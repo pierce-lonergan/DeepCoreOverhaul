@@ -40,10 +40,10 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 // Resource constants
 //
 
-#define OPENLRR_VERSION_NUMBER          0,0,0,1
-#define OPENLRR_VERSION                 0.0.0.1
+#define OPENLRR_VERSION_NUMBER          0,0,0,2
+#define OPENLRR_VERSION                 0.0.0.2
 
-#define OPENLRR_COPYRIGHT_STRING        "Copyright (C) 2021"
+#define OPENLRR_COPYRIGHT_STRING        "Copyright (C) 2022"
 #define OPENLRR_VERSION_STRING          STRINGIFY(OPENLRR_VERSION)
 #define OPENLRR_ABOUT_STRING            ABOUT_VER(OpenLRR v,OPENLRR_VERSION)
 

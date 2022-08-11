@@ -233,9 +233,9 @@ sint32 __cdecl LegoRR::SFX_Random_GetSound3DHandle(SFX_ID sfxID)
 			}
 
 			// Swap the randomly selected 3DSound handle with our root property.
-			/// TODO: This has be dangerous... With all the random sound selecting...
+			/// TODO: This has to be dangerous... With all the random sound selecting...
 			sint32 group3DHandle = sfxGroup->sound3DHandle;
-			group3DHandle = sfxProp->sound3DHandle;
+			sfxGroup->sound3DHandle = sfxProp->sound3DHandle;
 			sfxProp->sound3DHandle = group3DHandle;
 		}
 		return sfxGlobs.samplePropTable[sfxID].sound3DHandle;
