@@ -379,7 +379,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareObjectToolTip(LegoObject* liveObj)
 			}
 			else {
 				// Only buildings openly display their upgrade level: (UP1), (UP2), etc...
-				std::sprintf(buffVal, " (%s)", legoGlobs.langUpgradeLevel_name[liveObj->objLevel]);
+				std::sprintf(buffVal, " (%s)", upgradeName);
 				std::strcat(buffText, buffVal);
 			}
 		}
@@ -745,7 +745,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareMapBlockToolTip(const Point2I* blockPos
 
 			// Texture hex ID (and direction):
 			static constexpr const std::array<char, 4> directionChars = { 'U', 'R', 'D', 'L' };
-			std::sprintf(buffVal, "\nTex: %02x, Dir: %c", (uint32)block->texture, directionChars[block->direction % 4]);
+			std::sprintf(buffVal, "\nTex: %02x, Dir: %c", (uint32)block->texture, directionChars[block->direction % directionChars.size()]);
 			std::strcat(buffText, buffVal);
 			
 			// Wall damage:
@@ -822,10 +822,11 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareMapBlockToolTip(const Point2I* blockPos
 						break;
 					}
 				}
-				static constexpr const std::array<const char*, 5> erodeSpeedNames = { "VSlow", "Slow", "Med", "Fast", "VFast" };
+				// Include "None" as dummy to keep array index lookup the same as erodeSpeed.
+				static constexpr const std::array<const char*, 6> erodeSpeedNames = { "None", "VSlow", "Slow", "Med", "Fast", "VFast" };
 				const char* erodeActiveName = (erodeActive ? "Active" : "Dormant");
 				// Casts are vital here, since values are stored in `uint8`.
-				if (block->erodeSpeed > erodeSpeedNames.size()) {
+				if (block->erodeSpeed >= erodeSpeedNames.size()) {
 					std::sprintf(buffVal, "\nErode: %i", (uint32)block->erodeSpeed);
 					std::strcat(buffText, buffVal);
 				}
