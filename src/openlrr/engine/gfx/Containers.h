@@ -773,9 +773,9 @@ IDirect3DRMFrame3* __cdecl Container_Frame_Find(Container* cont, const char* fin
 
 // <LegoRR.exe @00476230>
 void __cdecl Container_Frame_SetAppData(IDirect3DRMFrame3* frame, Container* owner,
-										OPTIONAL AnimClone* animClone, OPTIONAL const char* asfname, OPTIONAL uint32* frameCount,
-										OPTIONAL const char* frameName, OPTIONAL real32* currTime, OPTIONAL real32* transCo,
-										OPTIONAL const char* actSample, OPTIONAL void* soundRecord, OPTIONAL uint32* trigger);
+										OPTIONAL AnimClone* animClone, OPTIONAL const char* asfname, OPTIONAL const uint32* frameCount,
+										OPTIONAL const char* frameName, OPTIONAL const real32* currTime, OPTIONAL const real32* transCo,
+										OPTIONAL const char* actSample, OPTIONAL void* soundRecord, OPTIONAL const uint32* trigger);
 
 // <LegoRR.exe @004763a0>
 void __cdecl Container_Frame_RemoveAppData(IDirect3DRMFrame3* frame);

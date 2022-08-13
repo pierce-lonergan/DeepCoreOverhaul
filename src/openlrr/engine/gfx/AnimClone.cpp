@@ -159,7 +159,7 @@ bool32 __cdecl Gods98::AnimClone_IsLws(const AnimClone* clone)
 
 
 // <LegoRR.exe @00489aa0>
-void __cdecl Gods98::AnimClone_SetTime(AnimClone* clone, real32 time, OUT real32* oldTime)
+void __cdecl Gods98::AnimClone_SetTime(AnimClone* clone, real32 time, OPTIONAL const real32* oldTime)
 {
 	AnimClone* orig = clone->clonedFrom;
 

@@ -320,7 +320,7 @@ void __cdecl Gods98::Lws_Shutdown(void)
 }
 
 // <LegoRR.exe @00487a90>
-uint32 __cdecl Gods98::Lws_GetFrameCount(Lws_Info* scene)
+uint32 __cdecl Gods98::Lws_GetFrameCount(const Lws_Info* scene)
 {
 	return (uint32)scene->lastFrame; // from uint16 -> uint32
 }
@@ -371,6 +371,9 @@ void __cdecl Gods98::Lws_SetupSoundTriggers(Lws_Info* scene)
 
 						if (end) st->frameEndList[index] = std::atoi(&end[1]);
 						else st->frameEndList[index] = st->frameStartList[index];
+
+						/// SANITY: Invalidate sound play handles in-case a loop ends before being started.
+						st->loopUID[index] = -1;
 					}
 				}
 			}
@@ -498,7 +501,7 @@ void __cdecl Gods98::Lws_SetTime(Lws_Info* scene, real32 time)
 }
 
 // <LegoRR.exe @00487f70>
-real32 __cdecl Gods98::Lws_FindPrevKey(Lws_Node* node, real32 time, uint16* prev)
+real32 __cdecl Gods98::Lws_FindPrevKey(const Lws_Node* node, real32 time, IN OUT uint16* prev)
 {
 	uint16 low=0, middle, high=node->keyCount;
 	uint16 frame;
@@ -535,25 +538,26 @@ void __cdecl Gods98::Lws_HandleTrigger(Lws_Info* scene, Lws_Node* node)
 	if (lwsGlobs.FindSFXIDFunc) {
 		if (node->flags & Lws_NodeFlags::LWSNODE_FLAG_SOUNDTRIGGER) {
 
-			uint16 loop;
-			bool32 loopMode;
 			IDirect3DRMFrame3* frame = scene->frameList[node->frameIndex];
 			Lws_SoundTrigger* st = &scene->triggerList[node->triggerIndex];
 
 
-			for (loop=0 ; loop<st->count ; loop++) {
-				loopMode = (st->frameStartList[loop] != st->frameEndList[loop]);
-				if (Lws_KeyPassed(scene, st->frameStartList[loop])) {
+			for (uint16 loop = 0; loop < st->count; loop++) {
+				bool32 loopMode = (st->frameStartList[loop] != st->frameEndList[loop]);
+				
+				/// CHANGE: Stop sounds before trying to start new ones.
+				if (loopMode && Lws_KeyPassed(scene, st->frameEndList[loop])) {
+					Sound3D_StopSound(st->loopUID[loop]);
+				}
+				/// FIX APPLY: Exclusive range for checking if a sound should play (should we also use exclusive for stop?)
+				///            This prevents sounds on frame 0 from playing twice, which was noticeable after fixing issue #37.
+				if (Lws_KeyPassedExclusive(scene, st->frameStartList[loop])) {
 	//				st->loopUID[loop] = Sound3D_PlayOnFrame(frame, st->sound, loopMode);
 	//				if (lwsGlobs.SoundEnabledFunc()) st->loopUID[loop] = Sound3D_PlayOnFrame(frame, lwsGlobs.GetSoundFunc(st->sfxID), loopMode);
 
-					{
-						if (lwsGlobs.SoundEnabledFunc()) st->loopUID[loop] = lwsGlobs.PlaySample3DFunc(frame, st->sfxID, loopMode, true, nullptr);
+					if (lwsGlobs.SoundEnabledFunc()) {
+						st->loopUID[loop] = lwsGlobs.PlaySample3DFunc(frame, st->sfxID, loopMode, true, nullptr);
 					}
-				}
-				if (loopMode &&
-					Lws_KeyPassed(scene, st->frameEndList[loop])) {
-					Sound3D_StopSound(st->loopUID[loop]);
 				}
 			}
 		}
@@ -561,16 +565,20 @@ void __cdecl Gods98::Lws_HandleTrigger(Lws_Info* scene, Lws_Node* node)
 }
 
 // <LegoRR.exe @00488190>
-bool32 __cdecl Gods98::Lws_KeyPassed(Lws_Info* scene, uint32 key)
+bool32 __cdecl Gods98::Lws_KeyPassed(const Lws_Info* scene, uint32 key)
 {
 	real32 keyTime = (real32) key;
 	real32 lastTime = scene->lastTime;
 	real32 currTime = scene->time;
 	real32 totalTime = (real32) Lws_GetFrameCount(scene);
 
+	// I'm unsure why these are used instead of time/lastTime, but maybe it's an
+	//  unused debugging feature to support playing animations in reverse (rewinding?)
 	real32 maxTime = std::max(lastTime, currTime);
 	real32 minTime = std::min(lastTime, currTime);
 
+	// Awkwardly check if the animation has just looped (basically: lastTime higher than currTime).
+	// First block is hit if we haven't looped.
 	if ((maxTime - minTime) / totalTime < 0.5f) {
 		if (keyTime <= maxTime && keyTime >= minTime) return true;
 	} else {
@@ -583,8 +591,35 @@ bool32 __cdecl Gods98::Lws_KeyPassed(Lws_Info* scene, uint32 key)
 //	return false;
 }
 
+bool32 __cdecl Gods98::Lws_KeyPassedExclusive(const Lws_Info* scene, uint32 key)
+{
+	real32 keyTime = (real32) key;
+	real32 lastTime = scene->lastTime;
+	real32 currTime = scene->time;
+	real32 totalTime = (real32) Lws_GetFrameCount(scene);
+
+	// I'm unsure why these are used instead of time/lastTime, but maybe it's an
+	//  unused debugging feature to support playing animations in reverse (rewinding?)
+	real32 maxTime = std::max(lastTime, currTime);
+	real32 minTime = std::min(lastTime, currTime);
+
+	// Awkwardly check if the animation has just looped (basically: lastTime higher than currTime).
+	// First block is hit if we haven't looped.
+
+	/// FIX APPLY: Vanilla issue where sounds on frame zero could trigger twice
+	///            (due to time/lastTime both being zero on the first frame).
+	///            This function is called "KeyPASSED", that means we should've PASSED the key already with our lastTime.
+	if ((maxTime - minTime) / totalTime < 0.5f) {
+		if (keyTime < maxTime && keyTime >= minTime) return true;
+	} else {
+		if (keyTime >= maxTime || keyTime < minTime) return true;
+	}
+
+	return false;
+}
+
 // <LegoRR.exe @00488280>
-real32 __cdecl Gods98::Lws_FindPrevDissolve(Lws_Node* node, real32 time, uint16* prev)
+real32 __cdecl Gods98::Lws_FindPrevDissolve(Lws_Node* node, real32 time, IN OUT uint16* prev)
 {
 	// Assume that there will be a small number of these keys...
 
@@ -788,7 +823,7 @@ Gods98::Mesh* __cdecl Gods98::Lws_LoadMesh(const char* baseDir, const char* fnam
 }
 
 // <LegoRR.exe @004889f0>
-Gods98::Mesh* __cdecl Gods98::Lws_SearchMeshPathList(Lws_MeshPath* list, uint32 count, const char* path)
+Gods98::Mesh* __cdecl Gods98::Lws_SearchMeshPathList(const Lws_MeshPath* list, uint32 count, const char* path)
 {
 	uint16 loop;
 

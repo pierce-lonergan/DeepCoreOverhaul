@@ -107,7 +107,7 @@ struct Lws_SoundTrigger
 	/*00,4*/ uint32 sfxID;
 	/*04,32*/ uint16 frameStartList[LWS_MAXTRIGGERKEYS];
 	/*36,32*/ uint16 frameEndList[LWS_MAXTRIGGERKEYS];
-	/*68,64*/ uint32 loopUID[LWS_MAXTRIGGERKEYS];
+	/*68,64*/ sint32 loopUID[LWS_MAXTRIGGERKEYS];
 	/*cc,2*/ uint16 count;
 	/*ce,2*/ uint16 padding1;
 	/*d0*/
@@ -229,7 +229,7 @@ void __cdecl Lws_Initialise(const char* sharedDir, LwsFindSFXIDFunc FindSFXID,
 void __cdecl Lws_Shutdown(void);
 
 // <LegoRR.exe @00487a90>
-uint32 __cdecl Lws_GetFrameCount(Lws_Info* scene);
+uint32 __cdecl Lws_GetFrameCount(const Lws_Info* scene);
 
 // <LegoRR.exe @00487aa0>
 void __cdecl Lws_SetupSoundTriggers(Lws_Info* scene);
@@ -251,7 +251,7 @@ Lws_Info* __cdecl Lws_Clone(Lws_Info* scene, IDirect3DRMFrame3* parent);
 void __cdecl Lws_SetTime(Lws_Info* scene, real32 time);
 
 // <LegoRR.exe @00487f70>
-real32 __cdecl Lws_FindPrevKey(Lws_Node* node, real32 time, uint16* prev);
+real32 __cdecl Lws_FindPrevKey(const Lws_Node* node, real32 time, IN OUT uint16* prev);
 
 // <LegoRR.exe @00488010>
 void __cdecl Lws_AnimateTextures(Lws_Info* scene, Lws_Node* node);
@@ -260,10 +260,12 @@ void __cdecl Lws_AnimateTextures(Lws_Info* scene, Lws_Node* node);
 void __cdecl Lws_HandleTrigger(Lws_Info* scene, Lws_Node* node);
 
 // <LegoRR.exe @00488190>
-bool32 __cdecl Lws_KeyPassed(Lws_Info* scene, uint32 key);
+bool32 __cdecl Lws_KeyPassed(const Lws_Info* scene, uint32 key);
+
+bool32 __cdecl Lws_KeyPassedExclusive(const Lws_Info* scene, uint32 key);
 
 // <LegoRR.exe @00488280>
-real32 __cdecl Lws_FindPrevDissolve(Lws_Node* node, real32 time, uint16* prev);
+real32 __cdecl Lws_FindPrevDissolve(Lws_Node* node, real32 time, IN OUT uint16* prev);
 
 // <LegoRR.exe @00488330>
 void __cdecl Lws_InterpolateDissolve(Lws_Info* scene, Lws_Node* node, uint16 prev, real32 delta);
@@ -282,7 +284,7 @@ void __cdecl Lws_SetupNodeTransform(Lws_Info* scene, Lws_Node* node, const Vecto
 Mesh* __cdecl Lws_LoadMesh(const char* baseDir, const char* fname, IDirect3DRMFrame3* frame, bool32 noTextures);
 
 // <LegoRR.exe @004889f0>
-Mesh* __cdecl Lws_SearchMeshPathList(Lws_MeshPath* list, uint32 count, const char* path);
+Mesh* __cdecl Lws_SearchMeshPathList(const Lws_MeshPath* list, uint32 count, const char* path);
 
 // <LegoRR.exe @00488a50>
 void __cdecl Lws_AddMeshPathEntry(Lws_MeshPath* list, IN OUT uint32* count, const char* path, Mesh* mesh);
