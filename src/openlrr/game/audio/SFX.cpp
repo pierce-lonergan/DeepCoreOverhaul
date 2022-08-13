@@ -212,6 +212,7 @@ bool32 __cdecl LegoRR::SFX_LoadSampleProperty(char* value, SFX_ID sfxID)
     return success;
 }
 
+/// REPLACED BY: SFX_Current_GetSound3DHandle
 // <LegoRR.exe @004650e0>
 sint32 __cdecl LegoRR::SFX_Random_GetSound3DHandle(SFX_ID sfxID)
 {
@@ -238,6 +239,18 @@ sint32 __cdecl LegoRR::SFX_Random_GetSound3DHandle(SFX_ID sfxID)
 			sfxGroup->sound3DHandle = sfxProp->sound3DHandle;
 			sfxProp->sound3DHandle = group3DHandle;
 		}
+		return sfxGlobs.samplePropTable[sfxID].sound3DHandle;
+	}
+
+	return -1; // Invalid handle
+}
+
+/// REPLACEMENT: For all but three instances of calling `SFX_Random_GetSound3DHandle`.
+// <LegoRR.exe @004650e0>
+sint32 __cdecl LegoRR::SFX_Current_GetSound3DHandle(SFX_ID sfxID)
+{
+	if (sfxID != SFX_NULL) {
+		// Return the *current* sound choice assigned to the SFX group root property.
 		return sfxGlobs.samplePropTable[sfxID].sound3DHandle;
 	}
 
@@ -302,7 +315,7 @@ sint32 __cdecl LegoRR::SFX_Random_Play_OrAddToQueue(SFX_ID sfxID, bool32 loop)
 		if (sfxID != SFX_NULL && SFX_IsSoundOn()) {
 
 			sint32 rngSound3DHandle = SFX_Random_GetSound3DHandle(sfxID);
-			if (rngSound3DHandle != 0) {
+			if (rngSound3DHandle > 0) {
 				return Gods98::Sound3D_Play2(Gods98::Sound3DPlay::Normal, nullptr, rngSound3DHandle, loop, nullptr);
 			}
 			//return 0; // rngSound3DHandle; // return 0; // (EAX)
@@ -327,20 +340,29 @@ sint32 __cdecl LegoRR::SFX_Random_Play_OrAddToQueue(SFX_ID sfxID, bool32 loop)
 	return -1;
 }
 
+/// CHANGE: Gets the current-assigned sound3DHandle (instead of a random one).
 // <LegoRR.exe @004652d0>
 void __cdecl LegoRR::SFX_Random_SetBufferVolume(SFX_ID sfxID, sint32 volume)
 {
-	/// FIXME: The randomness here smells like a disaster waiting to happen.
-	sint32 rngSound3DHandle = SFX_Random_GetSound3DHandle(sfxID);
-	Gods98::Sound3D_SetBufferVolume(rngSound3DHandle, volume);
+	/// FIX APPLY: Sanity check for handle value (not -1 or 0).
+	sint32 currentSound3DHandle = SFX_Current_GetSound3DHandle(sfxID);
+	if (currentSound3DHandle > 0) {
+		Gods98::Sound3D_SetBufferVolume(currentSound3DHandle, volume);
+	}
 }
 
+/// CHANGE: Gets the current-assigned sound3DHandle (instead of a random one).
 // <LegoRR.exe @004652f0>
 sint32 __cdecl LegoRR::SFX_Random_GetBufferVolume(SFX_ID sfxID)
 {
-	/// FIXME: The randomness here smells like a disaster waiting to happen.
-	sint32 rngSound3DHandle = SFX_Random_GetSound3DHandle(sfxID);
-	return Gods98::Sound3D_GetBufferVolume(rngSound3DHandle);
+	/// FIX APPLY: Sanity check for handle value (not -1 or 0).
+	sint32 currentSound3DHandle = SFX_Current_GetSound3DHandle(sfxID);
+	if (currentSound3DHandle > 0) {
+		return Gods98::Sound3D_GetBufferVolume(currentSound3DHandle);
+	}
+
+	// We need a default return value after the fix, we could also return 0 (Sound3D_MaxVolume).
+	return Gods98::Sound3D_MinVolume();
 }
 
 // if (SFX_IsQueueMode())
@@ -365,7 +387,7 @@ sint32 __cdecl LegoRR::SFX_Random_Play_OrInitSoundUnk(IDirect3DRMFrame3* frame, 
 		if (sfxID != SFX_NULL && SFX_IsSoundOn()) {
 
 			sint32 rngSound3DHandle = SFX_Random_GetSound3DHandle(sfxID);
-			if (rngSound3DHandle != 0) {
+			if (rngSound3DHandle > 0) {
 
 				if (sound3D) {
 					return Sound3D_Play2(Gods98::Sound3DPlay::OnFrame, frame, rngSound3DHandle, loop, nullptr);
@@ -401,12 +423,13 @@ sint32 __cdecl LegoRR::SFX_Random_Play_OrInitSoundUnk(IDirect3DRMFrame3* frame, 
 	return 0;
 }
 
+/// CHANGE: Gets the current-assigned sound3DHandle (instead of a random one).
 // <LegoRR.exe @00465420>
 real32 __cdecl LegoRR::SFX_Random_GetSamplePlayTime(SFX_ID sfxID)
 {
-	sint32 rngSound3DHandle = SFX_Random_GetSound3DHandle(sfxID);
-	if (rngSound3DHandle != 0) {
-		return Gods98::Sound3D_GetSamplePlayTime(rngSound3DHandle);
+	sint32 currentSound3DHandle = SFX_Current_GetSound3DHandle(sfxID);
+	if (currentSound3DHandle > 0) {
+		return Gods98::Sound3D_GetSamplePlayTime(currentSound3DHandle);
 	}
 	return 0.0f;
 }

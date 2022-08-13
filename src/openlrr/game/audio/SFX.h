@@ -167,8 +167,17 @@ __inline bool32 __cdecl SFX_Callback_FindSFXIDFunc(const char* name, OUT uint32*
 // <LegoRR.exe @00464fc0>
 bool32 __cdecl SFX_LoadSampleProperty(char* value, SFX_ID sfxID);
 
+/// REPLACED BY: SFX_Current_GetSound3DHandle
 // <LegoRR.exe @004650e0>
 sint32 __cdecl SFX_Random_GetSound3DHandle(SFX_ID sfxID);
+
+// Replacement for `SFX_Random_GetSound3DHandle` so that random sound choices are *mostly* preserved.
+// This is intended for use after `SFX_Random_Play_OrAddToQueue`, `SFX_Random_Play_OrInitSoundUnk` or
+//  `SFX_Container_Random_Play_OrInitSoundUnk`. Basically so that a random sound is chosen, and then
+//  getting the handle will always return that chosen sound.
+/// REPLACEMENT: For all but three instances of calling `SFX_Random_GetSound3DHandle`.
+// <LegoRR.exe @004650e0>
+sint32 __cdecl SFX_Current_GetSound3DHandle(SFX_ID sfxID);
 
 // <LegoRR.exe @00465140>
 void __cdecl SFX_StopGlobalSample(void);
@@ -185,9 +194,11 @@ void __cdecl SFX_AddToQueue(SFX_ID sfxID, Gods98::SoundMode mode);
 // <LegoRR.exe @00465260>
 sint32 __cdecl SFX_Random_Play_OrAddToQueue(SFX_ID sfxID, bool32 loop);
 
+/// CHANGE: Gets the current-assigned sound3DHandle (instead of a random one).
 // <LegoRR.exe @004652d0>
 void __cdecl SFX_Random_SetBufferVolume(SFX_ID sfxID, sint32 volume);
 
+/// CHANGE: Gets the current-assigned sound3DHandle (instead of a random one).
 // <LegoRR.exe @004652f0>
 sint32 __cdecl SFX_Random_GetBufferVolume(SFX_ID sfxID);
 
@@ -211,6 +222,10 @@ __inline sint32 __cdecl SFX_Callback_PlaySample3DFunc(void* frame, uint32 type, 
 }
 
 
+/// CHANGE: Gets the current-assigned sound3DHandle (instead of a random one).
+/// TODO: This is used in `Weapon_LegoObject_Callback_FUN_0046f8d0`, and called before a sound is played.
+///       It's not really dire, since `SFX_LazerRecharge` isn't a grouped sound by default, but still
+///        something to think about when rewriting the SFX sound3DHandle behaviour.
 // <LegoRR.exe @00465420>
 real32 __cdecl SFX_Random_GetSamplePlayTime(SFX_ID sfxID);
 

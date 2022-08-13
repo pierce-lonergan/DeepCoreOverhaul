@@ -1622,7 +1622,8 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 		// This panelGlobs variable tracks both the air beat SFX playing, and the flashing O2 low icon.
 		if (Panel_AirMeter_IsOxygenLow() && SFX_GetType("SND_AirBeat", &airBeatSFX)) {
-			SFX_Sound3D_StopSound(SFX_Random_GetSound3DHandle(airBeatSFX));
+			/// CHANGE: Get the current-assigned sound3DHandle (instead of a random one).
+			SFX_Sound3D_StopSound(SFX_Current_GetSound3DHandle(airBeatSFX));
 		}
 
 		Panel_AirMeter_SetOxygenLow(false);
