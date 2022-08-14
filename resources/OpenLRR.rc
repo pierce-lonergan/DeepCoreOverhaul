@@ -57,26 +57,11 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 // remains consistent on all systems.
 IDI_OPENLRR             ICON                    "logo/icon.ico"
 
+// Extra official icons for LRR
+IDI_LEGORR              ICON                    "logo/icon-gold.ico"
+IDI_CLGEN               ICON                    "logo/icon-teal.ico"
+IDI_CDROM               ICON                    "logo/icon-teal-rr.ico"
 
-//#if defined(__has_include)
-//#if __has_include("resource-icons.h")
-// TODO: Add a way to optionally include this only when available
-#if 0
-#include "resource-icons.h"
-
-#ifdef IDI_LEGORR_ICONPATH
-IDI_LEGORR              ICON                    IDI_LEGORR_ICONPATH
-#endif
-#ifdef IDI_CLGEN_ICONPATH
-IDI_CLGEN               ICON                    IDI_CLGEN_ICONPATH
-#endif
-#ifdef IDI_CDROM_ICONPATH
-IDI_CDROM               ICON                    IDI_CDROM_ICONPATH
-#endif
-
-#endif
-//#endif
-//#endif
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -128,9 +113,9 @@ BEGIN
             MENUITEM "None",                    IDM_ICON_NONE,CHECKED
             MENUITEM "Native",                  IDM_ICON_NATIVE
             MENUITEM "OpenLRR",                 IDM_ICON_OPENLRR
-            MENUITEM "Teal",                    IDM_ICON_TEAL
             MENUITEM "Gold",                    IDM_ICON_GOLD
-            MENUITEM "Teal RR",                 IDM_ICON_CDROM
+            MENUITEM "Teal",                    IDM_ICON_TEAL
+            MENUITEM "Teal RR",                 IDM_ICON_TEALRR
         END
         MENUITEM SEPARATOR
         POPUP "&Graphics"

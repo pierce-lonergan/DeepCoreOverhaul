@@ -137,6 +137,8 @@ enum class Graphics_Quality : uint32
 	Gouraud   = 3, // (placeholder: D3DRMRENDER_GOURAUD)
 	Phong     = 4, // (placeholder: D3DRMRENDER_PHONG) CUSTOM: add remaining render quality combination, does this have any use?
 
+	Count,
+
 	/*/// OLD:
 	WIREFRAME      = 0,
 	UNLITFLATSHADE = 1,

@@ -70,9 +70,9 @@
 #define IDM_ICON_NONE					541
 #define IDM_ICON_NATIVE					542
 #define IDM_ICON_OPENLRR				543
-#define IDM_ICON_TEAL					544
-#define IDM_ICON_GOLD					545
-#define IDM_ICON_CDROM					546
+#define IDM_ICON_GOLD					544
+#define IDM_ICON_TEAL					545
+#define IDM_ICON_TEALRR					546
 // --------------
 // &Options > Graphics
 #define IDM_LIGHTEFFECTS				551
@@ -218,7 +218,7 @@
 /////////////////////////////////////////////////////////////////////
 // Other
 //
-#define IDI_CDROM						204		// icon used for the CD drive
+#define IDI_CDROM						204		// icon used by the CDROM
 
 
 /////////////////////////////////////////////////////////////////////

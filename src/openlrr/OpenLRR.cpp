@@ -91,37 +91,45 @@ bool InjectOpenLRR(HINSTANCE hInstanceDll)
     ::CheckMenuItem(Gods98::Main_GetMenu(), (menuID), MF_BYCOMMAND|((state)?MF_CHECKED:MF_UNCHECKED))
 
 #define Menu_EnableButtons(menuIDs, count, state) \
-    for (sint32 ii = 0; ii < (sint32)(count); ii++) Menu_EnableButton((menuIDs)[ii], state)
+    for (sint32 ii = 0; ii < static_cast<sint32>(count); ii++) Menu_EnableButton((menuIDs)[ii], state)
 
 #define Menu_CheckButtons(menuIDs, count, state) \
-    for (sint32 ii = 0; ii < (sint32)(count); ii++) Menu_CheckButton((menuIDs)[ii], state)
+    for (sint32 ii = 0; ii < static_cast<sint32>(count); ii++) Menu_CheckButton((menuIDs)[ii], state)
 
 #define Menu_CheckRadioButtons(menuIDs, count, index) \
-    for (sint32 ii = 0; ii < (sint32)(count); ii++) Menu_CheckButton((menuIDs)[ii], (ii==(index)))
+    for (sint32 ii = 0; ii < static_cast<sint32>(count); ii++) Menu_CheckButton((menuIDs)[ii], (ii==(index)))
 
-#define Menu_EnableButtonsArray(menuIDs, state) Menu_EnableButtons(menuIDs, _countof(menuIDs), state)
-#define Menu_CheckButtonsArray(menuIDs, state)  Menu_CheckButtons(menuIDs, _countof(menuIDs), state)
-#define Menu_CheckRadioButtonsArray(menuIDs, index) Menu_CheckRadioButtons(menuIDs, _countof(menuIDs), index)
+#define Menu_EnableButtonsArray(menuIDs, state) Menu_EnableButtons(menuIDs, menuIDs.size(), state)
+#define Menu_CheckButtonsArray(menuIDs, state)  Menu_CheckButtons(menuIDs, menuIDs.size(), state)
+#define Menu_CheckRadioButtonsArray(menuIDs, index) Menu_CheckRadioButtons(menuIDs, menuIDs.size(), index)
 
 
-static const uint32 Menu_ScaleIDs[] = { IDM_SCALE_X1, IDM_SCALE_X2, IDM_SCALE_X3, IDM_SCALE_X4 };
-static const uint32 Menu_IconIDs[] = { IDM_ICON_NONE, IDM_ICON_NATIVE, IDM_ICON_OPENLRR, IDM_ICON_TEAL, IDM_ICON_GOLD, IDM_ICON_CDROM };
-static const uint32 Menu_CursorIDs[] = { IDM_CURSOR_NEVER, IDM_CURSOR_TITLEBAR, IDM_CURSOR_ALWAYS };
-static const uint32 Menu_QualityIDs[] = { IDM_QUALITY_WIREFRAME, IDM_QUALITY_UNLITFLAT, IDM_QUALITY_FLAT, IDM_QUALITY_GOURAUD, IDM_QUALITY_PHONG };
-static const uint32 Menu_AdvanceFrameIDs[] = { IDM_ADVANCE_1FRAME, IDM_ADVANCE_1SECOND };
-static const uint32 Menu_InitCommandLineIDs[] = { IDM_DUALMOUSE, IDM_PROGRAMMER, IDM_DEBUGMODE, IDM_DEBUGCOMPLETE, IDM_LEVELSOPEN, IDM_TESTERCALL, IDM_BLOCKFADE, IDM_DUMPMODE, IDM_FREEZE };
+static constexpr const auto Menu_ScaleIDs = array_of<uint32>(IDM_SCALE_X1, IDM_SCALE_X2, IDM_SCALE_X3, IDM_SCALE_X4);
+static constexpr const auto Menu_IconIDs = array_of<uint32>(IDM_ICON_NONE, IDM_ICON_NATIVE, IDM_ICON_OPENLRR, IDM_ICON_GOLD, IDM_ICON_TEAL, IDM_ICON_TEALRR);
+static constexpr const auto Menu_CursorIDs = array_of<uint32>(IDM_CURSOR_NEVER, IDM_CURSOR_TITLEBAR, IDM_CURSOR_ALWAYS);
+static constexpr const auto Menu_QualityIDs = array_of<uint32>(IDM_QUALITY_WIREFRAME, IDM_QUALITY_UNLITFLAT, IDM_QUALITY_FLAT, IDM_QUALITY_GOURAUD, IDM_QUALITY_PHONG);
+static constexpr const auto Menu_AdvanceFrameIDs = array_of<uint32>(IDM_ADVANCE_1FRAME, IDM_ADVANCE_1SECOND);
+static constexpr const auto Menu_InitCommandLineIDs = array_of<uint32>(IDM_DUALMOUSE, IDM_PROGRAMMER, IDM_DEBUGMODE, IDM_DEBUGCOMPLETE, IDM_LEVELSOPEN, IDM_TESTERCALL, IDM_BLOCKFADE, IDM_DUMPMODE, IDM_FREEZE);
 
-static uint32 Menu_LegoInitIDs[] = { IDM_MUSICON, IDM_SOUNDON, IDM_HELPWINDOW, IDM_AUTOGAMESPEED, IDM_LOSEFOCUSANDPAUSE,
+//static_assert(Menu_ScaleIDs.size() == 4, "Mismatched Menu_ScaleIDs array size");
+static_assert(Menu_IconIDs.size() == openlrrGlobs.iconList.size(), "Mismatched Menu_IconIDs array size");
+static_assert(Menu_CursorIDs.size() == static_cast<size_t>(Gods98::CursorVisibility::Count), "Mismatched Menu_CursorIDs array size");
+static_assert(Menu_QualityIDs.size() == static_cast<size_t>(Gods98::Graphics_Quality::Count), "Mismatched Menu_QualityIDs array size");
+
+static constexpr const auto Menu_LegoInitIDs = array_of<uint32>(
+	IDM_MUSICON, IDM_SOUNDON, IDM_HELPWINDOW, IDM_AUTOGAMESPEED, IDM_LOSEFOCUSANDPAUSE,
 	IDM_SHOWOBJINFO, IDM_RENDERPANELS, IDM_TOOLTIPSOUND, IDM_LIGHTEFFECTS, IDM_DETAILON, IDM_DYNAMICPM, IDM_ALLOWDEBUGKEYS,
 	IDM_ALLOWEDITMODE, IDM_SHOWDEBUGTOOLTIPS, IDM_DDRAWCLEAR, IDM_FPSMONITOR, IDM_MEMORYMONITOR, IDM_NONERPS, IDM_UNLOCKCAMERA,
-	IDM_UNLOCKBUILD, IDM_BUILDWITHOUTPATHS, IDM_FPNOCLIP, IDM_NOROCKFALL, IDM_QUICKREINFORCE };
+	IDM_UNLOCKBUILD, IDM_BUILDWITHOUTPATHS, IDM_FPNOCLIP, IDM_NOROCKFALL, IDM_QUICKREINFORCE
+);
 
-static uint32 Menu_InLevelIDs[] = { IDM_BUILDANYROUGHNESS, IDM_NOOXYGEN, IDM_PEACEFUL, IDM_ALLOWRENAME, IDM_DISABLEENDTELEPORT,
+static constexpr const auto Menu_InLevelIDs = array_of<uint32>(
+	IDM_BUILDANYROUGHNESS, IDM_NOOXYGEN, IDM_PEACEFUL, IDM_ALLOWRENAME, IDM_DISABLEENDTELEPORT,
 	IDM_GENERATESPIDERS, IDM_NOAUTOEAT, IDM_NOFALLINS, IDM_NOMULTISELECT, IDM_SAFECAVERNS, IDM_SEETHROUGHWALLS,
 	IDM_ADDCRYSTALS, IDM_SUBCRYSTALS, IDM_ADDORE, IDM_SUBORE, IDM_ADDOXYGEN, IDM_SUBOXYGEN,
 
-	IDM_SELECTEDLEVELUP, IDM_SELECTEDHEAL, IDM_SELECTEDTRAIN,
-};
+	IDM_SELECTEDLEVELUP, IDM_SELECTEDHEAL, IDM_SELECTEDTRAIN
+);
 
 // Update menu item enabled/checked states.
 void __cdecl OpenLRR_UpdateMenuItems(void)
@@ -156,10 +164,10 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_TOPDOWNFOG,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsTopdownFogOn()));
 
     // This can safely be out of range, beacuse of how the Buttons macros function
-    sint32 curCursor = (sint32)Gods98::Main_GetCursorVisibility();
+    sint32 curCursor = static_cast<sint32>(Gods98::Main_GetCursorVisibility());
     Menu_CheckRadioButtonsArray(Menu_CursorIDs, curCursor);
 
-	Menu_CheckRadioButtonsArray(Menu_QualityIDs,   (sint32)Gods98::Graphics_GetRenderQuality());
+	Menu_CheckRadioButtonsArray(Menu_QualityIDs,   static_cast<sint32>(Gods98::Graphics_GetRenderQuality()));
 	Menu_CheckButton(IDM_GRAPHICS_BLEND,           Gods98::Graphics_IsBlendTransparency());
 	Menu_CheckButton(IDM_GRAPHICS_DITHER,          Gods98::Graphics_IsDither());
 	Menu_CheckButton(IDM_GRAPHICS_FILTER,          Gods98::Graphics_IsLinearFilter());
@@ -169,16 +177,16 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_GRAPHICS_ALPHAMODULATION, Gods98::Graphics_IsAlphaModulation());
 
     sint32 curIcon = -1;
-    for (uint32 i = 0; i < (uint32)OpenLRRIcon::Count; i++) {
+    for (size_t i = 0; i < Menu_IconIDs.size(); i++) {
         // Disable menu items for unavailable icons.
-        if ((OpenLRRIcon)i != OpenLRRIcon::None && !openlrrGlobs.iconList[i])
+        if (static_cast<OpenLRRIcon>(i) != OpenLRRIcon::None && !openlrrGlobs.iconList[i])
             Menu_EnableButton(Menu_IconIDs[i], false);
         else if (openlrrGlobs.iconList[i] == Gods98::Main_GetIcon() && curIcon == -1)
             curIcon = i;
     }
     Menu_CheckRadioButtonsArray(Menu_IconIDs, curIcon);
 
-	for (uint32 i = 0; i < 4; i++) {
+	for (size_t i = 0; i < Menu_ScaleIDs.size(); i++) {
 		Menu_EnableButton((IDM_SCALE_X1 + i), Gods98::Main_IsScaleSupported(i + 1)); // scale is "1-indexed"
 	}
 	Menu_CheckRadioButtonsArray(Menu_ScaleIDs, (Gods98::Main_Scale() - 1)); // scale is "1-indexed"
@@ -371,24 +379,24 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
         case IDM_CURSOR_TITLEBAR: std::printf("IDM_CURSOR_TITLEBAR\n"); break;
         case IDM_CURSOR_ALWAYS:   std::printf("IDM_CURSOR_ALWAYS\n"); break;
         }*/
-        Gods98::Main_SetCursorVisibility((Gods98::CursorVisibility)(wmId - IDM_CURSOR_NEVER));
+        Gods98::Main_SetCursorVisibility(static_cast<Gods98::CursorVisibility>(wmId - IDM_CURSOR_NEVER));
         break;
 
     case IDM_ICON_NONE:
     case IDM_ICON_NATIVE:
     case IDM_ICON_OPENLRR:
-    case IDM_ICON_TEAL:
     case IDM_ICON_GOLD:
-    case IDM_ICON_CDROM:
+    case IDM_ICON_TEAL:
+    case IDM_ICON_TEALRR:
         /*switch (wmId) {
         case IDM_ICON_NONE:    std::printf("IDM_ICON_NONE\n"); break;
         case IDM_ICON_NATIVE:  std::printf("IDM_ICON_NATIVE\n"); break;
         case IDM_ICON_OPENLRR: std::printf("IDM_ICON_OPENLRR\n"); break;
-        case IDM_ICON_TEAL:    std::printf("IDM_ICON_TEAL\n"); break;
         case IDM_ICON_GOLD:    std::printf("IDM_ICON_GOLD\n"); break;
-        case IDM_ICON_CDROM:   std::printf("IDM_ICON_CDROM\n"); break;
+        case IDM_ICON_TEAL:    std::printf("IDM_ICON_TEAL\n"); break;
+        case IDM_ICON_TEALRR:  std::printf("IDM_ICON_TEALRR\n"); break;
         }*/
-        Gods98::Main_SetIcon(openlrrGlobs.iconList[(uint32)(wmId - IDM_ICON_NONE)], false);
+        Gods98::Main_SetIcon(openlrrGlobs.iconList[static_cast<size_t>(wmId - IDM_ICON_NONE)], false);
         break;
 
 	case IDM_LIGHTEFFECTS:
@@ -424,7 +432,7 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
         case IDM_QUALITY_GOURAUD:   std::printf("IDM_QUALITY_GOURAUD\n"); break;
         case IDM_QUALITY_PHONG:     std::printf("IDM_QUALITY_PHONG\n"); break;
         }*/
-		Gods98::Graphics_SetRenderQuality((Gods98::Graphics_Quality)((sint32)(wmId - IDM_QUALITY_WIREFRAME)));
+		Gods98::Graphics_SetRenderQuality(static_cast<Gods98::Graphics_Quality>(wmId - IDM_QUALITY_WIREFRAME));
         break;
 
     /*case IDM_GRAPHICS_BLEND:
@@ -557,7 +565,7 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 
     case IDM_ADVANCE_1SECOND:
         //std::printf("IDM_ADVANCE_1SECOND\n");
-        Gods98::Main_SetAdvanceFrames((uint32)STANDARD_FRAMERATE);
+        Gods98::Main_SetAdvanceFrames(static_cast<sint32>(STANDARD_FRAMERATE));
         break;
 
 
@@ -854,9 +862,9 @@ sint32 __stdcall LaunchOpenLRR(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
     openlrrGlobs.iconList[(uint32)OpenLRRIcon::Native]  = ::LoadIconA(OpenLRR_hInstMain(), MAKEINTRESOURCEA(IDI_LEGORR));
     openlrrGlobs.iconList[(uint32)OpenLRRIcon::OpenLRR] = ::LoadIconA(OpenLRR_hInstDll(), MAKEINTRESOURCEA(IDI_OPENLRR));
     // The following icons may not be included in OpenLRR:
-    openlrrGlobs.iconList[(uint32)OpenLRRIcon::Teal]    = ::LoadIconA(OpenLRR_hInstDll(), MAKEINTRESOURCEA(IDI_CLGEN));
     openlrrGlobs.iconList[(uint32)OpenLRRIcon::Gold]    = ::LoadIconA(OpenLRR_hInstDll(), MAKEINTRESOURCEA(IDI_LEGORR));
-    openlrrGlobs.iconList[(uint32)OpenLRRIcon::CDROM]   = ::LoadIconA(OpenLRR_hInstDll(), MAKEINTRESOURCEA(IDI_CDROM));
+    openlrrGlobs.iconList[(uint32)OpenLRRIcon::Teal]    = ::LoadIconA(OpenLRR_hInstDll(), MAKEINTRESOURCEA(IDI_CLGEN));
+    openlrrGlobs.iconList[(uint32)OpenLRRIcon::TealRR]  = ::LoadIconA(OpenLRR_hInstDll(), MAKEINTRESOURCEA(IDI_CDROM));
 
     openlrrGlobs.menu   = ::LoadMenuA(OpenLRR_hInstDll(), MAKEINTRESOURCEA(IDC_DEBUGSYSMENU));
     openlrrGlobs.accels = ::LoadAcceleratorsA(OpenLRR_hInstDll(), MAKEINTRESOURCEA(IDC_DEBUGSYSMENU));

@@ -177,6 +177,18 @@ typedef uint32			colour32;
 #pragma endregion
 
 
+#pragma region CPP Helpers
+
+// Define std::arrays without specifying the size.
+// see: <https://stackoverflow.com/a/26351760/7517185>
+template <typename V, typename... T>
+constexpr auto array_of(T&&... t) -> std::array<V, sizeof...(T)> {
+	return { static_cast<V>(std::forward<T>(t))... };
+}
+
+#pragma endregion
+
+
 #pragma region Macro functions
 
 // Gets the name of a symbol as a C string

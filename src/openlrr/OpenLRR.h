@@ -32,9 +32,9 @@ enum class OpenLRRIcon
 	None,
 	Native,		// Whatever is present at resource 113 in the native-loaded executable.
 	OpenLRR,	// Teal rim with "OR" letters
-	Teal,		// Teal rim						(not included by default)
-	Gold,		// Gold rim						(not included by default)
-	CDROM,		// Teal rim with "RR" letters	(not included by default)
+	Gold,		// Gold rim						(from LegoRR.exe)
+	Teal,		// Teal rim						(from CLGen.exe)
+	TealRR,		// Teal rim with "RR" letters	(from CDROM)
 
 	Count,
 };
@@ -55,7 +55,7 @@ struct OpenLRR_Globs
 	FILE*			conout;    // CONOUT$ file opened by `MakeConsole`
 	InjectMethod	method;    // How OpenLRR has been injected and attached to `LegoRR.exe`
 
-	HICON			iconList[(uint32)OpenLRRIcon::Count];
+	std::array<HICON, static_cast<size_t>(OpenLRRIcon::Count)>	iconList;
 	HMENU			menu;
 	HACCEL			accels;
 
