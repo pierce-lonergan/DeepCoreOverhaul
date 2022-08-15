@@ -47,17 +47,17 @@ namespace LegoRR
 
 #pragma region Structs
 
-struct SearchData18_2 // [LegoRR/search.c|struct:0x18]
+struct SearchWeapons18_2 // [LegoRR/search.c|struct:0x18]
 {
-	/*00,4*/	undefined4 field_0;
+	/*00,4*/	LegoObject* foundObj;
 	/*04,4*/	real32 ref_float_4;
-	/*08,4*/	Vector3F* vectorp_8;
-	/*0c,4*/	Vector3F* vectorp_c;
-	/*10,4*/	bool32 field_10;
-	/*14,4*/	undefined4 field_14;
+	/*08,4*/	const Vector3F* vectorp_8;
+	/*0c,4*/	const Vector3F* vectorp_c;
+	/*10,4*/	bool32 success;
+	/*14,4*/	LegoObject* ignoreObj;
 	/*18*/
 };
-assert_sizeof(SearchData18_2, 0x18);
+assert_sizeof(SearchWeapons18_2, 0x18);
 
 
 struct WeaponsModel // [LegoRR/Weapons.c|struct:0xa8]
@@ -68,8 +68,8 @@ struct WeaponsModel // [LegoRR/Weapons.c|struct:0xa8]
 	/*30,4*/	real32 pivotMaxZ;			// (ae: PivotMaxZ)
 	/*34,4*/	real32 pivotMinZ;			// (ae: PivotMinZ)
 	/*38,c*/	bool32 fireNullPairFrames[WEAPON_MAXWEAPONS];	// (valid: [0,1])
-	/*44,48*/	Vector3F vectors3_44[WEAPON_MAXWEAPONS];
-	/*68,48*/	Vector3F vectors3_68[WEAPON_MAXWEAPONS];
+	/*44,48*/	Vector3F fireDirections[WEAPON_MAXWEAPONS];
+	/*68,48*/	Vector3F targetWorldPos[WEAPON_MAXWEAPONS];
 	/*8c,c*/	Upgrade_PartInfo* weaponParts[WEAPON_MAXWEAPONS];
 	/*98,c*/	real32 timers[WEAPON_MAXWEAPONS];
 	/*a4,4*/	uint32 weaponCount;			// (valid: [0,3])
@@ -134,7 +134,7 @@ struct Weapon_Globs // [LegoRR/Weapons.c|struct:0x1b90|tags:GLOBS]
 	/*0008,4*/	WeaponStats* weaponStatsList;
 	/*000c,a0*/	Weapon_Lazer lazerList[WEAPON_MAXLAZERS];
 	/*00ac,1ae0*/	Weapon_Projectile projectileList[WEAPON_MAXPROJECTILES];
-	/*1b8c,4*/	Gods98::Config* config;
+	/*1b8c,4*/	const Gods98::Config* config;
 	/*1b90*/
 };
 assert_sizeof(Weapon_Globs, 0x1b90);
@@ -167,7 +167,8 @@ extern Weapon_Globs & weaponGlobs;
 #pragma region Functions
 
 // <LegoRR.exe @0046ee40>
-#define Weapon_Initialise ((bool32 (__cdecl* )(const Gods98::Config* config, const char* gameName))0x0046ee40)
+//#define Weapon_Initialise ((bool32 (__cdecl* )(const Gods98::Config* config, const char* gameName))0x0046ee40)
+bool32 __cdecl Weapon_Initialise(const Gods98::Config* config, const char* gameName);
 
 // On failure, returns weaponGlobs.weaponCount
 // Weapon IDs are 1-indexed it seems...(?)

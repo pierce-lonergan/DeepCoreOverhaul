@@ -1572,8 +1572,9 @@ __inline Map3D* Lego_GetMap(void) { return Lego_GetLevel()->map; }
 // <LegoRR.exe @00434460>
 #define Level_RemoveAll_ProMeshes ((void (__cdecl* )(void))0x00434460)
 
+// destroyTime can also be drillTime.
 // <LegoRR.exe @004344a0>
-#define Level_Block_Damage ((bool32 (__cdecl* )(uint32 bx, uint32 by, real32 param_3, real32 param_4))0x004344a0)
+#define Level_Block_Damage ((bool32 (__cdecl* )(uint32 bx, uint32 by, real32 destroyTime, real32 elapsed))0x004344a0)
 
 // <LegoRR.exe @00434520>
 #define Lego_LoadPanels ((void (__cdecl* )(const Gods98::Config* config, uint32 screenWidth, uint32 screenHeight))0x00434520)

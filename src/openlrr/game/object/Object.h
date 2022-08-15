@@ -1162,7 +1162,7 @@ bool32 __cdecl LegoObject_Callback_Remove(LegoObject* liveObj, void* unused);
 #define LegoObject_CallbackBoulderAttackBuilding_FUN_00447be0 ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* buildingLiveObj))0x00447be0)
 
 // <LegoRR.exe @00447c10>
-#define LegoObject_Hit ((void (__cdecl* )(LegoObject* liveObj, const Point2F* dir, bool32 reactToHit))0x00447c10)
+#define LegoObject_Hit ((void (__cdecl* )(LegoObject* liveObj, OPTIONAL const Point2F* dir, bool32 reactToHit))0x00447c10)
 
 // <LegoRR.exe @00447dc0>
 #define LegoObject_TeleportDownBuilding ((void (__cdecl* )(LegoObject* liveObj))0x00447dc0)
