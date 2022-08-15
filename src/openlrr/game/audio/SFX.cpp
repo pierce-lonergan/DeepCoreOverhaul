@@ -97,7 +97,7 @@ void __cdecl LegoRR::SFX_Container_SoundTriggerCallback(const char* sfxName, God
     SFX_ID sfxID = SFX_ID::SFX_NULL; // dummy init
     if (SFX_GetType(sfxName, &sfxID)) {
 
-        SFX_Container_Random_Play_OrInitSoundUnk(cont, sfxID, false, true, nullptr);
+        SFX_Random_PlaySound3DOnContainer(cont, sfxID, false, true, nullptr);
     }
 }
 
@@ -282,7 +282,7 @@ bool32 __cdecl LegoRR::SFX_SetGlobalSampleDurationIfLE0_AndNullifyHandle(real32 
 bool32 __cdecl LegoRR::SFX_Random_SetAndPlayGlobalSample(SFX_ID sfxID, OPTIONAL OUT sint32* handle)
 {
 	if (sfxGlobs.globalSampleDuration <= 0.0f) {
-		sfxGlobs.globalSampleSoundHandle = SFX_Random_Play_OrAddToQueue(sfxID, false);
+		sfxGlobs.globalSampleSoundHandle = SFX_Random_PlaySoundNormal(sfxID, false);
 
 		if (sfxGlobs.globalSampleSoundHandle != -1) {
 			real32 playTime = SFX_Random_GetSamplePlayTime(sfxID);
@@ -300,7 +300,7 @@ bool32 __cdecl LegoRR::SFX_Random_SetAndPlayGlobalSample(SFX_ID sfxID, OPTIONAL 
 // <LegoRR.exe @00465220>
 void __cdecl LegoRR::SFX_AddToQueue(SFX_ID sfxID, Gods98::SoundMode mode)
 {
-	if (sfxGlobs.soundQueueCount_1 < 10) {
+	if (sfxGlobs.soundQueueCount_1 < _countof(sfxGlobs.sfxInstanceTable)) {
 		sfxGlobs.soundQueueSFXTable_1[sfxGlobs.soundQueueCount_1] = sfxID;
 		sfxGlobs.soundQueueModesTable_1[sfxGlobs.soundQueueCount_1] = mode;
 		sfxGlobs.soundQueueCount_1++;
@@ -308,7 +308,7 @@ void __cdecl LegoRR::SFX_AddToQueue(SFX_ID sfxID, Gods98::SoundMode mode)
 }
 
 // <LegoRR.exe @00465260>
-sint32 __cdecl LegoRR::SFX_Random_Play_OrAddToQueue(SFX_ID sfxID, bool32 loop)
+sint32 __cdecl LegoRR::SFX_Random_PlaySoundNormal(SFX_ID sfxID, bool32 loop)
 {
 	if (!SFX_IsQueueMode()) {
 
@@ -323,10 +323,18 @@ sint32 __cdecl LegoRR::SFX_Random_Play_OrAddToQueue(SFX_ID sfxID, bool32 loop)
 		//return (sint32)sfxID; // (EAX) // return 0; or return sfxID; if (!SFX_IsSoundOn())
 	}
 	else {
-		if (sfxGlobs.sfxInstanceCount < 10) {
+		if (sfxGlobs.sfxInstanceCount < _countof(sfxGlobs.sfxInstanceTable)) {
 			SFX_Instance* sfxInst = &sfxGlobs.sfxInstanceTable[sfxGlobs.sfxInstanceCount];
+			/// SANITY: Clear unused frame and position fields.
 			sfxInst->sfxID = sfxID;
-			sfxGlobs.sfxInstanceTable[sfxGlobs.sfxInstanceCount].flags &= ~SFX_InstanceFlags::SFX_INSTANCE_FLAG_UNK_1; // !playing? queued?
+			sfxInst->frame = nullptr;
+
+			/// FIX APPLY: Properly clear or assign the looping flag.
+			sfxInst->flags &= ~(SFX_InstanceFlags::SFX_INSTANCE_FLAG_ONFRAME|SFX_InstanceFlags::SFX_INSTANCE_FLAG_LOOPING|SFX_InstanceFlags::SFX_INSTANCE_FLAG_SOUND3D);
+			if (loop) sfxInst->flags |= SFX_InstanceFlags::SFX_INSTANCE_FLAG_LOOPING;
+
+			sfxInst->position = Vector3F { 0.0f, 0.0f, 0.0f };
+
 			sfxGlobs.sfxInstanceCount++;
 
 			//return (sint32)sfxInst; // (EAX)
@@ -366,21 +374,21 @@ sint32 __cdecl LegoRR::SFX_Random_GetBufferVolume(SFX_ID sfxID)
 }
 
 // if (SFX_IsQueueMode())
-//   sound3D and loop MUST be a boolean with the LSB (0x1) set or unset
-// wPos must be non-null if (!sound3D)
+//   onCont and loop MUST be a boolean with the LSB (0x1) set or unset
+// wPos must be non-null if (!onCont)
 // <LegoRR.exe @00465310>
-sint32 __cdecl LegoRR::SFX_Container_Random_Play_OrInitSoundUnk(Gods98::Container* cont, SFX_ID sfxID, bool32 loop, bool32 sound3D, OPTIONAL const Vector3F* wPos)
+sint32 __cdecl LegoRR::SFX_Random_PlaySound3DOnContainer(Gods98::Container* cont, SFX_ID sfxID, bool32 loop, bool32 onCont, OPTIONAL const Vector3F* wPos)
 {
 	IDirect3DRMFrame3* frame = (cont ? Gods98::Container_GetMasterFrame(cont) : nullptr);
 
-	return SFX_Random_Play_OrInitSoundUnk(frame, sfxID, loop, sound3D, wPos);
+	return SFX_Random_PlaySound3DOnFrame(frame, sfxID, loop, onCont, wPos);
 }
 
 // if (SFX_IsQueueMode())
-//   sound3D and loop MUST be a boolean with the LSB (0x1) set or unset
-// wPos must be non-null if (SFX_IsQueueMode() && !sound3D)
+//   onFrame and loop MUST be a boolean with the LSB (0x1) set or unset
+// wPos must be non-null if (SFX_IsQueueMode() && !onFrame)
 // <LegoRR.exe @00465350>
-sint32 __cdecl LegoRR::SFX_Random_Play_OrInitSoundUnk(IDirect3DRMFrame3* frame, SFX_ID sfxID, bool32 loop, bool32 sound3D, OPTIONAL const Vector3F* wPos)
+sint32 __cdecl LegoRR::SFX_Random_PlaySound3DOnFrame(IDirect3DRMFrame3* frame, SFX_ID sfxID, bool32 loop, bool32 onFrame, OPTIONAL const Vector3F* wPos)
 {
 	if (!SFX_IsQueueMode()) {
 
@@ -389,7 +397,7 @@ sint32 __cdecl LegoRR::SFX_Random_Play_OrInitSoundUnk(IDirect3DRMFrame3* frame, 
 			sint32 rngSound3DHandle = SFX_Random_GetSound3DHandle(sfxID);
 			if (rngSound3DHandle > 0) {
 
-				if (sound3D) {
+				if (onFrame) {
 					return Sound3D_Play2(Gods98::Sound3DPlay::OnFrame, frame, rngSound3DHandle, loop, nullptr);
 				}
 				else {
@@ -399,22 +407,24 @@ sint32 __cdecl LegoRR::SFX_Random_Play_OrInitSoundUnk(IDirect3DRMFrame3* frame, 
 		}
 	}
 	else {
-		if (sfxGlobs.sfxInstanceCount < 10) {
+		if (sfxGlobs.sfxInstanceCount < _countof(sfxGlobs.sfxInstanceTable)) {
 			SFX_Instance* sfxInst = &sfxGlobs.sfxInstanceTable[sfxGlobs.sfxInstanceCount];
+			std::memset(sfxInst, 0, sizeof(*sfxInst));
 			sfxInst->sfxID = sfxID;
 			sfxInst->frame = frame;
 
-			
-			sfxInst->flags &= ~(SFX_InstanceFlags::SFX_INSTANCE_FLAG_SOUND3D|SFX_InstanceFlags::SFX_INSTANCE_FLAG_LOOPING);
-			sfxInst->flags |= SFX_InstanceFlags::SFX_INSTANCE_FLAG_UNK_1; // playing?
-			if (loop)    sfxInst->flags |= SFX_InstanceFlags::SFX_INSTANCE_FLAG_LOOPING;
-			if (sound3D) sfxInst->flags |= SFX_InstanceFlags::SFX_INSTANCE_FLAG_SOUND3D;
-
 			// Original flag manipulation had some pretty strict requirements for the booleans:
-			//sfxInst->flags = ((sound3D & 1U) << 1 | loop & 1U) << 1 |
+			//sfxInst->flags = ((onFrame & 1U) << 1 | loop & 1U) << 1 |
 			//	(sfxInst->flags & 0xfffffff9) | 0x1;
 			
+			sfxInst->flags &= ~(SFX_InstanceFlags::SFX_INSTANCE_FLAG_ONFRAME|SFX_InstanceFlags::SFX_INSTANCE_FLAG_LOOPING);
+			sfxInst->flags |= SFX_InstanceFlags::SFX_INSTANCE_FLAG_SOUND3D;
+			if (loop)    sfxInst->flags |= SFX_InstanceFlags::SFX_INSTANCE_FLAG_LOOPING;
+			if (onFrame) sfxInst->flags |= SFX_InstanceFlags::SFX_INSTANCE_FLAG_ONFRAME;
+
+			/// SANITY: Clear position field if erroneously passed as nullptr when (!onFrame).
 			if (wPos) sfxInst->position = *wPos;
+			else      sfxInst->position = Vector3F { 0.0f, 0.0f, 0.0f };
 
 			sfxGlobs.sfxInstanceCount++;
 		}
@@ -451,7 +461,7 @@ void __cdecl LegoRR::SFX_Update(real32 elapsed)
 
 	/// FIXME: Figure out what field type soundQueueModesTable_1/2 really is, bool32 for looping??
 	for (uint32 i = 0; i < sfxGlobs.soundQueueCount_2; i++) {
-		SFX_Random_Play_OrAddToQueue(sfxGlobs.soundQueueSFXTable_2[i], (bool32)sfxGlobs.soundQueueModesTable_2[i]);
+		SFX_Random_PlaySoundNormal(sfxGlobs.soundQueueSFXTable_2[i], (bool32)sfxGlobs.soundQueueModesTable_2[i]);
 	}
 
 	if (origQueueMode) {
@@ -531,14 +541,14 @@ void __cdecl LegoRR::SFX_SetQueueMode(bool32 on, bool32 flushQueued)
 			for (uint32 i = 0; i < sfxGlobs.sfxInstanceCount; i++) {
 				SFX_Instance* sfxInst = &sfxGlobs.sfxInstanceTable[i];
 
-				if (!(sfxInst->flags & SFX_InstanceFlags::SFX_INSTANCE_FLAG_UNK_1)) {
-					SFX_Random_Play_OrAddToQueue(sfxInst->sfxID,
+				if (!(sfxInst->flags & SFX_InstanceFlags::SFX_INSTANCE_FLAG_SOUND3D)) {
+					SFX_Random_PlaySoundNormal(sfxInst->sfxID,
 														((sfxInst->flags & SFX_InstanceFlags::SFX_INSTANCE_FLAG_LOOPING) != 0)); // != 0 for awkward precise flag boolean parameters
 				}
 				else {
-					SFX_Random_Play_OrInitSoundUnk(sfxInst->frame, sfxInst->sfxID,
+					SFX_Random_PlaySound3DOnFrame(sfxInst->frame, sfxInst->sfxID,
 														  ((sfxInst->flags & SFX_InstanceFlags::SFX_INSTANCE_FLAG_LOOPING) != 0), // != 0 for awkward precise flag boolean parameters
-														  ((sfxInst->flags & SFX_InstanceFlags::SFX_INSTANCE_FLAG_SOUND3D) != 0), // != 0 for awkward precise flag boolean parameters
+														  ((sfxInst->flags & SFX_InstanceFlags::SFX_INSTANCE_FLAG_ONFRAME) != 0), // != 0 for awkward precise flag boolean parameters
 														  &sfxInst->position);
 				}
 			}

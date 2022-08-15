@@ -378,7 +378,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 
 
 	// See: SFX_GetType
-	//      SFX_Random_Play_OrInitSoundUnk
+	//      SFX_Random_PlaySound3DOnFrame
 	const char* sharedObjectDir = Gods98::Config_GetTempStringValue(legoConfig, Main_ID("SharedObjects"));
 	Gods98::Lws_Initialise(sharedObjectDir, SFX_Callback_FindSFXIDFunc, SFX_Callback_PlaySample3DFunc, SFX_IsSoundOn);
 
@@ -799,7 +799,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		Front_LoadOptionParameters(true, false);
 
 		if (Lego_LoadLevel(startLevelName)) {
-			SFX_Random_Play_OrAddToQueue(SFX_AmbientLoop, true);
+			SFX_Random_PlaySoundNormal(SFX_AmbientLoop, true);
 			return true;
 		}
 	}
@@ -1486,11 +1486,11 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 	// SFX LOGIC: AMBIENCE SFX
 	if (updateGlobs.dripSFXTimer < 0.0f) {
-		SFX_Random_Play_OrAddToQueue(SFX_Drip, false);
+		SFX_Random_PlaySoundNormal(SFX_Drip, false);
 		updateGlobs.dripSFXTimer = Gods98::Maths_RandRange(75.0f, 125.0f);
 	}
 	if (updateGlobs.ambientSFXTimer < 0.0f) {
-		SFX_Random_Play_OrAddToQueue(SFX_Ambient, false);
+		SFX_Random_PlaySoundNormal(SFX_Ambient, false);
 		updateGlobs.ambientSFXTimer = Gods98::Maths_RandRange(250.0f, 750.0f);
 	}
 	updateGlobs.dripSFXTimer -= elapsedInterface;
@@ -1632,7 +1632,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		// Set SFX to play if the last state did not have it playing.
 		
 		if (!Panel_AirMeter_IsOxygenLow() && SFX_GetType("SND_AirBeat", &airBeatSFX)) {
-			SFX_Random_Play_OrAddToQueue(airBeatSFX, true);
+			SFX_Random_PlaySoundNormal(airBeatSFX, true);
 		}
 
 		if (SFX_GetType("SND_AirBeat", &airBeatSFX)) {

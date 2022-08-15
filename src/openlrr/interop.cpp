@@ -419,7 +419,7 @@ bool interop_hook_Gods98_Containers(void)
 	//           Water_InitVertices
 	result &= hook_write_jmpret(0x00473820, Gods98::Container_MakeMesh2);
 
-	// used by: SFX_Container_Random_Play_OrInitSoundUnk
+	// used by: SFX_Random_PlaySound3DOnContainer
 	result &= hook_write_jmpret(0x00473940, Gods98::Container_GetMasterFrame);
 
 	result &= hook_write_jmpret(0x00473950, Gods98::Container_Clone);
@@ -1991,11 +1991,11 @@ bool interop_hook_LegoRR_SFX(void)
 	result &= hook_write_jmpret(0x00465180, LegoRR::SFX_SetGlobalSampleDurationIfLE0_AndNullifyHandle);
 	result &= hook_write_jmpret(0x004651b0, LegoRR::SFX_Random_SetAndPlayGlobalSample);
 	result &= hook_write_jmpret(0x00465220, LegoRR::SFX_AddToQueue);
-	result &= hook_write_jmpret(0x00465260, LegoRR::SFX_Random_Play_OrAddToQueue);
+	result &= hook_write_jmpret(0x00465260, LegoRR::SFX_Random_PlaySoundNormal);
 	result &= hook_write_jmpret(0x004652d0, LegoRR::SFX_Random_SetBufferVolume);
 	result &= hook_write_jmpret(0x004652f0, LegoRR::SFX_Random_GetBufferVolume);
-	result &= hook_write_jmpret(0x00465310, LegoRR::SFX_Container_Random_Play_OrInitSoundUnk);
-	result &= hook_write_jmpret(0x00465350, LegoRR::SFX_Random_Play_OrInitSoundUnk);
+	result &= hook_write_jmpret(0x00465310, LegoRR::SFX_Random_PlaySound3DOnContainer);
+	result &= hook_write_jmpret(0x00465350, LegoRR::SFX_Random_PlaySound3DOnFrame);
 	result &= hook_write_jmpret(0x00465420, LegoRR::SFX_Random_GetSamplePlayTime);
 	result &= hook_write_jmpret(0x00465450, LegoRR::SFX_Sound3D_StopSound);
 	result &= hook_write_jmpret(0x00465460, LegoRR::SFX_Update);

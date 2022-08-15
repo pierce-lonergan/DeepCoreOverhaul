@@ -263,6 +263,18 @@ enum LevelStatus : sint32 // [LegoRR/Objective.c|enum:0x4|type:int] Not sure if 
 };
 assert_sizeof(LevelStatus, 0x4);
 
+
+enum PointerSFX_Type : uint32 // [LegoRR/Lego.c|enum:0x4|type:uint] Argument for Lego_SetPointerSFX (FUN_00428730)
+{
+	PointerSFX_Okay                  = 0,
+	PointerSFX_NotOkay               = 1,
+	PointerSFX_NotOkay_ImmovableRock = 2,
+	PointerSFX_Okay_TopPriority      = 3,
+	PointerSFX_Okay_Wall             = 4,
+	PointerSFX_Okay_Floor            = 5,
+};
+assert_sizeof(PointerSFX_Type, 0x4);
+
 #pragma endregion
 
 /**********************************************************************************

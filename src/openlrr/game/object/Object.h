@@ -591,8 +591,16 @@ void __cdecl LegoObject_AddList(void);
 // <LegoRR.exe @00438840>
 #define LegoObject_SetPowerOn ((void (__cdecl* )(LegoObject* liveObj, bool32 on))0x00438840)
 
+// This seems to be a catch-all type function to see if an object is "active".
+// 
+// For buildings, it must be receiving power, and NOT be powered-off.
+// Aside from that, there are many other checks based on various flags states, and also health.
+// 
+// When ignoreUnpowered is true, powered state will not be checked.
+// 
+// Old name: LegoObject_CheckCondition_AndIsPowered
 // <LegoRR.exe @00438870>
-#define LegoObject_CheckCondition_AndIsPowered ((bool32 (__cdecl* )(LegoObject* liveObj, bool32 state))0x00438870)
+#define LegoObject_IsActive ((bool32 (__cdecl* )(LegoObject* liveObj, bool32 ignoreUnpowered))0x00438870)
 
 // <LegoRR.exe @004388d0>
 #define LegoObject_CreateInWorld ((LegoObject* (__cdecl* )(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, real32 xPos, real32 yPos, real32 heading))0x004388d0)

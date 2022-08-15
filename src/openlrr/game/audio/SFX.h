@@ -46,9 +46,9 @@ enum SFX_InstanceFlags : uint32 // [LegoRR/SFX.c|flags:0x4|type:uint]
 {
 	SFX_INSTANCE_FLAG_NONE    = 0,
 
-	SFX_INSTANCE_FLAG_UNK_1   = 0x1,
+	SFX_INSTANCE_FLAG_SOUND3D = 0x1, /// WARNING: Previously named `SFX_INSTANCE_FLAG_UNK_1`
 	SFX_INSTANCE_FLAG_LOOPING = 0x2,
-	SFX_INSTANCE_FLAG_SOUND3D = 0x4,
+	SFX_INSTANCE_FLAG_ONFRAME = 0x4, /// WARNING: Previously named `SFX_INSTANCE_FLAG_SOUND3D`
 };
 flags_end(SFX_InstanceFlags, 0x4);
 
@@ -172,8 +172,8 @@ bool32 __cdecl SFX_LoadSampleProperty(char* value, SFX_ID sfxID);
 sint32 __cdecl SFX_Random_GetSound3DHandle(SFX_ID sfxID);
 
 // Replacement for `SFX_Random_GetSound3DHandle` so that random sound choices are *mostly* preserved.
-// This is intended for use after `SFX_Random_Play_OrAddToQueue`, `SFX_Random_Play_OrInitSoundUnk` or
-//  `SFX_Container_Random_Play_OrInitSoundUnk`. Basically so that a random sound is chosen, and then
+// This is intended for use after `SFX_Random_PlaySoundNormal`, `SFX_Random_PlaySound3DOnFrame` or
+//  `SFX_Random_PlaySound3DOnContainer`. Basically so that a random sound is chosen, and then
 //  getting the handle will always return that chosen sound.
 /// REPLACEMENT: For all but three instances of calling `SFX_Random_GetSound3DHandle`.
 // <LegoRR.exe @004650e0>
@@ -191,8 +191,9 @@ bool32 __cdecl SFX_Random_SetAndPlayGlobalSample(SFX_ID sfxID, OPTIONAL OUT sint
 // <LegoRR.exe @00465220>
 void __cdecl SFX_AddToQueue(SFX_ID sfxID, Gods98::SoundMode mode);
 
+// Old name: SFX_Random_Play_OrAddToQueue
 // <LegoRR.exe @00465260>
-sint32 __cdecl SFX_Random_Play_OrAddToQueue(SFX_ID sfxID, bool32 loop);
+sint32 __cdecl SFX_Random_PlaySoundNormal(SFX_ID sfxID, bool32 loop);
 
 /// CHANGE: Gets the current-assigned sound3DHandle (instead of a random one).
 // <LegoRR.exe @004652d0>
@@ -202,23 +203,25 @@ void __cdecl SFX_Random_SetBufferVolume(SFX_ID sfxID, sint32 volume);
 // <LegoRR.exe @004652f0>
 sint32 __cdecl SFX_Random_GetBufferVolume(SFX_ID sfxID);
 
-// if (sfxGlobs.flags & SFX_GlobFlags::SFX_GLOB_FLAG_UNK_8)
-//   sound3D and loop MUST be a boolean with the LSB (0x1) set or unset
-// wPos must be non-null if (!sound3D)
+// if (sfxGlobs.flags & SFX_GlobFlags::SFX_GLOB_FLAG_QUEUEMODE)
+//   onCont and loop MUST be a boolean with the LSB (0x1) set or unset
+// wPos must be non-null if (!onCont)
+// Old name: SFX_Container_Random_Play_OrInitSoundUnk
 // <LegoRR.exe @00465310>
-sint32 __cdecl SFX_Container_Random_Play_OrInitSoundUnk(Gods98::Container* cont, SFX_ID sfxID, bool32 loop, bool32 sound3D, OPTIONAL const Vector3F* wPos);
+sint32 __cdecl SFX_Random_PlaySound3DOnContainer(Gods98::Container* cont, SFX_ID sfxID, bool32 loop, bool32 onCont, OPTIONAL const Vector3F* wPos);
 
 
-// if (sfxGlobs.flags & SFX_GlobFlags::SFX_GLOB_FLAG_UNK_8)
-//   sound3D and loop MUST be a boolean with the LSB (0x1) set or unset
-// wPos must be non-null if ((sfxGlobs.flags & SFX_GLOB_FLAG_UNK_8) && !sound3D)
+// if (sfxGlobs.flags & SFX_GlobFlags::SFX_GLOB_FLAG_QUEUEMODE)
+//   onFrame and loop MUST be a boolean with the LSB (0x1) set or unset
+// wPos must be non-null if ((sfxGlobs.flags & SFX_GLOB_FLAG_QUEUEMODE) && !onFrame)
+// Old name: SFX_Random_Play_OrInitSoundUnk
 // <LegoRR.exe @00465350>
-sint32 __cdecl SFX_Random_Play_OrInitSoundUnk(IDirect3DRMFrame3* frame, SFX_ID sfxID, bool32 loop, bool32 sound3D, OPTIONAL const Vector3F* wPos);
+sint32 __cdecl SFX_Random_PlaySound3DOnFrame(IDirect3DRMFrame3* frame, SFX_ID sfxID, bool32 loop, bool32 onFrame, OPTIONAL const Vector3F* wPos);
 
-// Parameter type wrapper around `SFX_Random_Play_OrInitSoundUnk` for use with `LwsPlaySample3DFunc`.
+// Parameter type wrapper around `SFX_Random_PlaySound3DOnFrame` for use with `LwsPlaySample3DFunc`.
 __inline sint32 __cdecl SFX_Callback_PlaySample3DFunc(void* frame, uint32 type, bool32 loop, bool32 onCont, const Vector3F* wPos)
 {
-	return SFX_Random_Play_OrInitSoundUnk(reinterpret_cast<IDirect3DRMFrame3*>(frame), static_cast<SFX_ID>(type), loop, onCont, wPos);
+	return SFX_Random_PlaySound3DOnFrame(reinterpret_cast<IDirect3DRMFrame3*>(frame), static_cast<SFX_ID>(type), loop, onCont, wPos);
 }
 
 

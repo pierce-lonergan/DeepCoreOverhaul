@@ -370,7 +370,7 @@ void __cdecl LegoRR::Smoke_Update(real32 elapsedGame)
 		if (!(smoke->flags & SMOKE_FLAG_SFXFAILED) && smoke->sound3DPlayHandle == 0) {
 			if (smoke->sfxID != SFX_NULL) {
 				// Start looping sound, so this will only be called once per smoke until Smoke_Remove.
-				smoke->sound3DPlayHandle = SFX_Container_Random_Play_OrInitSoundUnk(nullptr, smoke->sfxID, true, false, &smoke->sfxOrigin);
+				smoke->sound3DPlayHandle = SFX_Random_PlaySound3DOnContainer(nullptr, smoke->sfxID, true, false, &smoke->sfxOrigin);
 			}
 			if (smoke->sound3DPlayHandle == 0) {
 				// SFX failed to play, but we don't want to try playing it again.
