@@ -227,7 +227,7 @@ bool32 __cdecl LegoRR::LegoObject_Remove(LegoObject* deadObj)
 	// This function has no side effects with deadObj, we can safely reorganize other cleanup around this call.
 	LegoObject_WaterVehicle_Unregister(deadObj);
 
-	if (deadObj->flags4 & LIVEOBJ4_LASERTRACKER) {
+	if (deadObj->flags4 & LIVEOBJ4_LASERTRACKERMODE) {
 		legoGlobs.flags1 &= ~GAME1_LASERTRACKER;
 	}
 

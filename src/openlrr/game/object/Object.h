@@ -185,7 +185,7 @@ flags_end(LiveFlags3, 0x4);
 enum LiveFlags4 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 {
 	LIVEOBJ4_NONE          = 0,
-	LIVEOBJ4_LASERTRACKER  = 0x1, // ???
+	LIVEOBJ4_LASERTRACKERMODE  = 0x1, // ???
 	LIVEOBJ4_UNK_2         = 0x2,
 	LIVEOBJ4_UNK_4         = 0x4,
 	LIVEOBJ4_UNK_8         = 0x8,
@@ -868,11 +868,11 @@ bool32 __cdecl LegoObject_Callback_Remove(LegoObject* liveObj, void* unused);
 #define LegoObject_FUN_0043c6a0 ((bool32 (__cdecl* )(LegoObject* liveObj))0x0043c6a0)
 
 // <LegoRR.exe @0043c700>
-#define LegoObject_GetEquippedBeam ((WeaponKnownType (__cdecl* )(LegoObject* liveObj))0x0043c700)
+#define LegoObject_GetEquippedBeam ((Weapon_KnownType (__cdecl* )(LegoObject* liveObj))0x0043c700)
 
 // Function cannot return true unless param_3 is non-zero.
 // <LegoRR.exe @0043c750>
-#define LegoObject_FUN_0043c750 ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* routeToObject, WeaponKnownType knownWeapon))0x0043c750)
+#define LegoObject_FUN_0043c750 ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* routeToObject, Weapon_KnownType knownWeapon))0x0043c750)
 
 // <LegoRR.exe @0043c780>
 #define LegoObject_Proc_FUN_0043c780 ((void (__cdecl* )(LegoObject* liveObj))0x0043c780)
@@ -994,10 +994,10 @@ bool32 __cdecl LegoObject_Callback_Remove(LegoObject* liveObj, void* unused);
 #define LegoObject_DestroyBoulder_AndCreateExplode ((void (__cdecl* )(LegoObject* liveObj))0x00442160)
 
 // <LegoRR.exe @00442190>
-#define LegoObject_Proc_FUN_00442190 ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* targetObj, WeaponKnownType knownWeapon))0x00442190)
+#define LegoObject_Proc_FUN_00442190 ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* targetObj, Weapon_KnownType knownWeapon))0x00442190)
 
 // <LegoRR.exe @00442390>
-#define LegoObject_GetWeaponUnk ((void (__cdecl* )(LegoObject* liveObj, WeaponKnownType knownWeapon))0x00442390)
+#define LegoObject_CreateWeaponProjectile ((void (__cdecl* )(LegoObject* liveObj, Weapon_KnownType knownWeapon))0x00442390)
 
 // <LegoRR.exe @004424d0>
 #define LegoObject_UnkActivityCrumble_FUN_004424d0 ((void (__cdecl* )(LegoObject* liveObj))0x004424d0)

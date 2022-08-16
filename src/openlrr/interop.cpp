@@ -48,6 +48,7 @@
 #include "game/object/BezierCurve.h"
 #include "game/object/Object.h"
 #include "game/object/Stats.h"
+#include "game/object/Weapons.h"
 #include "game/mission/NERPsFile.h"
 #include "game/mission/PTL.h"
 #include "game/world/Camera.h"
@@ -2116,6 +2117,62 @@ bool interop_hook_LegoRR_Stats(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Weapons(void)
+{
+	bool result = true;
+
+	//result &= hook_write_jmpret(0x0046ee40, LegoRR::Weapon_Initialise);
+	result &= hook_write_jmpret(0x0046f390, LegoRR::Weapon_GetWeaponIDByName);
+	result &= hook_write_jmpret(0x0046f3d0, LegoRR::Weapon_GetRechargeTime);
+	result &= hook_write_jmpret(0x0046f400, LegoRR::Weapon_GetDischargeRate);
+	result &= hook_write_jmpret(0x0046f430, LegoRR::Weapon_GetWeaponRange);
+	result &= hook_write_jmpret(0x0046f460, LegoRR::Weapon_GetWallDestroyTime);
+	result &= hook_write_jmpret(0x0046f490, LegoRR::Weapon_GetDamageForObject);
+	result &= hook_write_jmpret(0x0046f530, LegoRR::Weapon_GenericDamageObject);
+	result &= hook_write_jmpret(0x0046f640, LegoRR::Weapon_GunDamageObject);
+	result &= hook_write_jmpret(0x0046f670, LegoRR::Weapon_Projectile_FUN_0046f670);
+	//result &= hook_write_jmpret(0x0046f810, LegoRR::Weapon_Update);
+	result &= hook_write_jmpret(0x0046f8d0, LegoRR::Weapon_LegoObject_Callback_UpdateObject);
+	result &= hook_write_jmpret(0x0046fa30, LegoRR::Weapon_GunHitObject);
+	result &= hook_write_jmpret(0x0046fbe0, LegoRR::Weapon_Projectile_UpdatePath);
+	result &= hook_write_jmpret(0x0046fdb0, LegoRR::Weapon_Projectile_AddStraightPath);
+	result &= hook_write_jmpret(0x0046ff30, LegoRR::Weapon_Projectile_AddCurvedPath);
+	result &= hook_write_jmpret(0x004701b0, LegoRR::Weapon_GetObjectTypeAndID_ByKnownWeaponType);
+	result &= hook_write_jmpret(0x00470230, LegoRR::Weapon_Projectile_GetNextAvailable);
+	result &= hook_write_jmpret(0x00470250, LegoRR::Weapon_Lazer_GetNextAvailable);
+	result &= hook_write_jmpret(0x00470270, LegoRR::Weapon_FireLazer);
+	result &= hook_write_jmpret(0x00470520, LegoRR::Weapon_LegoObject_Collision_FUN_00470520);
+	result &= hook_write_jmpret(0x00470570, LegoRR::Weapon_LegoObject_CollisionBox_FUN_00470570);
+	result &= hook_write_jmpret(0x00470800, LegoRR::Weapon_LegoObject_CollisionRadius_FUN_00470800);
+	result &= hook_write_jmpret(0x004708f0, LegoRR::Weapon_LegoObject_TestCollision_FUN_004708f0);
+	result &= hook_write_jmpret(0x00470950, LegoRR::Weapon_Lazer_Add);
+	result &= hook_write_jmpret(0x00470a20, LegoRR::Weapon_Lazer_InitMesh);
+	result &= hook_write_jmpret(0x00471580, LegoRR::Weapon_LegoObject_GetWeaponsModel);
+	result &= hook_write_jmpret(0x004715b0, LegoRR::Weapon_LegoObject_GetWeaponTimer);
+	result &= hook_write_jmpret(0x004715d0, LegoRR::Weapon_LegoObject_SetWeaponTimer);
+	result &= hook_write_jmpret(0x004715f0, LegoRR::Weapon_MathUnk_CheckVectorsZScalar_InRange);
+	result &= hook_write_jmpret(0x00471630, LegoRR::Weapon_LegoObject_Callback_FUN_00471630);
+	result &= hook_write_jmpret(0x004718f0, LegoRR::Weapon_LegoObject_FUN_004718f0);
+	result &= hook_write_jmpret(0x00471b20, LegoRR::Weapon_DoCallbacksSearch_FUN_00471b20);
+	result &= hook_write_jmpret(0x00471b90, LegoRR::Weapon_LegoObject_DoCallbacksSearch_FUN_00471b90);
+	result &= hook_write_jmpret(0x00471c20, LegoRR::Weapon_LegoObject_SeeThroughWalls_FUN_00471c20);
+	result &= hook_write_jmpret(0x00471ce0, LegoRR::Weapon_GetFireNull);
+	result &= hook_write_jmpret(0x00471d00, LegoRR::Weapon_GetXPivotNull);
+	result &= hook_write_jmpret(0x00471d10, LegoRR::Weapon_GetYPivotNull);
+	result &= hook_write_jmpret(0x00471d20, LegoRR::Weapon_PivotTracker);
+	result &= hook_write_jmpret(0x00471f30, LegoRR::Weapon_GetFireDirection);
+	result &= hook_write_jmpret(0x00471f60, LegoRR::Weapon_LegoObject_GetCollCenterPosition);
+	result &= hook_write_jmpret(0x00471fa0, LegoRR::Weapon_LegoObject_IsActiveWithTracker);
+	result &= hook_write_jmpret(0x00471fe0, LegoRR::Weapon_LegoObject_UpdateSelectedTracker);
+	result &= hook_write_jmpret(0x004721c0, LegoRR::Weapon_LegoObject_UpdateUnselectedTracker);
+	result &= hook_write_jmpret(0x00472280, LegoRR::Weapon_LegoObject_UpdateTracker);
+	result &= hook_write_jmpret(0x00472320, LegoRR::Weapon_Callback_RemoveProjectileReference);
+	result &= hook_write_jmpret(0x00472340, LegoRR::Weapon_LegoObject_WithinWeaponRange);
+	result &= hook_write_jmpret(0x004723f0, LegoRR::Weapon_LegoObject_WithinAwarenessRange);
+
+	return_interop(result);
+}
+
 #pragma endregion
 
 
@@ -2198,6 +2255,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Object();
 	result &= interop_hook_LegoRR_PTL();
 	result &= interop_hook_LegoRR_Stats();
+	result &= interop_hook_LegoRR_Weapons();
 
 	// Only a few functions from each of these have been
 	// defined in order to fix certain original bugs.

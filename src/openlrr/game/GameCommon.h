@@ -919,15 +919,15 @@ enum LegoObject_ToolType : sint32
 assert_sizeof(LegoObject_ToolType, 0x4);
 
 
-enum WeaponKnownType : uint32
+enum Weapon_KnownType : uint32
 {
-	WEAPONKNOWN_UNK_0   = 0,
-	WEAPONKNOWN_LAZER_1 = 1,
-	WEAPONKNOWN_PUSHER  = 2,
-	WEAPONKNOWN_FREEZER = 3,
-	WEAPONKNOWN_LAZER_4 = 4,
+	Weapon_KnownType_None    = 0,
+	Weapon_KnownType_Laser   = 1,
+	Weapon_KnownType_Pusher  = 2,
+	Weapon_KnownType_Freezer = 3,
+	Weapon_KnownType_Boulder = 4, // (unused)
 };
-assert_sizeof(WeaponKnownType, 0x4);
+assert_sizeof(Weapon_KnownType, 0x4);
 
 
 enum LegoObject_AbilityType : sint32
