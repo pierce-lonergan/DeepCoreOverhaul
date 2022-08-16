@@ -552,6 +552,7 @@ void __cdecl LegoRR::SFX_SetQueueMode(bool32 on, bool32 flushQueued)
 														  &sfxInst->position);
 				}
 			}
+			sfxGlobs.sfxInstanceCount = 0;
 		}
 	}
 }
