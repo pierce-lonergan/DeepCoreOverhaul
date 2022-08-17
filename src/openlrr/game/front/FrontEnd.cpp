@@ -1355,13 +1355,17 @@ void __cdecl LegoRR::Front_Callback_TriggerBackSave(void)
 // <LegoRR.exe @00415150>
 void __cdecl LegoRR::Debug_ProgrammerMode11_LoadLevel(void)
 {
-	char buff[128];
-	std::sprintf(buff, "%s", legoGlobs.currLevel->name);
+	char tempLevelNameBuff[128];
+	std::strcpy(tempLevelNameBuff, legoGlobs.currLevel->name);
 
 	Lego_SetPaused(false, false);
 
 	Level_Free();
-	Lego_LoadLevel(Gods98::Util_StrCpy(buff));
+
+	// Override Lego_LoadLevel to store SeeThroughWalls property.
+	/// CHANGE: Don't allocate a new string, since Lego_LoadLevel2 already expects to receive a temporary string.
+	Lego_LoadLevel2(tempLevelNameBuff);
+	//Lego_LoadLevel2(Gods98::Util_StrCpy(tempLevelNameBuff));
 
 	MenuSet* menuSet = frontGlobs.pausedMenuSet;
 	for (sint32 i = 0; i < (sint32)menuSet->menuCount; i++) {

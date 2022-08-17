@@ -715,6 +715,13 @@ struct Lego_Globs2
 	bool legoInit; // Lego_Initialise has finished (up to the FrontEnd UI loop).
 	bool topdownFogOn; // Render the same fog used in FP view while in Topdown view.
 	bool topdownFPControlsOn; // Allow controling the primary unit with FP controls while in topdown view.
+
+	// CFG on-demand lookup replacements:
+	// Game properties:
+	bool loseFocusAndPause; // (cfg: Main::LoseFocusAndPause)
+
+	// Level properties:
+	bool seeThroughWalls; // (cfg: cfg: Level::SeeThroughWalls)
 };
 
 #pragma endregion
@@ -809,6 +816,11 @@ void Lego_SetAllowEditMode(bool on);
 /// CUSTOM: cfg: Main::LoseFocusAndPause
 bool Lego_IsLoseFocusAndPause();
 void Lego_SetLoseFocusAndPause(bool on);
+
+/// REQUIRES: Replacing `Weapon_LegoObject_SeeThroughWalls_FUN_00471c20`, since this is always checked by CFG lookup.
+/// CUSTOM: cfg: Level::SeeThroughWalls
+bool Lego_IsSeeThroughWalls();
+void Lego_SetSeeThroughWalls(bool on);
 
 /// CUSTOM: cfg: Main::DisableToolTipSound
 inline bool Lego_IsDisableToolTipSound() { return (legoGlobs.flags2 & GAME2_DISABLETOOLTIPSOUND); }
@@ -1175,7 +1187,12 @@ __inline real32 __cdecl Lego_GetObjectUpgradeTime(LegoObject_Type objType) { ret
 __inline real32 __cdecl Lego_GetTrainTime(void) { return legoGlobs.currLevel->TrainTime; }
 
 // <LegoRR.exe @004297c0>
-#define Lego_LoadLevel ((bool32 (__cdecl* )(const char* levelName))0x004297c0)
+#define Lego_LoadLevel ((bool32 (__cdecl* )(char* levelName))0x004297c0)
+
+// Move functionality from here into Lego_LoadLevel once that's implemented.
+/// CUSTOM: Extended version of `Lego_LoadLevel` that also handles storing the SeeThroughWalls property.
+/// CHANGE: Always allocate new memory for the level name, because its taken from various places that we can't rely on.
+bool32 __cdecl Lego_LoadLevel2(const char* tempLevelName);
 
 // <LegoRR.exe @0042b220>
 #define Level_AddCryOreToToolStore ((bool32 (__cdecl* )(LegoObject* liveObj, SearchAddCryOre_c* search))0x0042b220)
@@ -1640,7 +1657,8 @@ __inline SFX_ID __cdecl Lego_GetSurfaceTypeSFX(Lego_SurfaceType surfaceType) { r
 #define SaveMenu_ConfirmMessage_FUN_004354f0 ((sint32 (__cdecl* )(const char* titleText, const char* message, const char* okText, const har* cancelText))0x004354f0)
 
 // <LegoRR.exe @00435870>
-#define Lego_EndLevel ((bool32 (__cdecl* )(void))0x00435870)
+//#define Lego_EndLevel ((bool32 (__cdecl* )(void))0x00435870)
+bool32 __cdecl Lego_EndLevel(void);
 
 // <LegoRR.exe @00435950>
 #define Lego_ClearSomeFlags3_FUN_00435950 ((void (__cdecl* )(void))0x00435950)

@@ -218,8 +218,8 @@ BEGIN
             MENUITEM "No Multi-Select",         IDM_NOMULTISELECT
 #if 0  // not ready yet
             MENUITEM "Safe Caverns",            IDM_SAFECAVERNS
-            MENUITEM "See Through Walls",       IDM_SEETHROUGHWALLS
 #endif
+            MENUITEM "See Through Walls",       IDM_SEETHROUGHWALLS
         END
 #if 0  // not ready yet
         MENUITEM SEPARATOR

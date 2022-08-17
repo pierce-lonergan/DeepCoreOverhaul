@@ -230,6 +230,7 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_NOAUTOEAT,			(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsNoAutoEat()));
 	Menu_CheckButton(IDM_NOFALLINS,			(LegoRR::Lego_IsInLevel() && !LegoRR::Lego_IsFallinsOn()));
 	Menu_CheckButton(IDM_NOMULTISELECT,		(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsNoMultiSelect()));
+	Menu_CheckButton(IDM_SEETHROUGHWALLS,	(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsSeeThroughWalls()));
 
 }
 
@@ -651,6 +652,10 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_NOMULTISELECT:
 		//std::printf("IDM_NOMULTISELECT\n");
 		LegoRR::Lego_SetNoMultiSelect(!LegoRR::Lego_IsNoMultiSelect());
+		break;
+	case IDM_SEETHROUGHWALLS:
+		//std::printf("IDM_SEETHROUGHWALLS\n");
+		LegoRR::Lego_SetSeeThroughWalls(!LegoRR::Lego_IsSeeThroughWalls());
 		break;
     }
 }

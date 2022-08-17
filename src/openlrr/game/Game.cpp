@@ -3,6 +3,7 @@
 
 #include "../engine/audio/3DSound.h"
 #include "../engine/core/Maths.h"
+#include "../engine/core/Utils.h"
 #include "../engine/gfx/Viewports.h"
 #include "../engine/Main.h"
 
@@ -10,6 +11,7 @@
 #include "effects/DamageText.h"
 #include "effects/Effects.h"
 #include "effects/Smoke.h"
+#include "front/FrontEnd.h"
 #include "interface/Advisor.h"
 #include "interface/HelpWindow.h"
 #include "interface/InfoMessages.h"
@@ -154,11 +156,15 @@ void LegoRR::Lego_SetAllowEditMode(bool on)
 /// CUSTOM: cfg: Main::LoseFocusAndPause
 bool LegoRR::Lego_IsLoseFocusAndPause()
 {
-	return Config_GetBoolOrFalse(legoGlobs.config, Main_ID("LoseFocusAndPause"));
+	return legoGlobs2.loseFocusAndPause;
+
+	//return Config_GetBoolOrFalse(legoGlobs.config, Main_ID("LoseFocusAndPause"));
 }
 void LegoRR::Lego_SetLoseFocusAndPause(bool on)
 {
-	Gods98::Config* cfgFocus = const_cast<Gods98::Config*>(Gods98::Config_FindItem(legoGlobs.config, Main_ID("LoseFocusAndPause")));
+	legoGlobs2.loseFocusAndPause = on;
+
+	/*Gods98::Config* cfgFocus = const_cast<Gods98::Config*>(Gods98::Config_FindItem(legoGlobs.config, Main_ID("LoseFocusAndPause")));
 	if (cfgFocus == nullptr) {
 		// Hoooh boy, this is gonna be a pain. The game reads the cfg value AS NEEDED!!!
 
@@ -186,7 +192,50 @@ void LegoRR::Lego_SetLoseFocusAndPause(bool on)
 		cfgFocus->itemName = "LoseFocusAndPause";
 		cfgFocus->dataString = "FALSE"; // default value when not found
 	}
-	cfgFocus->dataString = (on ? "TRUE" : "FALSE");
+	cfgFocus->dataString = (on ? "TRUE" : "FALSE");*/
+}
+
+/// REQUIRES: Replacing `Weapon_LegoObject_SeeThroughWalls_FUN_00471c20`, since this is always checked by CFG lookup.
+/// CUSTOM: cfg: Level::SeeThroughWalls
+bool LegoRR::Lego_IsSeeThroughWalls()
+{
+	if (Lego_IsInLevel()) {
+		return legoGlobs2.seeThroughWalls;
+	}
+	return true; // Default value when none exists, doesn't really matter when outside of a level.
+
+	//return Config_GetBoolOrTrue(legoGlobs.config, Lego_ID(levelName, "SeeThroughWalls"));
+}
+void LegoRR::Lego_SetSeeThroughWalls(bool on)
+{
+	if (Lego_IsInLevel()) {
+		legoGlobs2.seeThroughWalls = on;
+	}
+
+	/*/// FIXME: This is a bad temporary implementation, because it permenantly changes the level for this game session!!!
+	Gods98::Config* cfgSee = const_cast<Gods98::Config*>(Gods98::Config_FindItem(legoGlobs.config, Lego_ID(levelName, "SeeThroughWalls")));
+	if (cfgSee == nullptr) {
+
+		// We know this property has to exist if this is a valid level.
+		// Lego*::Levels::<levelName>
+		Gods98::Config* cfgLevel = const_cast<Gods98::Config*>(Gods98::Config_FindItem(legoGlobs.config, Lego_ID(levelName)));
+
+		if (cfgLevel == nullptr)
+			return; // Failed to find level with this name.
+
+		// Find tail of level block linked list.
+		Gods98::Config* tail = cfgLevel;
+		while (tail->linkNext != nullptr) tail = tail->linkNext;
+
+		// Create as child of cfgLevel.
+		cfgSee = Gods98::Config_Create(cfgLevel);
+
+		// Lego*::Levels::<levelName>::SeeThroughWalls
+		cfgSee->depth = cfgLevel->depth + 1;
+		cfgSee->itemName = "SeeThroughWalls";
+		cfgSee->dataString = "TRUE"; // default value when not found
+	}
+	cfgSee->dataString = (on ? "TRUE" : "FALSE");*/
 }
 
 /// CUSTOM: cfg: Main::DisableToolTipSound
@@ -933,6 +982,26 @@ void __cdecl LegoRR::Lego_ShowBlockToolTip(const Point2I* blockPos, bool32 showC
 }
 
 
+// Move functionality from here into Lego_LoadLevel once that's implemented.
+/// CUSTOM: Extended version of `Lego_LoadLevel` that also handles storing the SeeThroughWalls property.
+/// CHANGE: Always allocate new memory for the level name, because its taken from various places that we can't rely on.
+bool32 __cdecl LegoRR::Lego_LoadLevel2(const char* tempLevelName)
+{
+	/// NEW: Allocate memory for level name (because name was being taken from inconsistent sources).
+	char* levelName = Gods98::Util_StrCpy(tempLevelName);
+
+	/// NEW: Store SeeThroughWalls property so that we don't need to look it up on-demand.
+	legoGlobs2.seeThroughWalls = Config_GetBoolOrTrue(legoGlobs.config, Lego_ID(levelName, "SeeThroughWalls"));
+
+	if (!Lego_LoadLevel(levelName)) {
+		/// NEW: Failed to load level, so cleanup allocated levelName string.
+		Gods98::Mem_Free(levelName);
+		return false;
+	}
+
+	return true;
+}
+
 
 // <LegoRR.exe @0042c260>
 bool32 __cdecl LegoRR::Level_HandleEmergeTriggers(Lego_Level* level, const Point2I* blockPos, OUT Point2I* emergeBlockPos)
@@ -996,7 +1065,6 @@ bool32 __cdecl LegoRR::Level_HandleEmergeTriggers(Lego_Level* level, const Point
 
 
 // <LegoRR.exe @0042eff0>
-//#define Level_Free ((char* (__cdecl* )(void))0x0042eff0)
 const char* __cdecl LegoRR::Level_Free(void)
 {
 	Lego_Level* level = legoGlobs.currLevel;
@@ -1062,6 +1130,9 @@ const char* __cdecl LegoRR::Level_Free(void)
 		Level_BlockActivity_RemoveAll(level);
 		Effect_RemoveAll_BoulderExplode();
 
+		/// NEW: Free memory allocated for level name (because name was being taken from inconsistent sources).
+		Gods98::Mem_Free(level->name);
+
 		Gods98::Mem_Free(level->blocks);
 		Gods98::Mem_Free(level);
 
@@ -1075,6 +1146,64 @@ const char* __cdecl LegoRR::Level_Free(void)
 	}
 	legoGlobs.currLevel = nullptr;
 	return nextLevelName;
+}
+
+
+// <LegoRR.exe @00435870>
+bool32 __cdecl LegoRR::Lego_EndLevel(void)
+{
+	const bool32 isMissionLevelSel = Front_IsMissionSelected();
+	const bool32 isTutorialLevelSel = Front_IsTutorialSelected();
+
+	Gods98::Sound3D_StopAllSounds();
+
+	if (Front_IsFrontEndEnabled()) {
+		Reward_CreateLevel();
+		Reward_Prepare();
+		Reward_Show();
+		Reward_FreeLevel();
+	}
+	Lego_SetViewMode(ViewMode_Top, nullptr, 0);
+
+	Gods98::TextWindow_Clear(legoGlobs.textWnd_80);
+
+	// Default to using the next level specified in the level links. Otherwise ask the FrontEnd.
+	const char* nextLevelID = Level_Free();
+
+	if (Front_IsFrontEndEnabled()) {
+		// Start FrontEnd loop to select the next level (this runs all FrontEnd menus).
+		if (isMissionLevelSel) {
+			Front_RunScreenMenuType(Menu_Screen_Missions);
+			if (Front_IsTriggerAppQuit()) {
+				return false;
+			}
+			nextLevelID = Front_GetSelectedLevel();
+		}
+		else if (isTutorialLevelSel) {
+			Front_RunScreenMenuType(Menu_Screen_Training);
+			if (Front_IsTriggerAppQuit()) {
+				return false;
+			}
+			nextLevelID = Front_GetSelectedLevel();
+		}
+	}
+
+	Front_LoadOptionParameters(true, false);
+	if (nextLevelID == nullptr) {
+		return false; // No next level selected, must have quit or something...
+	}
+
+	// Override Lego_LoadLevel to store SeeThroughWalls property.
+	if (!Lego_LoadLevel2(nextLevelID)) {
+		return false; // Failed to load level.
+	}
+
+	/// FIX APPLY: Don't free memory that wasn't allocated for this. BAD! NO TOUCH!
+	// Another memory leak? Only freed on LoadLevel success...
+	// I'm not even sure how this bit of memory is supposed to be managed.
+	//Gods98::Mem_Free(nextLevelID);
+
+	return true;
 }
 
 #pragma endregion

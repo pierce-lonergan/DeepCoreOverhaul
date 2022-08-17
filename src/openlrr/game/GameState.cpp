@@ -165,6 +165,9 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		return false;
 	}
 
+	/// NEW: Store LoseFocusAndPause property so that we don't need to look it up on-demand.
+	legoGlobs2.loseFocusAndPause = Config_GetBoolOrFalse(legoGlobs.config, Main_ID("LoseFocusAndPause"));
+
 	ColourRGBF ToolTipRGB;
 
 	if (!Gods98::Config_GetRGBValue(legoConfig, Main_ID("ToolTipRGB"), &ToolTipRGB.red, &ToolTipRGB.green, &ToolTipRGB.blue)) {
@@ -799,7 +802,8 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		}
 		Front_LoadOptionParameters(true, false);
 
-		if (Lego_LoadLevel(startLevelName)) {
+		// Override Lego_LoadLevel to store SeeThroughWalls property.
+		if (Lego_LoadLevel2(startLevelName)) {
 			SFX_Random_PlaySoundNormal(SFX_AmbientLoop, true);
 			return true;
 		}
@@ -2174,9 +2178,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 
 		if (!Gods98::Main_AppActive()) {
 			/// FIXME: Store this CFG value for access, so that we can properly fiddle with config constants.
-			bool loseFocusAndPause = Config_GetBoolOrFalse(legoGlobs.config, Main_ID("LoseFocusAndPause"));
-			
-			if (loseFocusAndPause && !(legoGlobs.flags1 & GAME1_LEVELENDING)) {
+			if (Lego_IsLoseFocusAndPause() && !(legoGlobs.flags1 & GAME1_LEVELENDING)) {
 				Lego_SetPaused(false, true);
 				//if (!(legoGlobs.flags1 & GAME1_PAUSED)) {
 				//	legoGlobs.flags1 |= GAME1_PAUSED;

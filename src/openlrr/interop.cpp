@@ -1715,6 +1715,9 @@ bool interop_hook_LegoRR_FrontEnd(void)
 {
 	bool result = true;
 
+	// Hook this function because we need to override level loading.
+	result &= hook_write_jmpret(0x00415150, LegoRR::Debug_ProgrammerMode11_LoadLevel);
+
 	// QoL apply for always-skippable splash screens and movies
 	result &= hook_write_jmpret(0x00415630, LegoRR::Front_PlayMovie);
 	result &= hook_write_jmpret(0x004156f0, LegoRR::Front_PlayIntroSplash);
@@ -1771,6 +1774,9 @@ bool interop_hook_LegoRR_Game(void)
 
 	// used by: Debug_ProgrammerMode11_LoadLevel, Lego_Shutdown_Full, Lego_EndLevel
 	result &= hook_write_jmpret(0x0042eff0, LegoRR::Level_Free);
+
+	// used by: Lego_MainLoop, Lego_HandleKeys, Objective_HandleKeys
+	result &= hook_write_jmpret(0x00435870, LegoRR::Lego_EndLevel);
 
 	return_interop(result);
 }

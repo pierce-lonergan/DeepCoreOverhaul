@@ -1154,7 +1154,7 @@ bool32 __cdecl LegoRR::Weapon_LegoObject_SeeThroughWalls_FUN_00471c20(LegoObject
 	/// FIXME: Store this CFG value for access, so that we can properly fiddle with config constants.
 	// SeeThroughWalls property defaults to true.
 	// I guess the code below this is to calculate sight when the object can't see through walls.
-	if (Config_GetBoolOrTrue(Lego_Config(), Lego_ID(Lego_GetLevel()->name, "SeeThroughWalls"))) {
+	if (Lego_IsSeeThroughWalls()) {
 		return false;
 	}
 
