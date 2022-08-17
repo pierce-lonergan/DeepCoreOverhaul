@@ -2131,7 +2131,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 
 		/// EDIT DEBUG KEYBIND: [Numpad 0]  "Toggle unrestricted camera movement."
 		if (Lego_IsAllowEditMode() && Input_IsKeyPressed(Keys::KEYPAD_0)) {
-			Camera_EnableFreeMovement(legoGlobs.cameraMain, false);
+			Camera_EnableFreeMovement(legoGlobs.cameraMain, !Camera_IsFreeMovement(legoGlobs.cameraMain));
 			SelectPlace_Hide(legoGlobs.selectPlace, true);
 		}
 
