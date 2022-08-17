@@ -1014,7 +1014,7 @@ const char* __cdecl LegoRR::Level_Free(void)
 
 		legoGlobs.flags1 &= ~(GAME1_CAMERAGOTO|GAME1_LEVELENDING);
 		objectGlobs.flags &= ~LegoObject_GlobFlags::OBJECT_GLOB_FLAG_CYCLEUNITS;
-		legoGlobs.flags2 &= ~(GAME2_UNK_2|GAME2_NOMULTISELECT);
+		legoGlobs.flags2 &= ~(GAME2_LEVELEXITING|GAME2_NOMULTISELECT);
 
 		legoGlobs.gotoSmooth = false;
 		legoGlobs.objTeleportQueue_COUNT = 0;

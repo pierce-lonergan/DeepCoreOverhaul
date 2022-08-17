@@ -136,7 +136,7 @@ enum GameFlags2 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 {
 	GAME2_NONE                 = 0,
 	GAME2_CALLTOARMS           = 0x1,
-	GAME2_UNK_2                = 0x2,
+	GAME2_LEVELEXITING         = 0x2, // GAME1_LEVELENDING and all units have finished teleporting up. 
 	GAME2_ATTACKDEFER          = 0x4,
 	GAME2_SHOWDEBUGTOOLTIPS    = 0x8,
 	GAME2_ALLOWDEBUGKEYS       = 0x10,
@@ -673,7 +673,7 @@ struct GameControl_Globs // [LegoRR/???|struct:0x180|tags:GLOBS]
 	/*124,4*/	real32 dbgSpeedChangeTimer;
 	/*128,4*/	real32 dbgRollOffChangeTimer;
 	/*12c,4*/	real32 sceneFogDelta; // Delta value used in Lego_UpdateSceneFog ((M_PI*2)/fogRate * elapsed).
-	/*130,4*/	sint32 msbl_last_2_unknum;
+	/*130,4*/	bool32 handleKeysLastLeftMouseButtonDown; // Tracks mouse released state in Lego_HandleKeys
 	/*134,4*/	real32 dbgCursorLightLevel;
 	/*138,4*/	bool32 isGameSpeedLocked; // When this is TRUE, game speed can only be lowered when calling `Game_SetGameSpeed`.
 	/*13c,4*/	bool32 mslb_Last_3;
@@ -960,6 +960,7 @@ __inline real32 __cdecl Lego_GetElapsedAbs(void) { return legoGlobs.elapsedAbs; 
 
 // <LegoRR.exe @00423120>
 #define Lego_HandleRenameInput ((void (__cdecl* )(void))0x00423120)
+//void __cdecl Lego_HandleRenameInput(void);
 
 // <LegoRR.exe @00423210>
 //#define Lego_MainLoop ((bool32 (__cdecl* )(real32 elapsed))0x00423210)
@@ -1008,9 +1009,13 @@ void __cdecl Lego_Shutdown_Full(void);
 void __cdecl Lego_Exit(void);
 
 // Returning FALSE will naturally exit the program (as handled by Lego_MainLoop).
+// 
+// keyDownT is unused, and no keybinds exist.
+// keyDownR is unused, but debug keybinds exist for the rewards screen.
+// keyDownAnyShift is only needed by Lego_HandleWorld().
 // <LegoRR.exe @00424ff0>
-#define Lego_HandleKeys ((bool32 (__cdecl* )(real32 elapsedGame, real32 param_2, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAnyShift))0x00424ff0)
-//bool32 __cdecl Lego_HandleKeys(real32 elapsedGame, real32 param_2, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAnyShift);
+//#define Lego_HandleKeys ((bool32 (__cdecl* )(real32 elapsedGame, real32 elapsedInterface, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAnyShift))0x00424ff0)
+bool32 __cdecl Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterface, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAnyShift);
 
 // <LegoRR.exe @00425a70>
 #define Lego_UpdateAll3DSounds ((bool32 (__cdecl* )(bool32 stopAll))0x00425a70)
@@ -1044,6 +1049,7 @@ __inline bool32 __cdecl Lego_IsFirstPersonView(bool32 locked) { return (legoGlob
 
 // <LegoRR.exe @00425cc0>
 #define Lego_HandleRadarInput ((void (__cdecl* )(void))0x00425cc0)
+//void __cdecl Lego_HandleRadarInput(void);
 
 // <LegoRR.exe @004260f0>
 #define Lego_UpdateSlug_FUN_004260f0 ((void (__cdecl* )(real32 elapsedGame))0x004260f0)
@@ -1075,6 +1081,7 @@ __inline void __cdecl Lego_GetMouseWorldPosition(OUT Vector3F* vector) { *vector
 
 // <LegoRR.exe @00426450>
 #define Lego_HandleWorld ((void (__cdecl* )(real32 elapsedGame, real32 elapsedAbs, bool32 keyDownT, bool32 keyDownR, bool32 keyDownAnyShift))0x00426450)
+//void __cdecl Lego_HandleWorld(real32 elapsedGame, real32 elapsedAbs, bool32 keyDownT, bool32 keyDownR, bool32 keyDownAnyShift);
 
 // <LegoRR.exe @00427d30>
 #define Lego_LoadToolTipInfos ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x00427d30)

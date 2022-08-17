@@ -142,11 +142,12 @@ extern Objective_Globs & objectiveGlobs;
 // <LegoRR.exe @00458ba0>
 #define Objective_ProgrammerModeGT3_FUN_00458ba0 ((void (__cdecl* )(void))0x00458ba0)
 
+// Returns true if the mission briefing or failure/complete window is show.
 // <LegoRR.exe @00458c60>
-#define Objective_IsEnded ((bool32 (__cdecl* )(void))0x00458c60)
+#define Objective_IsShowing ((bool32 (__cdecl* )(void))0x00458c60)
 
 // <LegoRR.exe @00458c80>
-#define Objective_HandleKeys ((bool32 (__cdecl* )(bool32 spaceKeyHeld, bool32 leftButtonReleasedUnk, OUT bool32* gotoNextLevel))0x00458c80)
+#define Objective_HandleKeys ((bool32 (__cdecl* )(bool32 spaceKeyPressed, bool32 leftButtonReleased, OUT bool32* exitGame))0x00458c80)
 
 // <LegoRR.exe @00458ea0>
 #define Objective_Update ((void (__cdecl* )(Gods98::TextWindow* textWnd, Lego_Level* level, real32 elapsedGame, real32 elapsedAbs))0x00458ea0)

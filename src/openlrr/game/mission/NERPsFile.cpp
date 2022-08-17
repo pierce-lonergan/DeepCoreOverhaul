@@ -707,7 +707,7 @@ void __cdecl LegoRR::NERPs_Level_NERPMessage_Parse(const char* text, OPTIONAL OU
 										nerpsUnkSampleIndex = sound3DHandle;
 
 										TutorialFlags tflags = (TutorialFlags)NERPFunc__GetTutorialFlags(nullptr);
-										if (tflags == TUTORIAL_NONE) {
+										if (tflags == TUTORIAL_FLAG_NONE) {
 											Advisor_Start(Advisor_TalkInGame, true);
 											nerpsfileGlobs.AdvisorTalkingMode = true;
 										}

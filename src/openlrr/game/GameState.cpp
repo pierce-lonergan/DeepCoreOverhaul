@@ -57,6 +57,7 @@
 #include "object/Vehicle.h"
 #include "object/Weapons.h"
 #include "mission/NERPsFile.h"
+#include "mission/NERPsFunctions.h"
 #include "mission/Objective.h"
 #include "world/Camera.h"
 #include "world/Construction.h"
@@ -612,7 +613,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		Pointer_LoadPointers(Gods98::Config_FindArray(legoConfig, Lego_ID("Pointers")));
 		Pointer_SetCurrent_IfTimerFinished(Pointer_Standard);
 
-		if (legoGlobs.flags2 & GAME2_ALLOWDEBUGKEYS) {
+		if (Lego_IsAllowDebugKeys()) {
 			Message_Debug_RegisterSelectedUnitHotkey(Keys::KEY_ONE, Message_FirstPerson, nullptr, false, nullptr);
 			Message_Debug_RegisterSelectedUnitHotkey(Keys::KEY_TWO, Message_FirstPerson, nullptr, true, nullptr);
 			Message_Debug_RegisterSelectedUnitHotkey(Keys::KEY_FOUR, Message_TrackObject, nullptr, false, nullptr);
@@ -827,8 +828,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	// the `LoaderProfile*.txt` data.
 	//
 	// This *also* functions as a sloppy unit test to ensure all levels load without crashing. :)
-	bool32 hasNextLevel;
-	if (Gods98::Main_ProgrammerMode() == 10 && (hasNextLevel = Lego_EndLevel(), !hasNextLevel)) {
+	if (Gods98::Main_ProgrammerMode() == 10 && !Lego_EndLevel()) { // No next level after this.
 		// ProgrammerMode 10 has finished cycling through every level.
 		// Now shutdown the game, and write the load sizes to `LoaderProfile*.txt`.
 		return false;
@@ -1093,7 +1093,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 	// IsKeyPressed(KEY_F6) (64)
 	//  "Toggles fallin mode."
-	if ((legoGlobs.flags2 & GAME2_ALLOWDEBUGKEYS) && Input_IsKeyPressed(Keys::KEY_F6)) {
+	if (Lego_IsAllowDebugKeys() && Input_IsKeyPressed(Keys::KEY_F6)) {
 		legoGlobs.IsFallinsEnabled = !legoGlobs.IsFallinsEnabled;
 
 		const char* fallinMode = (legoGlobs.IsFallinsEnabled ? "On" : "Off");
@@ -1297,7 +1297,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	}
 	HelpWindow_FUN_00418930();
 
-	const real32 advisorElapsed = (Objective_IsEnded() ? elapsedReal : elapsedInterface);
+	const real32 advisorElapsed = (Objective_IsShowing() ? elapsedReal : elapsedInterface);
 	Advisor_Update(advisorElapsed);
 
 	Gods98::Sound_Update((legoGlobs.flags1 & GAME1_USEMUSIC));
@@ -1355,7 +1355,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		if (Front_Options_Update(elapsedInterface, Menu_Modal_Options)) {
 			legoGlobs.flags2 &= ~GAME2_INOPTIONSMENU;
 
-			if (!Objective_IsEnded()) {
+			if (!Objective_IsShowing()) {
 				Lego_SetPaused(false, false);
 			}
 			else {
@@ -1383,7 +1383,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 			legoGlobs.flags1 ^= GAME1_PAUSED; // toggle flag
 			if (!Front_IsTriggerMissionQuit()) {
 
-				if (!Objective_IsEnded()) {
+				if (!Objective_IsShowing()) {
 					Lego_SetPaused(false, false);
 				}
 			}
@@ -1436,7 +1436,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 	/// DEBUG KEY UI LOGIC: Change upgrade model
 	// Awkwardly... this is only the UI VISUAL for the debug command to change upgrade parts.
-	if (legoGlobs.flags2 & GAME2_ALLOWDEBUGKEYS) {
+	if (Lego_IsAllowDebugKeys()) {
 		// IsKeyPressed(KEY_FIVE) (6)
 		//  "Set selected unit model to first upgrade code."
 		// IsKeyPressed(KEY_SIX)   (7)
@@ -1498,7 +1498,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 
 	/// DEBUG KEY GAME+UI LOGIC: Game speed increment/decrement.
-	if (legoGlobs.flags2 & GAME2_ALLOWDEBUGKEYS) {
+	if (Lego_IsAllowDebugKeys()) {
 
 		// IsKeyDown(KEYPAD_9) (73)
 		//  "Increases game speed while held." (has priority over KEYPAD_8)
@@ -1531,7 +1531,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	}
 
 	/// DEBUG KEY GAME+UI LOGIC: Sound3D roll-off factor.
-	if (legoGlobs.flags2 & GAME2_ALLOWDEBUGKEYS) {
+	if (Lego_IsAllowDebugKeys()) {
 
 		/// FIX ME: dbgRollOffFactorValue is never assigned to the loaded Lego.cfg value,
 		///         so once we change this value, it will be changed from 1.0f, instead of its initial state... :\
@@ -1676,7 +1676,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	/// BETA: RockFall. Show listset counts using the F8 key.
 	/// CHANGE: Instead of holding F8, F8 is now a toggle.
 	static bool sShowListSets = false;
-	if (legoGlobs.flags2 & GAME2_ALLOWDEBUGKEYS) {
+	if (Lego_IsAllowDebugKeys()) {
 		if (Input_IsKeyPressed(Keys::KEY_F8)) {
 			sShowListSets = !sShowListSets;
 		}
@@ -1833,5 +1833,417 @@ void __cdecl LegoRR::Lego_Exit(void)
 	Gods98::Main_Exit();
 }
 #endif
+
+// Returning FALSE will naturally exit the program (as handled by Lego_MainLoop).
+// 
+// keyDownT is unused, and no keybinds exist.
+// keyDownR is unused, but debug keybinds exist for the rewards screen.
+// keyDownAnyShift is only needed by Lego_HandleWorld().
+// <LegoRR.exe @00424ff0>
+bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterface, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAnyShift)
+{
+	/// CHANGE: Move these to the top for clarity. These only appeared after return false cases, so there were no issues.
+	*keyDownT = false;
+	*keyDownR = false;
+	*keyDownAnyShift = false;
+
+
+	/// KEYBIND: [Return]  "Start/submit unit rename input."
+	if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE) && (legoGlobs.flags2 & GAME2_ALLOWRENAME) &&
+		legoGlobs.viewMode == ViewMode_Top && Input_IsKeyReleased(Keys::KEY_RETURN))
+	{
+		LegoObject* renameObj = Message_GetPrimarySelectedUnit();
+
+		// Can only rename *unique* Mini-Figures. AKA, ones that have upgraded or trained an ability.
+		if (renameObj != nullptr && renameObj->type == LegoObject_MiniFigure &&
+			(renameObj->abilityFlags != ABILITY_FLAG_NONE || renameObj->objLevel != 0))
+		{
+			Vector3F renameWorldPos;
+			Gods98::Container* cont = LegoObject_GetActivityContainer(renameObj);
+			Gods98::Container_GetPosition(cont, nullptr, &renameWorldPos);
+			const real32 collHeight = StatsObject_GetCollHeight(renameObj);
+			renameWorldPos.z = (renameWorldPos.z - collHeight * 0.5f);
+
+			Point2F renameScreenPos;
+			Viewport_WorldToScreen(legoGlobs.viewMain, &renameScreenPos, &renameWorldPos);
+			if (renameScreenPos.x >= 40.0f && renameScreenPos.x <= Gods98::appWidth() &&
+				renameScreenPos.y >= 40.0f && renameScreenPos.y <= Gods98::appHeight())
+			{
+				Lego_SetPaused(false, true);
+				if (renameObj->customName == nullptr) {
+					// Ensure a customName buffer is created, so that we can use it for editing.
+					LegoObject_SetCustomName(renameObj, "Object");
+					renameObj->customName[0] = '\0';
+				}
+				legoGlobs.renameInput = renameObj->customName;
+				legoGlobs.renamePosition = renameScreenPos;
+			}
+		}
+	}
+
+	if (Input_IsKeyDown(Keys::KEY_ESCAPE)) {
+		if (!(legoGlobs.flags1 & GAME1_LEVELENDING) && !(legoGlobs.flags2 & GAME2_INOPTIONSMENU) &&
+			!HelpWindow_IsEnabled_AndFlags_3_AndNoTutorialFlags() && !Objective_IsShowing())
+		{
+			/// DEBUG KEYBIND: [Space]+[Esc]  "Exits program forcefully (while held)."
+			if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_SPACE)) {
+				Gods98::Sound3D_ShutDown();
+				Lego_Exit();
+				return false; // IMMEDIATE EXIT
+			}
+
+			/// DEBUG KEYBIND: [Return]+[Esc]  "Exits program naturally (while held)."
+			if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_RETURN)) {
+				return false;
+			}
+
+			/// KEYBIND: [Esc]  "Pauses the game (but does not unpause, while held)."
+			Lego_SetPaused(false, true);
+			legoGlobs.flags1 |= GAME1_PAUSED;
+		}
+		/*else {
+			/// UNREACHABLE CODE: Condition is identical to condition for above block.
+			// Input_IsKeyDown(Keys::KEY_ESCAPE) (1)
+			if (Input_IsKeyDown(Keys::KEY_ESCAPE) &&
+				!(legoGlobs.flags1 & GAME1_LEVELENDING) && !(legoGlobs.flags2 & GAME2_INOPTIONSMENU) &&
+				!HelpWindow_IsEnabled_AndFlags_3_AndNoTutorialFlags() && !Objective_IsShowing())
+			{
+				Gods98::Sound3D_ShutDown();
+				Lego_Exit();
+				return false; // IMMEDIATE EXIT
+			}
+		}*/
+	}
+
+	if (legoGlobs.flags2 & GAME2_LEVELEXITING) {
+
+		/// CHANGE: Now requires debug keys and [Esc] modifier.
+		/// DEBUG KEYBIND: [(new)Esc]+[Space]  "Exits program forcefully (while held during level exit)."
+		if (!Front_IsFrontEndEnabled() || (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_ESCAPE) && Input_IsKeyDown(Keys::KEY_SPACE))) {
+			// If !Front_IsFrontEndEnabled() then game was booted up
+			//  into a single level, exit now that the level is done.
+			Gods98::Sound3D_ShutDown();
+			Lego_Exit();
+			return false; // IMMEDIATE EXIT
+		}
+		/// CHANGE: Now requires debug keys and [Esc] modifier.
+		/// DEBUG KEYBIND: [(new)Esc]+[Return]  "Exits program naturally (while held during level exit)."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_ESCAPE) && Input_IsKeyDown(Keys::KEY_RETURN)) {
+			return false;
+		}
+
+		// Complete the end of the level. WHY IS THIS IN HANDLEKEYS!??
+		if (!Lego_EndLevel()) { // No next level after this.
+			return false;
+		}
+	}
+
+	if (!(legoGlobs.flags1 & (GAME1_FREEZEINTERFACE|GAME1_LEVELENDING))) {
+
+		/// KEYBIND: [F2]+(any)  "Interface menu actions defined in Lego.cfg."
+		Interface_DoF2InterfaceKeyAction();
+
+		// Input_IsKeyPressed(Keys::KEY_SPACE) (57)
+		/// KEYBIND: [Space]  "Toggle unit info bubbles/HUDs visibility."
+		if (Input_IsKeyPressed(Keys::KEY_SPACE)) {
+			Bubble_ToggleObjectUIsAlwaysVisible();
+		}
+
+		/// CONFLICT KEYBIND: [LShift], [RShift]  Used by Lego_HandleWorld to avoid certain actions.
+		if (Input_IsKeyDown(Keys::KEY_LEFTSHIFT) || Input_IsKeyDown(Keys::KEY_RIGHTSHIFT)) {
+			*keyDownAnyShift = true;
+		}
+
+		if (legoGlobs.viewMode == ViewMode_Top &&
+			!(NERPFunc__GetTutorialFlags(nullptr) & TUTORIAL_FLAG_UNK_1000)) // Freeze/control camera flag?
+		{
+			// Topdown camera controls.
+
+			/// KEYBIND: [Down]  "Topdown view: Pitch lower (around center, while held)."
+			if (Input_IsKeyDown(Keys::KEY_CURSORDOWN)) {
+				Camera_AddTilt(legoGlobs.cameraMain, elapsedInterface * 0.02f);
+			}
+
+			/// KEYBIND: [Up]  "Topdown view: Pitch raise (around center, while held)."
+			if (Input_IsKeyDown(Keys::KEY_CURSORUP)) {
+				Camera_AddTilt(legoGlobs.cameraMain, elapsedInterface * -0.02f);
+			}
+
+			/// KEYBIND: [Left]  "Topdown view: Rotate clockwise (around center, while held)."
+			if (Input_IsKeyDown(Keys::KEY_CURSORLEFT)) {
+				Camera_AddRotation(legoGlobs.cameraMain, elapsedInterface * 0.02f);
+			}
+
+			/// KEYBIND: [Right]  "Topdown view: Rotate counter-clockwise (around center, while held)."
+			if (Input_IsKeyDown(Keys::KEY_CURSORRIGHT)) {
+				Camera_AddRotation(legoGlobs.cameraMain, elapsedInterface * -0.02f);
+			}
+
+			/// KEYBIND: [-]  "Topdown view: Zoom out (while held)."
+			if (Input_IsKeyDown(Keys::KEY_MINUS)) {
+				Camera_AddZoom(legoGlobs.cameraMain, elapsedInterface * 3.0f);
+			}
+
+			/// KEYBIND: [=]  "Topdown view: Zoom in (while held)."
+			if (Input_IsKeyDown(Keys::KEY_EQUALS)) {
+				Camera_AddZoom(legoGlobs.cameraMain, elapsedInterface * -3.0f);
+			}
+		}
+
+
+		/// DEBUG KEYBIND: [Numpad 7]  "Set game speed to 300% (while held)."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEYPAD_7)) {
+			Lego_SetGameSpeed(3.0f);
+		}
+
+		if (Lego_IsAllowDebugKeys()) {
+			/// DEBUG CONFLICT KEYBIND: [T]  Is not used for any keybinds.
+			if (Input_IsKeyDown(Keys::KEY_T)) {
+				*keyDownT = true;
+			}
+
+			/// DEBUG CONFLICT KEYBIND: [R]  Is only used for Rewards screen debug keybinds, but this variable is never used.
+			if (Input_IsKeyDown(Keys::KEY_R)) {
+				*keyDownR = true;
+			}
+		}
+
+		/// DEBUG KEYBIND: [L]  "Instantly wins the level and goes to rewards screen."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyPressed(Keys::KEY_L) && !Lego_EndLevel()) { // No next level after this.
+			return false;
+		}
+
+		/// DEBUG KEYBIND: [LCtrl]+[F]  "Toggle framerate monitor."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_LEFTCTRL) && Input_IsKeyPressed(Keys::KEY_F)) {
+
+			if (!(legoGlobs.flags1 & GAME1_SHOWFPS)) {
+				legoGlobs.flags1 |= GAME1_SHOWFPS;
+			}
+			else {
+				legoGlobs.flags1 &= ~GAME1_SHOWFPS;
+			}
+
+			const char* onOff = ((legoGlobs.flags1 & GAME1_SHOWFPS) ? "ON" : "OFF");
+			TextWindow_PrintF(legoGlobs.textWnd_80, "\nFrame Rate Monitor: %s", onOff);
+		}
+
+		/// HELPER KEYBIND: [Tab]  "Toggle between Radar Map/Track Object View."
+		if (legoGlobs.flags1 & GAME1_RADARON) {
+			if (Lego_IsAllowDebugKeys() && Input_IsKeyPressed(Keys::KEY_TAB)) {
+
+				bool newIsTrackObjectView = !(legoGlobs.flags1 & GAME1_RADAR_TRACKOBJECTVIEW);
+				if (newIsTrackObjectView) {
+					legoGlobs.flags1 &= ~GAME1_RADAR_MAPVIEW;
+					legoGlobs.flags1 |= GAME1_RADAR_TRACKOBJECTVIEW;
+				}
+				else {
+					legoGlobs.flags1 &= ~GAME1_RADAR_TRACKOBJECTVIEW;
+					legoGlobs.flags1 |= GAME1_RADAR_MAPVIEW;
+				}
+				// Flags_10 must be "disabled"
+				Panel_Button_SetFlags_10(Panel_Radar, PanelButton_Radar_ZoomIn, newIsTrackObjectView);
+				Panel_Button_SetFlags_10(Panel_Radar, PanelButton_Radar_ZoomOut, newIsTrackObjectView);
+			}
+		}
+
+		/// DEBUG KEYBIND: [LCtrl]+[G]  "Toggle memory monitor."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_LEFTCTRL) && Input_IsKeyPressed(Keys::KEY_G)) {
+
+			if (!(legoGlobs.flags1 & GAME1_SHOWMEMORY)) {
+				legoGlobs.flags1 |= GAME1_SHOWMEMORY;
+			}
+			else {
+				legoGlobs.flags1 &= ~GAME1_SHOWMEMORY;
+			}
+
+			const char* onOff = ((legoGlobs.flags1 & GAME1_SHOWMEMORY) ? "ON" : "OFF");
+			TextWindow_PrintF(legoGlobs.textWnd_80, "\nMemory Monitor: %s", onOff);
+		}
+
+		/// DEBUG KEYBIND: [LCtrl]+[Return]  "Toggle Noclip in first/second person view."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_LEFTCTRL) && Input_IsKeyPressed(Keys::KEY_RETURN)) {
+
+			if (!(legoGlobs.flags1 & GAME1_DEBUG_NOCLIP_FPS)) {
+				legoGlobs.flags1 |= GAME1_DEBUG_NOCLIP_FPS;
+			}
+			else {
+				legoGlobs.flags1 &= ~GAME1_DEBUG_NOCLIP_FPS;
+			}
+		}
+
+		if (legoGlobs.viewMode == ViewMode_FP && !(legoGlobs.objectFP->flags2 & LIVEOBJ2_THROWING)) {
+			// First person view controls.
+
+			/// KEYBIND: [Up]  "First person view: Move forward (while held)."
+			if (Input_IsKeyDown(Keys::KEY_CURSORUP)) {
+				LegoObject_FP_Move(legoGlobs.objectFP, 1, 0, 0.0f);
+			}
+
+			/// KEYBIND: [Down]  "First person view: Move back (while held)."
+			if (Input_IsKeyDown(Keys::KEY_CURSORDOWN)) {
+				LegoObject_FP_Move(legoGlobs.objectFP, -1, 0, 0.0f);
+			}
+
+			/// KEYBIND: [Left]  "First person view: Turn left (while held)."
+			if (Input_IsKeyDown(Keys::KEY_CURSORLEFT)) {
+				LegoObject_FP_Move(legoGlobs.objectFP, 0, 0, -0.05f);
+			}
+
+			/// KEYBIND: [Right]  "First person view: Turn right (while held)."
+			if (Input_IsKeyDown(Keys::KEY_CURSORRIGHT)) {
+				LegoObject_FP_Move(legoGlobs.objectFP, 0, 0, 0.05f);
+			}
+
+			/// KEYBIND: [Z]  "First person view: Strafe left (while held)."
+			if (Input_IsKeyDown(Keys::KEY_Z)) {
+				LegoObject_FP_Move(legoGlobs.objectFP, 0, -1, 0.0f);
+			}
+
+			/// KEYBIND: [X]  "First person view: Strafe right (while held)."
+			if (Input_IsKeyDown(Keys::KEY_X)) {
+				LegoObject_FP_Move(legoGlobs.objectFP, 0, 1, 0.0f);
+			}
+		}
+
+		/// HELPER KEYIND: [S]  "Toggle sound On/Off."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyPressed(Keys::KEY_S)) {
+
+			if (!(legoGlobs.flags1 & GAME1_USESFX)) {
+				Lego_SetSoundOn(true);
+				SFX_Random_PlaySoundNormal(SFX_AmbientLoop, true);
+			}
+			else {
+				Lego_SetSoundOn(false);
+			}
+
+			const char* onOff = ((legoGlobs.flags1 & GAME1_USESFX) ? "ON" : "OFF");
+			TextWindow_PrintF(legoGlobs.textWnd_80, "\nSound Effects: %s", onOff);
+		}
+
+		/// HELPER KEYIND: [M]  "Toggle music On/Off."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyPressed(Keys::KEY_M)) {
+
+			Lego_SetMusicOn(!(legoGlobs.flags1 & GAME1_USEMUSIC));
+
+			const char* onOff = ((legoGlobs.flags1 & GAME1_USEMUSIC) ? "ON" : "OFF");
+			TextWindow_PrintF(legoGlobs.textWnd_80, "\nMusic: %s", onOff);
+		}
+
+		/// EDIT DEBUG KEYBIND: [Numpad 0]  "Toggle unrestricted camera movement."
+		if (Lego_IsAllowEditMode() && Input_IsKeyPressed(Keys::KEYPAD_0)) {
+			Camera_EnableFreeMovement(legoGlobs.cameraMain, false);
+			SelectPlace_Hide(legoGlobs.selectPlace, true);
+		}
+
+		/// HELPER KEYBIND: [Z]  "Make primary selected unit eat."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyPressed(Keys::KEY_Z)) {
+			Camera_Shake(legoGlobs.cameraMain, 5.0f, 25.0f);
+
+			LegoObject* primaryUnit = Message_GetPrimarySelectedUnit();
+			if (primaryUnit != nullptr) {
+				primaryUnit->flags1 |= LIVEOBJ1_EATING;
+				LegoObject_SetActivity(primaryUnit, Activity_Eat, 0);
+				LegoObject_UpdateActivityChange(primaryUnit);
+				AITask_DoAnimationWait(primaryUnit);
+			}
+		}
+	}
+
+	bool32 leftButtonReleased = false;
+	if (gamectrlGlobs.handleKeysLastLeftMouseButtonDown && !Gods98::mslb()) {
+		leftButtonReleased = true;
+	}
+	
+	// This logic seems very wrong...
+	// if ((INPUT.Key_Map[57] == false) || (INPUT.prevKey_Map[57] == INPUT.Key_Map[57]))
+	/// CONFLICT KEYBIND: [Space]  Space behaviour for skipping phases used in the Rewards screen(?).
+	const bool32 spaceKeyPressed = Input_IsKeyPressed(Keys::KEY_SPACE);
+
+	bool32 exitGame = false;
+	// This return value is identical to `Objective_IsShowing()`.
+	const bool32 isObjectiveShowing = Objective_HandleKeys(spaceKeyPressed, leftButtonReleased, &exitGame);
+
+	if (!isObjectiveShowing && !(legoGlobs.flags1 & GAME1_LEVELENDING) && !(legoGlobs.flags2 & GAME2_INOPTIONSMENU) &&
+		!HelpWindow_IsEnabled_AndFlags_3_AndNoTutorialFlags() && !Objective_IsShowing())
+	{
+		/// KEYBIND: [P]  "Pause/unpause the game."
+		if (Input_IsKeyPressed(Keys::KEY_P)) {
+			Lego_SetPaused(true, false);
+			legoGlobs.flags1 ^= GAME1_PAUSED;
+		}
+
+		if (!Gods98::Main_AppActive()) {
+			/// FIXME: Store this CFG value for access, so that we can properly fiddle with config constants.
+			bool loseFocusAndPause = Config_GetBoolOrFalse(legoGlobs.config, Main_ID("LoseFocusAndPause"));
+			
+			if (loseFocusAndPause && !(legoGlobs.flags1 & GAME1_LEVELENDING)) {
+				Lego_SetPaused(false, true);
+				//if (!(legoGlobs.flags1 & GAME1_PAUSED)) {
+				//	legoGlobs.flags1 |= GAME1_PAUSED;
+				//}
+				/// SHORTHAND: No need to waste checking.
+				legoGlobs.flags1 |= GAME1_PAUSED;
+			}
+		}
+	}
+
+	gamectrlGlobs.handleKeysLastLeftMouseButtonDown = Gods98::mslb();
+
+	if (exitGame) {
+		return false;
+	}
+
+	/// DEBUG KEYBIND: [Shift]+[5]     "Increase topdown spotlight penumbra (while held)."
+	/// DEBUG KEYBIND: (no Shift)+[5]  "Decrease topdown spotlight penumbra (while held)."
+	if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_FIVE)) {
+		/// FIXME: Change this to elapsed real time, so that high FPS doesn't affect speed.
+		if (Input_IsKeyDown(Keys::KEY_LEFTSHIFT)) {
+			updateGlobs.currentBaseLightLevel += 0.02f;
+		}
+		else {
+			updateGlobs.currentBaseLightLevel -= 0.02f;
+		}
+		Gods98::Container_Light_SetSpotPenumbra(legoGlobs.rootSpotlight, updateGlobs.currentBaseLightLevel);
+	}
+
+	/// DEBUG KEYBIND: [Shift]+[6]     "Increase topdown spotlight umbra (while held)."
+	/// DEBUG KEYBIND: (no Shift)+[6]  "Decrease topdown spotlight umbra (while held)."
+	if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_SIX)) {
+		/// FIXME: Change this to elapsed real time, so that high FPS doesn't affect speed.
+		if (Input_IsKeyDown(Keys::KEY_LEFTSHIFT)) {
+			gamectrlGlobs.dbgCursorLightLevel += 0.02f;
+		}
+		else {
+			gamectrlGlobs.dbgCursorLightLevel -= 0.02f;
+		}
+		Gods98::Container_Light_SetSpotUmbra(legoGlobs.rootSpotlight, gamectrlGlobs.dbgCursorLightLevel);
+	}
+
+	if (Lego_IsAllowDebugKeys() || Gods98::Main_IsDebugComplete()) {
+
+		/// DEBUG KEYBIND: [LCtrl]+[D]  "Instantly fails the current level."
+		if (Input_IsKeyDown(Keys::KEY_LEFTCTRL) && Input_IsKeyPressed(Keys::KEY_D)) {
+			NERPFunc__SetLevelFail(nullptr);
+		}
+
+		/// DEBUG KEYBIND: [LCtrl]+[S]  "Instantly completes the current level."
+		if (Input_IsKeyDown(Keys::KEY_LEFTCTRL) && Input_IsKeyPressed(Keys::KEY_S)) {
+			NERPFunc__SetLevelCompleted(nullptr);
+		}
+
+		/// DEBUG KEYBIND: [RCtrl]+[S]  "Instantly fails the current level with reason, too many crystals stolen."
+		if (Input_IsKeyDown(Keys::KEY_RIGHTCTRL) && Input_IsKeyPressed(Keys::KEY_S)) {
+			Objective_SetStatus(LEVELSTATUS_FAILED_CRYSTALS);
+		}
+
+		/// DEBUG KEYBIND: [O]  "Decreases oxygen level (while held)."
+		if (Input_IsKeyDown(Keys::KEY_O)) {
+			/// FIXME: Change this to elapsed real time, so that high FPS doesn't affect speed.
+			legoGlobs.currLevel->oxygenLevel -= 1.0f;
+		}
+	}
+
+	return true;
+}
 
 #pragma endregion

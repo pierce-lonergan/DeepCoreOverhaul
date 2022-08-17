@@ -112,33 +112,33 @@ bool32 __cdecl LegoRR::Weapon_Initialise(const Gods98::Config* config, const cha
 					Error_Fatal(argc < 2, "Not enough parts in WeaponTypes SlowDeath");
 
 					weaponStats->isSlowDeath = true;
-					weaponStats->slowDeathInitialCoef = std::atof(stringParts[0]);
-					weaponStats->slowDeathDuration = std::atof(stringParts[1]);
+					weaponStats->slowDeathInitialCoef = (real32)std::atof(stringParts[0]);
+					weaponStats->slowDeathDuration = (real32)std::atof(stringParts[1]);
 
 					Gods98::Mem_Free(str);
 				}
 				else if (::_stricmp(Gods98::Config_GetItemName(stat), "RechargeTime") == 0) {
-					weaponStats->rechargeTime = std::atof(Gods98::Config_GetDataString(stat));
+					weaponStats->rechargeTime = (real32)std::atof(Gods98::Config_GetDataString(stat));
 				}
 				else if (::_stricmp(Gods98::Config_GetItemName(stat), "DefaultDamage") == 0) {
-					weaponStats->damage = std::atof(Gods98::Config_GetDataString(stat));
+					weaponStats->damage = (real32)std::atof(Gods98::Config_GetDataString(stat));
 				}
 				else if (::_stricmp(Gods98::Config_GetItemName(stat), "DischargeRate") == 0) {
-					weaponStats->dischargeRate = std::atof(Gods98::Config_GetDataString(stat));
+					weaponStats->dischargeRate = (real32)std::atof(Gods98::Config_GetDataString(stat));
 				}
 				else if (::_stricmp(Gods98::Config_GetItemName(stat), "Ammo") == 0) {
 					/// FIX APPLY: Ammo was assigned to zero whenever a check for its name failed (after surfaceTypes, before objectCoefs)
 					weaponStats->ammo = std::atoi(Gods98::Config_GetDataString(stat));
 				}
 				else if (::_stricmp(Gods98::Config_GetItemName(stat), "WeaponRange") == 0) {
-					weaponStats->weaponRange = std::atof(Gods98::Config_GetDataString(stat));
+					weaponStats->weaponRange = (real32)std::atof(Gods98::Config_GetDataString(stat));
 				}
 				else {
 					uint32 surfaceType;
 					for (surfaceType = 0; surfaceType < Lego_SurfaceType_Count; surfaceType++) {
 						std::sprintf(surfaceNameBuff, "WallDestroyTime_%s", legoGlobs.surfaceName[surfaceType]);
 						if (::_stricmp(Gods98::Config_GetItemName(stat), surfaceNameBuff) == 0) {
-							weaponStats->wallDestroyTimes[surfaceType] = std::atof(Gods98::Config_GetDataString(stat));
+							weaponStats->wallDestroyTimes[surfaceType] = (real32)std::atof(Gods98::Config_GetDataString(stat));
 							break;
 						}
 					}
@@ -157,7 +157,7 @@ bool32 __cdecl LegoRR::Weapon_Initialise(const Gods98::Config* config, const cha
 							Error_Fatal(argc < objLevelCount, "Not enough levels in WeaponTypes object coefs");
 
 							for (uint32 objLevel = 0; objLevel < objLevelCount; objLevel++) {
-								weaponStats->objectCoefs[objType][objID][objLevel] = std::atof(stringParts[objLevel]);
+								weaponStats->objectCoefs[objType][objID][objLevel] = (real32)std::atof(stringParts[objLevel]);
 							}
 
 							Gods98::Mem_Free(str);

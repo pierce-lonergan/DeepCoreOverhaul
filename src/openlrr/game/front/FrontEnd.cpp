@@ -1430,7 +1430,7 @@ bool32 __cdecl LegoRR::Front_Options_Update(real32 elapsed, Menu_ModalType modal
 	// `s_FrontOptionsMenuSet != menuSet` effectively checks if the last call to this function was the same modal type.
 	if (s_FrontOptionsMenu == nullptr || s_FrontOptionsMenuSet != menuSet ||
 		frontGlobs.triggerRestartMission != FALSE || frontGlobs.triggerQuitMission != FALSE ||
-		frontGlobs.triggerReplayObjective != FALSE || Objective_IsEnded())
+		frontGlobs.triggerReplayObjective != FALSE || Objective_IsShowing())
 	{
 		frontGlobs.triggerQuitMission = false;
 
@@ -1475,7 +1475,7 @@ bool32 __cdecl LegoRR::Front_Options_Update(real32 elapsed, Menu_ModalType modal
 	}
 
 
-	if (!Objective_IsEnded()) {
+	if (!Objective_IsShowing()) {
 		// From here, the current modal menu can be changed from menus[0].
 		s_FrontOptionsMenu = Front_Menu_Update(elapsed, s_FrontOptionsMenu, nullptr);
 	}
