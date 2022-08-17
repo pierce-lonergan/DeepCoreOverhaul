@@ -168,7 +168,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 	/// NEW: Store LoseFocusAndPause property so that we don't need to look it up on-demand.
 	legoGlobs2.loseFocusAndPause = Config_GetBoolOrFalse(legoGlobs.config, Main_ID("LoseFocusAndPause"));
 
-	ColourRGBF ToolTipRGB;
+	ColourRGBF ToolTipRGB = { 0.0f }; // dummy init
 
 	if (!Gods98::Config_GetRGBValue(legoConfig, Main_ID("ToolTipRGB"), &ToolTipRGB.red, &ToolTipRGB.green, &ToolTipRGB.blue)) {
 		ToolTipRGB.red   = (83.0f / 255.0f);// 0.3254902f;
@@ -1853,14 +1853,16 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 
 
 	/// KEYBIND: [Return]  "Start/submit unit rename input."
+	// Evaluate if we can perform a rename before checking key (for future hotkey implementation).
 	if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE) && (legoGlobs.flags2 & GAME2_ALLOWRENAME) &&
-		legoGlobs.viewMode == ViewMode_Top && Input_IsKeyReleased(Keys::KEY_RETURN))
+		legoGlobs.viewMode == ViewMode_Top && Message_AnyUnitSelected())
 	{
 		LegoObject* renameObj = Message_GetPrimarySelectedUnit();
 
 		// Can only rename *unique* Mini-Figures. AKA, ones that have upgraded or trained an ability.
 		if (renameObj != nullptr && renameObj->type == LegoObject_MiniFigure &&
-			(renameObj->abilityFlags != ABILITY_FLAG_NONE || renameObj->objLevel != 0))
+			(renameObj->abilityFlags != ABILITY_FLAG_NONE || renameObj->objLevel != 0) &&
+			Input_IsKeyReleased(Keys::KEY_RETURN))
 		{
 			Vector3F renameWorldPos;
 			Gods98::Container* cont = LegoObject_GetActivityContainer(renameObj);
@@ -1868,6 +1870,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 			const real32 collHeight = StatsObject_GetCollHeight(renameObj);
 			renameWorldPos.z = (renameWorldPos.z - collHeight * 0.5f);
 
+			// Don't try to rename units that are off-screen.
 			Point2F renameScreenPos;
 			Viewport_WorldToScreen(legoGlobs.viewMain, &renameScreenPos, &renameWorldPos);
 			if (renameScreenPos.x >= 40.0f && renameScreenPos.x <= Gods98::appWidth() &&
@@ -1885,39 +1888,39 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 		}
 	}
 
-	if (Input_IsKeyDown(Keys::KEY_ESCAPE)) {
-		if (!(legoGlobs.flags1 & GAME1_LEVELENDING) && !(legoGlobs.flags2 & GAME2_INOPTIONSMENU) &&
-			!HelpWindow_IsEnabled_AndFlags_3_AndNoTutorialFlags() && !Objective_IsShowing())
-		{
-			/// DEBUG KEYBIND: [Space]+[Esc]  "Exits program forcefully (while held)."
-			if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_SPACE)) {
-				Gods98::Sound3D_ShutDown();
-				Lego_Exit();
-				return false; // IMMEDIATE EXIT
-			}
+	if (!(legoGlobs.flags1 & GAME1_LEVELENDING) && !(legoGlobs.flags2 & GAME2_INOPTIONSMENU) &&
+		!HelpWindow_IsEnabled_AndFlags_3_AndNoTutorialFlags() && !Objective_IsShowing())
+	{
+		/// DEBUG KEYBIND: [Space]+[Esc]  "Exits program forcefully (while held)."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_ESCAPE) && Input_IsKeyDown(Keys::KEY_SPACE)) {
+			Gods98::Sound3D_ShutDown();
+			Lego_Exit();
+			return false; // IMMEDIATE EXIT
+		}
 
-			/// DEBUG KEYBIND: [Return]+[Esc]  "Exits program naturally (while held)."
-			if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_RETURN)) {
-				return false;
-			}
+		/// DEBUG KEYBIND: [Return]+[Esc]  "Exits program naturally (while held)."
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyDown(Keys::KEY_ESCAPE) && Input_IsKeyDown(Keys::KEY_RETURN)) {
+			return false;
+		}
 
-			/// KEYBIND: [Esc]  "Pauses the game (but does not unpause, while held)."
+		/// KEYBIND: [Esc]  "Pauses the game (but does not unpause, while held)."
+		if (Input_IsKeyDown(Keys::KEY_ESCAPE)) {
 			Lego_SetPaused(false, true);
 			legoGlobs.flags1 |= GAME1_PAUSED;
 		}
-		/*else {
-			/// UNREACHABLE CODE: Condition is identical to condition for above block.
-			// Input_IsKeyDown(Keys::KEY_ESCAPE) (1)
-			if (Input_IsKeyDown(Keys::KEY_ESCAPE) &&
-				!(legoGlobs.flags1 & GAME1_LEVELENDING) && !(legoGlobs.flags2 & GAME2_INOPTIONSMENU) &&
-				!HelpWindow_IsEnabled_AndFlags_3_AndNoTutorialFlags() && !Objective_IsShowing())
-			{
-				Gods98::Sound3D_ShutDown();
-				Lego_Exit();
-				return false; // IMMEDIATE EXIT
-			}
-		}*/
 	}
+	/*else {
+		/// UNREACHABLE CODE: Condition is identical to condition for above block.
+		// Input_IsKeyDown(Keys::KEY_ESCAPE) (1)
+		if (Input_IsKeyDown(Keys::KEY_ESCAPE) &&
+			!(legoGlobs.flags1 & GAME1_LEVELENDING) && !(legoGlobs.flags2 & GAME2_INOPTIONSMENU) &&
+			!HelpWindow_IsEnabled_AndFlags_3_AndNoTutorialFlags() && !Objective_IsShowing())
+		{
+			Gods98::Sound3D_ShutDown();
+			Lego_Exit();
+			return false; // IMMEDIATE EXIT
+		}
+	}*/
 
 	if (legoGlobs.flags2 & GAME2_LEVELEXITING) {
 
@@ -2013,8 +2016,10 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 		}
 
 		/// DEBUG KEYBIND: [L]  "Instantly wins the level and goes to rewards screen."
-		if (Lego_IsAllowDebugKeys() && Input_IsKeyPressed(Keys::KEY_L) && !Lego_EndLevel()) { // No next level after this.
-			return false;
+		if (Lego_IsAllowDebugKeys() && Input_IsKeyPressed(Keys::KEY_L)) {
+			if (!Lego_EndLevel()) { // No next level after this.
+				return false;
+			}
 		}
 
 		/// DEBUG KEYBIND: [LCtrl]+[F]  "Toggle framerate monitor."

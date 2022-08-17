@@ -683,7 +683,7 @@ struct GameControl_Globs // [LegoRR/???|struct:0x180|tags:GLOBS]
 	/*150,4*/	bool32 mslb_Last_6;
 	/*154,4*/	bool32 mslb_Last_0;
 	/*158,4*/	bool32 mslr_Last_0;
-	/*15c,4*/	real32 elapsed_15c;
+	/*15c,4*/	real32 handleWorldNoMouseButtonsElapsed; // Duration that neither left or right mouse buttons have been down for (in game time).
 	/*160,4*/	bool32 bool_160;
 	/*164,4*/	LegoObject* toolTipObject;
 	/*168,4*/	bool32 dbgF10InvertLighting;
@@ -1131,8 +1131,11 @@ void __cdecl Lego_ShowBlockToolTip(const Point2I* blockPos, bool32 showConstruct
 // <LegoRR.exe @00428730>
 #define Lego_SetPointerSFX ((void (__cdecl* )(PointerSFX_Type pointerSFXType))0x00428730)
 
+// bx,by : mouse-over block position.
+// mouseOverObj: mouse-over object.
 // <LegoRR.exe @00428810>
-#define Lego_HandleDebugKeys ((void (__cdecl* )(sint32 bx, sint32 by, LegoObject* liveObj, real32 gameCtrlElapsed))0x00428810)
+//#define Lego_HandleWorldDebugKeys ((void (__cdecl* )(sint32 bx, sint32 by, LegoObject* mouseOverObj, real32 noMouseButtonsElapsed))0x00428810)
+void __cdecl Lego_HandleWorldDebugKeys(sint32 bx, sint32 by, LegoObject* mouseOverObj, real32 noMouseButtonsElapsed);
 
 // <LegoRR.exe @00429040>
 #define Lego_XYCallback_AddVisibleSmoke ((void (__cdecl* )(sint32 bx, sint32 by))0x00429040)

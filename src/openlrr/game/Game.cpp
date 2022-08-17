@@ -5,11 +5,14 @@
 #include "../engine/core/Maths.h"
 #include "../engine/core/Utils.h"
 #include "../engine/gfx/Viewports.h"
+#include "../engine/input/Input.h"
+#include "../engine/input/Keys.h"
 #include "../engine/Main.h"
 
 #include "audio/SFX.h"
 #include "effects/DamageText.h"
 #include "effects/Effects.h"
+#include "effects/LightEffects.h"
 #include "effects/Smoke.h"
 #include "front/FrontEnd.h"
 #include "interface/Advisor.h"
@@ -22,17 +25,24 @@
 #include "interface/TextMessages.h"
 #include "interface/ToolTip.h"
 #include "mission/NERPsFile.h"
+#include "mission/NERPsFunctions.h"
 #include "object/AITask.h"
 #include "object/Dependencies.h"
 #include "object/Object.h"
 #include "object/Stats.h"
 #include "world/Construction.h"
 #include "world/Detail.h"
+#include "world/ElectricFence.h"
 #include "world/Erode.h"
+#include "world/Fallin.h"
 #include "world/Map3D.h"
 #include "world/Roof.h"
+#include "world/SpiderWeb.h"
 #include "Debug.h"
 #include "Game.h"
+
+
+using Gods98::Keys;
 
 
 /**********************************************************************************
@@ -979,6 +989,269 @@ void __cdecl LegoRR::Lego_ShowBlockToolTip(const Point2I* blockPos, bool32 showC
 	}
 
 	Lego_PrepareBlockToolTip(blockPos, showConstruction, playSound, showCavern);
+}
+
+
+// mbx,mby : mouse-over block position.
+// mouseOverObj: mouse-over object.
+// <LegoRR.exe @00428810>
+void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObject* mouseOverObj, real32 noMouseButtonsElapsed)
+{
+	const Point2I mouseBlockPos = { mbx, mby };
+
+	/// DEBUG KEYBIND: [A]  "Creates a landslide at mousepoint."
+	// The DIRECTION_FLAG_N here is probably why the landslide debug key is so finicky.
+	if (Input_IsKeyPressed(Keys::KEY_A)) {
+		Fallin_Block_FUN_0040f260(&mouseBlockPos, DIRECTION_FLAG_N, true);
+	}
+	/// DEBUG KEYBIND: [A]  "Causes unit at mousepoint to slip."
+	if (mouseOverObj != nullptr && Input_IsKeyPressed(Keys::KEY_A)) {
+		LegoObject_DoSlip(mouseOverObj);
+	}
+
+	/// DEBUG KEYBIND: [End]  "Toggles power Off/On for currently selected building."
+	if (Message_AnyUnitSelected() && Input_IsKeyPressed(Keys::KEY_END)) {
+		StatsObject_Debug_ToggleObjectPower(Message_GetPrimarySelectedUnit());
+	}
+
+	/// DEBUG KEYBIND: [E]  "Makes a monster emerge from a diggable (valid) wall at mousepoint."
+	if (Input_IsKeyPressed(Keys::KEY_E)) {
+		LegoObject_TryGenerateRMonster(&legoGlobs.rockMonsterData[legoGlobs.currLevel->EmergeCreature],
+									   LegoObject_RockMonster, legoGlobs.currLevel->EmergeCreature, mbx, mby);
+	}
+
+	/// DEBUG KEYBIND: [W]  "Performs unknown behaviour with the unfinished 'flood water' surface."
+	if (Input_IsKeyDown(Keys::KEY_W)) {
+		Level_Debug_WKey_NeedsBlockFlags1_8_FUN_004303a0(legoGlobs.currLevel, 0, mbx, mby); // 0 = unused parameter
+	}
+
+	/// DEBUG KEYBIND: [C]  "Tell selected unit carrying dynamite drop it where they are and set it off."
+	if (Message_AnyUnitSelected() && Input_IsKeyPressed(Keys::KEY_C)) {
+		LegoObject_Debug_DropActivateDynamite(Message_GetPrimarySelectedUnit());
+
+		// Simply calling the same debug [C] key function again... no idea why.
+		if (Message_AnyUnitSelected()) {
+			LegoObject_Debug_DropActivateDynamite(Message_GetPrimarySelectedUnit());
+		}
+	}
+
+	/// DEBUG KEYBIND: [F12]  "Disables all NERPs functions (toggle)."
+	if (Input_IsKeyPressed(Keys::KEY_F12)) {
+		if (!(legoGlobs.flags1 & GAME1_DEBUG_NONERPS)) {
+			legoGlobs.flags1 |= GAME1_DEBUG_NONERPS;
+			// Clear tutorial flags.
+			TutorialFlags tutFlags = TUTORIAL_FLAG_NONE;
+			NERPFunc__SetTutorialFlags((sint32*)&tutFlags);
+		}
+		else {
+			legoGlobs.flags1 &= ~GAME1_DEBUG_NONERPS;
+		}
+	}
+
+	/// DEBUG KEYBIND: [F11]  "Disables all building and vehicle prerequisites."
+	if (Input_IsKeyPressed(Keys::KEY_F11)) {
+		Dependencies_SetEnabled(!Dependencies_IsEnabled());
+	}
+
+	/// DEBUG KEYBIND: [F10]  "Inverts the direction of lighting."
+	if (Input_IsKeyPressed(Keys::KEY_F10)) {
+		gamectrlGlobs.dbgF10InvertLighting = !gamectrlGlobs.dbgF10InvertLighting;
+		real32 dirZ;
+		if (!gamectrlGlobs.dbgF10InvertLighting) {
+			Gods98::Container_SetPosition(legoGlobs.spotlightTop, (legoGlobs.cameraMain)->cont3, 200.0f, 140.0f, -130.0f);
+			dirZ = 0.75f;
+		}
+		else {
+			Gods98::Container_SetPosition(legoGlobs.spotlightTop, (legoGlobs.cameraMain)->cont3, 250.0f, 190.0f, 20.0f);
+			dirZ = 0.0f;
+		}
+		Gods98::Container_SetOrientation(legoGlobs.spotlightTop, (legoGlobs.cameraMain)->cont3, -1.0f, -0.8f, dirZ, 0.0f, 1.0f, 0.0f);
+		LightEffects_InvalidatePosition();
+	}
+
+	/// DEBUG KEYBIND: [F9]  "Toggle spotlight effects."
+	if (Input_IsKeyPressed(Keys::KEY_F9)) {
+		gamectrlGlobs.dbgF9DisableLightEffects = !gamectrlGlobs.dbgF9DisableLightEffects;
+		LightEffects_SetDisabled(gamectrlGlobs.dbgF9DisableLightEffects);
+	}
+
+	/// DEBUG KEYBIND: [5]  "Change selected unit visual upgrade parts (Carry level bit)"
+	/// DEBUG KEYBIND: [6]  "Change selected unit visual upgrade parts (Scan  level bit)"
+	/// DEBUG KEYBIND: [7]  "Change selected unit visual upgrade parts (Speed level bit)"
+	/// DEBUG KEYBIND: [8]  "Change selected unit visual upgrade parts (Drill level bit)"
+	// Evaluate if we can perform an upgrade before checking keys (for future hotkey implementation).
+	if (Message_AnyUnitSelected() && 
+		(Message_GetPrimarySelectedUnit()->type == LegoObject_Building ||
+		 Message_GetPrimarySelectedUnit()->type == LegoObject_Vehicle))
+	{
+		bool hotkeyUpgCarry = Input_IsKeyPressed(Keys::KEY_FIVE);
+		bool hotkeyUpgScan  = Input_IsKeyPressed(Keys::KEY_SIX);
+		bool hotkeyUpgSpeed = Input_IsKeyPressed(Keys::KEY_SEVEN);
+		bool hotkeyUpgDrill = Input_IsKeyPressed(Keys::KEY_EIGHT);
+		if (hotkeyUpgCarry || hotkeyUpgScan || hotkeyUpgSpeed || hotkeyUpgDrill) {
+
+			bool canUpgCarry = false, canUpgScan = false, canUpgSpeed = false, canUpgDrill = false; // dummy inits
+			UpgradesModel* upgrades = nullptr; // Can't perform upgrades unless a check below for object type passes.
+
+			LegoObject* primaryObj = Message_GetPrimarySelectedUnit();
+			switch (primaryObj->type) {
+			case LegoObject_Building:
+				upgrades = &primaryObj->building->upgrades;
+
+				canUpgCarry = Building_CanUpgradeType(primaryObj->building, LegoObject_UpgradeType_Carry, false);
+				canUpgScan  = Building_CanUpgradeType(primaryObj->building, LegoObject_UpgradeType_Scan,  false);
+				canUpgSpeed = Building_CanUpgradeType(primaryObj->building, LegoObject_UpgradeType_Speed, false);
+				canUpgDrill = Building_CanUpgradeType(primaryObj->building, LegoObject_UpgradeType_Drill, false);
+				break;
+
+			case LegoObject_Vehicle:
+				upgrades = &primaryObj->vehicle->upgrades;
+
+				canUpgCarry = Vehicle_CanUpgradeType(primaryObj->vehicle, LegoObject_UpgradeType_Carry, false);
+				canUpgScan  = Vehicle_CanUpgradeType(primaryObj->vehicle, LegoObject_UpgradeType_Scan,  false);
+				canUpgSpeed = Vehicle_CanUpgradeType(primaryObj->vehicle, LegoObject_UpgradeType_Speed, false);
+				canUpgDrill = Vehicle_CanUpgradeType(primaryObj->vehicle, LegoObject_UpgradeType_Drill, false);
+				break;
+			}
+
+			if (upgrades != nullptr) {
+				const LegoObject_UpgradeFlags oldUpgradeLvl = (LegoObject_UpgradeFlags)upgrades->currentLevel;
+				LegoObject_UpgradeFlags newUpgradeLvl = oldUpgradeLvl;
+
+				/// FIX APPLY: Upgrade hotkeys now check the correct 'CanUpgradeType'.
+				///            Original order was reversed: canUpgDrill, canUpgSpeed, canUpgScan, canUpgCarry
+				if (hotkeyUpgCarry && canUpgCarry) newUpgradeLvl ^= UPGRADE_FLAG_CARRY;
+				if (hotkeyUpgScan  && canUpgScan)  newUpgradeLvl ^= UPGRADE_FLAG_SCAN;
+				if (hotkeyUpgSpeed && canUpgSpeed) newUpgradeLvl ^= UPGRADE_FLAG_SPEED;
+				if (hotkeyUpgDrill && canUpgDrill) newUpgradeLvl ^= UPGRADE_FLAG_DRILL;
+
+				if (newUpgradeLvl != oldUpgradeLvl) {
+					switch (primaryObj->type) {
+					case LegoObject_Building:
+						Building_SetUpgradeLevel(primaryObj->building, newUpgradeLvl);
+						break;
+					case LegoObject_Vehicle:
+						Vehicle_SetUpgradeLevel(primaryObj->vehicle, newUpgradeLvl);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	/// DEBUG KEYBIND: [Backspace]  ???
+	if (Input_IsKeyPressed(Keys::KEY_BACKSPACE)) {
+		AITask_DoGather_Count(5);
+	}
+
+	/// DEBUG KEYBIND: [Numpad Del]  "Destroys any walls at mousepoint, except border rock"
+	if (Input_IsKeyPressed(Keys::KEYPAD_DELETE)) {
+		Level_DestroyWall(legoGlobs.currLevel, mbx, mby, false);
+	}
+
+	/// DEBUG KEYBIND: [Numpad 3]  "Destroys connections between any walls at mousepoint, except border rock."
+	if (Input_IsKeyDown(Keys::KEYPAD_3)) {
+		Level_DestroyWallConnection(legoGlobs.currLevel, mbx, mby);
+	}
+
+	/// DEBUG KEYBIND: [W]  "Tell selected monster to immediately carry a created boulder."
+	if (Message_AnyUnitSelected() && Message_GetPrimarySelectedUnit()->type == LegoObject_RockMonster &&
+		Input_IsKeyPressed(Keys::KEY_W))
+	{
+		LegoObject* primaryObj = Message_GetPrimarySelectedUnit();
+		sint32 nearest_bx = 0, nearest_by = 0; // dummy inits
+		LegoObject_FindNearestWall(primaryObj, &nearest_bx, &nearest_by, true, false, false);
+		LegoObject* boulderObj = LegoObject_Create(legoGlobs.contBoulder, LegoObject_Boulder, (LegoObject_ID)0);
+		LegoObject_Hide(boulderObj, true);
+		LegoObject_RoutingNoCarry_FUN_00447470(primaryObj, nearest_bx, nearest_by, boulderObj);
+		Gods98::Container_Texture* contTexture = Detail_GetTexture(legoGlobs.currLevel->textureSet, blockValue(legoGlobs.currLevel, nearest_bx, nearest_by).texture);
+		LegoObject_InitBoulderMesh_FUN_00440eb0(boulderObj, contTexture);
+	}
+
+	/// DEBUG KEYBIND: [N]  ???
+	if (Message_AnyUnitSelected() && Input_IsKeyPressed(Keys::KEY_N)) {
+		LegoObject_Route_End(Message_GetPrimarySelectedUnit(), false);
+	}
+
+	/// DEBUG KEYBIND: [LShift]+[A]  "Tells any Rock Raider to get a Sonic Blaster from Tool Store and place at mousepoint."
+	if (Input_IsKeyDown(Keys::KEY_LEFTSHIFT) && Input_IsKeyPressed(Keys::KEY_A)) {
+		AITask_DoBirdScarer_AtPosition(&mouseBlockPos);
+	}
+
+	/// DEBUG KEYBIND: [B]  "Pushes (bumps) any Rock Raider or Monster at mousepoint east-northeast."
+	if (mouseOverObj != nullptr && Input_IsKeyPressed(Keys::KEY_B)) {
+		const Point2F pushVec2D = { 2.0f, 1.0f };
+		LegoObject_Push(mouseOverObj, &pushVec2D, 40.0f);
+	}
+
+	/// DEBUG KEYBIND: [H]  "Creates a spider web at mousepoint."
+	if (Input_IsKeyPressed(Keys::KEY_H)) {
+		SpiderWeb_SpawnAt(mbx, mby);
+	}
+
+	/// DEBUG KEYBIND: [F]  "Take 40 health points off all units selected."
+	if (Message_AnyUnitSelected() && Input_IsKeyPressed(Keys::KEY_F)) {
+		const uint32 numSelected = Message_GetNumSelectedUnits();
+		LegoObject** selectedUnits = Message_GetSelectedUnits();
+		for (uint32 i = 0; i < numSelected; i++) {
+			LegoObject_AddDamage2(selectedUnits[i], 40.0f, true, noMouseButtonsElapsed);
+		}
+	}
+
+	/// DEBUG KEYBIND: [H]  ???
+	if (Message_AnyUnitSelected() && Message_GetPrimarySelectedUnit()->type == LegoObject_Building &&
+		Input_IsKeyPressed(Keys::KEY_H))
+	{
+		ElectricFence_FUN_0040d420(Message_GetPrimarySelectedUnit(), 0, 0);
+	}
+
+	/// DEBUG KEYBIND: [J]  "Place an electric fence at mousepoint."
+	if (Input_IsKeyPressed(Keys::KEY_J)) {
+		if (!ElectricFence_Block_IsFence(mbx, mby)) {
+			ElectricFence_Debug_PlaceFence(mbx, mby);
+		}
+		else {
+			ElectricFence_Debug_RemoveFence(mbx, mby);
+		}
+	}
+
+	/// DEBUG KEYBIND: [Y]  "Triggers the CrystalFound InfoMessage."
+	if (Input_IsKeyPressed(Keys::KEY_Y)) {
+		const Point2I infoBlockPos = { 1, 1 };
+		Info_Send(Info_CrystalFound, nullptr, nullptr, &infoBlockPos);
+	}
+
+
+	/// DEBUG KEYBIND: (no LShift)+[U]  "Ends Advisor_Anim_Point_N."
+	if (Input_IsKeyUp(Keys::KEY_LEFTSHIFT) && Input_IsKeyPressed(Keys::KEY_U)) {
+		Advisor_End();
+	}
+	/// DEBUG KEYBIND: [LShift]+[U]  "Begins Advisor_Anim_Point_N."
+	if (Input_IsKeyDown(Keys::KEY_LEFTSHIFT) && Input_IsKeyPressed(Keys::KEY_U)) {
+		Panel_SetCurrentAdvisorFromButton(Panel_Radar, PanelButton_Radar_Toggle, true);
+	}
+
+	/// DEBUG KEYBIND: [K]  "Pt.1 Registers a selected vehicle as a get-in target."
+	if (Message_AnyUnitSelected() && Message_GetPrimarySelectedUnit()->type == LegoObject_Vehicle &&
+		Input_IsKeyPressed(Keys::KEY_K))
+	{
+		// Register vehicle for Get-in.
+		gamectrlGlobs.dbgGetInVehicle = Message_GetPrimarySelectedUnit();
+	}
+	/// DEBUG KEYBIND: [K]  "Pt.2 Tells a selected minifigure to get in a registered vehicle (training not required)."
+	if (Message_AnyUnitSelected() && Message_GetPrimarySelectedUnit()->type == LegoObject_MiniFigure &&
+		 Input_IsKeyPressed(Keys::KEY_K))
+	{
+		// Tell unit to Get-in registered vehicle.
+		/// FIX APPLY: Ensure our registered vehicle is valid/hasn't been teleported up/etc.
+		///            Note that this is also ensured in LegoObject_Remove.
+		if (!ListSet::IsNullOrDead(gamectrlGlobs.dbgGetInVehicle) &&
+			gamectrlGlobs.dbgGetInVehicle->type == LegoObject_Vehicle)
+		{
+			LegoObject* registeredVehicle = gamectrlGlobs.dbgGetInVehicle;
+			LegoObject_TryFindDriver_FUN_00440690(Message_GetPrimarySelectedUnit(), registeredVehicle);
+		}
+	}
 }
 
 

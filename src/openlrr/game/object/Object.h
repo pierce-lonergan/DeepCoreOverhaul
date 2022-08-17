@@ -566,7 +566,7 @@ bool32 __cdecl LegoObject_RunThroughLists(LegoObject_RunThroughListsCallback cal
 #define LegoObject_CanShootObject ((bool32 (__cdecl* )(LegoObject* liveObj))0x00437f80)
 
 // <LegoRR.exe @00437fc0>
-#define LegoObject_Create ((LegoObject* (__cdecl* )(sint32** objModel, LegoObject_Type objType, LegoObject_ID objID))0x00437fc0)
+#define LegoObject_Create ((LegoObject* (__cdecl* )(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID))0x00437fc0)
 
 // <LegoRR.exe @00438580>
 //#define LegoObject_Create_internal ((LegoObject* (__cdecl* )(void))0x00438580)

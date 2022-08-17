@@ -246,7 +246,7 @@ extern Interface_Globs & interfaceGlobs;
 #define Interface_FUN_0041b3c0 ((void (__cdecl* )(void))0x0041b3c0)
 
 // <LegoRR.exe @0041b5b0>
-#define Interface_FUN_0041b5b0 ((bool32 (__cdecl* )(Interface_MenuType menuIcon, undefined* callback, void* context))0x0041b5b0)
+#define Interface_FUN_0041b5b0 ((bool32 (__cdecl* )(Interface_MenuType menuIcon, void* callback, void* context))0x0041b5b0)
 
 // <LegoRR.exe @0041b730>
 #define Interface_Callback_FUN_0041b730 ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon, uint32 param_2, sint32 param_3, real32* param_4))0x0041b730)
@@ -276,7 +276,8 @@ extern Interface_Globs & interfaceGlobs;
 #define Interface_Callback_FUN_0041c240 ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID, uint32* param_4))0x0041c240)
 
 // <LegoRR.exe @0041c370>
-#define Interface_DoF2InterfaceKeyAction ((void (__cdecl* )(void))0x0041c370)
+//#define Interface_DoF2InterfaceKeyAction ((void (__cdecl* )(void))0x0041c370)
+void __cdecl Interface_DoF2InterfaceKeyAction(void);
 
 // <LegoRR.exe @0041c3a0>
 #define Interface_CallbackDoMenuIconKeyAction ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID))0x0041c3a0)

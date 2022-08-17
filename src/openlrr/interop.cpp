@@ -43,6 +43,7 @@
 #include "game/front/Credits.h"
 #include "game/front/FrontEnd.h"
 #include "game/interface/Advisor.h"
+#include "game/interface/Interface.h"
 #include "game/interface/Messages.h"
 #include "game/object/AITask.h"
 #include "game/object/BezierCurve.h"
@@ -1640,7 +1641,7 @@ bool interop_hook_LegoRR_Advisor(void)
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x004019b0, LegoRR::Advisor_MoveAnimation);
 
-	// used by: Lego_HandleDebugKeys, NERPFunc__FlashCallToArmsIcon, NERPsRuntime_UpdateTimers,
+	// used by: Lego_HandleWorldDebugKeys, NERPFunc__FlashCallToArmsIcon, NERPsRuntime_UpdateTimers,
 	//          NERPsRuntime_FlashIcon, Objective_ProgrammerModeGT3_FUN_00458ba0, Objective_Update
 	result &= hook_write_jmpret(0x00401a60, LegoRR::Advisor_End);
 
@@ -1766,17 +1767,33 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00424660, LegoRR::Lego_UpdateSceneFog);
 
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x00424ff0, LegoRR::Lego_HandleKeys);
+
 	// Restore debug tooltip support.
 	// used by: Lego_HandleWorld
 	result &= hook_write_jmpret(0x00427f50, LegoRR::Lego_ShowObjectToolTip);
 	// used by: Lego_HandleRadarInput, Lego_HandleWorld
 	result &= hook_write_jmpret(0x00428260, LegoRR::Lego_ShowBlockToolTip);
 
+	// used by: Lego_HandleWorld
+	result &= hook_write_jmpret(0x00428810, LegoRR::Lego_HandleWorldDebugKeys);
+
 	// used by: Debug_ProgrammerMode11_LoadLevel, Lego_Shutdown_Full, Lego_EndLevel
 	result &= hook_write_jmpret(0x0042eff0, LegoRR::Level_Free);
 
 	// used by: Lego_MainLoop, Lego_HandleKeys, Objective_HandleKeys
 	result &= hook_write_jmpret(0x00435870, LegoRR::Lego_EndLevel);
+
+	return_interop(result);
+}
+
+bool interop_hook_LegoRR_Interface(void)
+{
+	bool result = true;
+
+	// used by: Lego_HandleKeys
+	result &= hook_write_jmpret(0x0041c370, LegoRR::Interface_DoF2InterfaceKeyAction);
 
 	return_interop(result);
 }
@@ -2256,6 +2273,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Credits();
 	result &= interop_hook_LegoRR_ElectricFence();
 	result &= interop_hook_LegoRR_Game();
+	result &= interop_hook_LegoRR_Interface();
 	result &= interop_hook_LegoRR_LegoCamera();
 	result &= interop_hook_LegoRR_Messages();
 	result &= interop_hook_LegoRR_Object();
