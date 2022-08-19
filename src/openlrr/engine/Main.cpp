@@ -1085,8 +1085,12 @@ LRESULT __cdecl Gods98::Main_WndProc_Fullscreen(HWND hWnd, UINT message, WPARAM 
 	// Handle single or dual mouse
 	case WM_LBUTTONDOWN:
 	case WM_LBUTTONUP:
+	//case WM_MBUTTONDOWN:
+	//case WM_MBUTTONUP:
 	case WM_RBUTTONDOWN:
 	case WM_RBUTTONUP:
+	//case WM_XBUTTONDOWN:
+	//case WM_XBUTTONUP:
 		{
 			/// IMPORTANT: Consider that the faulty switch breaking may have intended
 			///  control flow to fall into the end of the function:
@@ -1196,6 +1200,9 @@ LRESULT __cdecl Gods98::Main_WndProc_Fullscreen(HWND hWnd, UINT message, WPARAM 
 	case WM_RBUTTONDBLCLK:
 		INPUT.rDoubleClicked = true;			
 		return 0;
+	//case WM_MBUTTONDBLCLK:
+	//case WM_XBUTTONDBLCLK:
+	//	return 0;
 
 	// Exit messages
 	case WM_CLOSE:

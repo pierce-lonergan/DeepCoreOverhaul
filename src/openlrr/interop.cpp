@@ -1900,6 +1900,8 @@ bool interop_hook_LegoRR_Messages(void)
 
 	result &= hook_write_jmpret(0x00452910, LegoRR::Message_FindIndexOfObject);
 
+	result &= hook_write_jmpret(0x00452b80, LegoRR::Message_PTL_ReduceSelection);
+
 	/// NOT IMPLEMENTED YET
 	//result &= hook_write_jmpret(0x00452950, LegoRR::Message_LiveObject_Check_FUN_00452950);
 	//result &= hook_write_jmpret(0x00452980, LegoRR::Message_PTL_Select_LiveObject);

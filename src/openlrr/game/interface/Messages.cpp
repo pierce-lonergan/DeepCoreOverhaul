@@ -6,8 +6,10 @@
 #include "../../engine/core/Utils.h"
 
 #include "../object/Object.h"
+#include "../object/Stats.h"
 #include "../Game.h"
 
+#include "Interface.h"
 #include "Messages.h"
 
 
@@ -273,7 +275,238 @@ bool32 __cdecl LegoRR::Message_FindIndexOfObject(LegoObject** objsTable, uint32 
 //bool32 __cdecl LegoRR::Message_LiveObject_Check_FUN_00452b30(LegoObject* liveObj);
 
 // <LegoRR.exe @00452b80>
-//void __cdecl LegoRR::Message_PTL_ReduceSelection(void);
+void __cdecl LegoRR::Message_PTL_ReduceSelection(void)
+{
+	/// DECOMPILER WARNING: The decompiled code for this function was VERY BROKEN. It's flooded with gotos, and the logic is
+	///                     straight-up wrong in same cases (like unmanned vehicles being reduced when there's no driver).
+
+	// Disabled for initial implementation commit.
+	//const bool allowSpecial = false; // (Gods98::Main_IsDebugComplete() && Lego_IsAllowEditMode());
+
+	// All these reduceType bools will be *reduced* to just one true, after the loop.
+	// Listed by highest to lowest priority.
+	bool hasMiniFigure      = false; // MiniFigure type, that is not a driver.
+	bool hasLandVehicle     = false; // Drivable with driver -or- Vehicle type (self-driving), that can cross land -or- has flags4 0x40.
+	bool hasWaterVehicle    = false; // Drivable with driver -or- Vehicle type (self-driving), that can't cross land, and doesn't have flags4 0x40.
+	bool hasUnmannedVehicle = false; // Drivable without driver.
+	// All types below must not be drivable for the reduceType to be chosen (but drivable isn't checked during the reduce loop).
+	bool hasBuilding        = false; // Building type.
+	bool hasElectricFence   = false; // ElectricFence type, that is placed (active).
+	/// NEW: Additional selection types for debugging. Requires DebugComplete and AllowEditMode.
+	bool hasMonster         = false; // RockMonster type.
+	bool hasResource        = false; // PowerCrystal type -or- Ore type.
+	// Not set in loop, but set if all above are false.
+	// This is the main interface menu for when no units are selected.
+	bool hasMain            = false;
+
+	// Find all possible reduceTypes from the list of selected units.
+	for (uint32 i = 0; i < messageGlobs.selectedUnitCount; i++) {
+		LegoObject* unit = messageGlobs.selectedUnitList[i];
+
+		if (unit->type == LegoObject_MiniFigure && unit->driveObject == nullptr) {
+			hasMiniFigure = true;
+			break;
+		}
+
+		const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(unit);
+		if (!(sflags1 & STATS1_CANBEDRIVEN)) {
+			if (unit->type == LegoObject_Vehicle) {
+				// Self-driving vehicles:
+				if ((sflags1 & STATS1_CROSSLAND) || (unit->flags4 & LIVEOBJ4_UNK_40)) {
+					hasLandVehicle = true;
+				}
+				else {
+					hasWaterVehicle = true;
+				}
+			}
+			else if (unit->type == LegoObject_Building) {
+				hasBuilding = true;
+			}
+			else if (unit->type == LegoObject_ElectricFence && (unit->flags2 & LIVEOBJ2_ACTIVEELECTRICFENCE)) {
+				hasElectricFence = true;
+			}
+			//else if (allowSpecial && unit->type == LegoObject_RockMonster) {
+			//	hasMonster = true;
+			//}
+			// Can cause crashes with the AI, so disable this for now.
+			//else if (allowSpecial && (unit->type == LegoObject_PowerCrystal || unit->type == LegoObject_Ore)) {
+			//	hasResource = true;
+			//}
+		}
+		else {
+			// Drivable vehicles:
+			if (unit->driveObject == nullptr) {
+				hasUnmannedVehicle = true;
+			}
+			else if ((sflags1 & STATS1_CROSSLAND) || (unit->flags4 & LIVEOBJ4_UNK_40)) {
+				hasLandVehicle = true;
+			}
+			else {
+				hasWaterVehicle = true;
+			}
+		}
+	}
+
+
+	// From all of our possible reduceTypes, pick the reduceType with the highest priority and disable all other reduceTypes.
+	if (hasMiniFigure) {
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_LegoMan, nullptr);
+		hasLandVehicle = false;
+		hasWaterVehicle = false;
+		hasUnmannedVehicle = false;
+		hasBuilding = false;
+		hasElectricFence = false;
+
+		hasMonster = false;
+		hasResource = false;
+	}
+	else if (hasLandVehicle) {
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_LandVehicle, nullptr);
+		hasWaterVehicle = false;
+		hasUnmannedVehicle = false;
+		hasBuilding = false;
+		hasElectricFence = false;
+
+		hasMonster = false;
+		hasResource = false;
+	}
+	else if (hasWaterVehicle) {
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_WaterVehicle, nullptr);
+		hasUnmannedVehicle = false;
+		hasBuilding = false;
+		hasElectricFence = false;
+
+		hasMonster = false;
+		hasResource = false;
+	}
+	else if (hasUnmannedVehicle) {
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_UnmannedVehicle, nullptr);
+		hasBuilding = false;
+		hasElectricFence = false;
+
+		hasMonster = false;
+		hasResource = false;
+	}
+	else if (hasBuilding) {
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_Building, nullptr);
+		hasElectricFence = false;
+
+		hasMonster = false;
+		hasResource = false;
+	}
+	else if (hasElectricFence) {
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_ElectricFence, nullptr);
+
+		hasMonster = false;
+		hasResource = false;
+	}
+	else if (hasMonster) {
+		// Crashes:
+		//Interface_OpenMenu_FUN_0041b200(Interface_Menu_LegoMan, nullptr);
+		//Interface_OpenMenu_FUN_0041b200(Interface_Menu_Building, nullptr);
+
+		// Works: Even the tele' up button functions (for "standard" monster types).
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_ElectricFence, nullptr);
+		//Interface_OpenMenu_FUN_0041b200(Interface_Menu_Main, nullptr);
+		hasResource = false;
+	}
+	else if (hasResource) {
+		// Works: Even the tele' up button functions.
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_ElectricFence, nullptr);
+	}
+	else {
+		hasMain = true; // Fallback to main interface if no matching units found.
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_Main, nullptr);
+	}
+
+
+	// Go through the list of selected units, and remove units that are excluded by our reduceType.
+	for (uint32 i = 0; i < messageGlobs.selectedUnitCount; i++) {
+		LegoObject* unit = messageGlobs.selectedUnitList[i];
+		const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(unit);
+		bool reduce = false;
+
+		if (hasMiniFigure) {
+			if (unit->type != LegoObject_MiniFigure || unit->driveObject != nullptr) {
+				// 1. This is not a mini-figure.
+				// 2. This is a driver (select the vehicle instead).
+				reduce = true;
+			}
+		}
+		else if (hasLandVehicle) {
+			if (!(sflags1 & STATS1_CANBEDRIVEN)) {
+				/// FIXME: Self-driving vehicles don't properly differentiate between land and water!
+				if (unit->type != LegoObject_Vehicle) {
+					// 1. This isn't a self-driving vehicle.
+					reduce = true;
+				}
+			}
+			else if ((!(sflags1 & STATS1_CROSSLAND) && !(unit->flags4 & LIVEOBJ4_UNK_40)) || unit->driveObject == nullptr) {
+				// 1. This is a water vehicle. No mystery land vehicle flag.
+				// 2. This is an unmanned vehicle.
+				reduce = true;
+			}
+		}
+		else if (hasWaterVehicle) {
+			if (!(sflags1 & STATS1_CANBEDRIVEN)) {
+				/// FIXME: Self-driving vehicles don't properly differentiate between land and water!
+				if (unit->type != LegoObject_Vehicle) {
+					// 1. This isn't a self-driving vehicle.
+					reduce = true;
+				}
+			}
+			else if (((sflags1 & STATS1_CROSSLAND) || (unit->flags4 & LIVEOBJ4_UNK_40)) || unit->driveObject == nullptr) {
+				// 1. This is a land vehicle. Has mystery land vehicle flag.
+				// 2. This is an unmanned vehicle.
+				reduce = true;
+			}
+		}
+		else if (hasUnmannedVehicle) {
+			/// DECOMPILER FIX: THE DECOMPILER LOGIC HERE *WAS* WRONG!!!
+			///                 A vehicle *was* considered unmanned if it was drivable WITH A DRIVER (not without).
+			if (!(sflags1 & STATS1_CANBEDRIVEN) || unit->driveObject != nullptr) {
+				// 1. This is a self-driving vehicle.
+				// 2. This is not an unmanned vehicle.
+				reduce = true;
+			}
+		}
+		else if (hasBuilding) {
+			if (unit->type != LegoObject_Building) {
+				reduce = true;
+			}
+		}
+		else if (hasElectricFence) {
+			if (unit->type != LegoObject_ElectricFence || !(unit->flags2 & LIVEOBJ2_ACTIVEELECTRICFENCE)) {
+				// 1. This is not an electric fence.
+				// 2. This electric fence is not active (placed).
+				reduce = true;
+			}
+		}
+		else if (hasMonster) {
+			if (unit->type != LegoObject_RockMonster) {
+				reduce = true;
+			}
+		}
+		else if (hasResource) {
+			if (unit->type != LegoObject_PowerCrystal && unit->type != LegoObject_Ore) {
+				reduce = true;
+			}
+		}
+		else { //if (hasMain) {
+			reduce = true;
+		}
+
+		if (reduce || hasMain) { // hasMain check is redundant here, but wasn't in original decompiled function.
+
+			// Replace this reduced object with the object at the end of the list.
+			messageGlobs.selectedUnitList[i] = messageGlobs.selectedUnitList[messageGlobs.selectedUnitCount - 1];
+			messageGlobs.selectedUnitCount--;
+			i--;
+
+			unit->flags3 &= ~LIVEOBJ3_UNK_200000; // Mmmm mystery flags, yum. Selected maybe?
+		}
+	}
+}
 
 // <LegoRR.exe @00452ea0>
 //void __cdecl LegoRR::Message_PTL_ClearSelection(void);

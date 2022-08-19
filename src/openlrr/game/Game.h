@@ -769,8 +769,8 @@ extern Lego_Globs2 legoGlobs2;
 #define SurfaceType_RegisterName(n)		(legoGlobs.surfaceName[n]=#n)
 #define ToolType_RegisterName(n)		(legoGlobs.toolName[n]=#n)
 
-#define Lego_ID(...) Config_ID(legoGlobs.gameName, __VA_ARGS__ )
-#define Main_ID(...) Config_ID(legoGlobs.gameName, "Main", __VA_ARGS__ )
+#define Lego_ID(...) Config_ID(LegoRR::legoGlobs.gameName, __VA_ARGS__ )
+#define Main_ID(...) Config_ID(LegoRR::legoGlobs.gameName, "Main", __VA_ARGS__ )
 
 #pragma endregion
 

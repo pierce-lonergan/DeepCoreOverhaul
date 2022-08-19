@@ -1273,6 +1273,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		if (!(legoGlobs.flags2 & GAME2_INMENU)) {
 			Interface_FUN_0041b3c0();
 		}
+		// Somewhere in here causes a crash if an unsupported object type is selected with certain interface menu types.
 		Interface_FUN_0041b860(elapsedInterface);
 
 
@@ -1280,17 +1281,17 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		/// JANK: Crystals panel drawing still happening outside of level,
 		///       and relying on values only assigned when in-level.
 		/// JANK: Why are these being stored as floats???
-		real32 crystalsTotal = elapsedInterface;
-		real32 crystalsFree = elapsedInterface;
+		uint32 crystalsTotal = 0;// (uint32)elapsedInterface;
+		uint32 crystalsFree = 0;// (uint32)elapsedInterface;
 		if (legoGlobs.currLevel != nullptr) {
-			crystalsTotal = (real32)(legoGlobs.currLevel)->crystals;
-			crystalsFree = (real32)((legoGlobs.currLevel)->crystals - (legoGlobs.currLevel)->crystalsDrained);
+			crystalsTotal = legoGlobs.currLevel->crystals;
+			crystalsFree = (legoGlobs.currLevel->crystals - legoGlobs.currLevel->crystalsDrained);
 		}
-		Panel_Crystals_Draw((uint32)crystalsTotal, (uint32)crystalsFree, elapsedWorld);
+		Panel_Crystals_Draw(crystalsTotal, crystalsFree, elapsedWorld);
 
 		Panel_CryOreSideBar_Draw();
 		/// HARDCODED STUD ORE COUNT
-		const uint32 oreTotal = ((legoGlobs.currLevel)->ore + (legoGlobs.currLevel)->studs * 5);
+		const uint32 oreTotal = (legoGlobs.currLevel->ore + (legoGlobs.currLevel->studs * 5));
 		Panel_PrintF(Panel_CrystalSideBar, legoGlobs.bmpToolTipFont, 16, 469, true, "%i", oreTotal);
 
 		Panel_FUN_0045a9f0(Panel_Information, elapsedInterface);

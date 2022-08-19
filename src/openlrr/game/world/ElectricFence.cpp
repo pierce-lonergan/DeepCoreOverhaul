@@ -90,7 +90,7 @@ LegoRR::ElectricFence_Block* __cdecl LegoRR::ElectricFence_Create(LegoObject* li
 	efenceBlockValue(bx, by).flags = FENCEGRID_FLAG_NONE;
 	efenceBlockValue(bx, by).efence = newEFence;
 
-	liveObj->flags2 |= LIVEOBJ2_UNK_2000000;
+	liveObj->flags2 |= LIVEOBJ2_ACTIVEELECTRICFENCE;
 	ElectricFence_UpdateBlockConnections(bx, by);
 	return newEFence;
 }
@@ -106,7 +106,7 @@ void __cdecl LegoRR::ElectricFence_AddList(void)
 // <LegoRR.exe @0040cfd0>
 void __cdecl LegoRR::ElectricFence_RemoveFence(LegoObject* liveObj)
 {
-	if (liveObj->flags2 & LIVEOBJ2_UNK_2000000) {
+	if (liveObj->flags2 & LIVEOBJ2_ACTIVEELECTRICFENCE) {
 
 		sint32 bx = 0, by = 0; // dummy init
 		LegoObject_GetBlockPos(liveObj, &bx, &by);

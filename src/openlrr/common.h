@@ -37,6 +37,7 @@
 #include <type_traits>
 #include <iterator>
 //#include <typeinfo>
+#include <memory>
 
 // Windows C RunTime Header Files
 #include <direct.h>
@@ -213,6 +214,10 @@ constexpr auto array_of(T&&... t) -> std::array<V, sizeof...(T)> {
 #define noinline(funcname) _noinline_ ##funcname
 
 
+#define flags_enum(name) \
+	DEFINE_ENUM_FLAG_OPERATORS(name)
+
+
 #define enum_scoped(name) \
 	namespace _ns_ ##name { \
 	enum name
@@ -225,7 +230,7 @@ constexpr auto array_of(T&&... t) -> std::array<V, sizeof...(T)> {
 	} using name = _ns_ ##name## :: ##name
 
 #define flags_scoped_end(name, size) \
-	DEFINE_ENUM_FLAG_OPERATORS(name); \
+	flags_enum(name); \
 	enum_scoped_end(name, size)
 
 
@@ -233,7 +238,7 @@ constexpr auto array_of(T&&... t) -> std::array<V, sizeof...(T)> {
 	assert_sizeof(name, size)
 
 #define flags_end(name, size) \
-	DEFINE_ENUM_FLAG_OPERATORS(name); \
+	flags_enum(name); \
 	assert_sizeof(name, size)
 
 

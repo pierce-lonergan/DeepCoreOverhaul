@@ -184,8 +184,8 @@ bool32 __cdecl Message_FindIndexOfObject(LegoObject** objsTable, uint32 objsCoun
 //bool32 __cdecl Message_LiveObject_Check_FUN_00452b30(LegoObject* liveObj);
 
 // <LegoRR.exe @00452b80>
-#define Message_PTL_ReduceSelection ((void (__cdecl* )(void))0x00452b80)
-//void __cdecl Message_PTL_ReduceSelection(void);
+//#define Message_PTL_ReduceSelection ((void (__cdecl* )(void))0x00452b80)
+void __cdecl Message_PTL_ReduceSelection(void);
 
 // <LegoRR.exe @00452ea0>
 #define Message_PTL_ClearSelection ((void (__cdecl* )(void))0x00452ea0)

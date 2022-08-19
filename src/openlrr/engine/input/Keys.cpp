@@ -26,10 +26,11 @@ void __cdecl Gods98::Keys_Initialise(void)
 {
 	log_firstcall();
 
-	for (uint32 loop=0 ; loop<256 ; loop++) {
+	for (uint32 loop = 0; loop < 256; loop++) {
 		keyGlobs.keyName[loop] = nullptr;
 	}
 
+	//Key_RegisterName(KEY_NONE);
 	Key_RegisterName(KEY_ESCAPE);
 	Key_RegisterName(KEY_ONE);
 	Key_RegisterName(KEY_TWO);
