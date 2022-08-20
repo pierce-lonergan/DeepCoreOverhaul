@@ -194,8 +194,8 @@ void __cdecl LegoRR::LegoObject_Shutdown(void)
 // <LegoRR.exe @00437800>
 bool32 __cdecl LegoRR::LegoObject_Remove(LegoObject* deadObj)
 {
-	// Decrement number of this object type/id/level present in the level.
-	objectGlobs.objectPrevLevels[deadObj->type][deadObj->id][deadObj->objLevel]--;
+	// Increment number of this object type/id/levels that were removed from the level.
+	objectGlobs.objectPrevLevels[deadObj->type][deadObj->id][deadObj->objLevel]++;
 
 	// Stop currently-playing sound handles.
 	if (deadObj->flags4 & LIVEOBJ4_DRILLSOUNDPLAYING) {
