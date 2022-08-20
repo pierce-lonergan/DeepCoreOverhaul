@@ -1948,6 +1948,18 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: Lego_Shutdown_Full
 	result &= hook_write_jmpret(0x00437310, LegoRR::LegoObject_Shutdown);
 
+	// used by: LegoObject_CleanupLevel
+	result &= hook_write_jmpret(0x00437700, LegoRR::LegoObject_CleanupObjectLevels);
+	// used by: Lego_MainLoop, LegoObject_GetObjectsBuilt, NERPsRuntime_GetLevelObjectsBuilt, Reward_GetLevelObjectsBuilt
+	result &= hook_write_jmpret(0x00437720, LegoRR::LegoObject_GetLevelObjectsBuilt);
+	// used by: NERPsRuntime_GetPreviousLevelObjectsBuilt, RewardQuota_CountBuildings
+	result &= hook_write_jmpret(0x00437760, LegoRR::LegoObject_GetPreviousLevelObjectsBuilt);
+	// used by: Level_BlockUpdateSurface
+	result &= hook_write_jmpret(0x00437790, LegoRR::LegoObject_IncLevelPathsBuilt);
+	// used by: LegoObject_Remove
+	result &= hook_write_jmpret(0x004377b0, LegoRR::LegoObject_RemoveRouteToReferences);
+	// internal, no need to hook these
+	//result &= hook_write_jmpret(0x004377d0, LegoRR::LegoObject_Callback_RemoveRouteToReference);
 
 	result &= hook_write_jmpret(0x00437800, LegoRR::LegoObject_Remove);
 	result &= hook_write_jmpret(0x00437a70, LegoRR::LegoObject_RunThroughListsSkipUpgradeParts);

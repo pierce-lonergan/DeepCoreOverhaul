@@ -503,7 +503,9 @@ void __cdecl LegoRR::Message_PTL_ReduceSelection(void)
 			messageGlobs.selectedUnitCount--;
 			i--;
 
-			unit->flags3 &= ~LIVEOBJ3_UNK_200000; // Mmmm mystery flags, yum. Selected maybe?
+			unit->flags3 &= ~LIVEOBJ3_SELECTED;
+			/// FIXME: Should we also remove LIVEOBJ4_LASERTRACKERMODE, like with ClearSelection?
+			//unit->flags4 &= ~LIVEOBJ4_LASERTRACKERMODE;
 		}
 	}
 }

@@ -190,6 +190,67 @@ void __cdecl LegoRR::LegoObject_Shutdown(void)
 }
 
 
+// <LegoRR.exe @00437700>
+void __cdecl LegoRR::LegoObject_CleanupObjectLevels(void)
+{
+	std::memset(objectGlobs.objectPrevLevels, 0, sizeof(objectGlobs.objectPrevLevels));
+	std::memset(objectGlobs.objectTotalLevels, 0, sizeof(objectGlobs.objectTotalLevels));
+}
+
+// <LegoRR.exe @00437720>
+uint32 __cdecl LegoRR::LegoObject_GetLevelObjectsBuilt(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, bool32 currentCount)
+{
+	uint32 levelsCount = objectGlobs.objectTotalLevels[objType][objID][objLevel];
+	if (currentCount) {
+		// Subtract objects that have been removed from the total.
+		levelsCount -= objectGlobs.objectPrevLevels[objType][objID][objLevel];
+	}
+	return levelsCount;
+}
+
+// <LegoRR.exe @00437760>
+uint32 __cdecl LegoRR::LegoObject_GetPreviousLevelObjectsBuilt(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel)
+{
+	return objectGlobs.objectPrevLevels[objType][objID][objLevel];
+}
+
+// <LegoRR.exe @00437790>
+void __cdecl LegoRR::LegoObject_IncLevelPathsBuilt(bool32 incCurrent)
+{
+	if (incCurrent) {
+		objectGlobs.objectTotalLevels[LegoObject_Path][0][0]++;
+	}
+	else {
+		objectGlobs.objectPrevLevels[LegoObject_Path][0][0]++;
+	}
+}
+
+// Removes all route-to references that match the specified object.
+// Does nothing if routeToObj is a Boulder type.
+// <LegoRR.exe @004377b0>
+void __cdecl LegoRR::LegoObject_RemoveRouteToReferences(LegoObject* routeToObj)
+{
+	if (routeToObj->type != LegoObject_Boulder) {
+		for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
+			LegoObject_Callback_RemoveRouteToReference(obj, routeToObj);
+		}
+		//LegoObject_RunThroughListsSkipUpgradeParts(LegoObject_Callback_RemoveRouteToReference, routeToObj);
+	}
+}
+
+// Removes the route-to reference if it matches the specified object.
+// DATA: LegoObject* routeToObj
+// <LegoRR.exe @004377d0>
+bool32 __cdecl LegoRR::LegoObject_Callback_RemoveRouteToReference(LegoObject* liveObj, void* pRouteToObj)
+{
+	const LegoObject* routeToObj = (LegoObject*)pRouteToObj;
+	if (liveObj->routeToObject == routeToObj) {
+		LegoObject_Route_End(liveObj, false);
+		liveObj->routeToObject = nullptr;
+	}
+	return false;
+}
+
 
 // <LegoRR.exe @00437800>
 bool32 __cdecl LegoRR::LegoObject_Remove(LegoObject* deadObj)
@@ -224,25 +285,29 @@ bool32 __cdecl LegoRR::LegoObject_Remove(LegoObject* deadObj)
 		LegoObject_DropCarriedObject(deadObj->carryingThisObject, false);
 	}
 
-	// This function has no side effects with deadObj, we can safely reorganize other cleanup around this call.
+	// This function has no side effects with deadObj, we can safely reorganize the LIVEOBJ4_DOCKOCCUPIED cleanup around this call.
 	LegoObject_WaterVehicle_Unregister(deadObj);
 
+	// Exit laser tracker mode.
+	// Note that this mode does not treat the object as selected, so no extra handling seems to be needed.
 	if (deadObj->flags4 & LIVEOBJ4_LASERTRACKERMODE) {
 		legoGlobs.flags1 &= ~GAME1_LASERTRACKER;
 	}
 
-	/// TODO: Check if a single routeToObject can be referenced my multiple objects at once.
+	// Clear flags that link routeToObjects to one another.
+	/// TODO: Check if a single routeToObject can be referenced by multiple objects at once.
 	///       If that's the case, then is clearing these flags causing problems?
 	/// REFACTOR: First block moved from above `LegoObject_WaterVehicle_Unregister`.
-	if (deadObj->flags4 & LIVEOBJ4_UNK_40) {
-		deadObj->flags4 &= ~LIVEOBJ4_UNK_40;
+	if (deadObj->flags4 & LIVEOBJ4_DOCKOCCUPIED) {
+		deadObj->flags4 &= ~LIVEOBJ4_DOCKOCCUPIED;
 		if (deadObj->routeToObject != nullptr) {
-			deadObj->routeToObject->flags4 &= ~LIVEOBJ4_UNK_40;
+			deadObj->routeToObject->flags4 &= ~LIVEOBJ4_DOCKOCCUPIED;
 		}
+		/// TODO: Should routeToObject be cleared in this scenario too?
 	}
-	if (deadObj->flags4 & LIVEOBJ4_UNK_80) {
+	if (deadObj->flags4 & LIVEOBJ4_ENTRANCEOCCUPIED) {
 		if (deadObj->routeToObject != nullptr) {
-			deadObj->routeToObject->flags4 &= ~LIVEOBJ4_UNK_80;
+			deadObj->routeToObject->flags4 &= ~LIVEOBJ4_ENTRANCEOCCUPIED;
 		}
 		deadObj->routeToObject = nullptr;
 	}
@@ -332,9 +397,9 @@ bool32 __cdecl LegoRR::LegoObject_Remove(LegoObject* deadObj)
 // <LegoRR.exe @00437a70>
 bool32 __cdecl LegoRR::LegoObject_RunThroughListsSkipUpgradeParts(LegoObject_RunThroughListsCallback callback, void* data)
 {
-	for (LegoObject* liveObj : objectListSet.EnumerateSkipUpgradeParts()) {
+	for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
 
-		if (callback(liveObj, data))
+		if (callback(obj, data))
 			return true; // terminate run through listSet
 	}
 	return false;
@@ -344,11 +409,11 @@ bool32 __cdecl LegoRR::LegoObject_RunThroughListsSkipUpgradeParts(LegoObject_Run
 // <LegoRR.exe @00437a90>
 bool32 __cdecl LegoRR::LegoObject_RunThroughLists(LegoObject_RunThroughListsCallback callback, void* data, bool32 skipUpgradeParts)
 {
-	for (LegoObject* liveObj : objectListSet.EnumerateAlive()) {
+	for (LegoObject* obj : objectListSet.EnumerateAlive()) {
 		// Secondary filter
-		if (!skipUpgradeParts || !(liveObj->flags3 & LIVEOBJ3_UPGRADEPART)) {
+		if (!skipUpgradeParts || !(obj->flags3 & LIVEOBJ3_UPGRADEPART)) {
 
-			if (callback(liveObj, data))
+			if (callback(obj, data))
 				return true; // terminate run through listSet
 		}
 	}
@@ -496,15 +561,15 @@ void __cdecl LegoRR::LegoObject_SetLevelEnding(bool32 ending)
 void __cdecl LegoRR::LegoObject_FUN_0044b0a0(LegoObject* liveObj)
 {
 	if (!(objectGlobs.flags & LegoObject_GlobFlags::OBJECT_GLOB_FLAG_LEVELENDING) &&
-		(liveObj->type == LegoObject_Vehicle) && !(liveObj->flags4 & LIVEOBJ4_UNK_800))
+		(liveObj->type == LegoObject_Vehicle) && !(liveObj->flags4 & LIVEOBJ4_CRYORECOSTDROPPED))
 	{
-		LegoObject* routeToObj = ((liveObj->flags4 & LIVEOBJ4_UNK_40) ? liveObj->routeToObject : nullptr);
+		LegoObject* routeToObj = ((liveObj->flags4 & LIVEOBJ4_DOCKOCCUPIED) ? liveObj->routeToObject : nullptr);
 
 		LegoObject* spawnTargetObj = (routeToObj != nullptr ? routeToObj : liveObj);
 
 		uint32 crystalCost = Stats_GetCostCrystal(LegoObject_Vehicle, liveObj->id, 0);
 		LegoObject_SpawnDropCrystals_FUN_0044b110(spawnTargetObj, crystalCost, (routeToObj != nullptr));
-		liveObj->flags4 |= LIVEOBJ4_UNK_800;
+		liveObj->flags4 |= LIVEOBJ4_CRYORECOSTDROPPED;
 	}
 }
 

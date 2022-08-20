@@ -165,9 +165,9 @@ enum LiveFlags3 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ3_SIMPLEOBJECT   = 0x20000, // Guess at usage, for resources or other objects that don't do anything on their own.
 	LIVEOBJ3_UNK_40000      = 0x40000,
 	LIVEOBJ3_UPGRADEPART    = 0x80000, // When running through the list of all LegoObjects, this flag states to ignore this object.
-	                                   // (99% of the calls to Run through lists use this flag).
+	                                   // (99% of the calls to Run through lists ignore objects with this flag).
 	LIVEOBJ3_UNK_100000     = 0x100000,
-	LIVEOBJ3_UNK_200000     = 0x200000,
+	LIVEOBJ3_SELECTED       = 0x200000, // Object is selected (required to enter laser tracker mode, because double select).
 	LIVEOBJ3_UNK_400000     = 0x400000,
 	LIVEOBJ3_REMOVING       = 0x800000,
 	LIVEOBJ3_UNK_1000000    = 0x1000000,
@@ -185,17 +185,17 @@ flags_end(LiveFlags3, 0x4);
 enum LiveFlags4 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 {
 	LIVEOBJ4_NONE          = 0,
-	LIVEOBJ4_LASERTRACKERMODE  = 0x1, // ???
-	LIVEOBJ4_UNK_2         = 0x2,
+	LIVEOBJ4_LASERTRACKERMODE   = 0x1, // Used by the object whose mounted laser is currently being aimed (red selection box).
+	LIVEOBJ4_DOUBLESELECTREADY  = 0x2, // Required to enter laser tracker mode. Set during PTL_ClearSelection if LIVEOBJ3_SELECTED, 
 	LIVEOBJ4_UNK_4         = 0x4,
 	LIVEOBJ4_UNK_8         = 0x8,
 	LIVEOBJ4_UNK_10        = 0x10,
-	LIVEOBJ4_CALLTOARMS_20 = 0x20,
-	LIVEOBJ4_UNK_40        = 0x40,
-	LIVEOBJ4_UNK_80        = 0x80,
-	LIVEOBJ4_UNK_100       = 0x100, // Used when resource is placed in construction zone (reserved, and not for use?).
-	LIVEOBJ4_UNK_200       = 0x200,
-	LIVEOBJ4_UNK_800       = 0x800,
+	LIVEOBJ4_CALLTOARMS_20 = 0x20, 
+	LIVEOBJ4_DOCKOCCUPIED       = 0x40, // Used when a building water entrance is occupied (for both vehicle and building). Linked by routeToObject.
+	LIVEOBJ4_ENTRANCEOCCUPIED   = 0x80, // Used when a building land entrance is occupied (for both vehicle and building). Linked by routeToObject.
+	LIVEOBJ4_USEDBYCONSTRUCTION = 0x100, // Used when resource is placed in construction zone (reserved, and not for use?).
+	LIVEOBJ4_DONTSHOWHELPWINDOW = 0x200, // Prevents showing the help window for this object. This is set for OL objects and objects exposed in a new cavern.
+	LIVEOBJ4_CRYORECOSTDROPPED  = 0x800, // Used when teleporing-up a constructed object to signal that its resource costs have been returned (spawned).
 	LIVEOBJ4_UNK_1000      = 0x1000,
 	LIVEOBJ4_UNK_2000      = 0x2000,
 	LIVEOBJ4_UNK_4000      = 0x4000,
@@ -517,26 +517,32 @@ void __cdecl LegoObject_Shutdown(void);
 #define LegoObject_DoOpeningClosing ((bool32 (__cdecl* )(LegoObject* liveObj, bool32 open))0x00437690)
 
 // <LegoRR.exe @00437700>
-#define LegoObject_CleanupObjectLevels ((void (__cdecl* )(void))0x00437700)
+//#define LegoObject_CleanupObjectLevels ((void (__cdecl* )(void))0x00437700)
+void __cdecl LegoObject_CleanupObjectLevels(void);
 
 // <LegoRR.exe @00437720>
-#define LegoObject_GetLevelObjectsBuilt ((uint32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, bool32 currentLevel))0x00437720)
+//#define LegoObject_GetLevelObjectsBuilt ((uint32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, bool32 currentCount))0x00437720)
+uint32 __cdecl LegoObject_GetLevelObjectsBuilt(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, bool32 currentCount);
 
 // <LegoRR.exe @00437760>
-#define LegoObject_GetPreviousLevelObjectsBuilt ((uint32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel))0x00437760)
+//#define LegoObject_GetPreviousLevelObjectsBuilt ((uint32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel))0x00437760)
+uint32 __cdecl LegoObject_GetPreviousLevelObjectsBuilt(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel);
 
 // <LegoRR.exe @00437790>
-#define LegoObject_IncLevelPathsBuilt ((void (__cdecl* )(bool32 incCurrent))0x00437790)
+//#define LegoObject_IncLevelPathsBuilt ((void (__cdecl* )(bool32 incCurrent))0x00437790)
+void __cdecl LegoObject_IncLevelPathsBuilt(bool32 incCurrent);
 
 // Removes all route-to references that match the specified object.
 // Does nothing if routeToObj is a Boulder type.
 // <LegoRR.exe @004377b0>
-#define LegoObject_RemoveRouteToReferences ((void (__cdecl* )(LegoObject* routeToObj))0x004377b0)
+//#define LegoObject_RemoveRouteToReferences ((void (__cdecl* )(LegoObject* routeToObj))0x004377b0)
+void __cdecl LegoObject_RemoveRouteToReferences(LegoObject* routeToObj);
 
 // Removes the route-to reference if it matches the specified object.
 // DATA: LegoObject* routeToObj
 // <LegoRR.exe @004377d0>
-#define LegoObject_Callback_RemoveRouteToReference ((bool32 (__cdecl* )(LegoObject* liveObj, void* routeToObj))0x004377d0)
+//#define LegoObject_Callback_RemoveRouteToReference ((bool32 (__cdecl* )(LegoObject* liveObj, void* pRouteToObj))0x004377d0)
+bool32 __cdecl LegoObject_Callback_RemoveRouteToReference(LegoObject* liveObj, void* pRouteToObj);
 
 // <LegoRR.exe @00437800>
 //#define LegoObject_Remove ((bool32 (__cdecl* )(LegoObject* liveObj))0x00437800)
@@ -1082,7 +1088,7 @@ bool32 __cdecl LegoObject_Callback_Remove(LegoObject* liveObj, void* unused);
 #define LegoObject_RoutingUnk_FUN_00444940 ((bool32 (__cdecl* )(LegoObject* liveObj, bool32 useRoutingPos, bool32 flags3_8, bool32 notFlags1_10000))0x00444940)
 
 // <LegoRR.exe @00445270>
-#define LegoObject_FaceTowardsCamera ((void (__cdecl* )(LegoObject* liveObj, const Point2F* worldPos))0x00445270)
+#define LegoObject_FaceTowardsCamera ((void (__cdecl* )(LegoObject* liveObj, const Point2F* newFaceDir))0x00445270)
 
 // <LegoRR.exe @004454a0>
 #define LegoObject_Route_CurveSolid_FUN_004454a0 ((void (__cdecl* )(LegoObject* liveObj))0x004454a0)
