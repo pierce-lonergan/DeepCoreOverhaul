@@ -8,7 +8,7 @@
 #include "../../engine/input/Input.h"
 
 #include "../audio/SFX.h"
-#include "../mission/PTL.h"
+#include "../interface/Interface.h"
 #include "../object/AITask.h"
 #include "../object/Object.h"
 #include "../object/Stats.h"
@@ -16,7 +16,7 @@
 #include "../world/ElectricFence.h"
 #include "../Game.h"
 
-#include "Interface.h"
+#include "PTL.h"
 #include "Messages.h"
 
 

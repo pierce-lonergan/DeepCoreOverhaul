@@ -9,7 +9,7 @@
 #include "../object/Object.h"
 #include "../Game.h"
 
-#include "../interface/Messages.h"
+#include "Messages.h"
 #include "PTL.h"
 
 

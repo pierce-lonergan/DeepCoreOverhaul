@@ -6,7 +6,7 @@
 #include "../interface/hud/Bubbles.h"
 #include "../interface/Encyclopedia.h"
 #include "../interface/InfoMessages.h"
-#include "../interface/Messages.h"
+#include "../mission/Messages.h"
 #include "AITask.h"
 #include "Stats.h"
 #include "Object.h"

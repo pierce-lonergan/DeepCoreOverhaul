@@ -220,7 +220,6 @@
     <ClInclude Include="game\interface\hud\ObjInfo.h" />
     <ClInclude Include="game\interface\InfoMessages.h" />
     <ClInclude Include="game\interface\Interface.h" />
-    <ClInclude Include="game\interface\Messages.h" />
     <ClInclude Include="game\interface\Panels.h" />
     <ClInclude Include="game\interface\Pointers.h" />
     <ClInclude Include="game\interface\Priorities.h" />
@@ -228,6 +227,7 @@
     <ClInclude Include="game\interface\ScrollInfo.h" />
     <ClInclude Include="game\interface\TextMessages.h" />
     <ClInclude Include="game\interface\ToolTip.h" />
+    <ClInclude Include="game\mission\Messages.h" />
     <ClInclude Include="game\mission\NERPsFile.h" />
     <ClInclude Include="game\mission\NERPsFunctions.h" />
     <ClInclude Include="game\mission\NERPsRuntime.h" />
@@ -340,7 +340,6 @@
     <ClCompile Include="game\interface\hud\ObjInfo.cpp" />
     <ClCompile Include="game\interface\InfoMessages.cpp" />
     <ClCompile Include="game\interface\Interface.cpp" />
-    <ClCompile Include="game\interface\Messages.cpp" />
     <ClCompile Include="game\interface\Panels.cpp" />
     <ClCompile Include="game\interface\Pointers.cpp" />
     <ClCompile Include="game\interface\Priorities.cpp" />
@@ -348,6 +347,7 @@
     <ClCompile Include="game\interface\ScrollInfo.cpp" />
     <ClCompile Include="game\interface\TextMessages.cpp" />
     <ClCompile Include="game\interface\ToolTip.cpp" />
+    <ClCompile Include="game\mission\Messages.cpp" />
     <ClCompile Include="game\mission\NERPsFile.cpp" />
     <ClCompile Include="game\mission\NERPsFunctions.cpp" />
     <ClCompile Include="game\mission\NERPsRuntime.cpp" />
