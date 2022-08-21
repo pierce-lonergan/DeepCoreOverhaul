@@ -668,7 +668,7 @@ struct GameControl_Globs // [LegoRR/???|struct:0x180|tags:GLOBS]
 	/*014,4*/	bool32 mslb_Last_1;
 	/*018,4*/	bool32 renameUseQuotes;
 	/*01c,4*/	undefined4 reserved2;
-	/*020,100*/	bool typingState_Map[256];
+	/*020,100*/	bool8 typingState_Map[256];
 	/*120,4*/	real32 dbgUpgradeChangeTimer;
 	/*124,4*/	real32 dbgSpeedChangeTimer;
 	/*128,4*/	real32 dbgRollOffChangeTimer;

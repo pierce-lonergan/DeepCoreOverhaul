@@ -176,7 +176,7 @@ uint32 __cdecl Gods98::Input_AnyKeyPressed(void)
 	log_firstcall();
 
 	uint32 ret = 0;
-	const bool* lp = INPUT.Key_Map;
+	const bool8* lp = INPUT.Key_Map;
 	for (uint32 i=0; i<INPUT_MAXKEYS; i++)
 	{
 		if(*lp)

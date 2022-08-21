@@ -95,7 +95,7 @@ assert_sizeof(DIcallbackData, 0xc);
 
 struct Input_Globs
 {
-	/*000,100*/ bool prevKey_Map[INPUT_MAXKEYS]; // Keyboard state
+	/*000,100*/ bool8 prevKey_Map[INPUT_MAXKEYS]; // Keyboard state
 	// [globs: start]
 #if DIRECTINPUT_VERSION == 0x0500
 	/*100,4*/ IDirectInputA* lpdi;
@@ -130,7 +130,7 @@ struct Input_Globs
 	/*17c,1*/ char Input_KeyTemp;
 	// THIS PADDING IS NEEDED so that Key_Map aligns to 180
 	/*17d,3*/ uint8 padding1[3];
-	/*180,100*/ bool Key_Map[INPUT_MAXKEYS]; // Keyboard state
+	/*180,100*/ bool8 Key_Map[INPUT_MAXKEYS]; // Keyboard state
 	/*280*/
 };
 assert_sizeof(Input_Globs, 0x280);
@@ -243,7 +243,7 @@ VOID Input_ReadMouse2(VOID);*/
  * @brief Gets if the current key state is 'down'.
  * @param k Key code defined by `Keys` enum.
  */
-#define Input_IsKeyDown(k)		(Gods98::INPUT.Key_Map[(k)])
+#define Input_IsKeyDown(k)		((bool)Gods98::INPUT.Key_Map[(k)])
 /**
  * @brief Gets if the current key state is 'up'.
  * @param k Key code defined by `Keys` enum.
@@ -254,7 +254,7 @@ VOID Input_ReadMouse2(VOID);*/
  * @brief Gets if the previous key state was 'down'.
  * @param k Key code defined by `Keys` enum.
  */
-#define Input_IsPrevKeyDown(k)	(Gods98::INPUT.prevKey_Map[(k)])
+#define Input_IsPrevKeyDown(k)	((bool)Gods98::INPUT.prevKey_Map[(k)])
 /**
  * @brief Gets if the previous key state was 'up'.
  * @param k Key code defined by `Keys` enum.
