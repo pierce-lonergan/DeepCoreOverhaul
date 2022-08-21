@@ -172,6 +172,8 @@ typedef float			real32;
 typedef double			real64;
 
 typedef sint32			bool32; // WIN BOOL
+typedef uint16			bool16;
+typedef uint8			bool8;
 
 typedef uint32			colour32;
 

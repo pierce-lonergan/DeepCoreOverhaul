@@ -2,11 +2,18 @@
 //
 
 #include "../../engine/core/Errors.h"
+#include "../../engine/core/Maths.h"
 #include "../../engine/core/Memory.h"
 #include "../../engine/core/Utils.h"
+#include "../../engine/input/Input.h"
 
+#include "../audio/SFX.h"
+#include "../mission/PTL.h"
+#include "../object/AITask.h"
 #include "../object/Object.h"
 #include "../object/Stats.h"
+#include "../world/Construction.h"
+#include "../world/ElectricFence.h"
 #include "../Game.h"
 
 #include "Interface.h"
@@ -104,30 +111,24 @@ void __cdecl LegoRR::Message_Initialise(void)
 }
 
 // <LegoRR.exe @00452220>
-void __cdecl LegoRR::Message_RemoveLiveObject(LegoObject* liveObj)
+void __cdecl LegoRR::Message_RemoveEventsWithObject(LegoObject* deadObj)
 {
-    //uint32 newCount;
-    bool32 bx2 = messageGlobs.messageX2Bool;
-    uint32 count = messageGlobs.messageCountX2[bx2];
+	/// FIXME: Should we also be checking events at (1 - bx2)???
+    const bool32 bx2 = messageGlobs.eventAB;
+    uint32 count = messageGlobs.eventCounts[bx2];
     for (uint32 i = 0; i < count; i++) {
-        if (liveObj == messageGlobs.messageTableX2[bx2][i].argumentObj) {
-            //const MessageAction* lastAction = &messageGlobs.messageTableX2[bx2][--count];
-            //MessageAction* curAction = &messageGlobs.messageTableX2[bx2][i];
+		/// FIXME: We should also be checking message types that use argument2 as an object!!!
+        if (deadObj == messageGlobs.eventLists[bx2][i].argumentObj) {
 
-            messageGlobs.messageTableX2[bx2][i] = messageGlobs.messageTableX2[bx2][--count];
-
-
-            /// ADDED: Is this necessary to avoid memory issues?
-            //if (count > 0)
-            //*curAction = *lastAction;
-
-            messageGlobs.messageCountX2[bx2] = count;
+			// Replace this removed message with the message at the end of the list.
+            messageGlobs.eventLists[bx2][i] = messageGlobs.eventLists[bx2][--count];
+            messageGlobs.eventCounts[bx2] = count;
         }
     }
 }
 
 // <LegoRR.exe @00452290>
-LegoRR::Message_Type __cdecl LegoRR::Message_LookupPTLEventIndex(const char* ptlName)
+LegoRR::Message_Type __cdecl LegoRR::Message_ParsePTLName(const char* ptlName)
 {
     for (uint32 i = 0; i < MESSAGE_MAXTYPES; i++) {
         // Skip "Message_" in name
@@ -137,57 +138,255 @@ LegoRR::Message_Type __cdecl LegoRR::Message_LookupPTLEventIndex(const char* ptl
     }
 
     /// TODO: Actually return an invalid result on failure
-    Error_Warn(true, "Invalid message name in PTL");
+    Error_Warn(true, Gods98::Error_Format("Invalid message name in PTL: %s", ptlName));
     return Message_Type::Message_Null; // safest possible return
     //return (Message_Type)-1;
 }
 
 // <LegoRR.exe @004522d0>
-void __cdecl LegoRR::Message_Debug_RegisterSelectedUnitHotkey(Gods98::Keys key, Message_Type messageType, LegoObject* argumentObj, undefined4 argument2, OUT Point2I* position)
+void __cdecl LegoRR::Message_RegisterHotKeyEvent(Gods98::Keys key, Message_Type messageType, LegoObject* argument1Obj, Message_Argument argument2, OPTIONAL const Point2I* blockPos)
 {
-    messageGlobs.hotkeyList[messageGlobs.hotkeyCount] = key;
-    messageGlobs.hotkeyMessages[messageGlobs.hotkeyCount].event = messageType;
-    messageGlobs.hotkeyMessages[messageGlobs.hotkeyCount].argumentObj = argumentObj;
-    messageGlobs.hotkeyMessages[messageGlobs.hotkeyCount].argument2 = argument2;
-    if (position) {
-        messageGlobs.hotkeyMessages[messageGlobs.hotkeyCount].position = *position;
-    }
-    messageGlobs.hotkeyCount++;
+	const uint32 index = messageGlobs.hotKeyCount;
+	/// SANITY: Bounds check hotKeyKeyList.
+	if (index < MESSAGE_MAXHOTKEYS) {
+		messageGlobs.hotKeyCount++;
+		messageGlobs.hotKeyKeyList[index] = key;
+		Message_Event* message = &messageGlobs.hotKeyEventList[index];
+
+		std::memset(message, 0, sizeof(Message_Event));
+
+		message->type = messageType;
+		message->argumentObj = argument1Obj;
+		message->argument2 = argument2;
+		if (blockPos) {
+			message->blockPos = *blockPos;
+		}
+		//else {
+		//	message->blockPos = Point2I { 0, 0 };
+		//}
+	}
 }
 
 // <LegoRR.exe @00452320>
-void __cdecl LegoRR::Message_AddMessageAction(Message_Type messageType, LegoObject* argument1Obj, undefined4 argument2, OPTIONAL Point2I* blockPos)
+void __cdecl LegoRR::Message_PostEvent(Message_Type messageType, LegoObject* argument1Obj, Message_Argument argument2, OPTIONAL const Point2I* blockPos)
 {
-    bool32 bx2 = messageGlobs.messageX2Bool;
-    uint32 index = messageGlobs.messageCountX2[bx2];
-    if (index < MESSAGE_MAXACTIONS) {
-        messageGlobs.messageCountX2[bx2]++;
+	const bool32 bx2 = messageGlobs.eventAB;
+    const uint32 index = messageGlobs.eventCounts[bx2];
+    if (index < MESSAGE_MAXEVENTS) {
+        messageGlobs.eventCounts[bx2]++;
+		Message_Event* message = &messageGlobs.eventLists[bx2][index];
 
-        std::memset(&messageGlobs.messageTableX2[bx2][index], 0, sizeof(MessageAction));
-        // Some leftover default constructor (or memset?)
-        /*messageGlobs.messageTableX2[bx2][index].event = Message_Null;
-        messageGlobs.messageTableX2[bx2][index].argumentObj = nullptr;
-        messageGlobs.messageTableX2[bx2][index].argument2 = 0;
-        messageGlobs.messageTableX2[bx2][index].position.x = 0;
-        messageGlobs.messageTableX2[bx2][index].position.y = 0;*/
+        std::memset(message, 0, sizeof(Message_Event));
 
-        messageGlobs.messageTableX2[bx2][index].event = messageType;
-        messageGlobs.messageTableX2[bx2][index].argumentObj = argument1Obj;
-        messageGlobs.messageTableX2[bx2][index].argument2 = argument2;
+		message->type = messageType;
+		message->argumentObj = argument1Obj;
+		message->argument2 = argument2;
         if (blockPos) {
-            messageGlobs.messageTableX2[bx2][index].position = *blockPos;
+			message->blockPos = *blockPos;
         }
+		//else {
+		//	message->blockPos = Point2I { 0, 0 };
+		//}
     }
 }
 
 // <LegoRR.exe @00452390>
-//void __cdecl LegoRR::Message_PTL_Update(void);
+void __cdecl LegoRR::Message_Update(void)
+{
+	if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE)) {
+		for (uint32 i = 0; i < messageGlobs.hotKeyCount; i++) {
+			if (Input_IsKeyDown(messageGlobs.hotKeyKeyList[i])) {
+				Message_Event* message = &messageGlobs.hotKeyEventList[i];
+				Message_PostEvent(message->type, message->argumentObj, message->argument2, &message->blockPos);
+			}
+		}
+	}
+
+	const bool32 bx2 = messageGlobs.eventAB;
+
+	for (uint32 i = 0; i < messageGlobs.eventCounts[bx2]; i++) {
+		PTL_TranslateEvent(&messageGlobs.eventLists[bx2][i]);
+	}
+
+	// So I kind of understand what this dual-queue is for.
+	// When going through our message loop, we want to be able to queue up new messages,
+	//  but don't want to dispatch them this update.
+	// Because we're clearing the count, it just seems like a lazy method of copying the current message queue and
+	//  clearing it (which could be done with one state). But we REALLY should handle object reference removal and
+	//  message removal, so having a dual queue is better.
+
+	/// FIXME: We're dealing with messages that could be referencing dead objects (that may be removed in earlier messages).
+	///        How the hell are we supposed to handle this!??
+	const uint32 count = messageGlobs.eventCounts[bx2];
+	messageGlobs.eventCounts[bx2] = 0;
+	messageGlobs.eventCounts[!bx2] = 0;
+	messageGlobs.eventAB = !bx2;
+
+	for (uint32 i = 0; i < count; i++) {
+		const Message_Event* message = &messageGlobs.eventLists[bx2][i];
+
+		switch (message->type) {
+		case Message_Select: //0x1:
+			Message_SelectObject(message->argumentObj, message->argument2.boolean);
+			break;
+		case Message_ClearSelection: //0x3:
+			Message_ClearSelectedUnits();
+			break;
+		case Message_Deselect: //0x4:
+			Message_DeselectObject(message->argumentObj);
+			break;
+		case Message_Goto: //0x5:
+		case Message_RockMonsterGoto: //0x6:
+			AITask_Game_PTL_GotoOrRMGoto(message->argumentObj, &message->blockPos, message->argument2.aiTask); // aiTask->field_4
+			break;
+		case Message_UserGoto: //0x8:
+			AITask_QueueGotoBlock_Group(messageGlobs.selectedUnitList, messageGlobs.selectedUnitCount, &message->blockPos, message->argument2.boolean);
+			break;
+		case Message_FirstPerson: //0x9:
+			Message_EnterFirstPersonView(message->argument2.uinteger);
+			break;
+		case Message_TrackObject: //0xa:
+			if (messageGlobs.selectedUnitCount != 0) {
+				Lego_TrackObjectInRadar(messageGlobs.selectedUnitList[0]);
+			}
+			break;
+		case Message_TopView: //0xb:
+			Lego_SetViewMode(ViewMode_Top, nullptr, 0);
+			break;
+		case Message_PlaySample: //0xc:
+			SFX_Random_PlaySoundNormal(message->argument2.sfxID, false);
+			break;
+		case Message_RockFall: //0x13:
+			Lego_PTL_RockFall(message->blockPos.x, message->blockPos.y,
+							  (Direction)message->argument2.wall.direction,
+							  message->argument2.wall.isConnection);
+			//				  (Direction)LOWORD(message->argument2),
+			//				  (bool32)   HIWORD(message->argument2));
+			break;
+		case Message_GenerateCrystal: //0x15:
+			Level_GenerateCrystal(&message->blockPos, 0, nullptr, true);
+			break;
+		case Message_CollectCrystal: //0x17:
+			AITask_DoCollect(message->argumentObj, 0.0f);
+			break;
+		case Message_CrystalToRefinery: //0x19:
+			AITask_QueueDepositInObject(message->argumentObj, message->argument2.object);
+			break;
+		case Message_GenerateOre: //0x1b:
+			Level_GenerateOre(&message->blockPos, 0, nullptr, true);
+			break;
+		case Message_CollectOre: //0x1d:
+			AITask_DoCollect(message->argumentObj, 0.0f);
+			break;
+		case Message_GenerateRockMonster: //0x1f:
+			LegoObject_TryGenerateRMonsterAtRandomBlock();
+			break;
+		case Message_GatherRock: //0x21:
+			LegoObject_PTL_GatherRock(message->argumentObj);
+			break;
+		case Message_PickRandomFloor: //0x23:
+			Message_PickRandomFloorBlock(message->argumentObj);
+			break;
+		case Message_AttackBuilding: //0x25:
+			LegoObject_PTL_AttackBuilding(message->argumentObj, message->argument2.object);
+			break;
+		case Message_FollowAttack: //0x2b:
+			AITask_Game_PTL_FollowAttack(message->argumentObj, message->argument2.object);
+			break;
+		case Message_ReduceSelection: //0x2d:
+			Message_ReduceSelectedUnits();
+			break;
+		case Message_GenerateCrystalAndOre: //0x34:
+			LegoObject_PTL_GenerateCrystalsAndOre(&message->blockPos, 0);
+			break;
+		case Message_GenerateFromCryOre: //0x36:
+			LegoObject_PTL_GenerateFromCryOre(&message->blockPos);
+			break;
+		case Message_Debug_DestroyAll: //0x40:
+			Message_Debug_DestroySelectedUnits();
+			break;
+		}
+	}
+}
 
 // <LegoRR.exe @004526f0>
-//void __cdecl LegoRR::Message_PTL_PickRandomFloor(LegoObject* liveObj);
+void __cdecl LegoRR::Message_PickRandomFloorBlock(LegoObject* liveObj)
+{
+	const Map3D* map = Lego_GetMap();
+	const uint32 blockWidth  = map->blockWidth;
+	const uint32 blockHeight = map->blockHeight;
+
+#if false
+	/// NEW: Too long to fail method (unless there's literally no floor blocks).
+	uint32 floorCount = 0;
+	for (uint32 by = 0; by < blockHeight; by++) {
+		for (uint32 bx = 0; bx < blockWidth; bx++) {
+
+			if (Level_Block_IsGround(bx, by))
+				floorCount++;
+		}
+	}
+
+	if (floorCount > 0) {
+		uint32 floorIndex = (uint32)Gods98::Maths_Rand() % floorCount;
+		for (uint32 by = 0; by < blockHeight; by++) {
+			for (uint32 bx = 0; bx < blockWidth; bx++) {
+
+				if (Level_Block_IsGround(bx, by)) {
+					if (floorIndex-- == 0) {
+						Point2I blockPos = { bx, by };
+						Message_PostEvent(Message_PickRandomFloorComplete, liveObj, MESSAGE_ARGUMENT_NONE, &blockPos);
+						return;
+					}
+				}
+
+			}
+		}
+	}
+
+#else
+	/// OLD: Brute force method, with max of 1000 attempts at finding a valid floor block.
+	bool success = false;
+	Point2I blockPos = { 0 }; // dummy init
+
+	for (uint32 i = 0; i < 1000; i++) {
+		blockPos.x = (sint32)Gods98::Maths_Rand() % (sint32)blockWidth;
+		blockPos.y = (sint32)Gods98::Maths_Rand() % (sint32)blockHeight;
+
+		if (Level_Block_IsGround(blockPos.x, blockPos.y)) {
+			success = true;
+			break;
+		}
+	}
+	if (success) {
+		Message_PostEvent(Message_PickRandomFloorComplete, liveObj, MESSAGE_ARGUMENT_NONE, &blockPos);
+	}
+
+#endif
+}
 
 // <LegoRR.exe @00452770>
-//void __cdecl LegoRR::Message_RemoveObjectReference(LegoObject* liveObj);
+void __cdecl LegoRR::Message_RemoveObjectReference(LegoObject* deadObj)
+{
+	Message_RemoveEventsWithObject(deadObj);
+	Message_DeselectObject(deadObj);
+
+	// Kick the player out of FP view if needed.
+	if (legoGlobs.objectFP == deadObj) {
+		Lego_SetViewMode(ViewMode_Top, nullptr, 0);
+		legoGlobs.objectFP = nullptr;
+	}
+
+	// Stop the radar from tracking this object.
+	if (legoGlobs.cameraTrack->trackObj == deadObj) {
+		legoGlobs.cameraTrack->trackObj = nullptr;
+
+		// Is this setting a last-known/final position?
+		LegoObject_GetPosition(deadObj, &legoGlobs.tvFaceDirection_338.x, &legoGlobs.tvFaceDirection_338.y);
+		
+		legoGlobs.flags1 |= GAME1_RADAR_UNK_4000; // Signal lost flag? (radar feature only found in beta)
+	}
+}
 
 // Allocates and outputs a copied list of all currently selected units.
 // <LegoRR.exe @004527e0>
@@ -247,7 +446,16 @@ void __cdecl LegoRR::Message_CleanupSelectedUnitsCount(void)
 }
 
 // <LegoRR.exe @004528d0>
-//bool32 __cdecl LegoRR::Message_LiveObject_Check_IsSelected_OrFlags3_200000(LegoObject* liveObj, OUT uint32* index);
+bool32 __cdecl LegoRR::Message_IsUnitSelected(LegoObject* liveObj, OUT uint32* index)
+{
+	// These two checks are slightly different, the first doesn't care about the selected flag,
+	//  the other doesn't care about appearing in the list.
+	// During normal circumstances, there shouldn't ever be a discrepancy.
+	if (index != nullptr) {
+		return Message_FindIndexOfObject(messageGlobs.selectedUnitList, messageGlobs.selectedUnitCount, liveObj, index);
+	}
+	return (liveObj->flags3 & LIVEOBJ3_SELECTED);
+}
 
 // <LegoRR.exe @00452910>
 bool32 __cdecl LegoRR::Message_FindIndexOfObject(LegoObject** objsTable, uint32 objsCount, LegoObject* thisObj, OPTIONAL OUT uint32* index)
@@ -263,160 +471,216 @@ bool32 __cdecl LegoRR::Message_FindIndexOfObject(LegoObject** objsTable, uint32 
 }
 
 // <LegoRR.exe @00452950>
-//bool32 __cdecl LegoRR::Message_LiveObject_Check_FUN_00452950(LegoObject* liveObj);
+bool32 __cdecl LegoRR::Message_IsObjectDoubleSelectable(LegoObject* liveObj)
+{
+	// The double select flag is set during the clear selection operation. That's why we're using an || operator here.
+	return Message_IsUnitSelected(liveObj, nullptr) || (liveObj->flags4 & LIVEOBJ4_DOUBLESELECTREADY);
+}
 
 // <LegoRR.exe @00452980>
-//bool32 __cdecl LegoRR::Message_PTL_Select_LiveObject(LegoObject* liveObj, bool32 noDoubleSelect);
+bool32 __cdecl LegoRR::Message_SelectObject(LegoObject* liveObj, bool32 noDoubleSelect)
+{
+	return Message_SelectObject2(liveObj, noDoubleSelect, true);
+}
 
 // <LegoRR.exe @004529a0>
-//bool32 __cdecl LegoRR::Message_LiveObject_DoSelect_FUN_004529a0(LegoObject* liveObj, bool32 noDoubleSelect, bool32 interrupt);
+bool32 __cdecl LegoRR::Message_SelectObject2(LegoObject* liveObj, bool32 noDoubleSelect, bool32 interrupt) // actually shouldFaceCamera
+{
+	// An object being carried can't be selected.
+	if (liveObj->carryingThisObject != nullptr) {
+		liveObj = liveObj->carryingThisObject;
+	}
+
+	if (Message_IsObjectSelectable(liveObj)) {
+		if (!noDoubleSelect) { // allowDoubleSelect
+			if (Message_IsObjectDoubleSelectable(liveObj)) {
+				LegoObject_TryEnterLaserTrackerMode(liveObj);
+				return false; // Units in laser tracker mode are not considered selected.
+			}
+		}
+
+		if (!Message_IsUnitSelected(liveObj, nullptr) && messageGlobs.selectedUnitCount < LEGO_MAXMULTISELECT) {
+			for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
+				LegoObject_Callback_UnkLaserTrackerToggleUnset_FUN_0044c7c0(obj, nullptr);
+			}
+			//LegoObject_RunThroughListsSkipUpgradeParts(LegoObject_Callback_UnkLaserTrackerToggleUnset_FUN_0044c7c0, nullptr);
+
+			messageGlobs.selectedUnitList[messageGlobs.selectedUnitCount] = liveObj;
+			messageGlobs.selectedUnitCount++;
+
+			liveObj->flags3 |= LIVEOBJ3_SELECTED;
+
+			if (liveObj->type != LegoObject_Building &&
+				!(liveObj->flags1 & (LIVEOBJ1_STORING|LIVEOBJ1_SLIPPING|LIVEOBJ1_RESTING)) &&
+				!(liveObj->flags2 & LIVEOBJ2_UNK_100))
+			{
+				LegoObject_Route_End(liveObj, false);
+				AITask_VariousGatherTasks_FUN_00403a90(liveObj);
+
+				if (liveObj->type == LegoObject_MiniFigure && interrupt) {
+					Vector3F cameraDir;
+					Gods98::Container_GetOrientation(legoGlobs.cameraMain->cont4, nullptr, &cameraDir, nullptr);
+					const Point2F faceTowardsDir = Point2F { -cameraDir.x, -cameraDir.y };
+
+					LegoObject_Interrupt(liveObj, false, false);
+					LegoObject_FaceTowardsCamera(liveObj, &faceTowardsDir);
+				}
+			}
+
+			if (liveObj->flags3 & LIVEOBJ3_UNK_80) {
+				const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(liveObj);
+
+				if (!(sflags1 & STATS1_CANBEDRIVEN) || liveObj->driveObject != nullptr) {
+					Container* cont = LegoObject_GetActivityContainer(liveObj);
+					SFX_Random_PlaySound3DOnContainer(cont, SFX_YesSir, false, true, nullptr);
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
 
 // <LegoRR.exe @00452b30>
-//bool32 __cdecl LegoRR::Message_LiveObject_Check_FUN_00452b30(LegoObject* liveObj);
+bool32 __cdecl LegoRR::Message_IsObjectSelectable(LegoObject* liveObj)
+{
+	if (liveObj->flags3 & LIVEOBJ3_CANSELECT) {
+		if (LegoObject_IsActive(liveObj, true) &&
+			!(liveObj->flags2 & (LIVEOBJ2_THROWN|LIVEOBJ2_DRIVING)) &&
+			!(liveObj->flags1 & (LIVEOBJ1_SLIPPING|LIVEOBJ1_RESTING)) &&
+			(liveObj->type != LegoObject_Vehicle || !(liveObj->flags1 & LIVEOBJ1_CLEARING))) // Can't select dozer while in the clearing animation?
+		{
+			return true;
+		}
+	}
+	return false;
+}
 
+#if true
 // <LegoRR.exe @00452b80>
-void __cdecl LegoRR::Message_PTL_ReduceSelection(void)
+void __cdecl LegoRR::Message_ReduceSelectedUnits(void)
 {
 	/// DECOMPILER WARNING: The decompiled code for this function was VERY BROKEN. It's flooded with gotos, and the logic is
 	///                     straight-up wrong in same cases (like unmanned vehicles being reduced when there's no driver).
 
+	/// REFACTOR: Switch function from storing bools for every reduce type, to using a priority enum.
+	///           So much cleaner now...
+
 	// Disabled for initial implementation commit.
-	//const bool allowSpecial = false; // (Gods98::Main_IsDebugComplete() && Lego_IsAllowEditMode());
+	const bool allowSpecial = false; // (Gods98::Main_IsDebugComplete() && Lego_IsAllowEditMode());
 
-	// All these reduceType bools will be *reduced* to just one true, after the loop.
-	// Listed by highest to lowest priority.
-	bool hasMiniFigure      = false; // MiniFigure type, that is not a driver.
-	bool hasLandVehicle     = false; // Drivable with driver -or- Vehicle type (self-driving), that can cross land -or- has flags4 0x40.
-	bool hasWaterVehicle    = false; // Drivable with driver -or- Vehicle type (self-driving), that can't cross land, and doesn't have flags4 0x40.
-	bool hasUnmannedVehicle = false; // Drivable without driver.
-	// All types below must not be drivable for the reduceType to be chosen (but drivable isn't checked during the reduce loop).
-	bool hasBuilding        = false; // Building type.
-	bool hasElectricFence   = false; // ElectricFence type, that is placed (active).
-	/// NEW: Additional selection types for debugging. Requires DebugComplete and AllowEditMode.
-	bool hasMonster         = false; // RockMonster type.
-	bool hasResource        = false; // PowerCrystal type -or- Ore type.
-	// Not set in loop, but set if all above are false.
-	// This is the main interface menu for when no units are selected.
-	bool hasMain            = false;
+	// Default to no reduce type (main interface, unselect all units).
+	Message_ReduceType reduceType = Message_ReduceType_Count;
 
-	// Find all possible reduceTypes from the list of selected units.
+	// Find the highest priority (lowest value) reduce type from the list of selected units.
 	for (uint32 i = 0; i < messageGlobs.selectedUnitCount; i++) {
 		LegoObject* unit = messageGlobs.selectedUnitList[i];
+		const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(unit);
 
 		if (unit->type == LegoObject_MiniFigure && unit->driveObject == nullptr) {
-			hasMiniFigure = true;
+			reduceType = std::min(reduceType, Message_ReduceType_MiniFigure);
 			break;
 		}
-
-		const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(unit);
-		if (!(sflags1 & STATS1_CANBEDRIVEN)) {
+		else if (sflags1 & STATS1_CANBEDRIVEN) {
+			// Drivable vehicles:
+			if (unit->driveObject == nullptr) {
+				reduceType = std::min(reduceType, Message_ReduceType_UnmannedVehicle);
+			}
+			else if ((sflags1 & STATS1_CROSSLAND) || (unit->flags4 & LIVEOBJ4_DOCKOCCUPIED)) {
+				reduceType = std::min(reduceType, Message_ReduceType_LandVehicle);
+			}
+			else {
+				reduceType = std::min(reduceType, Message_ReduceType_WaterVehicle);
+			}
+		}
+		else {
 			if (unit->type == LegoObject_Vehicle) {
 				// Self-driving vehicles:
-				if ((sflags1 & STATS1_CROSSLAND) || (unit->flags4 & LIVEOBJ4_UNK_40)) {
-					hasLandVehicle = true;
+				if ((sflags1 & STATS1_CROSSLAND) || (unit->flags4 & LIVEOBJ4_DOCKOCCUPIED)) {
+					reduceType = std::min(reduceType, Message_ReduceType_LandVehicle);
 				}
 				else {
-					hasWaterVehicle = true;
+					reduceType = std::min(reduceType, Message_ReduceType_WaterVehicle);
 				}
 			}
 			else if (unit->type == LegoObject_Building) {
-				hasBuilding = true;
+				reduceType = std::min(reduceType, Message_ReduceType_Building);
 			}
 			else if (unit->type == LegoObject_ElectricFence && (unit->flags2 & LIVEOBJ2_ACTIVEELECTRICFENCE)) {
-				hasElectricFence = true;
+				reduceType = std::min(reduceType, Message_ReduceType_ElectricFence);
 			}
-			//else if (allowSpecial && unit->type == LegoObject_RockMonster) {
-			//	hasMonster = true;
-			//}
-			// Can cause crashes with the AI, so disable this for now.
-			//else if (allowSpecial && (unit->type == LegoObject_PowerCrystal || unit->type == LegoObject_Ore)) {
-			//	hasResource = true;
-			//}
-		}
-		else {
-			// Drivable vehicles:
-			if (unit->driveObject == nullptr) {
-				hasUnmannedVehicle = true;
-			}
-			else if ((sflags1 & STATS1_CROSSLAND) || (unit->flags4 & LIVEOBJ4_UNK_40)) {
-				hasLandVehicle = true;
-			}
-			else {
-				hasWaterVehicle = true;
+			else if (allowSpecial) {
+				// Special reduce types introduced in OpenLRR.
+				// Though some of these like Monster must have existed during development.
+				if (unit->type == LegoObject_RockMonster) {
+					reduceType = std::min(reduceType, Message_ReduceType_Monster);
+				}
+				// Unknown behaviour, so disabled for now.
+				else if (unit->type == LegoObject_SpiderWeb) {
+					reduceType = std::min(reduceType, Message_ReduceType_SpiderWeb);
+				}
+				// Can cause crashes with the AI, so disable this for now.
+				else if (unit->type == LegoObject_PowerCrystal || unit->type == LegoObject_Ore) {
+					reduceType = std::min(reduceType, Message_ReduceType_Resource);
+				}
+				// Unknown behaviour, so disabled for now.
+				else if (unit->type == LegoObject_Dynamite || unit->type == LegoObject_Barrier || unit->type == LegoObject_OohScary ||
+						 (unit->type == LegoObject_ElectricFence && !(unit->flags2 & LIVEOBJ2_ACTIVEELECTRICFENCE)))
+				{
+					reduceType = std::min(reduceType, Message_ReduceType_Equipment);
+				}
 			}
 		}
 	}
-
 
 	// From all of our possible reduceTypes, pick the reduceType with the highest priority and disable all other reduceTypes.
-	if (hasMiniFigure) {
+	// Open the interface menu for the highest-priority selected reduceType.
+	switch (reduceType) {
+	case Message_ReduceType_MiniFigure:
 		Interface_OpenMenu_FUN_0041b200(Interface_Menu_LegoMan, nullptr);
-		hasLandVehicle = false;
-		hasWaterVehicle = false;
-		hasUnmannedVehicle = false;
-		hasBuilding = false;
-		hasElectricFence = false;
-
-		hasMonster = false;
-		hasResource = false;
-	}
-	else if (hasLandVehicle) {
+		break;
+	case Message_ReduceType_LandVehicle:
 		Interface_OpenMenu_FUN_0041b200(Interface_Menu_LandVehicle, nullptr);
-		hasWaterVehicle = false;
-		hasUnmannedVehicle = false;
-		hasBuilding = false;
-		hasElectricFence = false;
-
-		hasMonster = false;
-		hasResource = false;
-	}
-	else if (hasWaterVehicle) {
+		break;
+	case Message_ReduceType_WaterVehicle:
 		Interface_OpenMenu_FUN_0041b200(Interface_Menu_WaterVehicle, nullptr);
-		hasUnmannedVehicle = false;
-		hasBuilding = false;
-		hasElectricFence = false;
-
-		hasMonster = false;
-		hasResource = false;
-	}
-	else if (hasUnmannedVehicle) {
+		break;
+	case Message_ReduceType_UnmannedVehicle:
 		Interface_OpenMenu_FUN_0041b200(Interface_Menu_UnmannedVehicle, nullptr);
-		hasBuilding = false;
-		hasElectricFence = false;
-
-		hasMonster = false;
-		hasResource = false;
-	}
-	else if (hasBuilding) {
+		break;
+	case Message_ReduceType_Building:
 		Interface_OpenMenu_FUN_0041b200(Interface_Menu_Building, nullptr);
-		hasElectricFence = false;
-
-		hasMonster = false;
-		hasResource = false;
-	}
-	else if (hasElectricFence) {
+		break;
+	case Message_ReduceType_ElectricFence:
 		Interface_OpenMenu_FUN_0041b200(Interface_Menu_ElectricFence, nullptr);
+		break;
 
-		hasMonster = false;
-		hasResource = false;
-	}
-	else if (hasMonster) {
+	case Message_ReduceType_Monster:
 		// Crashes:
 		//Interface_OpenMenu_FUN_0041b200(Interface_Menu_LegoMan, nullptr);
 		//Interface_OpenMenu_FUN_0041b200(Interface_Menu_Building, nullptr);
 
 		// Works: Even the tele' up button functions (for "standard" monster types).
-		Interface_OpenMenu_FUN_0041b200(Interface_Menu_ElectricFence, nullptr);
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_ElectricFence, nullptr); // Just a tele' up button.
 		//Interface_OpenMenu_FUN_0041b200(Interface_Menu_Main, nullptr);
-		hasResource = false;
-	}
-	else if (hasResource) {
+		break;
+	case Message_ReduceType_SpiderWeb:
+		// Unknown:
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_ElectricFence, nullptr); // Just a tele' up button.
+		break;
+	case Message_ReduceType_Resource:
 		// Works: Even the tele' up button functions.
-		Interface_OpenMenu_FUN_0041b200(Interface_Menu_ElectricFence, nullptr);
-	}
-	else {
-		hasMain = true; // Fallback to main interface if no matching units found.
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_ElectricFence, nullptr); // Just a tele' up button.
+		break;
+	case Message_ReduceType_Equipment:
+		// Unknown:
+		Interface_OpenMenu_FUN_0041b200(Interface_Menu_ElectricFence, nullptr); // Just a tele' up button.
+		break;
+
+	default: // Fallback to main interface if no matching units found.
+		//reduceType = Message_ReduceType_Count;
 		Interface_OpenMenu_FUN_0041b200(Interface_Menu_Main, nullptr);
+		break;
 	}
 
 
@@ -426,77 +690,114 @@ void __cdecl LegoRR::Message_PTL_ReduceSelection(void)
 		const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(unit);
 		bool reduce = false;
 
-		if (hasMiniFigure) {
+		switch (reduceType) {
+
+		case Message_ReduceType_MiniFigure:
 			if (unit->type != LegoObject_MiniFigure || unit->driveObject != nullptr) {
 				// 1. This is not a mini-figure.
 				// 2. This is a driver (select the vehicle instead).
 				reduce = true;
 			}
-		}
-		else if (hasLandVehicle) {
-			if (!(sflags1 & STATS1_CANBEDRIVEN)) {
-				/// FIXME: Self-driving vehicles don't properly differentiate between land and water!
-				if (unit->type != LegoObject_Vehicle) {
-					// 1. This isn't a self-driving vehicle.
+			break;
+
+		case Message_ReduceType_LandVehicle:
+			/// FIX APPLY: Self-driving vehicles now properly differentiate between land and water.
+			if (!(sflags1 & STATS1_CROSSLAND) && !(unit->flags4 & LIVEOBJ4_DOCKOCCUPIED)) {
+				// 1. This is a water vehicle.
+				// 2. This is not a docked water vehicle (not treated as land vehicle).
+				reduce = true;
+			}
+			else if (sflags1 & STATS1_CANBEDRIVEN) {
+				if (unit->driveObject == nullptr) {
+					// 3. This is an unmanned vehicle.
 					reduce = true;
 				}
 			}
-			else if ((!(sflags1 & STATS1_CROSSLAND) && !(unit->flags4 & LIVEOBJ4_UNK_40)) || unit->driveObject == nullptr) {
-				// 1. This is a water vehicle. No mystery land vehicle flag.
-				// 2. This is an unmanned vehicle.
+			else if (unit->type != LegoObject_Vehicle) {
+				// 4. This isn't a self-driving vehicle.
 				reduce = true;
 			}
-		}
-		else if (hasWaterVehicle) {
-			if (!(sflags1 & STATS1_CANBEDRIVEN)) {
-				/// FIXME: Self-driving vehicles don't properly differentiate between land and water!
-				if (unit->type != LegoObject_Vehicle) {
-					// 1. This isn't a self-driving vehicle.
+			break;
+
+		case Message_ReduceType_WaterVehicle:
+			/// FIX APPLY: Self-driving vehicles now properly differentiate between land and water.
+			if ((sflags1 & STATS1_CROSSLAND) || (unit->flags4 & LIVEOBJ4_DOCKOCCUPIED)) {
+				// 1. This is a land vehicle.
+				// 2. This is a docked water vehicle (treated as land vehicle).
+				reduce = true;
+			}
+			else if (sflags1 & STATS1_CANBEDRIVEN) {
+				if (unit->driveObject == nullptr) {
+					// 3. This is an unmanned vehicle.
 					reduce = true;
 				}
 			}
-			else if (((sflags1 & STATS1_CROSSLAND) || (unit->flags4 & LIVEOBJ4_UNK_40)) || unit->driveObject == nullptr) {
-				// 1. This is a land vehicle. Has mystery land vehicle flag.
-				// 2. This is an unmanned vehicle.
+			else if (unit->type != LegoObject_Vehicle) {
+				// 4. This isn't a self-driving vehicle.
 				reduce = true;
 			}
-		}
-		else if (hasUnmannedVehicle) {
+			break;
+
+		case Message_ReduceType_UnmannedVehicle:
 			/// DECOMPILER FIX: THE DECOMPILER LOGIC HERE *WAS* WRONG!!!
 			///                 A vehicle *was* considered unmanned if it was drivable WITH A DRIVER (not without).
 			if (!(sflags1 & STATS1_CANBEDRIVEN) || unit->driveObject != nullptr) {
-				// 1. This is a self-driving vehicle.
+				// 1. This is a self-driving vehicle (or not a vehicle at all).
 				// 2. This is not an unmanned vehicle.
 				reduce = true;
 			}
-		}
-		else if (hasBuilding) {
+			break;
+
+		case Message_ReduceType_Building:
 			if (unit->type != LegoObject_Building) {
 				reduce = true;
 			}
-		}
-		else if (hasElectricFence) {
+			break;
+
+		case Message_ReduceType_ElectricFence:
 			if (unit->type != LegoObject_ElectricFence || !(unit->flags2 & LIVEOBJ2_ACTIVEELECTRICFENCE)) {
 				// 1. This is not an electric fence.
-				// 2. This electric fence is not active (placed).
+				// 2. This electric fence is not active (not placed).
 				reduce = true;
 			}
-		}
-		else if (hasMonster) {
+			break;
+
+		case Message_ReduceType_Monster:
 			if (unit->type != LegoObject_RockMonster) {
 				reduce = true;
 			}
-		}
-		else if (hasResource) {
+			break;
+
+		case Message_ReduceType_SpiderWeb:
+			if (unit->type != LegoObject_SpiderWeb) {
+				reduce = true;
+			}
+			break;
+
+		case Message_ReduceType_Resource:
 			if (unit->type != LegoObject_PowerCrystal && unit->type != LegoObject_Ore) {
 				reduce = true;
 			}
-		}
-		else { //if (hasMain) {
+			break;
+
+		case Message_ReduceType_Equipment:
+			if (unit->type == LegoObject_ElectricFence && (unit->flags2 & LIVEOBJ2_ACTIVEELECTRICFENCE)) {
+				// 1. This electric fence is active (already placed).
+				reduce = true;
+			}
+			else if (unit->type != LegoObject_Dynamite && unit->type != LegoObject_Barrier && unit->type != LegoObject_OohScary) {
+				// 2. Not a valid other equipment type (dynamite, construction barrier, or sonic blaster (carryable)).
+				reduce = true;
+			}
+			break;
+
+		default: // Main interface, all selected objects are reduced.
 			reduce = true;
+			break;
 		}
 
-		if (reduce || hasMain) { // hasMain check is redundant here, but wasn't in original decompiled function.
+
+		if (reduce) { // hasMain check is redundant here, but wasn't in original decompiled function.
 
 			// Replace this reduced object with the object at the end of the list.
 			messageGlobs.selectedUnitList[i] = messageGlobs.selectedUnitList[messageGlobs.selectedUnitCount - 1];
@@ -509,17 +810,117 @@ void __cdecl LegoRR::Message_PTL_ReduceSelection(void)
 		}
 	}
 }
+#endif
 
+#if true
 // <LegoRR.exe @00452ea0>
-//void __cdecl LegoRR::Message_PTL_ClearSelection(void);
+void __cdecl LegoRR::Message_ClearSelectedUnits(void)
+{
+	for (uint32 i = 0; i < messageGlobs.selectedUnitCount; i++) {
+		LegoObject* unit = messageGlobs.selectedUnitList[i];
+		if (unit->flags3 & LIVEOBJ3_SELECTED) {
+			// I don't know where this flag is cleared (outside of teleporting up).
+			// But it must be removed somewhere soon after calling this, since the debug tooltip never shows this flag.
+			unit->flags4 |= LIVEOBJ4_DOUBLESELECTREADY; // Next selection can be a double-selection.
+		}
+		unit->flags3 &= ~LIVEOBJ3_SELECTED;
+		unit->flags4 &= ~LIVEOBJ4_LASERTRACKERMODE;
+	}
+	messageGlobs.selectedUnitCount = 0;
+}
+#endif
 
 // <LegoRR.exe @00452f10>
-//bool32 __cdecl LegoRR::Message_PTL_Deselect_LiveObject(LegoObject* liveObj);
+bool32 __cdecl LegoRR::Message_DeselectObject(LegoObject* liveObj)
+{
+	if (messageGlobs.selectedUnitCount != 0) {
+		uint32 index;
+		if (Message_IsUnitSelected(liveObj, &index)) {
+			if (index == 0) {
+				// Primary unit has been deselected.
+				/// FIXME: Should we be clearing the entire selected list in this scenario?
+				Interface_OpenMenu_FUN_0041b200(Interface_Menu_Main, nullptr);
+			}
+
+			// Replace this deselected object with the object at the end of the list.
+			messageGlobs.selectedUnitList[index] = messageGlobs.selectedUnitList[messageGlobs.selectedUnitCount - 1];
+			messageGlobs.selectedUnitCount--;
+
+			liveObj->flags3 &= ~LIVEOBJ3_SELECTED;
+			/// FIXME: Should we also remove LIVEOBJ4_LASERTRACKERMODE, like with ClearSelection?
+
+			return true;
+		}
+	}
+	return false;
+}
 
 // <LegoRR.exe @00452f80>
-//uint32 __cdecl LegoRR::Message_PTL_Debug_DestroyAll(void);
+uint32 __cdecl LegoRR::Message_Debug_DestroySelectedUnits(void)
+{
+	// Adding a keybind for this method sounds like fun :)
+
+	// This is a very messy approach of removing all selected objects, how do we know there's
+	//  no side effects of removing one object, removing others that may also be selected?
+	for (uint32 i = messageGlobs.selectedUnitCount; i > 0; i--) {
+		LegoObject* unit = messageGlobs.selectedUnitList[0];
+		const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(unit);
+
+		if ((sflags1 & STATS1_CANBEDRIVEN) && unit->driveObject != nullptr) {
+			unit->driveObject->flags2 &= ~LIVEOBJ2_DRIVING;
+			unit->driveObject->driveObject = nullptr; // Clear driveObject's reference to us. This looks fishy at first, but it's not.
+		}
+
+		if (unit->type == LegoObject_Building) {
+			// This will call LegoObject_Remove, which... (see below for the chain...)
+			Construction_RemoveBuildingObject(unit);
+		}
+		else {
+			if (unit->type == LegoObject_ElectricFence) {
+				// Removes fence grid structure, does not perform object removal.
+				ElectricFence_RemoveFence(unit);
+			}
+
+			// This will call Message_RemoveObjectReference, which calls Message_DeselectObject,
+			//  so index 0 **SHOULD** always be the next object to deselect. This method is disgusting.
+
+			// Alternatively, this *may* be done in the scenario that we WANT to delete all selected objects...
+			// It's possible that a side effect could deselect (but not remove) an object, and we'd still want to trash that, right?
+			LegoObject_Remove(unit);
+		}
+	}
+
+	// This probably isn't supposed to return a value, but keep it anyway.
+	return messageGlobs.selectedUnitCount;
+}
 
 // <LegoRR.exe @00453020>
-//bool32 __cdecl LegoRR::Message_PTL_FirstPerson(uint32 cameraFrame);
+bool32 __cdecl LegoRR::Message_EnterFirstPersonView(uint32 cameraFrame)
+{
+	// If already in an FP view (with a valid unit), then change which FP camera we're using.
+	if (legoGlobs.objectFP != nullptr) {
+		LegoObject* unit = legoGlobs.objectFP;
+
+		if ((unit->flags3 & LIVEOBJ3_UNK_10) && (unit->type == LegoObject_MiniFigure || unit->driveObject != nullptr)) {
+			Lego_SetViewMode(ViewMode_FP, unit, cameraFrame);
+			return true;
+		}
+	}
+
+	// Otherwise find the first selected unit that's a valid FP target.
+	for (uint32 i = 0; i < messageGlobs.selectedUnitCount; i++) {
+		LegoObject* unit = messageGlobs.selectedUnitList[i];
+
+		if (unit->type == LegoObject_MiniFigure && unit->driveObject != nullptr) {
+			unit = unit->driveObject;
+		}
+		if ((unit->flags3 & LIVEOBJ3_UNK_10) && (unit->type == LegoObject_MiniFigure || unit->driveObject != nullptr)) {
+			Lego_SetViewMode(ViewMode_FP, unit, cameraFrame);
+			return true;
+		}
+	}
+
+	return false;
+}
 
 #pragma endregion

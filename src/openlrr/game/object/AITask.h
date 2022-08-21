@@ -99,7 +99,7 @@ flags_end(AITask_GlobFlags, 0x4);
 struct AITask // [LegoRR/AITask.c|struct:0x68|tags:LISTSET]
 {
 	/*00,4*/	AITask_Type taskType;
-	/*04,4*/	undefined4 field_4;
+	/*04,4*/	AITask* referrerTask; // Unused field, that's only passed along by certain Message_Events.
 	/*08,8*/	Point2I blockPos;
 	/*10,4*/	LegoObject* targetObject;
 	/*14,4*/	real32 unkExpiryTime; // Count-down timer.
@@ -394,7 +394,7 @@ void __cdecl AITask_RemoveGetToolReferences(AITask* aiTask);
 #define AITask_LiveObject_FUN_00403490 ((void (__cdecl* )(LegoObject* liveObj))0x00403490)
 
 // <LegoRR.exe @004034f0>
-#define AITask_Game_PTL_GotoOrRMGoto ((void (__cdecl* )(LegoObject* liveObj, const Point2I* blockPos, undefined4 param_3))0x004034f0)
+#define AITask_Game_PTL_GotoOrRMGoto ((void (__cdecl* )(LegoObject* liveObj, const Point2I* blockPos, OPTIONAL AITask* referrerTask))0x004034f0)
 
 // <LegoRR.exe @00403540>
 #define AITask_QueueDepositInObject ((void (__cdecl* )(LegoObject* liveObj, LegoObject* targetObj))0x00403540)

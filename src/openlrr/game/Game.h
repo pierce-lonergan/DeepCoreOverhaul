@@ -110,7 +110,7 @@ enum GameFlags1 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 	GAME1_RENDERPANELS          = 0x800,
 	GAME1_RADAR_MAPVIEW         = 0x1000,
 	GAME1_RADAR_TRACKOBJECTVIEW = 0x2000,
-	GAME1_RADAR_UNK_4000        = 0x4000,
+	GAME1_RADAR_UNK_4000        = 0x4000, // Signal lost flag? (radar feature only found in beta)
 	GAME1_FOGCOLOURRGB          = 0x8000,
 	GAME1_HIGHFOGCOLOURRGB      = 0x10000,
 	GAME1_RADAR_NOTRACKOBJECT   = 0x20000,
@@ -1389,7 +1389,7 @@ __inline Map3D* Lego_GetMap(void) { return Lego_GetLevel()->map; }
 #define Level_UncoverHiddenCavern ((void (__cdecl* )(uint32 bx, uint32 by))0x004314b0)
 
 // <LegoRR.exe @004316b0>
-#define Lego_PTL_RockFall ((void (__cdecl* )(uint32 bx, uint32 by, sint32 param_3, bool32 param_4))0x004316b0)
+#define Lego_PTL_RockFall ((void (__cdecl* )(uint32 bx, uint32 by, Direction direction, bool32 isBlockVertexPos))0x004316b0)
 
 // <LegoRR.exe @004318e0>
 #define Lego_GetBlockTerrain ((Lego_SurfaceType (__cdecl* )(sint32 bx, sint32 by))0x004318e0)

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../interface/Messages.h"
+#include "../GameCommon.h"
 
 
 namespace LegoRR
@@ -15,7 +15,7 @@ namespace LegoRR
 
 #pragma region Forward Declarations
 
-struct MessageAction;
+struct Message_Event;
 
 #pragma endregion
 
@@ -45,8 +45,8 @@ struct MessageAction;
 
 struct PTL_Property // [LegoRR/PTL.c|struct:0x8] Property loaded from a level's PTL config file (contains lookup index for actions)
 {
-	/*0,4*/	Message_Type event;
-	/*4,4*/	Message_Type action;
+	/*0,4*/	Message_Type fromType; // The original "posted" event message type.
+	/*4,4*/	Message_Type toType;   // The output "translated" event message type.
 	/*8*/
 };
 assert_sizeof(PTL_Property, 0x8);
@@ -83,7 +83,7 @@ extern PTL_Globs & ptlGlobs;
 bool32 __cdecl PTL_Initialise(const char* fname, const char* gameName);
 
 // <LegoRR.exe @0045db30>
-void __cdecl PTL_EventToAction(IN OUT MessageAction* message);
+void __cdecl PTL_TranslateEvent(IN OUT Message_Event* message);
 
 #pragma endregion
 

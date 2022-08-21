@@ -1748,7 +1748,7 @@ bool interop_hook_LegoRR_ElectricFence(void)
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x0040cf60, LegoRR::ElectricFence_AddList);
 
-	// used by: ElectricFence_Debug_RemoveFence, LegoObject_TeleportUp, Message_PTL_Debug_DestroyAll
+	// used by: ElectricFence_Debug_RemoveFence, LegoObject_TeleportUp, Message_Debug_DestroySelectedUnits
 	result &= hook_write_jmpret(0x0040cfd0, LegoRR::ElectricFence_RemoveFence);
 
 	// used by: ElectricFence_RemoveFence
@@ -1871,19 +1871,23 @@ bool interop_hook_LegoRR_Messages(void)
 	// used by: Lego_Initialise
 	result &= hook_write_jmpret(0x00451f90, LegoRR::Message_Initialise);
 
-	result &= hook_write_jmpret(0x00452220, LegoRR::Message_RemoveLiveObject);
+	// used by: Message_RemoveObjectReference
+	result &= hook_write_jmpret(0x00452220, LegoRR::Message_RemoveEventsWithObject);
 
 	// used by: PTL_Initialise
-	result &= hook_write_jmpret(0x00452290, LegoRR::Message_LookupPTLEventIndex);
+	result &= hook_write_jmpret(0x00452290, LegoRR::Message_ParsePTLName);
 	// used by: Lego_Initialise
-	result &= hook_write_jmpret(0x004522d0, LegoRR::Message_Debug_RegisterSelectedUnitHotkey);
+	result &= hook_write_jmpret(0x004522d0, LegoRR::Message_RegisterHotKeyEvent);
 
-	result &= hook_write_jmpret(0x00452320, LegoRR::Message_AddMessageAction);
+	// used by: AITask, Construction_Zone_PlaceResource, Interface, Lego, LegoObject, Message, Panel_CheckCollision
+	result &= hook_write_jmpret(0x00452320, LegoRR::Message_PostEvent);
 
-	/// NOT IMPLEMENTED YET
-	//result &= hook_write_jmpret(0x00452390, LegoRR::Message_PTL_Update);
-	//result &= hook_write_jmpret(0x004526f0, LegoRR::Message_PTL_PickRandomFloor);
-	//result &= hook_write_jmpret(0x00452770, LegoRR::Message_RemoveObjectReference);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x00452390, LegoRR::Message_Update);
+	// used by: Message_Update
+	result &= hook_write_jmpret(0x004526f0, LegoRR::Message_PickRandomFloorBlock);
+	// used by: LegoObject_Remove, LegoObject_TeleportUp
+	result &= hook_write_jmpret(0x00452770, LegoRR::Message_RemoveObjectReference);
 
 	result &= hook_write_jmpret(0x004527e0, LegoRR::Message_CopySelectedUnits);
 	result &= hook_write_jmpret(0x00452840, LegoRR::Message_GetSelectedUnits2);
@@ -1895,25 +1899,30 @@ bool interop_hook_LegoRR_Messages(void)
 	// used by: Level_Free
 	result &= hook_write_jmpret(0x004528c0, LegoRR::Message_CleanupSelectedUnitsCount);
 
-	/// NOT IMPLEMENTED YET
-	//result &= hook_write_jmpret(0x004528d0, LegoRR::Message_LiveObject_Check_IsSelected_OrFlags3_200000);
+	// used by: AITask, Interface_BackToMain_IfUnitIsSelected, Lego_HandleWorld, Message, NERPFunc__GetSelectedRecordObject
+	result &= hook_write_jmpret(0x004528d0, LegoRR::Message_IsUnitSelected);
 
 	result &= hook_write_jmpret(0x00452910, LegoRR::Message_FindIndexOfObject);
 
-	result &= hook_write_jmpret(0x00452b80, LegoRR::Message_PTL_ReduceSelection);
+	// used by: Message_SelectObject2
+	result &= hook_write_jmpret(0x00452950, LegoRR::Message_IsObjectDoubleSelectable);
+	// used by: Message_Update
+	result &= hook_write_jmpret(0x00452980, LegoRR::Message_SelectObject);
+	// used by: Message_SelectObject
+	result &= hook_write_jmpret(0x004529a0, LegoRR::Message_SelectObject2);
+	// used by: Message_SelectObject2
+	result &= hook_write_jmpret(0x00452b30, LegoRR::Message_IsObjectSelectable);
+	// used by: Message_Update
+	result &= hook_write_jmpret(0x00452b80, LegoRR::Message_ReduceSelectedUnits);
+	// used by: Interface_DoAction_FUN_0041dbd0, Message_Update
+	result &= hook_write_jmpret(0x00452ea0, LegoRR::Message_ClearSelectedUnits);
+	// used by: LegoObject_TeleportUp, LegoObject_FUN_00440470, Message_Update, Message_RemoveObjectReference
+	result &= hook_write_jmpret(0x00452f10, LegoRR::Message_DeselectObject);
+	// used by: Message_Update
+	result &= hook_write_jmpret(0x00452f80, LegoRR::Message_Debug_DestroySelectedUnits);
+	// used by: Message_Update
+	result &= hook_write_jmpret(0x00453020, LegoRR::Message_EnterFirstPersonView);
 
-	/// NOT IMPLEMENTED YET
-	//result &= hook_write_jmpret(0x00452950, LegoRR::Message_LiveObject_Check_FUN_00452950);
-	//result &= hook_write_jmpret(0x00452980, LegoRR::Message_PTL_Select_LiveObject);
-	//result &= hook_write_jmpret(0x004529a0, LegoRR::Message_LiveObject_DoSelect_FUN_004529a0);
-	//result &= hook_write_jmpret(0x00452b30, LegoRR::Message_LiveObject_Check_FUN_00452b30);
-	//result &= hook_write_jmpret(0x00452b80, LegoRR::Message_PTL_ReduceSelection);
-	//result &= hook_write_jmpret(0x00452ea0, LegoRR::Message_PTL_ClearSelection);
-	//result &= hook_write_jmpret(0x00452f10, LegoRR::Message_PTL_Deselect_LiveObject);
-	//result &= hook_write_jmpret(0x00452f80, LegoRR::Message_PTL_Debug_DestroyAll);
-	//result &= hook_write_jmpret(0x00453020, LegoRR::Message_PTL_FirstPerson);
-
-	
 	return_interop(result);
 }
 
@@ -2004,8 +2013,8 @@ bool interop_hook_LegoRR_PTL(void)
 	// used by: Lego_LoadLevel
 	result &= hook_write_jmpret(0x0045daa0, LegoRR::PTL_Initialise);
 
-	// used by: Message_PTL_Update
-	result &= hook_write_jmpret(0x0045db30, LegoRR::PTL_EventToAction);
+	// used by: Message_Update
+	result &= hook_write_jmpret(0x0045db30, LegoRR::PTL_TranslateEvent);
 	
 	return_interop(result);
 }

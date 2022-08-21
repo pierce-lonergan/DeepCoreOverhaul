@@ -346,7 +346,7 @@ void __cdecl Interface_DoF2InterfaceKeyAction(void);
 #define Interface_BackToMain_IfSelectedRubble_IsBlockPos ((void (__cdecl* )(const Point2I* blockPos))0x0041cf10)
 
 // <LegoRR.exe @0041cf40>
-#define Interface_BackToMain_IfLiveObject_IsSelected_OrFlags3_200000 ((void (__cdecl* )(LegoObject* liveObj))0x0041cf40)
+#define Interface_BackToMain_IfUnitIsSelected ((void (__cdecl* )(LegoObject* liveObj))0x0041cf40)
 
 // <LegoRR.exe @0041cf70>
 #define Interface_HandleMenuItem ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon))0x0041cf70)

@@ -370,6 +370,12 @@ extern NERPsFile_Globs & nerpsfileGlobs;
 
 #pragma region Functions
 
+/// CUSTOM: Replacement for always using NERPFunc_GetTurorialFlags
+inline TutorialFlags NERPs_GetTutorialFlags() { return nerpsruntimeGlobs.tutorialFlags; }
+/// CUSTOM: Replacement for always using NERPFunc_SetTurorialFlags
+inline void NERPs_SetTutorialFlags(TutorialFlags tutFlags) { nerpsruntimeGlobs.tutorialFlags = tutFlags; }
+
+
 // <LegoRR.exe @004530b0>
 bool32 __cdecl NERPsFile_LoadScriptFile(const char* filename);
 

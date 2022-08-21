@@ -617,10 +617,10 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		Pointer_SetCurrent_IfTimerFinished(Pointer_Standard);
 
 		if (Lego_IsAllowDebugKeys()) {
-			Message_Debug_RegisterSelectedUnitHotkey(Keys::KEY_ONE, Message_FirstPerson, nullptr, false, nullptr);
-			Message_Debug_RegisterSelectedUnitHotkey(Keys::KEY_TWO, Message_FirstPerson, nullptr, true, nullptr);
-			Message_Debug_RegisterSelectedUnitHotkey(Keys::KEY_FOUR, Message_TrackObject, nullptr, false, nullptr);
-			Message_Debug_RegisterSelectedUnitHotkey(Keys::KEY_THREE, Message_TopView, nullptr, false, nullptr);
+			Message_RegisterHotKeyEvent(Keys::KEY_ONE, Message_FirstPerson, nullptr, Message_Argument(0), nullptr);
+			Message_RegisterHotKeyEvent(Keys::KEY_TWO, Message_FirstPerson, nullptr, Message_Argument(1), nullptr);
+			Message_RegisterHotKeyEvent(Keys::KEY_THREE, Message_TopView, nullptr, MESSAGE_ARGUMENT_NONE, nullptr);
+			Message_RegisterHotKeyEvent(Keys::KEY_FOUR, Message_TrackObject, nullptr, MESSAGE_ARGUMENT_NONE, nullptr);
 		}
 
 		Smoke_LoadTextures("MiscAnims\\Smoke", "Smoke", 3);
@@ -1059,7 +1059,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	Erode_Update(elapsedWorld);
 	Level_BlockActivity_UpdateAll(legoGlobs.currLevel, elapsedWorld);
 
-	Message_PTL_Update();
+	Message_Update();
 
 	Camera_Update(legoGlobs.cameraMain, legoGlobs.currLevel, elapsedInterface, elapsedWorld);
 	Camera_Update(legoGlobs.cameraTrack, legoGlobs.currLevel, elapsedInterface, elapsedWorld);
@@ -1951,7 +1951,6 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 		/// KEYBIND: [F2]+(any)  "Interface menu actions defined in Lego.cfg."
 		Interface_DoF2InterfaceKeyAction();
 
-		// Input_IsKeyPressed(Keys::KEY_SPACE) (57)
 		/// KEYBIND: [Space]  "Toggle unit info bubbles/HUDs visibility."
 		if (Input_IsKeyPressed(Keys::KEY_SPACE)) {
 			Bubble_ToggleObjectUIsAlwaysVisible();
@@ -2142,7 +2141,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 		/// EDIT DEBUG KEYBIND: [Numpad 0]  "Toggle unrestricted camera movement."
 		if (Lego_IsAllowEditMode() && Input_IsKeyPressed(Keys::KEYPAD_0)) {
 			Camera_EnableFreeMovement(legoGlobs.cameraMain, !Camera_IsFreeMovement(legoGlobs.cameraMain));
-			SelectPlace_Hide(legoGlobs.selectPlace, true);
+			SelectPlace_Hide(legoGlobs.selectPlace, true); // Not sure what this line is doing.
 		}
 
 		/// HELPER KEYBIND: [Z]  "Make primary selected unit eat."

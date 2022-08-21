@@ -993,7 +993,7 @@ void __cdecl Gods98::FlicDeltaWordHiColor(Flic* fsp)
 			return;
 		}
 		else {
-			uint16 mflag = false; // bool16
+			bool16 mflag = false;
 			uint8 mfval;
 			if (ctrl == 0x8) {
 				mfval = *src;
@@ -1080,12 +1080,12 @@ void __cdecl Gods98::FlicDeltaWordHiColorFlic32k(Flic* fsp)
 			return;
 		}
 		else {
-			uint16 mflag = 0;
+			bool16 mflag = false;
 			uint16 mfval;
 			if (ctrl == 0x8) {
 				mfval = DoScreenConversion(fsp, *(uint16*)src);
 				src += 2;
-				mflag = 1;
+				mflag = true;
 			}
 			uint16 mcnt = *(uint16*)src;
 			src += 2;
