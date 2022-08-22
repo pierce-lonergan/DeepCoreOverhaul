@@ -118,8 +118,8 @@ enum LiveFlags2 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ2_BUILDPATH            = 0x200,
 	LIVEOBJ2_TRAINING             = 0x400,
 	LIVEOBJ2_UNK_800              = 0x800,
-	LIVEOBJ2_UNK_1000             = 0x1000,
-	LIVEOBJ2_UNK_2000             = 0x2000,
+	LIVEOBJ2_DAMAGE_UNK_1000      = 0x1000,
+	LIVEOBJ2_SHOWDAMAGENUMBERS    = 0x2000,
 	LIVEOBJ2_PUSHED               = 0x4000,
 	LIVEOBJ2_UPGRADING            = 0x8000,
 	LIVEOBJ2_TRIGGERFRAMECALLBACK = 0x10000, // What this actually does isn't clear.
