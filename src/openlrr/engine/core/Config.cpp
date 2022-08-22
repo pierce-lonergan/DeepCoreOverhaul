@@ -62,6 +62,12 @@ void* __cdecl Gods98::Config_LoadConvertedText(const char* fname, uint32* fileSi
 // <LegoRR.exe @00479120>
 Gods98::Config* __cdecl Gods98::Config_Load(const char* filename)
 {
+	return Config_Load2(filename, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Loads a configuration file, with additional flags specifying where and what checks are used to open it.
+Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fileFlags)
+{
 	log_firstcall();
 
 	Config* rootConf = nullptr;
@@ -72,7 +78,7 @@ Gods98::Config* __cdecl Gods98::Config_Load(const char* filename)
 	configGlobs.flags |= Config_GlobFlags::CONFIG_GLOB_FLAG_LOADINGCONFIG;
 
 	/// FIX APPLY: Use extension of File_LoadBinary function to null-terminate buffer.
-	if (fdata = (char*)File_LoadBinaryString(filename, &fileSize)) {
+	if (fdata = (char*)File_LoadBinaryString2(filename, &fileSize, fileFlags)) {
 
 		rootConf = Config_Create(nullptr);
 		rootConf->fileData = fdata;

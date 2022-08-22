@@ -69,6 +69,35 @@ enum class FileSys : sint32
 };
 assert_sizeof(FileSys, 0x4);
 
+
+// Flags used to specify how and where a file is opened.
+flags_scoped(FileFlags) : uint32
+{
+	FILE_FLAG_DATADIR      = 0x0,  // File path will have "<dataDir>\\" prepended.
+	FILE_FLAG_EXEDIR       = 0x1,  // File path will have "<exeDir>\\" (current dir) prepended.
+	FILE_FLAG_BASEDIR      = FILE_FLAG_EXEDIR, // Same as: FILE_FLAG_EXEDIR.
+	FILE_FLAG_ABSOLUTEPATH = 0x2,  // File path will be used as-is.
+								   // DO NOT USE THIS FLAG FOR USER-PROVIDED CONTENT.
+
+	FILE_FLAGS_PATHMASK    = (FILE_FLAG_DATADIR|FILE_FLAG_EXEDIR|FILE_FLAG_ABSOLUTEPATH),
+
+	FILE_FLAG_NOSTD        = 0x10, // Exclude looking in the standard file system.
+	FILE_FLAG_NOWAD        = 0x20, // Exclude looking in WAD files.
+								   // Used with: FILE_FLAG_DATADIR
+	FILE_FLAG_NOCD         = 0x40, // Exclude looking in the CD file system.
+								   // Used with: FILE_FLAG_DATADIR, FILE_FLAG_EXEDIR (FILE_FLAG_BASEDIR)
+
+	//FILE_FLAG_DATAPRIORITY = 0x80, // Files will attempt to load from the dataDir before checking WAD files. (excludes CD files)
+
+	FILE_FLAG_NOVERIFY     = 0x100,  // File path will not be checked for rogue ".\\" or "..\\" path parts.
+								     // DO NOT USE THIS FLAG FOR USER-PROVIDED CONTENT.
+								     // Used with: FILE_FLAG_DATADIR, FILE_FLAG_EXEDIR (FILE_FLAG_BASEDIR)
+
+
+	FILE_FLAGS_DEFAULT     = (FILE_FLAG_DATADIR), // Default flags used when not using File_<Function>2 calls.
+};
+flags_scoped_end(FileFlags, 0x4);
+
 #pragma endregion
 
 /**********************************************************************************
@@ -219,8 +248,17 @@ bool32 __cdecl File_GetCDFilePath(IN OUT char* path, const char* fname);
 // <LegoRR.exe @0047f960>
 void __cdecl File_MakeDir(const char* path);
 
+/// CUSTOM: Creates a directory, with additional flags specifying where to create it.
+void File_MakeDir2(const char* path, FileFlags fileFlags);
+
+/// CUSTOM: Subfunction of File_Open
+File* File_FromStandardFile(FILE* stdfile);
+
 // <LegoRR.exe @0047f9a0>
 File* __cdecl File_Open(const char* fName, const char* mode);
+
+/// CUSTOM: Opens a file, with additional flags specifying where and what checks are used to open it.
+File* File_Open2(const char* fName, const char* mode, FileFlags fileFlags);
 
 // <LegoRR.exe @0047fb10>
 sint32 __cdecl File_Seek(File* f, sint32 pos, SeekOrigin mode);
@@ -245,6 +283,9 @@ sint32 __cdecl File_Flush(File* f);
 
 // <LegoRR.exe @0047fe20>
 bool32 __cdecl File_Exists(const char* fName);
+
+/// CUSTOM: Checks for a file's existence, with additional flags specifying where and what checks are used.
+bool32 File_Exists2(const char* fName, FileFlags fileFlags);
 
 // <LegoRR.exe @0047fee0>
 sint32 __cdecl File_GetC(File* f);
@@ -273,6 +314,9 @@ FileSys __cdecl _File_GetSystem(File* f);
 
 // <LegoRR.exe @004800f0>
 FileSys __cdecl _File_CheckSystem(const char* fName, const char* mode);
+
+/// CUSTOM: Checks which file system a file is found in, with additional flags specifying where to check.
+FileSys _File_CheckSystem2(const char* fName, const char* mode, FileFlags fileFlags);
 
 // <LegoRR.exe @00480160>
 bool32 __cdecl _File_OpenWad(WADFILE* wad, const char* fName);
@@ -310,9 +354,15 @@ void* __cdecl File_Load(const char* filename, OPTIONAL OUT uint32* sizeptr, bool
 ///         Extra byte IS NOT included in the value returned by sizeptr.
 void* __cdecl File_LoadBinaryString(const char* filename, OPTIONAL OUT uint32* sizeptr);
 
+/// CUSTOM: Extension of File_LoadBinary that allocates one extra byte and null-terminates the end of the buffer.
+///         Extra byte IS NOT included in the value returned by sizeptr.
+///         Includes additional flags specifying where and what checks are used to load.
+void* File_LoadBinaryString2(const char* filename, OPTIONAL OUT uint32* sizeptr, FileFlags fileFlags);
+
 /// CUSTOM: Extension of File_Load to allow terminating the end of the buffer with extra bytes.
 ///         extraSize IS NOT included in the value returned by sizeptr.
-void* __cdecl File_Load2(const char* filename, OPTIONAL OUT uint32* sizeptr, bool32 binary, uint32 extraSize);
+///         Includes additional flags specifying where and what checks are used to load.
+void* File_Load2(const char* filename, OPTIONAL OUT uint32* sizeptr, bool32 binary, uint32 extraSize, FileFlags fileFlags);
 
 
 // <LegoRR.exe @00480430>
@@ -321,11 +371,15 @@ uint32 __cdecl File_LoadBinaryHandle(const char* filename, OPTIONAL OUT uint32* 
 
 /// CUSTOM: Extension of File_LoadBinaryHandle to allow ASCII and terminating the end of the buffer with extra bytes.
 ///         extraSize IS NOT included in the value returned by sizeptr.
-uint32 __cdecl File_LoadHandle2(const char* filename, OPTIONAL OUT uint32* sizeptr, bool32 binary, uint32 extraSize);
+///         Includes additional flags specifying where and what checks are used to load.
+uint32 File_LoadHandle2(const char* filename, OPTIONAL OUT uint32* sizeptr, bool32 binary, uint32 extraSize, FileFlags fileFlags);
 
 
 // <LegoRR.exe @004804e0>
 const char* __cdecl File_VerifyFilename(const char* filename);
+
+/// CUSTOM: Creates a full path filename, with additional flags specifying where the base directory is and whether to verify or not.
+const char* File_VerifyFilename2(const char* filename, FileFlags fileFlags);
 
 // <LegoRR.exe @00480570>
 void __cdecl File_SetLoadCallback(FileLoadCallback Callback, void* data);
@@ -340,8 +394,49 @@ void __cdecl File_CheckDirectory(const char* dirName);
 void __cdecl File_CheckFile(const char* fileName);
 
 
+/// CUSTOM:
+std::string File_GetWorkingDir();
+
+/// CUSTOM:
+std::string File_GetDataDir();
+
+/// CUSTOM:
+std::string File_GetExeDir();
+
 // <missing>
-void __cdecl File_SetDataDir(const char* newDataDir);
+//void File_SetDataDir(const char* newDataDir);
+
+/// CUSTOM:
+//void File_SetExeDir(const char* newExeDir);
+
+
+/// CUSTOM: Sets the Data directory used for loose files lookup.
+///         The argument will be converted to a full path.
+///         This must be called before File_Initialise.
+void File_SetDataDir(const std::string& initDataDir);
+
+/// CUSTOM: Sets the directory location to use when searching for WAD files.
+///         This must be called before File_Initialise.
+void File_SetWadDir(const std::string& initWadDir);
+
+
+/// CUSTOM: Gets if files should be looked for in the Data directory before WAD files.
+bool File_IsDataPriority();
+
+/// CUSTOM: Sets if files should be looked for in the Data directory before WAD files.
+void File_SetDataPriority(bool dataFirst);
+
+/// CUSTOM: Gets if the WAD files should be used for file lookup.
+bool File_IsWadsEnabled();
+
+/// CUSTOM: Sets if the WAD files should be used for file lookup.
+void File_SetWadsEnabled(bool useWads);
+
+/// CUSTOM: Gets if the CD should be used for file lookup.
+bool File_IsCDEnabled();
+
+/// CUSTOM: Sets if the CD should be used for file lookup.
+void File_SetCDEnabled(bool useCD);
 
 #pragma endregion
 

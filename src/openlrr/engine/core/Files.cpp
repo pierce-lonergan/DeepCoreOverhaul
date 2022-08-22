@@ -27,6 +27,26 @@ Gods98::File_Globs & Gods98::fileGlobs = *(Gods98::File_Globs*)0x005349a0; // = 
 // <LegoRR.exe @005779e0>
 Gods98::FileCheck_Globs & Gods98::checkGlobs = *(Gods98::FileCheck_Globs*)0x005779e0; // (no init)
 
+
+// Data directory has priority over loading from WAD files.
+static bool _dataFirst = false;
+
+// CD drive will never be checked if false.
+static bool _useCD = true;
+
+// WAD files will never be checked if false.
+static bool _useWads = true;
+
+// Counterpart to fileGlobs.dataDir. For looking up files relative to the CWD when used with FileFlags::FILE_FLAG_EXEDIR.
+//static char _exeDir[FILE_MAXPATH];
+static std::string _exeDir = "";
+
+// Data directory assigned by File_InitDataDir. Only used during File_Initialise.
+static std::string _initDataDirectory = "";
+
+// WAD file directory assigned by File_InitWadDir. Only used during File_Initialise.
+static std::string _initWadDirectory = "";
+
 #pragma endregion
 
 /**********************************************************************************
@@ -59,36 +79,31 @@ void __cdecl Gods98::File_Initialise(const char* programName, bool32 insistOnCD,
 {
 	log_firstcall();
 
-	sint32 wad = WAD_ERROR;
 	bool32 foundCD = false;
 	bool32 foundWad = false;
-	char cwd[_MAX_PATH];
-	FILE* fp;
-	char fname[1024];
 	bool32 failed = false;
 
-	::_getcwd(cwd, sizeof(cwd));
-	if (cwd[std::strlen(cwd) - 1] == '\\') cwd[std::strlen(cwd) - 1] = '\0';
-	std::sprintf(fileGlobs.dataDir, "%s\\%s", cwd, FILE_DATADIRNAME);
-	//sprintf(fileGlobs.exeDir, "%s", cwd);
+	if (_initDataDirectory.empty()) File_SetDataDir(""); // Initialise Data directory to its default setting.
+	std::strcpy(fileGlobs.dataDir, _initDataDirectory.c_str());
+	_exeDir = File_GetWorkingDir();
 
 //#ifdef _GODS98_USEWAD_
 	{
+		if (_initWadDirectory.empty()) File_SetWadDir(""); // Initialise WAD file directory to its default setting.
+
 		char wadFile[FILE_MAXPATH];
-		char cwdBase[FILE_MAXPATH];
 		for (uint32 i = 0; i < MAX_WADS; i++) {
-			std::sprintf(wadFile, "%s%i.wad", programName, (int)i);
-			wad = File_LoadWad(wadFile);
+			std::sprintf(wadFile, "%s\\%s%i.wad", _initWadDirectory.c_str(), programName, (sint32)i);
+			const sint32 wad = File_LoadWad(wadFile);
 			if (wad == WAD_ERROR) {
 				Error_Warn(true, Error_Format("Cannot load %s", wadFile));
-			} else {
+			}
+			else {
 //				File_SetActiveWad(wad);
 				foundWad = true;
 			}
 		}
-		::_getcwd(cwdBase, sizeof(cwdBase));
-		std::strcat(cwdBase, "\\Data");
-		File_SetBaseSearchPath(cwdBase);
+		File_SetBaseSearchPath(fileGlobs.dataDir);
 	}
 //#endif // _GODS98_USEWAD_
 
@@ -107,16 +122,24 @@ void __cdecl Gods98::File_Initialise(const char* programName, bool32 insistOnCD,
 		} else std::exit(0);
 	}
 
-	if (!foundCD && !foundWad) {     // Assume that if a wad is found then it is the correct one.
+	if (!foundCD && !foundWad) { // Assume that if a wad is found then it is the correct one.
+
+		//const char* dataDirName = FILE_DATADIRNAME;
+		const char* dataDirName = fileGlobs.dataDir;
+		for (const char* s = dataDirName; *s != '\0'; s++) {
+			if (*s == '\\') dataDirName = s + 1;
+		}
 
 		failed = true;
 
 		_finddata32_t findData;
 		intptr_t handle;
-		if ((handle = ::_findfirst32("*.*", &findData)) != -1) {
+		//if ((handle = ::_findfirst32("*.*", &findData)) != -1) {
+		if ((handle = ::_findfirst32(fileGlobs.dataDir, &findData)) != -1) {
 			do {
 				if (findData.attrib & _A_SUBDIR) {
-					if (::_stricmp(findData.name, FILE_DATADIRNAME) == 0) {
+					//if (::_stricmp(findData.name, FILE_DATADIRNAME) == 0) {
+					if (::_stricmp(findData.name, dataDirName) == 0) {
 						failed = false;
 						break;
 					}
@@ -128,7 +151,10 @@ void __cdecl Gods98::File_Initialise(const char* programName, bool32 insistOnCD,
 	}
 
 	if (insistOnCD) {
-		std::sprintf(fname, "%s\\%s", FILE_DATADIRNAME, FILE_KEYFILENAME);
+		char fname[1024];
+		std::sprintf(fname, "%s\\%s", fileGlobs.dataDir, FILE_KEYFILENAME);
+		//std::sprintf(fname, "%s\\%s", FILE_DATADIRNAME, FILE_KEYFILENAME);
+		FILE* fp;
 		if (fp = std::fopen(fname, "r")) {
 			std::fclose(fp);
 			failed = true;
@@ -138,16 +164,19 @@ void __cdecl Gods98::File_Initialise(const char* programName, bool32 insistOnCD,
 	if (!failed) {
 
 		// If everything started up ok (CD in or WAD found), then ensure the data directory exists...
-		::_mkdir(FILE_DATADIRNAME);
+		::_mkdir(fileGlobs.dataDir);
+		/*::_mkdir(FILE_DATADIRNAME);
 
 		// Remove the 'delme' file if it exists...
+		char fname[1024];
 		std::sprintf(fname, "%s\\%s", FILE_DATADIRNAME, FILE_DELMEFILENAME);
 		
+		FILE* fp;
 		if (fp = std::fopen(fname, "r")) {
 			std::fclose(fp);
 			::_chmod(fname, _S_IWRITE);
 			std::remove(fname);
-		}
+		}*/
 
 	} else {
 		char msgNoData[1024];
@@ -166,8 +195,11 @@ bool32 __cdecl Gods98::File_FindDataCD(void)
 {
 	log_firstcall();
 
+	/// FUTURE COMMANDLINE OPTION: -noCD "Never try to open files from, or locate the CD."
+	if (!_useCD)
+		return false;
+
 	char drive[] = "A:\\";
-	//char letter;
 	char fname[FILE_MAXPATH];
 
 	for (char letter = 'C'; letter <= 'Z'; letter++) {
@@ -251,6 +283,10 @@ bool32 __cdecl Gods98::File_GetCDFilePath(IN OUT char* path, const char* fname)
 {
 	log_firstcall();
 
+	/// FUTURE COMMANDLINE OPTION: -noCD "Never try to open files from, or locate the CD."
+	if (!_useCD)
+		return false;
+
 	if (fileGlobs.cdLetter != '\0') {
 		std::sprintf(path, "%c:\\%s\\%s", fileGlobs.cdLetter, FILE_DATADIRNAME, fname);
 		return true;
@@ -264,13 +300,40 @@ bool32 __cdecl Gods98::File_GetCDFilePath(IN OUT char* path, const char* fname)
 // <LegoRR.exe @0047f960>
 void __cdecl Gods98::File_MakeDir(const char* path)
 {
+	File_MakeDir2(path, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Creates a directory, with additional flags specifying where to create it.
+void Gods98::File_MakeDir2(const char* path, FileFlags fileFlags)
+{
 	log_firstcall();
 
+	if (fileFlags & FileFlags::FILE_FLAG_NOSTD)
+		return; // Can only create directories in the standard file system.
+
 	char name[FILE_MAXPATH];
+	std::strcpy(name, File_VerifyFilename2(path, fileFlags));
+	char* start = name;
 
-	std::sprintf(name, "%s\\%s", FILE_DATADIRNAME, path);
+	switch (fileFlags & FileFlags::FILE_FLAGS_PATHMASK) {
+	case FileFlags::FILE_FLAG_DATADIR:
+		start += std::strlen(fileGlobs.dataDir); // Skip past dataDir
+		break;
+	case FileFlags::FILE_FLAG_EXEDIR:
+		start += _exeDir.length(); // Skip past exeDir
+		break;
+	case FileFlags::FILE_FLAG_ABSOLUTEPATH:
+	default:
+		if (std::toupper(start[0]) >= 'A' && std::toupper(start[0]) <= 'Z' && start[1] == ':') {
+			start += 2; // Skip volume name "C:<path>"
+		}
+		if (*start == '\\') {
+			start++; // Skip root path slash "\<path>"
+		}
+		break;
+	}
 
-	for (char* s = name; *s != '\0'; s++) {
+	for (char* s = start; *s != '\0'; s++) {
 		if (*s == '\\') {
 			*s = '\0';
 			::_mkdir(name);
@@ -279,56 +342,97 @@ void __cdecl Gods98::File_MakeDir(const char* path)
 	}
 }
 
+/// CUSTOM: Subfunction of File_Open
+Gods98::File* Gods98::File_FromStandardFile(FILE* stdfile)
+{
+	if (!stdfile) return nullptr;
+
+	File* file = _File_Alloc(FileSys::Standard);
+	if (!file) return nullptr;
+
+	file->std = stdfile;
+	return file;
+}
+
 // <LegoRR.exe @0047f9a0>
 Gods98::File* __cdecl Gods98::File_Open(const char* fName, const char* mode)
 {
+	return File_Open2(fName, mode, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Opens a file, with additional flags specifying where and what checks are used to open it.
+Gods98::File* Gods98::File_Open2(const char* fName, const char* mode, FileFlags fileFlags)
+{
 	log_firstcall();
 
-	const char* fullName = File_VerifyFilename(fName);
-	FileSys fs = _File_CheckSystem(fullName, mode);
-	File* file;
+	bool useStd = !(fileFlags & FileFlags::FILE_FLAG_NOSTD);
+	bool useCD  = !(fileFlags & FileFlags::FILE_FLAG_NOCD);
+	switch (fileFlags & FileFlags::FILE_FLAGS_PATHMASK) {
+	case FileFlags::FILE_FLAG_DATADIR:
+	case FileFlags::FILE_FLAG_EXEDIR:
+		break;
+	case FileFlags::FILE_FLAG_ABSOLUTEPATH:
+	default:
+		useCD  = false;
+		break;
+	}
+
+	const char* fullName = File_VerifyFilename2(fName, fileFlags);
+
+	/// FUTURE COMMANDLINE OPTION: -datafirst "Data files have precedence over WAD files."
+	if (_dataFirst && useStd && Util_StrIStr(mode, "r") != nullptr) {
+		// _dataFirst does NOT include checking the CD.
+		FILE* stdfile;
+		if (stdfile = std::fopen(fullName, mode)) {
+			// Don't slow things down by opening the file twice (first to verify).
+			File_ErrorFile("STD Load %s\n", fullName);
+			return File_FromStandardFile(stdfile);
+		}
+	}
+
+	FileSys fs = _File_CheckSystem2(fullName, mode, fileFlags);
+	File* file = nullptr; // dummy init
 
 	switch (fs)
 	{
-	
-	case FileSys::Standard: {
-		file = _File_Alloc(fs); if (!file) return nullptr;
-		file->std = std::fopen(fullName, mode);
-		if (file->std)
-		{
-			File_ErrorFile("STD Load %s\n", fullName);
-			return file;
+	case FileSys::Standard:
+		file = _File_Alloc(fs);
+		if (!file) return nullptr;
+
+		file->std = nullptr;
+		if (useStd) {
+			if (file->std = std::fopen(fullName, mode)) {
+				File_ErrorFile("STD Load %s\n", fullName);
+				return file;
+			}
 		}
-		else
-		{
-			if (Util_StrIStr(mode, "w") == nullptr) {
+		if ((_useCD && useCD) && file->std == nullptr) {
+			if (Util_StrIStr(mode, "w") == nullptr) { // CDROM is readonly
 				char cdName[FILE_MAXPATH];
 				if (File_GetCDFilePath(cdName, fName)) {
-					if (file->std = std::fopen(cdName, mode)) return file;
+					if (file->std = std::fopen(cdName, mode)) {
+						File_ErrorFile("CD Load %s\n", cdName);
+						return file;
+					}
 				}
 			}
-
-			File_ErrorFile("STD Fail %s\n", fullName);
-			_File_Dealloc(file);
-			return nullptr;
 		}
-		break;
-	}
-	case FileSys::Wad: {
-		file = _File_Alloc(fs); if (!file) return nullptr;
-		if (_File_OpenWad(file->wad, _File_GetWadName(fullName)))
-		{
+		File_ErrorFile("STD Fail %s\n", fullName);
+		_File_Dealloc(file);
+		return nullptr;
+
+	case FileSys::Wad:
+		file = _File_Alloc(fs);
+		if (!file) return nullptr;
+
+		if (_File_OpenWad(file->wad, _File_GetWadName(fullName))) {
 			File_ErrorFile("WAD Load %s\n", _File_GetWadName(fullName));
 			return file;
 		}
-		else
-		{
-			File_ErrorFile("WAD Fail %s\n", _File_GetWadName(fullName));
-			_File_Dealloc(file);
-			return nullptr;
-		}
-		break;
-	}
+		File_ErrorFile("WAD Fail %s\n", _File_GetWadName(fullName));
+		_File_Dealloc(file);
+		return nullptr;
+
 	case FileSys::Error:
 	default:
 		File_Error("%s(%i) : Error in call to %s\n", __FILE__, __LINE__, "File_Open");
@@ -514,19 +618,39 @@ sint32 __cdecl Gods98::File_Flush(File* f)
 // <LegoRR.exe @0047fe20>
 bool32 __cdecl Gods98::File_Exists(const char* fName)
 {
+	return File_Exists2(fName, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Checks for a file's existence, with additional flags specifying where and what checks are used.
+bool32 Gods98::File_Exists2(const char* fName, FileFlags fileFlags)
+{
 	log_firstcall();
 
-	const char* fullName = File_VerifyFilename(fName);
-	FileSys fs = _File_CheckSystem(fullName, "r");
+	bool useStd = !(fileFlags & FileFlags::FILE_FLAG_NOSTD);
+	bool useCD  = !(fileFlags & FileFlags::FILE_FLAG_NOCD);
+	switch (fileFlags & FileFlags::FILE_FLAGS_PATHMASK) {
+	case FileFlags::FILE_FLAG_DATADIR:
+	case FileFlags::FILE_FLAG_EXEDIR:
+		break;
+	case FileFlags::FILE_FLAG_ABSOLUTEPATH:
+	default:
+		useCD  = false;
+		break;
+	}
+
+	const char* fullName = File_VerifyFilename2(fName, fileFlags);
+	FileSys fs = _File_CheckSystem2(fullName, "r", fileFlags);
 	switch (fs)
 	{
 	case FileSys::Standard: {
-		FILE* f = std::fopen(fullName, "r");
-		if (f)
-		{
-			std::fclose(f);
-			return true;
-		} else {
+		FILE* f = nullptr;
+		if (useStd) {
+			if (f = std::fopen(fullName, "r")) {
+				std::fclose(f);
+				return true;
+			}
+		}
+		if ((_useCD && useCD) && f == nullptr) {
 			char cdName[FILE_MAXPATH];
 			if (File_GetCDFilePath(cdName, fName)) {
 				if (f = std::fopen(cdName, "r")) {
@@ -538,7 +662,10 @@ bool32 __cdecl Gods98::File_Exists(const char* fName)
 		break;
 	}
 	case FileSys::Wad:
-		return Wad_IsFileInWad(fullName, currWadHandle);
+		/// CHANGE: This should always be true, because _File_CheckSystem2 already found the file in a wad.
+		return true;
+		/// FIX APPLY: Use _File_GetWadName to check for the correct name, and check against WAD_ERROR instead of non-zero.
+		//return Wad_IsFileInWad(_File_GetWadName(fullName), currWadHandle) != WAD_ERROR;
 
 	case FileSys::Error:
 	default:
@@ -695,25 +822,58 @@ Gods98::FileSys __cdecl Gods98::_File_GetSystem(File* f)
 // <LegoRR.exe @004800f0>
 Gods98::FileSys __cdecl Gods98::_File_CheckSystem(const char* fName, const char* mode)
 {
+	return _File_CheckSystem2(fName, mode, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Checks which file system a file is found in, with additional flags specifying where to check.
+Gods98::FileSys Gods98::_File_CheckSystem2(const char* fName, const char* mode, FileFlags fileFlags)
+{
 	log_firstcall();
 
 	if (!fName || !mode || !std::strlen(fName) || !std::strlen(mode)) return FileSys::Error;
 
-	if (mode[0] == 'w' || mode[0] == 'W')
-	{
-		// File must be opened as stdC
-		return FileSys::Standard;
+	bool useStd = !(fileFlags & FileFlags::FILE_FLAG_NOSTD);
+	bool useWad = !(fileFlags & FileFlags::FILE_FLAG_NOWAD);
+	bool useCD  = !(fileFlags & FileFlags::FILE_FLAG_NOCD);
+	switch (fileFlags & FileFlags::FILE_FLAGS_PATHMASK) {
+	case FileFlags::FILE_FLAG_DATADIR:
+		break;
+	case FileFlags::FILE_FLAG_EXEDIR:
+		useWad = false;
+		break;
+	case FileFlags::FILE_FLAG_ABSOLUTEPATH:
+	default:
+		useWad = false;
+		useCD  = false;
+		break;
 	}
-	else
-	{
-		if (Wad_IsFileInWad(_File_GetWadName(fName), currWadHandle) != WAD_ERROR)
-//		if (currWadHandle != WAD_ERROR && Wad_IsFileInWad(_File_GetWadName(fName), currWadHandle) != WAD_ERROR)
-		{
+
+	if (Util_StrIStr(mode, "w") != nullptr) { // WAD is readonly
+		if (useStd || (_useCD && useCD)) {
+			// File must be opened as stdC
+			return FileSys::Standard;
+		}
+	}
+	else {
+		/// FUTURE COMMANDLINE OPTION: Data files have precedence over WAD files.
+		if (_dataFirst && useStd && (_useWads && useWad)) { // Only perform the check if wads are in-use.
+			FILE* f;
+			if (f = std::fopen(fName, mode)) {
+				std::fclose(f);
+				return FileSys::Standard;
+			}
+		}
+
+		if ((_useWads && useWad) && Wad_IsFileInWad(_File_GetWadName(fName), currWadHandle) != WAD_ERROR) {
 			// The file is in the wad so we can use the wad version
 			return FileSys::Wad;
-		}	// Otherwise we will try the normal file system
-		else return FileSys::Standard;
+		}
+		else if (useStd || (_useCD && useCD)) {
+			// Otherwise we will try the normal file system
+			return FileSys::Standard;
+		}
 	}
+	return FileSys::Error;
 }
 
 // <LegoRR.exe @00480160>
@@ -845,13 +1005,13 @@ void* __cdecl Gods98::File_LoadBinary(const char* filename, OPTIONAL OUT uint32*
 {
 	log_firstcall();
 
-	return File_Load2(filename, sizeptr, true, 0);
+	return File_Load(filename, sizeptr, true);
 }
 
 // <missing>
 void* __cdecl Gods98::File_LoadASCII(const char* filename, OPTIONAL OUT uint32* sizeptr)
 {
-	return File_Load2(filename, sizeptr, false, 0);
+	return File_Load(filename, sizeptr, false);
 }
 
 // <LegoRR.exe @00480380>
@@ -859,7 +1019,7 @@ void* __cdecl Gods98::File_Load(const char* filename, OPTIONAL OUT uint32* sizep
 {
 	log_firstcall();
 
-	return File_Load2(filename, sizeptr, binary, 0);
+	return File_Load2(filename, sizeptr, binary, 0, FileFlags::FILE_FLAGS_DEFAULT);
 }
 
 
@@ -867,19 +1027,28 @@ void* __cdecl Gods98::File_Load(const char* filename, OPTIONAL OUT uint32* sizep
 ///         Extra byte IS NOT included in the value returned by sizeptr.
 void* __cdecl Gods98::File_LoadBinaryString(const char* filename, OPTIONAL OUT uint32* sizeptr)
 {
+	return File_LoadBinaryString2(filename, sizeptr, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Extension of File_LoadBinary that allocates one extra byte and null-terminates the end of the buffer.
+///         Extra byte IS NOT included in the value returned by sizeptr.
+///         Includes additional flags specifying where and what checks are used to load.
+void* Gods98::File_LoadBinaryString2(const char* filename, OPTIONAL OUT uint32* sizeptr, FileFlags fileFlags)
+{
 	log_firstcall();
 
-	return File_Load2(filename, sizeptr, true, 1);
+	return File_Load2(filename, sizeptr, true, 1, fileFlags);
 }
 
 /// CUSTOM: Extension of File_Load to allow terminating the end of the buffer with extra bytes.
 ///         extraSize IS NOT included in the value returned by sizeptr.
-void* __cdecl Gods98::File_Load2(const char* filename, OPTIONAL OUT uint32* sizeptr, bool32 binary, uint32 extraSize)
+///         Includes additional flags specifying where and what checks are used to load.
+void* Gods98::File_Load2(const char* filename, OPTIONAL OUT uint32* sizeptr, bool32 binary, uint32 extraSize, FileFlags fileFlags)
 {
 	log_firstcall();
 
 	File* file;
-	if (file = File_Open(filename, binary ? "rb" : "r")) {
+	if (file = File_Open2(filename, binary ? "rb" : "r", fileFlags)) {
 		File_Seek(file, 0, SeekOrigin::End);
 		uint32 size = File_Tell(file);
 
@@ -911,18 +1080,19 @@ uint32 __cdecl Gods98::File_LoadBinaryHandle(const char* filename, OPTIONAL OUT 
 {
 	log_firstcall();
 
-	return File_LoadHandle2(filename, sizeptr, true, 0);
+	return File_LoadHandle2(filename, sizeptr, true, 0, FileFlags::FILE_FLAGS_DEFAULT);
 }
 
 
 /// CUSTOM: Extension of File_LoadBinaryHandle to allow ASCII and terminating the end of the buffer with extra bytes.
 ///         extraSize IS NOT included in the value returned by sizeptr.
-uint32 __cdecl Gods98::File_LoadHandle2(const char* filename, OPTIONAL OUT uint32* sizeptr, bool32 binary, uint32 extraSize)
+///         Includes additional flags specifying where and what checks are used to load.
+uint32 Gods98::File_LoadHandle2(const char* filename, OPTIONAL OUT uint32* sizeptr, bool32 binary, uint32 extraSize, FileFlags fileFlags)
 {
 	log_firstcall();
 
 	File* file;
-	if (file = File_Open(filename, binary ? "rb" : "r")) {
+	if (file = File_Open2(filename, binary ? "rb" : "r", fileFlags)) {
 		File_Seek(file, 0, SeekOrigin::End);
 		uint32 size = File_Tell(file);
 
@@ -953,6 +1123,12 @@ uint32 __cdecl Gods98::File_LoadHandle2(const char* filename, OPTIONAL OUT uint3
 // <LegoRR.exe @004804e0>
 const char* __cdecl Gods98::File_VerifyFilename(const char* filename)
 {
+	return File_VerifyFilename2(filename, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Creates a full path filename, with additional flags specifying where the base directory is and whether to verify or not.
+const char* Gods98::File_VerifyFilename2(const char* filename, FileFlags fileFlags)
+{
 	log_firstcall();
 
 	//static char full[_MAX_PATH];
@@ -961,22 +1137,33 @@ const char* __cdecl Gods98::File_VerifyFilename(const char* filename)
 	char part[_MAX_PATH];
 
 	if (filename != nullptr) {
-		//REMOVE THE LEADING FORWARD SLASH IF ANY
 		const char* temp = filename;
-		if (*temp == '\\')
-			temp++;
+		const char* fileDir = nullptr;
+		bool noVerify = (fileFlags & FileFlags::FILE_FLAG_NOVERIFY);
 
-		/*if (*temp == '@')
-		{
-			temp++;
-			std::sprintf(fileGlobs.s_VerifyFilename_full, "%s\\%s", fileGlobs.exeDir, temp);
-			return fileGlobs.s_VerifyFilename_full;
+		switch (fileFlags & FileFlags::FILE_FLAGS_PATHMASK) {
+		case FileFlags::FILE_FLAG_DATADIR:
+			fileDir = fileGlobs.dataDir;
+			// Remove the leading slash if any.
+			if (*temp == '\\') temp++;
+			std::sprintf(part, "%s\\%s", fileDir, temp);
+			break;
+		case FileFlags::FILE_FLAG_EXEDIR:
+			fileDir = _exeDir.c_str();
+			// Remove the leading slash if any.
+			if (*temp == '\\') temp++;
+			std::sprintf(part, "%s\\%s", fileDir, temp);
+			break;
+		case FileFlags::FILE_FLAG_ABSOLUTEPATH:
+		default:
+			noVerify = true; // Can't verify absolute paths.
+			std::strcpy(part, temp);
+			break;
 		}
-		else*/
-			std::sprintf(part, "%s\\%s", fileGlobs.dataDir, temp);
 
 		if (::_fullpath(fileGlobs.s_VerifyFilename_full, part, sizeof(fileGlobs.s_VerifyFilename_full)) != nullptr) {
-			if (std::strncmp(fileGlobs.s_VerifyFilename_full, fileGlobs.dataDir, std::strlen(fileGlobs.dataDir)) == 0) {
+
+			if (noVerify || std::strncmp(fileGlobs.s_VerifyFilename_full, fileDir, std::strlen(fileDir)) == 0) {
 				return fileGlobs.s_VerifyFilename_full;
 			}
 		}
@@ -1002,23 +1189,22 @@ void __cdecl Gods98::File_CheckRedundantFiles(const char* logName)
 {
 	log_firstcall();
 
-	char fileName[1024];
+	char fileName[1024] = { '\0' }; // dummy init
 
-
-	// Yep... this is as broken as it looks
+	/// FIX APPLY: Properly use C file API, instead of File_Open combined with f-functions.
 	FILE* fileList;
-	if (fileList = (FILE*)File_Open(logName, "r")) {
+	if (fileList = std::fopen(logName, "r")) {
 		checkGlobs.numInList = 0;
 
 		while (std::fscanf(fileList, "%s", fileName) != EOF) {
 			Error_Fatal(checkGlobs.numInList == FILE_DEBUG_RLISTSIZE, "FILE_DEBUG_RLISTSIZE too small");
 			std::strcpy(checkGlobs.loadedList[checkGlobs.numInList++], fileName);
+			fileName[0] = '\0'; // dummy null terminate
 		}
 
 		File_CheckDirectory(fileGlobs.dataDir);
 
 		std::fclose(fileList);
-
 	}
 }
 
@@ -1072,10 +1258,121 @@ void __cdecl Gods98::File_CheckFile(const char* fileName)
 }
 
 
-// <missing>
-void __cdecl Gods98::File_SetDataDir(const char* newDataDir)
+/// CUSTOM:
+std::string Gods98::File_GetWorkingDir()
 {
-	std::strcpy(fileGlobs.dataDir, newDataDir);
+	char cwd[_MAX_PATH] = { '\0' };
+	::_getcwd(cwd, sizeof(cwd));
+	if (cwd[std::strlen(cwd) - 1] == '\\') cwd[std::strlen(cwd) - 1] = '\0';
+	return cwd;
+}
+
+/// CUSTOM:
+std::string Gods98::File_GetDataDir()
+{
+	return _initDataDirectory; //fileGlobs.dataDir;
+}
+
+/// CUSTOM:
+std::string Gods98::File_GetExeDir()
+{
+	return _exeDir;
+}
+
+/// CUSTOM: Sets the Data directory used for loose files lookup.
+///         The argument will be converted to a full path.
+///         This must be called before File_Initialise.
+void Gods98::File_SetDataDir(const std::string& initDataDir)
+{
+	char dataDir[sizeof(fileGlobs.dataDir)];
+	if (!initDataDir.empty()) {
+		std::string s = initDataDir;
+		// Convert forward slashes to backslashes
+		for (size_t i = 0; i < s.length(); i++) {
+			if (s[i] == '/') s[i] = '\\';
+		}
+		if (!s.empty() && s[s.length() - 1] == '\\') { // check last char
+			s = s.substr(0, s.length() - 1); // don't support trailing slashes (this also prevents using the root folder without a drive)
+		}
+
+
+		if (!s.empty()) {
+			::_fullpath(dataDir, s.c_str(), sizeof(dataDir));
+			_initDataDirectory = dataDir;
+			return;
+		}
+		// Don't support root directory. Fallthrough to setting the default Data directory.
+	}
+
+	// Set the default Data directory, when none is explicitly specified.
+	{
+		_initDataDirectory = File_GetWorkingDir();
+		_initDataDirectory.append("\\" FILE_DATADIRNAME);
+	}
+}
+
+/// CUSTOM: Sets the directory location to use when searching for WAD files.
+///         This must be called before File_Initialise.
+void Gods98::File_SetWadDir(const std::string& initWadDir)
+{
+	if (!initWadDir.empty()) {
+		std::string s = initWadDir;
+		// Convert forward slashes to backslashes
+		for (size_t i = 0; i < s.length(); i++) {
+			if (s[i] == '/') s[i] = '\\';
+		}
+		if (!s.empty() && s[s.length() - 1] == '\\') { // check last char
+			s = s.substr(0, s.length() - 1); // don't support trailing slashes (this also prevents using the root folder without a drive)
+		}
+
+
+		if (!s.empty()) {
+			_initWadDirectory = s;
+			return;
+		}
+		// Don't support root directory. Fallthrough to setting the default Data directory.
+	}
+
+	// Set the default WAD directory as the current directory, when none is explicitly specified.
+	{
+		_initWadDirectory = File_GetWorkingDir();
+	}
+}
+
+/// CUSTOM: Gets if files should be looked for in the Data directory before WAD files.
+bool Gods98::File_IsDataPriority()
+{
+	return _dataFirst;
+}
+
+/// CUSTOM: Sets if files should be looked for in the Data directory before WAD files.
+void Gods98::File_SetDataPriority(bool dataFirst)
+{
+	_dataFirst = dataFirst;
+}
+
+/// CUSTOM: Gets if the WAD files should be used for file lookup.
+bool Gods98::File_IsWadsEnabled()
+{
+	return _useWads;
+}
+
+/// CUSTOM: Sets if the WAD files should be used for file lookup.
+void Gods98::File_SetWadsEnabled(bool useWads)
+{
+	_useWads = useWads;
+}
+
+/// CUSTOM: Gets if the CD should be used for file lookup.
+bool Gods98::File_IsCDEnabled()
+{
+	return _useCD;
+}
+
+/// CUSTOM: Sets if the CD should be used for file lookup.
+void Gods98::File_SetCDEnabled(bool useCD)
+{
+	_useCD = useCD;
 }
 
 #pragma endregion

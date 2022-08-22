@@ -10,6 +10,7 @@
 
 #include "../../common.h"
 //#include "../input/Keys.h"
+#include "Files.h"
 #include "ListSet.hpp"
 
 
@@ -153,6 +154,9 @@ void* __cdecl Config_LoadConvertedText(const char* fname, uint32* fileSize);*/
 
 // <LegoRR.exe @00479120>
 Config* __cdecl Config_Load(const char* filename);
+
+/// CUSTOM: Loads a configuration file, with additional flags specifying where and what checks are used to open it.
+Config* __cdecl Config_Load2(const char* filename, FileFlags fileFlags);
 
 // <LegoRR.exe @00479210>
 const char* __cdecl Config_BuildStringID(const char* s, ...);
