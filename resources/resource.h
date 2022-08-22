@@ -57,6 +57,11 @@
 #define IDM_RENDERPANELS				512
 #define IDM_TOOLTIPSOUND				513
 // --------------
+// &Options > Logging
+#define IDM_LOGGING_DEBUG				581
+#define IDM_LOGGING_INFO				582
+#define IDM_LOGGING_WARNING				583
+#define IDM_LOGGING_FATAL				584
 // &Options > Scale (Radio Group)
 #define IDM_SCALE_X1					521
 #define IDM_SCALE_X2					522

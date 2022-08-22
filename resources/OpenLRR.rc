@@ -95,6 +95,13 @@ BEGIN
         MENUITEM "&Tooltip Sound",              IDM_TOOLTIPSOUND,CHECKED
 //#endif
         MENUITEM SEPARATOR
+        POPUP "Logging"
+        BEGIN
+            MENUITEM "Debug",                   IDM_LOGGING_DEBUG
+            MENUITEM "Info",                    IDM_LOGGING_INFO,CHECKED
+            MENUITEM "Warning",                 IDM_LOGGING_WARNING,CHECKED
+            MENUITEM "Fatal",                   IDM_LOGGING_FATAL,CHECKED
+        END
         POPUP "&Scale"
         BEGIN
             MENUITEM "x&1",                     IDM_SCALE_X1,CHECKED

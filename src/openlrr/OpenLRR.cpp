@@ -176,6 +176,11 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_GRAPHICS_SORT,            Gods98::Graphics_IsSortTransparency());
 	Menu_CheckButton(IDM_GRAPHICS_ALPHAMODULATION, Gods98::Graphics_IsAlphaModulation());
 
+	Menu_CheckButton(IDM_LOGGING_DEBUG,    Gods98::Error_IsDebugVisible());
+	Menu_CheckButton(IDM_LOGGING_INFO,     Gods98::Error_IsInfoVisible());
+	Menu_CheckButton(IDM_LOGGING_WARNING, Gods98::Error_IsWarnVisible());
+	Menu_CheckButton(IDM_LOGGING_FATAL,    Gods98::Error_IsFatalVisible());
+
     sint32 curIcon = -1;
     for (size_t i = 0; i < Menu_IconIDs.size(); i++) {
         // Disable menu items for unavailable icons.
@@ -357,6 +362,23 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_TOOLTIPSOUND:
 		//std::printf("IDM_TOOLTIPSOUND\n");
 		LegoRR::Lego_SetDisableToolTipSound(!LegoRR::Lego_IsDisableToolTipSound());
+		break;
+
+	case IDM_LOGGING_DEBUG:
+		//std::printf("IDM_LOGGING_DEBUG\n");
+		Gods98::Error_SetDebugVisible(!Gods98::Error_IsDebugVisible());
+		break;
+	case IDM_LOGGING_INFO:
+		//std::printf("IDM_LOGGING_INFO\n");
+		Gods98::Error_SetInfoVisible(!Gods98::Error_IsInfoVisible());
+		break;
+	case IDM_LOGGING_WARNING:
+		//std::printf("IDM_LOGGING_WARNING\n");
+		Gods98::Error_SetWarnVisible(!Gods98::Error_IsWarnVisible());
+		break;
+	case IDM_LOGGING_FATAL:
+		//std::printf("IDM_LOGGING_FATAL\n");
+		Gods98::Error_SetFatalVisible(!Gods98::Error_IsFatalVisible());
 		break;
 
 	case IDM_SCALE_X1:

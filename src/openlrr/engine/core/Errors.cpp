@@ -5,7 +5,6 @@
 #include "../../platform/dinput.h"
 #include <process.h>				// _getpid()
 
-#include "Config.h"
 #include "Files.h"
 
 #include "Errors.h"
@@ -23,6 +22,8 @@
 
 // <LegoRR.exe @00576ce0>
 Gods98::Error_Globs & Gods98::errorGlobs = *(Gods98::Error_Globs*)0x00576ce0;
+
+Gods98::Error_Globs2 Gods98::errorGlobs2 = { 0 };
 
 #pragma endregion
 
@@ -43,6 +44,11 @@ void __cdecl Gods98::Error_Initialise(void)
 	errorGlobs.redundantLogFile = nullptr;
 
 	errorGlobs.fullScreen = false;
+
+	errorGlobs2.debugVisible = false;
+	errorGlobs2.infoVisible  = true;
+	errorGlobs2.warnVisible  = true;
+	errorGlobs2.fatalVisible = true;
 }
 
 // <LegoRR.exe @0048b540>
@@ -127,7 +133,7 @@ void __cdecl Gods98::Error_TerminateProgram(const char* msg)
 	if (!errorGlobs.fullScreen) {
 
 		char message[1024];
-		std::sprintf(message, "Error:\n%s\nLast entry read from config: \"%s\"\n\nSelect Retry to crash to debugger", msg, Config_Debug_GetLastFind());
+		std::sprintf(message, "Error:\n%s\n\nSelect Retry to crash to debugger", msg);
 
 		::ShowCursor(true);
 
