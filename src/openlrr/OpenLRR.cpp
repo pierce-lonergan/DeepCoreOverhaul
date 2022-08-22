@@ -177,8 +177,9 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_GRAPHICS_ALPHAMODULATION, Gods98::Graphics_IsAlphaModulation());
 
 	Menu_CheckButton(IDM_LOGGING_DEBUG,    Gods98::Error_IsDebugVisible());
+	Menu_CheckButton(IDM_LOGGING_TRACE,    Gods98::Error_IsTraceVisible());
 	Menu_CheckButton(IDM_LOGGING_INFO,     Gods98::Error_IsInfoVisible());
-	Menu_CheckButton(IDM_LOGGING_WARNING, Gods98::Error_IsWarnVisible());
+	Menu_CheckButton(IDM_LOGGING_WARNING,  Gods98::Error_IsWarnVisible());
 	Menu_CheckButton(IDM_LOGGING_FATAL,    Gods98::Error_IsFatalVisible());
 
     sint32 curIcon = -1;
@@ -367,6 +368,10 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_LOGGING_DEBUG:
 		//std::printf("IDM_LOGGING_DEBUG\n");
 		Gods98::Error_SetDebugVisible(!Gods98::Error_IsDebugVisible());
+		break;
+	case IDM_LOGGING_TRACE:
+		//std::printf("IDM_LOGGING_TRACE\n");
+		Gods98::Error_SetTraceVisible(!Gods98::Error_IsTraceVisible());
 		break;
 	case IDM_LOGGING_INFO:
 		//std::printf("IDM_LOGGING_INFO\n");

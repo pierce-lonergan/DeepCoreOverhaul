@@ -98,6 +98,7 @@ BEGIN
         POPUP "Logging"
         BEGIN
             MENUITEM "Debug",                   IDM_LOGGING_DEBUG
+            MENUITEM "Trace",                   IDM_LOGGING_TRACE,CHECKED
             MENUITEM "Info",                    IDM_LOGGING_INFO,CHECKED
             MENUITEM "Warning",                 IDM_LOGGING_WARNING,CHECKED
             MENUITEM "Fatal",                   IDM_LOGGING_FATAL,CHECKED

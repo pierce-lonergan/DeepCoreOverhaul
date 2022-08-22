@@ -23,7 +23,7 @@
 // <LegoRR.exe @00576ce0>
 Gods98::Error_Globs & Gods98::errorGlobs = *(Gods98::Error_Globs*)0x00576ce0;
 
-Gods98::Error_Globs2 Gods98::errorGlobs2 = { 0 };
+Gods98::Error_LogLevels Gods98::errorLogLevels = { false, true, true, true, true }; // Default log levels (Debug, Trace, Info, Warning, Fatal)
 
 #pragma endregion
 
@@ -45,10 +45,12 @@ void __cdecl Gods98::Error_Initialise(void)
 
 	errorGlobs.fullScreen = false;
 
-	errorGlobs2.debugVisible = false;
-	errorGlobs2.infoVisible  = true;
-	errorGlobs2.warnVisible  = true;
-	errorGlobs2.fatalVisible = true;
+	// Initialised by global variable definition.
+	//errorLogLevels.debugVisible = false;
+	//errorLogLevels.traceVisible = true;
+	//errorLogLevels.infoVisible  = true;
+	//errorLogLevels.warnVisible  = true;
+	//errorLogLevels.fatalVisible = true;
 }
 
 // <LegoRR.exe @0048b540>

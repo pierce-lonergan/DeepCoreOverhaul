@@ -60,4 +60,5 @@ inline ENUMTYPE &operator ^= (ENUMTYPE &a, ENUMTYPE b) throw() { return (ENUMTYP
 
 #define log_firstcall() { static bool _log_firstcallbool = false; \
 	if (!_log_firstcallbool) {_log_firstcallbool = true; \
-		std::printf("%s called\n", __FUNCTION__); } }
+		if (Gods98::Error_IsTraceVisible()) { \
+			std::printf("%s called\n", __FUNCTION__); } } }

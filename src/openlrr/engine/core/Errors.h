@@ -74,9 +74,10 @@ struct Error_Globs
 assert_sizeof(Error_Globs, 0x818);
 
 
-struct Error_Globs2
+struct Error_LogLevels
 {
 	bool debugVisible;
+	bool traceVisible;
 	bool infoVisible;
 	bool warnVisible;
 	bool fatalVisible;
@@ -93,7 +94,7 @@ struct Error_Globs2
 // <LegoRR.exe @00576ce0>
 extern Error_Globs & errorGlobs;
 
-extern Error_Globs2 errorGlobs2;
+extern Error_LogLevels errorLogLevels;
 
 #pragma endregion
 
@@ -103,10 +104,12 @@ extern Error_Globs2 errorGlobs2;
 
 //#ifndef _RELEASE
 
-#define Error_Debug(s)						{ if (Gods98::errorGlobs2.debugVisible) { Gods98::Error_Out(false, "%s\n", (s)); } }
-#define Error_Info(s)						{ if (Gods98::errorGlobs2.infoVisible) { Gods98::Error_Out(false, "%s\n", (s)); } }
-#define Error_Warn(b, s)					{ if (Gods98::errorGlobs2.warnVisible && (b)) { Gods98::Error_Out(false, "%s(%i): Warning: %s\n", __FILE__, __LINE__, (s)); Gods98::Error_SetWarn(); } }
-#define Error_Fatal(b, s)					{ if (Gods98::errorGlobs2.fatalVisible && (b)) { Gods98::Error_Out(true, "%s(%i): Fatal: %s\n", __FILE__, __LINE__, (s)); } }
+// Debug is used to log information without the "file(line):" prefix, and without automatically ending the line.
+#define Error_Debug(s)						{ if (Gods98::errorLogLevels.debugVisible) { Gods98::Error_Out(false, "%s", (s)); } }
+#define Error_Trace(s)						{ if (Gods98::errorLogLevels.traceVisible) { std::printf(false, "%s\n", (s)); } }
+#define Error_Info(s)						{ if (Gods98::errorLogLevels.infoVisible) { Gods98::Error_Out(false, "%s\n", (s)); } }
+#define Error_Warn(b, s)					{ if (Gods98::errorLogLevels.warnVisible && (b)) { Gods98::Error_Out(false, "%s(%i): Warning: %s\n", __FILE__, __LINE__, (s)); Gods98::Error_SetWarn(); } }
+#define Error_Fatal(b, s)					{ if (Gods98::errorLogLevels.fatalVisible && (b)) { Gods98::Error_Out(true, "%s(%i): Fatal: %s\n", __FILE__, __LINE__, (s)); } }
 
 #define Error_DebugF(s, ...)				Error_Debug(Gods98::Error_Format((s), __VA_ARGS__))
 #define Error_InfoF(s, ...)					Error_Info(Gods98::Error_Format((s), __VA_ARGS__))
@@ -166,17 +169,20 @@ __inline void Error_SetWarn(void) { errorGlobs.warnCalled = true; }
 __inline void Error_CheckWarn(bool32 check) { if (!check) errorGlobs.warnCalled = false; else if (errorGlobs.warnCalled) Error_TerminateProgram("Check warning message log"); }
 
 
-inline bool Error_IsDebugVisible()					{ return errorGlobs2.debugVisible; }
-inline void Error_SetDebugVisible(bool visible)		{ errorGlobs2.debugVisible = visible; }
+inline bool Error_IsDebugVisible()					{ return errorLogLevels.debugVisible; }
+inline void Error_SetDebugVisible(bool visible)		{ errorLogLevels.debugVisible = visible; }
 
-inline bool Error_IsInfoVisible()					{ return errorGlobs2.infoVisible; }
-inline void Error_SetInfoVisible(bool visible)		{ errorGlobs2.infoVisible = visible; }
+inline bool Error_IsTraceVisible()					{ return errorLogLevels.traceVisible; }
+inline void Error_SetTraceVisible(bool visible)		{ errorLogLevels.traceVisible = visible; }
 
-inline bool Error_IsWarnVisible()					{ return errorGlobs2.warnVisible; }
-inline void Error_SetWarnVisible(bool visible)		{ errorGlobs2.warnVisible = visible; }
+inline bool Error_IsInfoVisible()					{ return errorLogLevels.infoVisible; }
+inline void Error_SetInfoVisible(bool visible)		{ errorLogLevels.infoVisible = visible; }
 
-inline bool Error_IsFatalVisible()					{ return errorGlobs2.fatalVisible; }
-inline void Error_SetFatalVisible(bool visible)		{ errorGlobs2.fatalVisible = visible; }
+inline bool Error_IsWarnVisible()					{ return errorLogLevels.warnVisible; }
+inline void Error_SetWarnVisible(bool visible)		{ errorLogLevels.warnVisible = visible; }
+
+inline bool Error_IsFatalVisible()					{ return errorLogLevels.fatalVisible; }
+inline void Error_SetFatalVisible(bool visible)		{ errorLogLevels.fatalVisible = visible; }
 
 #pragma endregion
 

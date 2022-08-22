@@ -59,9 +59,10 @@
 // --------------
 // &Options > Logging
 #define IDM_LOGGING_DEBUG				581
-#define IDM_LOGGING_INFO				582
-#define IDM_LOGGING_WARNING				583
-#define IDM_LOGGING_FATAL				584
+#define IDM_LOGGING_TRACE				582
+#define IDM_LOGGING_INFO				583
+#define IDM_LOGGING_WARNING				584
+#define IDM_LOGGING_FATAL				585
 // &Options > Scale (Radio Group)
 #define IDM_SCALE_X1					521
 #define IDM_SCALE_X2					522

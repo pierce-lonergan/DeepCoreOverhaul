@@ -244,9 +244,15 @@ constexpr auto array_of(T&&... t) -> std::array<V, sizeof...(T)> {
 	assert_sizeof(name, size)
 
 
+namespace Gods98
+{
+	bool Error_IsTraceVisible();
+}
+
 #define log_firstcall() { static bool _log_firstcallbool = false; \
 	if (!_log_firstcallbool) {_log_firstcallbool = true; \
-		std::printf("%s called\n", __FUNCTION__); } }
+		if (Gods98::Error_IsTraceVisible()) { \
+			std::printf("%s called\n", __FUNCTION__); } } }
 
 #pragma endregion
 
