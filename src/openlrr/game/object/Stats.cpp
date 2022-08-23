@@ -67,7 +67,9 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
         }
 
         if (statsGlobs.objectStats[type] == nullptr) {
-            uint32 subtypeArraySize = Lego_GetObjectTypeIDCount(type) * sizeof(ObjectStats*);
+			/// SANITY: Allocate size of max IDs for poorly written object type enumeration loops.
+            //uint32 subtypeArraySize = Lego_GetObjectTypeIDCount(type) * sizeof(ObjectStats*);
+			uint32 subtypeArraySize = LegoObject_ID_Count * sizeof(ObjectStats*);
 
             statsGlobs.objectStats[type] = (ObjectStats**)Gods98::Mem_Alloc(subtypeArraySize);
             std::memset(statsGlobs.objectStats[type], 0, subtypeArraySize);
@@ -80,7 +82,9 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
         StatsFlags2 flags2 = StatsFlags2::STATS2_NONE;
         StatsFlags3 flags3 = StatsFlags3::STATS3_NONE;
 
-        uint32 levelsArraySize = (sint32)levels * sizeof(ObjectStats);
+		/// SANITY: Allocate size of max levels for poorly written object type enumeration loops.
+        //uint32 levelsArraySize = (sint32)levels * sizeof(ObjectStats);
+        uint32 levelsArraySize = OBJECT_MAXLEVELS * sizeof(ObjectStats);
 
         statsGlobs.objectLevels[type][id] = levels;
         statsGlobs.objectStats[type][id] = (ObjectStats*)Gods98::Mem_Alloc(levelsArraySize);

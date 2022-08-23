@@ -50,7 +50,7 @@ struct ObjectRecallEntry // [LegoRR/ObjectRecall.c|struct:0x14] Object recall st
 {
 	/*00,4*/	LegoObject_AbilityFlags abilityFlags; // LiveFlags5
 	/*04,4*/	uint32 level;
-	/*08,c*/	char customName[12];
+	/*08,c*/	char customName[OBJECT_CUSTOMNAMELENGTH];
 	/*14*/
 };
 assert_sizeof(ObjectRecallEntry, 0x14);

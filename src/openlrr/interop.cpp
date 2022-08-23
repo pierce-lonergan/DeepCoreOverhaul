@@ -1957,6 +1957,21 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: Lego_Shutdown_Full
 	result &= hook_write_jmpret(0x00437310, LegoRR::LegoObject_Shutdown);
 
+	// used by: Reward_GotoSaveMenu
+	result &= hook_write_jmpret(0x00437370, LegoRR::Object_Save_CopyStruct18);
+	// used by: Lego_LoadLevel
+	result &= hook_write_jmpret(0x00437390, LegoRR::Object_Save_OverwriteStruct18);
+	// used by: AITask_FUN_00405880
+	result &= hook_write_jmpret(0x004373c0, LegoRR::LegoObject_GetObjectsBuilt);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x00437410, LegoRR::Object_LoadToolTipIcons);
+	// used by: Level_Free
+	result &= hook_write_jmpret(0x00437560, LegoRR::LegoObject_CleanupLevel);
+	// used by: LegoObject_FUN_00447880, Weapon_Projectile_AddStraightPath, Weapon_FireLazer
+	result &= hook_write_jmpret(0x004375c0, LegoRR::LegoObject_Weapon_FUN_004375c0);
+	// used by: LegoObject_Callback_Update, LegoObject_FUN_0043fee0, LegoObject_TryFindLoad_FUN_00440130
+	result &= hook_write_jmpret(0x00437690, LegoRR::LegoObject_DoOpeningClosing);
+
 	// used by: LegoObject_CleanupLevel
 	result &= hook_write_jmpret(0x00437700, LegoRR::LegoObject_CleanupObjectLevels);
 	// used by: Lego_MainLoop, LegoObject_GetObjectsBuilt, NERPsRuntime_GetLevelObjectsBuilt, Reward_GetLevelObjectsBuilt
@@ -1976,11 +1991,51 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: LegoObject_RunThroughListsSkipUpgradeParts, LegoObject_UpdateAll, LegoObject_HideAllCertainObjects
 	result &= hook_write_jmpret(0x00437a90, LegoRR::LegoObject_RunThroughLists);
 
+	// used by: Lego_HandleKeys, Lego_ShowObjectToolTip, ObjectRecall_RecallMiniFigure
+	result &= hook_write_jmpret(0x00437b40, LegoRR::LegoObject_SetCustomName);
+	// used by: LegoObject_CleanupLevel
+	result &= hook_write_jmpret(0x00437ba0, LegoRR::HiddenObject_RemoveAll);
+	// used by: Level_DestroyWall
+	result &= hook_write_jmpret(0x00437c00, LegoRR::HiddenObject_ExposeBlock);
+	// used by: Lego_LoadOLObjectList
+	result &= hook_write_jmpret(0x00437ee0, LegoRR::HiddenObject_Add);
+	// used by: AITask_DoAttackRockMonster_Target, LegoObject_Create
+	result &= hook_write_jmpret(0x00437f80, LegoRR::LegoObject_CanShootObject);
+
+	// used by: Lego_HandleWorldDebugKeys, Lego_LoadLevel, Lego_LoadOLObjectList,
+	//          HiddenObject_ExposeBlock, LegoObject_CreateInWorld, LegoObject_PTL_GatherRock,
+	//          Upgrade_SetUpgradeLevel
+	result &= hook_write_jmpret(0x00437fc0, LegoRR::LegoObject_Create);
 	// used by: LegoObject_Create
 	result &= hook_write_jmpret(0x00438580, LegoRR::LegoObject_Create_internal);
 
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x004385d0, LegoRR::LegoObject_AddList);
+
+	// used by: NERPFunc__GetBuildingsTeleported
+	result &= hook_write_jmpret(0x00438650, LegoRR::LegoObject_GetNumBuildingsTeleported);
+	// used by: LegoObject_CleanupLevel, NERPFunc__SetBuildingsTeleported
+	result &= hook_write_jmpret(0x00438660, LegoRR::LegoObject_SetNumBuildingsTeleported);
+	// used by: LegoObject_Weapon_FUN_004375c0, LegoObject_Create, LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00438670, LegoRR::LegoObject_SetCrystalPoweredColour);
+	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_TeleportUp,
+	//          LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00438720, LegoRR::LegoObject_FUN_00438720);
+	// used by: Interface_DoAction_FUN_0041dbd0
+	result &= hook_write_jmpret(0x00438840, LegoRR::LegoObject_SetPowerOn);
+	// used by: AITask, Interface_Callback_HasObject, Lego_HandleWorld, LegoObject,
+	//          Message_IsObjectSelectable, Weapon_GenericDamageObject, Weapon_LegoObject_IsActiveWithTracker
+	result &= hook_write_jmpret(0x00438870, LegoRR::LegoObject_IsActive);
+	// used by: Construction_Zone_CompleteBuilding, ElectricFence, Level_GenerateCrystal, Level_GenerateOre,
+	//          LegoObject, SpiderWeb_SpawnAt, Weapon_Projectile_AddStraightPath, Weapon_Projectile_AddCurvedPath
+	result &= hook_write_jmpret(0x004388d0, LegoRR::LegoObject_CreateInWorld);
+	// used by: Construction_PowerGrid_DrainAdjacentBlocks_Recurse
+	result &= hook_write_jmpret(0x00438930, LegoRR::LegoObject_FindPoweredBuildingAtBlockPos);
+	// internal, no need to hook these
+	//result &= hook_write_jmpret(0x00438970, LegoRR::LegoObject_Callback_FindPoweredBuildingAtBlockPos);
+	
+	// used by: 
+	//result &= hook_write_jmpret(0x, LegoRR::);
 
 	result &= hook_write_jmpret(0x00439c50, LegoRR::LegoObject_RequestPowerGridUpdate);
 

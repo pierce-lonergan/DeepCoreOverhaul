@@ -47,6 +47,8 @@ namespace Dummy {
 
 #define OBJECT_MAXLISTS				32			// 2^32 - 1 possible objects...
 
+#define OBJECT_MAXHIDDENOBJECTS		200			// Max OL objects that are not exposed on level start.
+
 #pragma endregion
 
 /**********************************************************************************
@@ -64,6 +66,33 @@ typedef bool32 (__cdecl* LegoObject_RunThroughListsCallback)(LegoObject* liveObj
  **********************************************************************************/
 
 #pragma region Enums
+
+enum RouteAction : uint8 // [LegoRR/Text.c|enum:0x1|type:byte]
+{
+	ROUTE_ACTION_UNK_1       = 1,
+	ROUTE_ACTION_REINFORCE   = 2,
+	ROUTE_ACTION_GATHERROCK  = 3,
+	ROUTE_ACTION_CLEAR       = 4,
+	ROUTE_ACTION_UNK_5       = 5,
+	ROUTE_ACTION_REPAIRDRAIN = 6,
+	ROUTE_ACTION_STORE       = 7,
+	ROUTE_ACTION_DROP        = 8,
+	ROUTE_ACTION_PLACE       = 9,
+	ROUTE_ACTION_UNK_10      = 10,
+	ROUTE_ACTION_EAT         = 11,
+	ROUTE_ACTION_UNK_12      = 12,
+	ROUTE_ACTION_UNK_13      = 13,
+	ROUTE_ACTION_TRAIN       = 14,
+	ROUTE_ACTION_UPGRADE     = 15,
+	ROUTE_ACTION_UNK_16      = 16,
+	ROUTE_ACTION_UNK_17      = 17,
+	ROUTE_ACTION_RECHARGE    = 18,
+	ROUTE_ACTION_DOCK        = 19,
+	ROUTE_ACTION_ATTACK      = 20,
+	ROUTE_ACTION_21          = 21,
+};
+assert_sizeof(RouteAction, 0x1);
+
 
 enum LiveFlags1 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 {
@@ -109,7 +138,7 @@ enum LiveFlags2 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ2_NONE                 = 0,
 	LIVEOBJ2_THROWING             = 0x1,
 	LIVEOBJ2_THROWN               = 0x2,
-	LIVEOBJ2_UNK_4                = 0x4,
+	LIVEOBJ2_UNK_4                = 0x4, // OL object flag? Related to driving? Route to object and get in?
 	LIVEOBJ2_DRIVING              = 0x8,
 	LIVEOBJ2_UNK_10               = 0x10,
 	LIVEOBJ2_UNK_20               = 0x20,
@@ -235,6 +264,20 @@ flags_end(LiveFlags5, 0x4);
 #endif
 
 
+enum RouteFlags : uint8 // [LegoRR/LegoObject.c|flags:0x1|type:byte]
+{
+	ROUTE_FLAG_NONE         = 0,
+	ROUTE_DIRECTION_MASK    = 0x3,
+	ROUTE_FLAG_GOTOBUILDING = 0x4,
+	ROUTE_FLAG_UNK_8        = 0x8,
+	ROUTE_UNK_MASK_c        = 0xc,
+	ROUTE_FLAG_UNK_10       = 0x10,
+	ROUTE_FLAG_UNK_20       = 0x20,
+	ROUTE_FLAG_RUNAWAY      = 0x40,
+};
+flags_end(RouteFlags, 0x1);
+
+
 flags_scoped(LegoObject_GlobFlags) : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint] LegoObject_GlobFlags, ReservedPool LiveObject INITFLAGS
 {
 	OBJECT_GLOB_FLAG_NONE             = 0,
@@ -267,12 +310,22 @@ flags_scoped_end(LegoObject_GlobFlags, 0x4);
 
 #pragma region Structs
 
+struct SearchObjectBlockXY_c // [LegoRR/search.c|struct:0xc]
+{
+	/*0,4*/	LegoObject* resultObj;
+	/*4,4*/	sint32 bx;
+	/*8,4*/	sint32 by;
+	/*c*/
+};
+assert_sizeof(SearchObjectBlockXY_c, 0xc);
+
+
 struct RoutingBlock // [LegoRR/Routing.c|struct:0x14]
 {
 	/*00,8*/	Point2I	blockPos;
 	/*08,8*/	Point2F	worldPos;
-	/*10,1*/	uint8	flagsByte_10;
-	/*11,1*/	uint8	byte_11;
+	/*10,1*/	RouteFlags flagsByte;
+	/*11,1*/	RouteAction actionByte;
 	/*12,2*/	undefined field_0x12_0x13[2];
 	/*14*/
 };
@@ -281,15 +334,15 @@ assert_sizeof(RoutingBlock, 0x14);
 
 struct HiddenObject // [LegoRR/LegoObject.c|struct:0x2c] Name is only guessed
 {
-	/*00,8*/	Point2I blockPos;
-	/*08,8*/	Point2F worldPos;
-	/*10,4*/	real32 heading;
-	/*14,4*/	void* objSrcData;
-	/*18,4*/	LegoObject_Type objType;
-	/*1c,4*/	LegoObject_ID objID;
-	/*20,4*/	real32 health;
-	/*24,4*/	char* thisOLName;
-	/*28,4*/	char* drivingOLName;
+	/*00,8*/	Point2I blockPos;     // (ol: xPos, yPos -> blockPos)
+	/*08,8*/	Point2F worldPos;     // (ol: xPos, yPos)
+	/*10,4*/	real32 heading;       // (ol: heading -> radians)
+	/*14,4*/	ObjectModel* model;   // (ol: type)
+	/*18,4*/	LegoObject_Type type; // (ol: type)
+	/*1c,4*/	LegoObject_ID id;     // (ol: type)
+	/*20,4*/	real32 health;        // (ol: health)
+	/*24,4*/	char* olistID;        // (ol: Object%i)
+	/*28,4*/	char* olistDrivingID; // (ol: driving)
 	/*2c*/
 };
 assert_sizeof(HiddenObject, 0x2c);
@@ -407,9 +460,9 @@ struct LegoObject_Globs // [LegoRR/LegoObject.c|struct:0xc644|tags:GLOBS]
 	/*9d5c,50*/     Point2I rechargeSeamBlocks[10];
 	/*9dac,4*/      uint32 slugHoleCount;
 	/*9db0,4*/      uint32 rechargeSeamCount;
-	/*9db4,2260*/   HiddenObject hiddenObjects[200];
+	/*9db4,2260*/   HiddenObject hiddenObjects[OBJECT_MAXHIDDENOBJECTS];
 	/*c014,4*/      uint32 hiddenObjectCount;
-	/*c018,4*/      real32 float_c018; // FLOAT_004eb7a8
+	/*c018,4*/      real32 dischargeBuildup; // When >= 1.0f, consume one crystal.
 	/*c01c,18*/     SaveStruct_18 savestruct18_c01c;
 	/*c034,400*/    LegoObject* cycleUnits[256]; // PTRLiveObject_ARRAY_004eb7c4
 	/*c434,4*/      uint32 cycleUnitCount; // COUNT_004ebbc4
@@ -503,26 +556,33 @@ void __cdecl LegoObject_Initialise(void);
 void __cdecl LegoObject_Shutdown(void);
 
 // <LegoRR.exe @00437370>
-#define Object_Save_CopyStruct18 ((void (__cdecl* )(SaveStruct_18* out_saveStruct18))0x00437370)
+//#define Object_Save_CopyStruct18 ((void (__cdecl* )(OUT SaveStruct_18* saveStruct18))0x00437370)
+void __cdecl Object_Save_CopyStruct18(OUT SaveStruct_18* saveStruct18);
 
 // <LegoRR.exe @00437390>
-#define Object_Save_OverwriteStruct18 ((void (__cdecl* )(SaveStruct_18* saveStruct18))0x00437390)
+//#define Object_Save_OverwriteStruct18 ((void (__cdecl* )(SaveStruct_18* saveStruct18))0x00437390)
+void __cdecl Object_Save_OverwriteStruct18(OPTIONAL const SaveStruct_18* saveStruct18);
 
 // <LegoRR.exe @004373c0>
-#define LegoObject_GetObjectsBuilt ((sint32 (__cdecl* )(LegoObject_Type objType, bool32 excludeToolStore))0x004373c0)
+//#define LegoObject_GetObjectsBuilt ((sint32 (__cdecl* )(LegoObject_Type objType, bool32 excludeToolStore))0x004373c0)
+uint32 __cdecl LegoObject_GetObjectsBuilt(LegoObject_Type objType, bool32 excludeToolStore);
 
 // <LegoRR.exe @00437410>
-#define Object_LoadToolTipIcons ((void (__cdecl* )(const Gods98::Config* config))0x00437410)
+//#define Object_LoadToolTipIcons ((void (__cdecl* )(const Gods98::Config* config))0x00437410)
+void __cdecl Object_LoadToolTipIcons(const Gods98::Config* config);
 
 // <LegoRR.exe @00437560>
-#define LegoObject_CleanupLevel ((void (__cdecl* )(void))0x00437560)
+//#define LegoObject_CleanupLevel ((void (__cdecl* )(void))0x00437560)
+void __cdecl LegoObject_CleanupLevel(void);
 
 // Used for consuming and producing unpowered crystals after weapon discharge.
 // <LegoRR.exe @004375c0>
-#define LegoObject_Weapon_FUN_004375c0 ((void (__cdecl* )(LegoObject* liveObj, sint32 weaponID, real32 coef))0x004375c0)
+//#define LegoObject_Weapon_FUN_004375c0 ((void (__cdecl* )(LegoObject* liveObj, sint32 weaponID, real32 coef))0x004375c0)
+void __cdecl LegoObject_Weapon_FUN_004375c0(LegoObject* liveObj, sint32 weaponID, real32 coef);
 
 // <LegoRR.exe @00437690>
-#define LegoObject_DoOpeningClosing ((bool32 (__cdecl* )(LegoObject* liveObj, bool32 open))0x00437690)
+//#define LegoObject_DoOpeningClosing ((bool32 (__cdecl* )(LegoObject* liveObj, bool32 open))0x00437690)
+bool32 __cdecl LegoObject_DoOpeningClosing(LegoObject* liveObj, bool32 open);
 
 // <LegoRR.exe @00437700>
 //#define LegoObject_CleanupObjectLevels ((void (__cdecl* )(void))0x00437700)
@@ -565,19 +625,24 @@ bool32 __cdecl LegoObject_RunThroughListsSkipUpgradeParts(LegoObject_RunThroughL
 bool32 __cdecl LegoObject_RunThroughLists(LegoObject_RunThroughListsCallback callback, void* data, bool32 skipUpgradeParts);
 
 // <LegoRR.exe @00437b40>
-#define LegoObject_SetCustomName ((void (__cdecl* )(LegoObject* liveObj, OPTIONAL const char* customName))0x00437b40)
+//#define LegoObject_SetCustomName ((void (__cdecl* )(LegoObject* liveObj, OPTIONAL const char* newCustomName))0x00437b40)
+void __cdecl LegoObject_SetCustomName(LegoObject* liveObj, OPTIONAL const char* newCustomName);
 
 // <LegoRR.exe @00437ba0>
-#define HiddenObject_RemoveAll ((void (__cdecl* )(void))0x00437ba0)
+//#define HiddenObject_RemoveAll ((void (__cdecl* )(void))0x00437ba0)
+void __cdecl HiddenObject_RemoveAll(void);
 
 // <LegoRR.exe @00437c00>
-#define HiddenObject_ExposeBlock ((void (__cdecl* )(Point2I* blockPos))0x00437c00)
+//#define HiddenObject_ExposeBlock ((void (__cdecl* )(const Point2I* blockPos))0x00437c00)
+void __cdecl HiddenObject_ExposeBlock(const Point2I* blockPos);
 
 // <LegoRR.exe @00437ee0>
-#define HiddenObject_Add ((void (__cdecl* )(void* objSrcData, LegoObject_Type objType, LegoObject_ID objID, Point2F* worldPos, real32 heading, real32 health, char* thisOLName, char* drivingOLName))0x00437ee0)
+//#define HiddenObject_Add ((void (__cdecl* )(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID, Point2F* worldPos, real32 heading, real32 health, const char* olistID, const char* olistDrivingID))0x00437ee0)
+void __cdecl HiddenObject_Add(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID, const Point2F* worldPos, real32 heading, real32 health, const char* olistID, const char* olistDrivingID);
 
 // <LegoRR.exe @00437f80>
-#define LegoObject_CanShootObject ((bool32 (__cdecl* )(LegoObject* liveObj))0x00437f80)
+//#define LegoObject_CanShootObject ((bool32 (__cdecl* )(LegoObject* liveObj))0x00437f80)
+bool32 __cdecl LegoObject_CanShootObject(LegoObject* liveObj);
 
 // <LegoRR.exe @00437fc0>
 //#define LegoObject_Create ((LegoObject* (__cdecl* )(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID))0x00437fc0)
@@ -592,19 +657,24 @@ LegoObject* __cdecl LegoObject_Create_internal(void);
 void __cdecl LegoObject_AddList(void);
 
 // <LegoRR.exe @00438650>
-#define LegoObject_GetNumBuildingsTeleported ((sint32 (__cdecl* )(sint32* stack))0x00438650)
+//#define LegoObject_GetNumBuildingsTeleported ((uint32 (__cdecl* )(void))0x00438650)
+uint32 __cdecl LegoObject_GetNumBuildingsTeleported(void);
 
 // <LegoRR.exe @00438660>
-#define LegoObject_SetNumBuildingsTeleported ((void (__cdecl* )(uint32 numTeleported))0x00438660)
+//#define LegoObject_SetNumBuildingsTeleported ((void (__cdecl* )(uint32 numTeleported))0x00438660)
+void __cdecl LegoObject_SetNumBuildingsTeleported(uint32 numTeleported);
 
 // <LegoRR.exe @00438670>
-#define LegoObject_SetCrystalPoweredColour ((void (__cdecl* )(LegoObject* liveObj, bool32 powered))0x00438670)
+//#define LegoObject_SetCrystalPoweredColour ((void (__cdecl* )(LegoObject* liveObj, bool32 powered))0x00438670)
+void __cdecl LegoObject_SetCrystalPoweredColour(LegoObject* liveObj, bool32 powered);
 
 // <LegoRR.exe @00438720>
-#define LegoObject_FUN_00438720 ((void (__cdecl* )(LegoObject* liveObj))0x00438720)
+//#define LegoObject_FUN_00438720 ((void (__cdecl* )(LegoObject* liveObj))0x00438720)
+void __cdecl LegoObject_FUN_00438720(LegoObject* liveObj);
 
 // <LegoRR.exe @00438840>
-#define LegoObject_SetPowerOn ((void (__cdecl* )(LegoObject* liveObj, bool32 on))0x00438840)
+//#define LegoObject_SetPowerOn ((void (__cdecl* )(LegoObject* liveObj, bool32 on))0x00438840)
+void __cdecl LegoObject_SetPowerOn(LegoObject* liveObj, bool32 on);
 
 // This seems to be a catch-all type function to see if an object is "active".
 // 
@@ -615,16 +685,21 @@ void __cdecl LegoObject_AddList(void);
 // 
 // Old name: LegoObject_CheckCondition_AndIsPowered
 // <LegoRR.exe @00438870>
-#define LegoObject_IsActive ((bool32 (__cdecl* )(LegoObject* liveObj, bool32 ignoreUnpowered))0x00438870)
+//#define LegoObject_IsActive ((bool32 (__cdecl* )(LegoObject* liveObj, bool32 ignoreUnpowered))0x00438870)
+bool32 __cdecl LegoObject_IsActive(LegoObject* liveObj, bool32 ignoreUnpowered);
 
 // <LegoRR.exe @004388d0>
-#define LegoObject_CreateInWorld ((LegoObject* (__cdecl* )(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, real32 xPos, real32 yPos, real32 heading))0x004388d0)
+//#define LegoObject_CreateInWorld ((LegoObject* (__cdecl* )(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, real32 xPos, real32 yPos, real32 heading))0x004388d0)
+LegoObject* __cdecl LegoObject_CreateInWorld(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, real32 xPos, real32 yPos, real32 heading);
 
 // <LegoRR.exe @00438930>
-#define LegoObject_FindPoweredBuildingAtBlockPos ((LegoObject* (__cdecl* )(const Point2I* blockPos))0x00438930)
+//#define LegoObject_FindPoweredBuildingAtBlockPos ((LegoObject* (__cdecl* )(const Point2I* blockPos))0x00438930)
+LegoObject* __cdecl LegoObject_FindPoweredBuildingAtBlockPos(const Point2I* blockPos);
 
+// DATA: SearchObjectBlockXY_c* search
 // <LegoRR.exe @00438970>
-#define LegoObject_Callback_FindPoweredBuildingAtBlockPos ((bool32 (__cdecl* )(LegoObject* liveObj, SearchObjectBlockXY_c* search))0x00438970)
+//#define LegoObject_Callback_FindPoweredBuildingAtBlockPos ((bool32 (__cdecl* )(LegoObject* liveObj, void* pSearch))0x00438970)
+bool32 __cdecl LegoObject_Callback_FindPoweredBuildingAtBlockPos(LegoObject* liveObj, void* pSearch);
 
 // <LegoRR.exe @004389e0>
 #define LegoObject_AddThisDrainedCrystals ((bool32 (__cdecl* )(LegoObject* liveObj, sint32 crystalDrainedAmount))0x004389e0)
