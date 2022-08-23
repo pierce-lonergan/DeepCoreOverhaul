@@ -48,7 +48,7 @@ bool32 __cdecl Gods98::Sound_Initialise(bool32 nosound)
 	if (nosound)
 		return true;
 
-	if( Sound3D_Initialise(Main_hWnd()) )
+	if (Sound3D_Initialise(Main_hWnd()))
 		return true;
 
 	return false;
@@ -67,7 +67,7 @@ bool32 __cdecl Gods98::Sound_PlayCDTrack(uint32 track, SoundMode mode, SoundCDSt
 {
 	log_firstcall();
 
-	if (soundGlobs.initialised){
+	if (soundGlobs.initialised) {
 		if (mode == SoundMode::Loop) soundGlobs.loopCDTrack = true;
 		soundGlobs.currTrack = track;
 		soundGlobs.CDStopCallback = StopCallback;
@@ -94,7 +94,7 @@ void __cdecl Gods98::Sound_Update(bool32 cdtrack)
 {
 	log_firstcall();
 
-	if (soundGlobs.initialised){
+	if (soundGlobs.initialised) {
 		//static uint32 lastUpdate = 0;
 		uint32 time = Main_GetTime();
 
@@ -348,9 +348,9 @@ sint32 __cdecl Gods98::WaveOpenFile2(IN const char* pszFileName,
 	/* Search the input file for for the 'fmt ' chunk.     */
     ckIn.ckid = mmioFOURCC('f', 'm', 't', ' ');
     if ((nError = (sint32)::mmioDescend(hmmioIn, &ckIn, pckInRIFF, MMIO_FINDCHUNK)) != 0)
-		{
+	{
 		goto ERROR_READING_WAVE;                
-		}
+	}
 					
 	/* Expect the 'fmt' chunk to be at least as large as <PCMWAVEFORMAT>;
     * if there are extra parameters at the end, we'll ignore them */
@@ -373,8 +373,9 @@ sint32 __cdecl Gods98::WaveOpenFile2(IN const char* pszFileName,
 	// format, read the next word, and thats how many extra
 	// bytes to allocate.
 	if (pcmWaveFormat.wf.wFormatTag == WAVE_FORMAT_PCM)
-		cbExtraAlloc = 0;                               
-							
+	{
+		cbExtraAlloc = 0;
+	}
 	else
 	{
 		// Read in length of extra bytes.
@@ -562,17 +563,16 @@ bool32 __cdecl Gods98::Restart_CDTrack(sint32 track)
 
 	char buff[100];
 
-//	if(cdDisable)
+//	if (cdDisable)
 //		return false;
 
-	track++;
-	::wsprintfA(buff, "play cdaudio from %i", track);
-	soundGlobs.mciErr = ::mciSendStringA(buff, mciReturn,sizeof(mciReturn), nullptr);
-	if(!soundGlobs.mciErr) {
+	::wsprintfA(buff, "play cdaudio from %i", (track + 1));
+	soundGlobs.mciErr = ::mciSendStringA(buff, mciReturn, sizeof(mciReturn), nullptr);
+	if (!soundGlobs.mciErr) {
 		return true;
 	}
 
-//	cdDisable=1;
+//	cdDisable = true;
 	ReportCDError();
 	return false;
 }
@@ -594,23 +594,21 @@ bool32 __cdecl Gods98::Status_CDTrack(sint32 track)
 
 	char buff[100];
 
-//	if(cdDisable)
+//	if (cdDisable)
 //		return true;
-
-	track++;
 
 	std::sprintf(buff, "status cdaudio mode");
 	soundGlobs.mciErr = ::mciSendStringA(buff, mciReturn, sizeof(mciReturn), nullptr);
-	if(::_stricmp(mciReturn,"stopped") != 0) {
+	if (::_stricmp(mciReturn, "stopped") != 0) {
 
 		std::sprintf(buff, "status cdaudio current track");
-		soundGlobs.mciErr = ::mciSendStringA(buff,mciReturn, sizeof(mciReturn), nullptr);
-		if(std::atoi(mciReturn)<=track) {
+		soundGlobs.mciErr = ::mciSendStringA(buff, mciReturn, sizeof(mciReturn), nullptr);
+		if (std::atoi(mciReturn) <= (track + 1)) {
 			return true;
 		}
 	}
 
-//	cdDisable=1;
+//	cdDisable= = true;
 	ReportCDError();
 	return false;
 }
@@ -620,23 +618,23 @@ bool32 __cdecl Gods98::Play_CDTrack(sint32 track)
 {
 	log_firstcall();
 
-//	if(cdDisable)
+//	if (cdDisable)
 //		return false;
 
-	soundGlobs.mciErr = ::mciSendStringA("open cdaudio", mciReturn,sizeof(mciReturn), nullptr);
-	if(!soundGlobs.mciErr) {
+	soundGlobs.mciErr = ::mciSendStringA("open cdaudio", mciReturn, sizeof(mciReturn), nullptr);
+	if (!soundGlobs.mciErr) {
 
 		soundGlobs.mciErr = ::mciSendStringA("set cdaudio time format tmsf", mciReturn, sizeof(mciReturn), nullptr);
-		if(!soundGlobs.mciErr) {
+		if (!soundGlobs.mciErr) {
 
 			Restart_CDTrack(track);
-			if(!soundGlobs.mciErr) {
+			if (!soundGlobs.mciErr) {
 				return true;
 			}
 		}
 	}
 
-//	cdDisable=1;
+//	cdDisable = true;
 	ReportCDError();
 	return false;
 }
@@ -646,21 +644,19 @@ bool32 __cdecl Gods98::Stop_CDTrack(void)
 {
 	log_firstcall();
 
-//	if(cdDisable)
+//	if (cdDisable)
 //		return false;
 
-	soundGlobs.mciErr = ::mciSendStringA("stop cdaudio", mciReturn, 
-		sizeof(mciReturn), nullptr);
-	if(!soundGlobs.mciErr) {
+	soundGlobs.mciErr = ::mciSendStringA("stop cdaudio", mciReturn, sizeof(mciReturn), nullptr);
+	if (!soundGlobs.mciErr) {
 
-		soundGlobs.mciErr = ::mciSendStringA("close cdaudio", mciReturn,
-			sizeof(mciReturn), nullptr);
-		if(!soundGlobs.mciErr) {
+		soundGlobs.mciErr = ::mciSendStringA("close cdaudio", mciReturn, sizeof(mciReturn), nullptr);
+		if (!soundGlobs.mciErr) {
 			return true;
 		}
 	}
 
-//	cdDisable=1;
+//	cdDisable = true;
 	ReportCDError();
 	return false;
 }
