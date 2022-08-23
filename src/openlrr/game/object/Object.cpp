@@ -421,6 +421,292 @@ bool32 __cdecl LegoRR::LegoObject_RunThroughLists(LegoObject_RunThroughListsCall
 }
 
 
+// <LegoRR.exe @00437fc0>
+LegoRR::LegoObject* __cdecl LegoRR::LegoObject_Create(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID)
+{
+	LegoObject* liveObj = LegoObject_Create_internal();
+	if (!liveObj) return nullptr;
+
+	const uint32 objLevel = 0; // Keep this here if we every want to extend creating an object that isn't at level 0.
+
+	liveObj->type = objType;
+	liveObj->id = objID;
+	liveObj->objLevel = objLevel; // We *would* need to assign this beforehand so that StatsObject_SetObjectLevel doesn't change the prevCount for Lv0.
+
+	liveObj->flags3 = LIVEOBJ3_NONE;
+
+	liveObj->health = 100.0f;
+	liveObj->energy = 100.0f;
+
+	// Disable sound temporarily to avoid anything that would play during initial activity setup(?)
+	Gods98::Container_EnableSoundTriggers(false);
+	const bool32 isSoundOn = SFX_IsSoundOn();
+	SFX_SetSoundOn(false, false);
+
+	switch (liveObj->type) {
+	case LegoObject_Vehicle:
+		{
+			VehicleModel* srcVehicleModel = (VehicleModel*)objModel;
+
+			liveObj->vehicle = (VehicleModel*)Gods98::Mem_Alloc(sizeof(VehicleModel));
+			Vehicle_Clone(srcVehicleModel, liveObj->vehicle);
+			Vehicle_SetOwnerObject(liveObj->vehicle, liveObj);
+
+			liveObj->carryNullFrames = Vehicle_GetCarryNullFrames(liveObj->vehicle);
+
+			liveObj->abilityFlags = ABILITY_FLAG_SCANNER; // Do vehicles always have a scanner by default??
+			liveObj->flags3 |= (LIVEOBJ3_CANFIRSTPERSON|LIVEOBJ3_CANYESSIR|LIVEOBJ3_CANSELECT|
+								LIVEOBJ3_CENTERBLOCKIDLE|LIVEOBJ3_CANDAMAGE|LIVEOBJ3_AITASK_UNK_400000);
+
+			// Set upgrade parts used in model.
+			Vehicle_SetUpgradeLevel(liveObj->vehicle, objLevel);
+			// Assign normal stats.
+			StatsObject_SetObjectLevel(liveObj, objLevel);
+
+			if (srcVehicleModel->drillNullName != nullptr) {
+				liveObj->flags3 |= LIVEOBJ3_CANDIG;
+			}
+
+			if (srcVehicleModel->carryNullName != nullptr) {
+				liveObj->flags3 |= LIVEOBJ3_CANCARRY;
+
+				const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(liveObj);
+				if (sflags1 & STATS1_CROSSLAND) {
+					liveObj->flags3 |= LIVEOBJ3_CANPICKUP;
+				}
+			}
+		}
+		break;
+	case LegoObject_MiniFigure:
+		{
+			CreatureModel* srcCreatureModel = (CreatureModel*)objModel;
+
+			liveObj->miniFigure = (CreatureModel*)Gods98::Mem_Alloc(sizeof(CreatureModel));
+			Creature_Clone(srcCreatureModel, liveObj->miniFigure);
+			Creature_SetOwnerObject(liveObj->miniFigure, liveObj);
+
+			liveObj->carryNullFrames = Creature_GetCarryNullFrames(liveObj->miniFigure);
+
+			liveObj->flags3 |= (LIVEOBJ3_UNK_1|LIVEOBJ3_CANREINFORCE|LIVEOBJ3_CANFIRSTPERSON|
+								LIVEOBJ3_CANCARRY|LIVEOBJ3_CANPICKUP|LIVEOBJ3_CANYESSIR|
+								LIVEOBJ3_CANSELECT|LIVEOBJ3_CANDAMAGE|LIVEOBJ3_AITASK_UNK_400000);
+
+			if (srcCreatureModel->drillNullName != nullptr) {
+				liveObj->flags3 |= LIVEOBJ3_CANDIG;
+			}
+
+			liveObj->flags3 |= LIVEOBJ3_CANDYNAMITE;
+
+			// Assign normal stats.
+			StatsObject_SetObjectLevel(liveObj, objLevel);
+
+			/// FIXME: Allow modding to change which tools a unit automatically starts with.
+			LegoObject_MiniFigure_EquipTool(liveObj, LegoObject_ToolType_Drill);
+		}
+		break;
+	case LegoObject_RockMonster:
+		{
+			CreatureModel* srcCreatureModel = (CreatureModel*)objModel;
+
+			liveObj->rockMonster = (CreatureModel*)Gods98::Mem_Alloc(sizeof(CreatureModel));
+			Creature_Clone(srcCreatureModel, liveObj->rockMonster);
+			Creature_SetOwnerObject(liveObj->rockMonster, liveObj);
+
+			liveObj->carryNullFrames = Creature_GetCarryNullFrames(liveObj->rockMonster);
+
+			liveObj->flags3 |= (LIVEOBJ3_UNK_200|LIVEOBJ3_CANDAMAGE|LIVEOBJ3_AITASK_UNK_400000|LIVEOBJ3_MONSTER_UNK_8000000);
+
+			if (srcCreatureModel->drillNullName != nullptr) {
+				liveObj->flags3 |= LIVEOBJ3_CANDIG;
+			}
+
+			// Assign normal stats.
+			StatsObject_SetObjectLevel(liveObj, objLevel);
+
+			const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(liveObj);
+			if (!(sflags1 & STATS1_FLOCKS)) {
+				liveObj->flocks = nullptr;
+			}
+			else {
+				LegoObject_Flocks_Initialise(liveObj);
+				if (!(sflags1 & STATS1_FLOCKS_DEBUG)) {
+					LegoObject_Hide(liveObj, true);
+					// CANSELECT flag was (definitely) present in debug builds for monsters, but it's never set in release.
+					liveObj->flags3 &= ~LIVEOBJ3_CANSELECT;
+				}
+			}
+
+			if (LegoObject_CanShootObject(liveObj)) {
+				// Register as a shootable target(?)
+				AITask_DoAttackRockMonster_Target(liveObj);
+			}
+
+			liveObj->flags3 |= LIVEOBJ3_POWEROFF;
+		}
+		break;
+	case LegoObject_Building:
+		{
+			BuildingModel* srcBuildingModel = (BuildingModel*)objModel;
+
+			liveObj->building = (BuildingModel*)Gods98::Mem_Alloc(sizeof(BuildingModel));
+			Building_Clone(srcBuildingModel, liveObj->building);
+			Building_SetOwnerObject(liveObj->building, liveObj);
+
+			liveObj->carryNullFrames = Building_GetCarryNullFrames(liveObj->building);
+
+			liveObj->flags3 |= (LIVEOBJ3_CANSELECT|LIVEOBJ3_CANDAMAGE);
+
+			// Set upgrade parts used in model.
+			Building_SetUpgradeLevel(liveObj->building, objLevel);
+			// Assign normal stats.
+			StatsObject_SetObjectLevel(liveObj, objLevel);
+
+			const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(liveObj);
+			// Not entirely sure, but register this new building as the primary teleporter for what it supports(??)
+			if (sflags1 & STATS1_SMALLTELEPORTER) {
+				legoGlobs.placeDestSmallTeleporter = liveObj;
+			}
+			if (sflags1 & STATS1_BIGTELEPORTER) {
+				legoGlobs.placeDestBigTeleporter = liveObj;
+			}
+			if (sflags1 & STATS1_WATERTELEPORTER) {
+				legoGlobs.placeDestWaterTeleporter = liveObj;
+			}
+			if (sflags1 & STATS1_SNAXULIKE) {
+				// Register this location as a valid *slow* food joint for Rock Raiders to hang out and loiter at(?)
+				AITask_DoGotoEat(liveObj);
+			}
+
+			// Register object as a repairable target(?)
+			AITask_DoRepair(liveObj);
+
+			liveObj->abilityFlags = ABILITY_FLAG_SCANNER; // Do buildings always have a scanner by default??
+
+			// The power grid needs to be updated for this building's consumption/or output.
+			LegoObject_RequestPowerGridUpdate();
+		}
+		break;
+	case LegoObject_UpgradePart:
+		{
+			Upgrade_PartModel* srcUpgradePartModel = (Upgrade_PartModel*)objModel;
+
+			liveObj->upgradePart = (Upgrade_PartModel*)Gods98::Mem_Alloc(sizeof(Upgrade_PartModel));
+			Upgrade_Part_Clone(srcUpgradePartModel, liveObj->upgradePart);
+
+			liveObj->flags3 |= LIVEOBJ3_UPGRADEPART; // This makes 99% of all object enumerations skip this object (see: EnumerateSkipUpgradeParts).
+
+			// Assign special stats.
+			liveObj->stats = &c_ObjectStats_Upgrade;
+		}
+		break;
+	default:
+		{
+			Gods98::Container* srcContainer = (Gods98::Container*)objModel;
+
+			liveObj->other = Gods98::Container_Clone(srcContainer);
+			Gods98::Container_SetUserData(liveObj->other, liveObj);
+
+			liveObj->flags3 |= LIVEOBJ3_SIMPLEOBJECT;
+
+			// Assign flags depending on the object type.
+			switch (liveObj->type) {
+			case LegoObject_PowerCrystal:
+			case LegoObject_Ore:
+				liveObj->flags3 |= (LIVEOBJ3_CANSELECT|LIVEOBJ3_ALLOWCULLING_UNK);
+				break;
+			case LegoObject_ElectricFence:
+				liveObj->flags3 |= (LIVEOBJ3_CANSELECT|LIVEOBJ3_CANDAMAGE);
+				break;
+			case LegoObject_Dynamite:
+			case LegoObject_OohScary:
+				liveObj->flags3 |= LIVEOBJ3_CANDAMAGE; // Uhhh... these can be damaged!? OR WAIT! MAYBE ITS THE COUNTDOWN NUMBERS! AHAHHHH!!!!
+				break;
+			}
+
+			// Only does anything when liveObj->type == LegoObject_PowerCrystal,
+			//  but leave it outside the switch/if-else check if we want to extend this.
+			LegoObject_SetCrystalPoweredColour(liveObj, true);
+
+			// Assign special or normal stats depending on the object type.
+			// Note that these special stats types are all identical. They have 0x30 for the first field, and the rest is all zeroes.
+			switch (liveObj->type) {
+			case LegoObject_Dynamite:
+				// Assign special stats.
+				liveObj->stats = &c_ObjectStats_Dynamite;
+				break;
+			case LegoObject_Barrier:
+				// Assign special stats.
+				liveObj->stats = &c_ObjectStats_Barrier;
+				break;
+			case LegoObject_SpiderWeb:
+			case LegoObject_OohScary:
+			case LegoObject_ElectricFenceStud:
+			case LegoObject_Pusher:
+			case LegoObject_Freezer:
+			case LegoObject_IceCube:
+			case LegoObject_LaserShot:
+				// Assign special stats.
+				liveObj->stats = &c_ObjectStats_Other;
+				break;
+			case LegoObject_Boulder:
+			case LegoObject_PowerCrystal:
+			case LegoObject_Ore:
+			case LegoObject_ElectricFence:
+			//case LegoObject_Path: // Not a real object type
+			default:
+				// Assign normal stats.
+				StatsObject_SetObjectLevel(liveObj, objLevel);
+				break;
+			}
+		}
+		break;
+	}
+
+	// Go through a few activities and confirm if our activity model supports them.
+	// Note that activityName2 needs to be different for the UpdateAcivityChange function to succeed.
+	liveObj->activityName2 = objectGlobs.activityName[Activity_Stand];
+
+	liveObj->activityName1 = objectGlobs.activityName[Activity_TurnLeft];
+	if (LegoObject_UpdateActivityChange(liveObj)) {
+		liveObj->flags3 |= LIVEOBJ3_CANTURN;
+	}
+
+	liveObj->activityName1 = objectGlobs.activityName[Activity_Gather];
+	if (LegoObject_UpdateActivityChange(liveObj)) {
+		liveObj->flags3 |= LIVEOBJ3_CANGATHER;
+	}
+
+	liveObj->activityName1 = objectGlobs.activityName[Activity_RouteRubble];
+	if (LegoObject_UpdateActivityChange(liveObj)) {
+		liveObj->flags3 |= LIVEOBJ3_CANROUTERUBBLE;
+	}
+
+	// Set back to default activity. Note, this only works because the previous calls to
+	//  LegoObject_UpdateActivityChange automatically assigned activityName2, even on failure.
+	liveObj->activityName1 = objectGlobs.activityName[Activity_Stand];
+	LegoObject_UpdateActivityChange(liveObj);
+
+	AITask_LiveObject_Unk_UpdateAITask_AnimationWait(liveObj);
+
+	// Restore sound functionality now that our object creation is finished.
+	Gods98::Container_EnableSoundTriggers(true);
+	if (isSoundOn) SFX_SetSoundOn(true, false);
+
+	LegoObject_UpdatePowerConsumption(liveObj);
+
+	// Track the number of objects that ever existed in the level.
+	/// NOTE: We ALWAYS want to start by incrementing the initial level, since StatsObject_SetObjectLevel
+	///       only either updates total+prevLevels, or neither if the level hasn't changed.
+	objectGlobs.objectTotalLevels[liveObj->type][liveObj->id][liveObj->objLevel]++;
+
+	// Respect the unselectable stats flag. This stats flag is ONLY used for initialisation HERE.
+	const StatsFlags2 sflags2 = StatsObject_GetStatsFlags2(liveObj);
+	if (sflags2 & STATS2_UNSELECTABLE) {
+		liveObj->flags3 &= ~LIVEOBJ3_CANSELECT;
+	}
+
+	return liveObj;
+}
 
 // <LegoRR.exe @00438580>
 LegoRR::LegoObject* __cdecl LegoRR::LegoObject_Create_internal(void)

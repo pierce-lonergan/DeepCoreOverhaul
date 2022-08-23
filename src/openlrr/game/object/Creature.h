@@ -112,6 +112,9 @@ assert_sizeof(CreatureModel, 0x74);
 #define Creature_IsHidden ((bool32 (__cdecl* )(CreatureModel* creature))0x004085d0)
 //bool32 __cdecl Creature_IsHidden(CreatureModel* creature);
 
+// Merged function: NERPFunc__True
+// <LegoRR.exe @00484e50>
+__inline uint32 __cdecl Creature_GetCarryNullFrames(CreatureModel* creature) { return 1; }
 
 
 

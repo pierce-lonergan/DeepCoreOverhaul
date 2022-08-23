@@ -1479,7 +1479,7 @@ __inline Map3D* Lego_GetMap(void) { return Lego_GetLevel()->map; }
 #define Level_Block_IsGround_alt ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by))0x00432900)
 
 // <LegoRR.exe @00432950>
-#define LiveObject_CanReinforceBlock ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by))0x00432950)
+#define LiveObject_CanReinforceBlock ((bool32 (__cdecl* )(OPTIONAL LegoObject* liveObj, uint32 bx, uint32 by))0x00432950)
 
 // <LegoRR.exe @004329d0>
 #define Level_Block_IsSolidBuilding ((bool32 (__cdecl* )(uint32 bx, uint32 by, bool32 includeToolStore))0x004329d0)

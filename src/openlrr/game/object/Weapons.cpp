@@ -228,7 +228,7 @@ real32 __cdecl LegoRR::Weapon_GetDamageForObject(uint32 weaponID, LegoObject* li
 // <LegoRR.exe @0046f530>
 void __cdecl LegoRR::Weapon_GenericDamageObject(LegoObject* liveObj, uint32 weaponID, bool32 hit, real32 elapsed, const Point2F* dir)
 {
-	if ((liveObj->flags3 & LIVEOBJ3_UNK_40000) && LegoObject_IsActive(liveObj, true)) {
+	if ((liveObj->flags3 & LIVEOBJ3_CANDAMAGE) && LegoObject_IsActive(liveObj, true)) {
 
 		/// CHANGE: Getter moved from top of function.
 		const real32 damage = Weapon_GetDamageForObject(weaponID, liveObj);

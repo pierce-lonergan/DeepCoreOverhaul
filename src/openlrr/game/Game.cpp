@@ -458,7 +458,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareObjectToolTip(LegoObject* liveObj)
 		}
 
 		// Health and Energy:
-		if (liveObj->flags3 & LIVEOBJ3_UNK_40000) {
+		if (liveObj->flags3 & LIVEOBJ3_CANDAMAGE) {
 			const uint32 health = ((liveObj->health >= 0.0f) ? (uint32)liveObj->health : 0);
 			const uint32 energy = ((liveObj->energy >= 0.0f) ? (uint32)liveObj->energy : 0);
 

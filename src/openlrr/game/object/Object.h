@@ -73,6 +73,7 @@ enum LiveFlags1 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ1_TURNING           = 0x4,
 	LIVEOBJ1_DRILLING          = 0x8,
 	LIVEOBJ1_DRILLINGSTART     = 0x10,
+	LIVEOBJ1_UNUSED_20         = 0x20, // Likely unused, but included to fill in the gaps.
 	LIVEOBJ1_REINFORCING       = 0x40,
 	LIVEOBJ1_TURNRIGHT         = 0x80,
 	LIVEOBJ1_EXPANDING         = 0x100,
@@ -95,7 +96,7 @@ enum LiveFlags1 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ1_CAUGHTINWEB       = 0x2000000,
 	LIVEOBJ1_SLIPPING          = 0x4000000,
 	LIVEOBJ1_SCAREDBYPLAYER    = 0x8000000,
-	LIVEOBJ1_UNUSED_10000000   = 0x10000000,
+	LIVEOBJ1_UNUSED_10000000   = 0x10000000, // Likely unused, but included to fill in the gaps.
 	LIVEOBJ1_RESTING           = 0x20000000,
 	LIVEOBJ1_EATING            = 0x40000000,
 	LIVEOBJ1_UNK_80000000      = 0x80000000, // Activity_FloatOn
@@ -145,35 +146,42 @@ flags_end(LiveFlags2, 0x4);
 enum LiveFlags3 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 {
 	LIVEOBJ3_NONE           = 0,
-	LIVEOBJ3_UNK_1          = 0x1,
-	LIVEOBJ3_UNK_2          = 0x2,
-	LIVEOBJ3_UNK_4          = 0x4,
-	LIVEOBJ3_UNK_8          = 0x8,
-	LIVEOBJ3_UNK_10         = 0x10,
-	LIVEOBJ3_UNK_20         = 0x20,
-	LIVEOBJ3_UNK_40         = 0x40,
-	LIVEOBJ3_UNK_80         = 0x80,
+	LIVEOBJ3_UNK_1          = 0x1, // Set for MiniFigure types, but haven't found usage yet.
+	LIVEOBJ3_CANDIG         = 0x2,
+	LIVEOBJ3_CANREINFORCE   = 0x4,
+	LIVEOBJ3_CANTURN        = 0x8,
+	LIVEOBJ3_CANFIRSTPERSON = 0x10,
+	LIVEOBJ3_CANCARRY       = 0x20, // Only checked in LegoObject_FUN_00438720 and Interface_ObjectCallback_FUN_0041f400.
+	                                // LegoObject_FUN_00438720 sets this flag to true for Building types if they can store or process.
+	LIVEOBJ3_CANPICKUP      = 0x40, // True for MiniFigures, and true for Vehicles with CANCARRY+CROSSLAND.
+	                                // Only checked in Interface_ObjectCallback_FUN_0041f400.
+	LIVEOBJ3_CANYESSIR      = 0x80, // Allows the unit to respond with SFX_YesSir.
 	LIVEOBJ3_CANSELECT      = 0x100, // This isn't fool-proof. It's still near-impossible to select RMonsters,
 	                                 // since they manage to interrupt the selection immediately after...
-	LIVEOBJ3_UNK_200        = 0x200,
+	LIVEOBJ3_UNK_200        = 0x200, // Set for RockMonster types, but haven't found usage yet.
 	LIVEOBJ3_UNK_400        = 0x400,
-	LIVEOBJ3_UNK_1000       = 0x1000,
+	LIVEOBJ3_UNUSED_800     = 0x800, // Likely unused, but included to fill in the gaps.
+	LIVEOBJ3_CENTERBLOCKIDLE = 0x1000, // Used for vehicles. These units will only idle in the center of a block. Ignored if STATS1_ROUTEAVOIDANCE.
+	                                   // Only used in LegoObject_Route_AllocPtr_FUN_004419c0.
 	LIVEOBJ3_UNK_2000       = 0x2000,
 	LIVEOBJ3_UNK_4000       = 0x4000,
-	LIVEOBJ3_UNK_8000       = 0x8000,
+	LIVEOBJ3_CANDYNAMITE    = 0x8000,
 	LIVEOBJ3_UNK_10000      = 0x10000, // Seen when an object starts ticking down, but also seen in a ton of other activities.
 	LIVEOBJ3_SIMPLEOBJECT   = 0x20000, // Guess at usage, for resources or other objects that don't do anything on their own.
-	LIVEOBJ3_UNK_40000      = 0x40000,
+	LIVEOBJ3_CANDAMAGE      = 0x40000,
 	LIVEOBJ3_UPGRADEPART    = 0x80000, // When running through the list of all LegoObjects, this flag states to ignore this object.
 	                                   // (99% of the calls to Run through lists ignore objects with this flag).
-	LIVEOBJ3_UNK_100000     = 0x100000,
+	LIVEOBJ3_ALLOWCULLING_UNK = 0x100000, // States that an object can be hidden when over certain types of non-floor blocks.
+	                                      // For example, if a building with this flag is founded on blocks that are all hidden, then it'll be hidden too.
+										  // This flag is only set for PowerCrystals/Ore, but is unset in a lot of places, so it's a one-time deal.
+										  // Maybe CANUNCOVER or CANCULL(?)
 	LIVEOBJ3_SELECTED       = 0x200000, // Object is selected (required to enter laser tracker mode, because double select).
-	LIVEOBJ3_UNK_400000     = 0x400000,
+	LIVEOBJ3_AITASK_UNK_400000 = 0x400000, // Only checked in AITask_Callback_UpdateObject.
 	LIVEOBJ3_REMOVING       = 0x800000,
 	LIVEOBJ3_UNK_1000000    = 0x1000000,
 	LIVEOBJ3_UNK_2000000    = 0x2000000,
 	LIVEOBJ3_CANGATHER      = 0x4000000,
-	LIVEOBJ3_UNK_8000000    = 0x8000000,
+	LIVEOBJ3_MONSTER_UNK_8000000 = 0x8000000, // Flag for RockMonster type, only checked in LegoObject_FUN_00439e90.
 	LIVEOBJ3_CANROUTERUBBLE = 0x10000000,
 	LIVEOBJ3_HASPOWER       = 0x20000000,
 	LIVEOBJ3_UNK_40000000   = 0x40000000,
@@ -572,7 +580,8 @@ bool32 __cdecl LegoObject_RunThroughLists(LegoObject_RunThroughListsCallback cal
 #define LegoObject_CanShootObject ((bool32 (__cdecl* )(LegoObject* liveObj))0x00437f80)
 
 // <LegoRR.exe @00437fc0>
-#define LegoObject_Create ((LegoObject* (__cdecl* )(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID))0x00437fc0)
+//#define LegoObject_Create ((LegoObject* (__cdecl* )(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID))0x00437fc0)
+LegoObject* __cdecl LegoObject_Create(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @00438580>
 //#define LegoObject_Create_internal ((LegoObject* (__cdecl* )(void))0x00438580)

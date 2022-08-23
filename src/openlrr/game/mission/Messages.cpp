@@ -527,7 +527,7 @@ bool32 __cdecl LegoRR::Message_SelectObject2(LegoObject* liveObj, bool32 noDoubl
 				}
 			}
 
-			if (liveObj->flags3 & LIVEOBJ3_UNK_80) {
+			if (liveObj->flags3 & LIVEOBJ3_CANYESSIR) {
 				const StatsFlags1 sflags1 = StatsObject_GetStatsFlags1(liveObj);
 
 				if (!(sflags1 & STATS1_CANBEDRIVEN) || liveObj->driveObject != nullptr) {
@@ -901,7 +901,7 @@ bool32 __cdecl LegoRR::Message_EnterFirstPersonView(uint32 cameraFrame)
 	if (legoGlobs.objectFP != nullptr) {
 		LegoObject* unit = legoGlobs.objectFP;
 
-		if ((unit->flags3 & LIVEOBJ3_UNK_10) && (unit->type == LegoObject_MiniFigure || unit->driveObject != nullptr)) {
+		if ((unit->flags3 & LIVEOBJ3_CANFIRSTPERSON) && (unit->type == LegoObject_MiniFigure || unit->driveObject != nullptr)) {
 			Lego_SetViewMode(ViewMode_FP, unit, cameraFrame);
 			return true;
 		}
@@ -914,7 +914,7 @@ bool32 __cdecl LegoRR::Message_EnterFirstPersonView(uint32 cameraFrame)
 		if (unit->type == LegoObject_MiniFigure && unit->driveObject != nullptr) {
 			unit = unit->driveObject;
 		}
-		if ((unit->flags3 & LIVEOBJ3_UNK_10) && (unit->type == LegoObject_MiniFigure || unit->driveObject != nullptr)) {
+		if ((unit->flags3 & LIVEOBJ3_CANFIRSTPERSON) && (unit->type == LegoObject_MiniFigure || unit->driveObject != nullptr)) {
 			Lego_SetViewMode(ViewMode_FP, unit, cameraFrame);
 			return true;
 		}
