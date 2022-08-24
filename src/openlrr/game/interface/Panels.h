@@ -37,6 +37,7 @@ enum PanelDataFlags : uint32
 {
 	PANELTYPE_FLAG_NONE = 0,
 
+	PANELTYPE_FLAG_UNK_2 = 0x2
 	// Todo...
 };
 flags_end(PanelDataFlags, 0x4);

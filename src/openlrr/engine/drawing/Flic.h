@@ -10,6 +10,17 @@
 #include "../geometry.h"
 
 
+/**********************************************************************************
+ ******** Forward Global Namespace Declarations
+ **********************************************************************************/
+
+#pragma region Forward Declarations
+
+struct IDirectDrawSurface4;
+
+#pragma endregion
+
+
 namespace Gods98
 {; // !<---
 

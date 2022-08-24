@@ -1764,6 +1764,38 @@ bool interop_hook_LegoRR_Game(void)
 {
 	bool result = true;
 
+	// used by: LegoObject_PutAwayCarriedObject, LegoObject_AddCrystalsStored, NERPFunc__AddPoweredCrystals
+	result &= hook_write_jmpret(0x0041f7a0, LegoRR::Level_IncCrystalsStored);
+	// used by: LegoObject_SpawnCarryableObject, LegoObject_UpdateTeleporter
+	result &= hook_write_jmpret(0x0041f7b0, LegoRR::Level_SubtractCrystalsStored);
+	// used by: LegoObject_AddThisDrainedCrystals
+	result &= hook_write_jmpret(0x0041f7d0, LegoRR::Level_AddCrystalsDrained);
+	// used by: LegoObject_RequestPowerGridUpdate
+	result &= hook_write_jmpret(0x0041f7f0, LegoRR::Level_ResetCrystalsDrained);
+	// used by: Interface_ChangeObjectIconFlag1_FUN_0041c730, LegoObject_AddThisDrainedCrystals,
+	//          LegoObject_CanSpawnCarryableObject, LegoObject_UpdatePowerConsumption, LegoObject_UpdateTeleporter,
+	//          NERPFunc__GetCrystalsCurrentlyStored, Weapon_LegoObject_UpdateSelectedTracker
+	result &= hook_write_jmpret(0x0041f810, LegoRR::Level_GetCrystalCount);
+	// used by: Interface_DoSomethingWithRenameReplace, LegoObject_GetBuildingUpgradeCost,
+	//          LegoObject_HasEnoughOreToUpgrade, LegoObject_CanSpawnCarryableObject, LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0041f830, LegoRR::Level_GetOreCount);
+	// used by: LegoObject_FinishEnteringWallHole, LegoObject_UnkUpdateEnergyHealth
+	result &= hook_write_jmpret(0x0041f850, LegoRR::Level_AddStolenCrystals);
+	// used by: Camera_Update
+	result &= hook_write_jmpret(0x0041f870, LegoRR::Lego_SetRadarNoTrackObject);
+
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0041f8b0, LegoRR::Level_IncCrystalsPickedUp);
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0041f8c0, LegoRR::Level_IncOrePickedUp);
+	// used by: LegoObject_PutAwayCarriedObject, LegoObject_AddOreStored, NERPFunc__AddStoredOre
+	result &= hook_write_jmpret(0x0041f8d0, LegoRR::Level_IncOreStored);
+	// used by: LegoObject_UpgradeBuilding, LegoObject_SpawnCarryableObject, LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0041f910, LegoRR::Level_SubtractOreStored);
+
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0041f9b0, LegoRR::Lego_StartLevelEnding);
+
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00424660, LegoRR::Lego_UpdateSceneFog);
 

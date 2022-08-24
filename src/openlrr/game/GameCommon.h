@@ -116,6 +116,8 @@ typedef uint8 DirectionByte;
 #define LEGO_MAXBLOCKPOINTERS	56
 //#define MAX_SMOKE_TYPES			4
 
+#define LEGO_STUDORECOUNT		5
+
 #define OBJECT_CUSTOMNAMELENGTH	12
 
 #pragma endregion

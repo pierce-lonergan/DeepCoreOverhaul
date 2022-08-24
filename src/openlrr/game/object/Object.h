@@ -475,7 +475,7 @@ struct LegoObject_Globs // [LegoRR/LegoObject.c|struct:0xc644|tags:GLOBS]
 	/*c62c,4*/      Gods98::Image* ToolTipIcon_Blank; // (cfg: ToolTipIcons::Blank)
 	/*c630,4*/      Gods98::Image* ToolTipIcon_Ore; // (cfg: ToolTipIcons::Ore)
 	/*c634,4*/      uint32 BuildingsTeleported;
-	/*c638,4*/      real32 LiveManager_TimerUnk;
+	/*c638,4*/      real32 s_sound3DUpdateTimer;
 	/*c63c,4*/      undefined4 s_stepCounter_c63c; // (static, counter %4 for step SFX) DAT_004ebdcc
 	/*c640,4*/      void** s_FlocksDestroy_c640; // (static, Struct 0x10, used in Flocks activities (QUICK_DESTROY??)) PTR_004ebdd0
 	/*c644*/
@@ -708,7 +708,7 @@ bool32 __cdecl LegoObject_Callback_FindPoweredBuildingAtBlockPos(LegoObject* liv
 #define LegoObject_GetBuildingUpgradeCost ((bool32 (__cdecl* )(LegoObject* liveObj, OPTIONAL OUT uint32* oreCost))0x00438a30)
 
 // <LegoRR.exe @00438ab0>
-#define LegoObject_FUN_00438ab0 ((void (__cdecl* )(LegoObject* liveObj))0x00438ab0)
+#define LegoObject_UpgradeBuilding ((void (__cdecl* )(LegoObject* liveObj))0x00438ab0)
 
 // <LegoRR.exe @00438b70>
 #define LegoObject_HasEnoughOreToUpgrade ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 objLevel))0x00438b70)
@@ -847,7 +847,7 @@ void __cdecl LegoObject_RequestPowerGridUpdate(void);
 #define LegoObject_GetDepositNull ((Gods98::Container* (__cdecl* )(LegoObject* liveObj))0x0043a8b0)
 
 // <LegoRR.exe @0043a910>
-#define LegoObject_FUN_0043a910 ((LegoObject* (__cdecl* )(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel))0x0043a910)
+#define LegoObject_SpawnCarryableObject ((LegoObject* (__cdecl* )(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel))0x0043a910)
 
 // <LegoRR.exe @0043aa80>
 #define LegoObject_CanSpawnCarryableObject ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID))0x0043aa80)
@@ -996,7 +996,7 @@ bool32 __cdecl LegoObject_Callback_Remove(LegoObject* liveObj, void* unused);
 #define LegoObject_QueueTeleport ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID))0x0043f410)
 
 // <LegoRR.exe @0043f450>
-#define LegoObject_FUN_0043f450 ((void (__cdecl* )(LegoObject* liveObj))0x0043f450)
+#define LegoObject_UpdateTeleporter ((void (__cdecl* )(LegoObject* liveObj))0x0043f450)
 
 // Removes the first teleport-down reference that matches the specified object.
 // <LegoRR.exe @0043f820>

@@ -906,47 +906,71 @@ __inline ViewMode Lego_GetViewMode(void) { return legoGlobs.viewMode; }
 
 
 // <LegoRR.exe @0041f7a0>
-#define Level_IncCrystalsStored ((void (__cdecl* )(void))0x0041f7a0)
+//#define Level_IncCrystalsStored ((void (__cdecl* )(void))0x0041f7a0)
+void __cdecl Level_IncCrystalsStored(void);
+
+/// CUSTOM: Extension of Level_IncCrystalsStored for units larger than 1.
+void __cdecl Level_AddCrystalsStored(sint32 crystalAmount);
 
 // <LegoRR.exe @0041f7b0>
-#define Level_SubtractCrystalsStored ((void (__cdecl* )(sint32 crystalAmount))0x0041f7b0)
+//#define Level_SubtractCrystalsStored ((void (__cdecl* )(sint32 crystalAmount))0x0041f7b0)
+void __cdecl Level_SubtractCrystalsStored(sint32 crystalAmount);
 
 // <LegoRR.exe @0041f7d0>
-#define Level_AddCrystalsDrained ((void (__cdecl* )(sint32 crystalDrainedAmount))0x0041f7d0)
+//#define Level_AddCrystalsDrained ((void (__cdecl* )(sint32 crystalDrainedAmount))0x0041f7d0)
+void __cdecl Level_AddCrystalsDrained(sint32 crystalDrainedAmount);
 
+// Previously tail of LegoObject_RequestPowerGridUpdate function.
+// <LegoRR.exe @0041f7f0>
+void __cdecl Level_ResetCrystalsDrained(void);
+
+// false - GetCrystalsFree   (not powering buildings)
+// true  - GetCrystalsStored (total)
 // <LegoRR.exe @0041f810>
-#define Level_GetCrystalCount ((sint32 (__cdecl* )(bool32 includeDrained))0x0041f810)
+//#define Level_GetCrystalCount ((sint32 (__cdecl* )(bool32 includeDrained))0x0041f810)
+sint32 __cdecl Level_GetCrystalCount(bool32 includeDrained);
 
 // <LegoRR.exe @0041f830>
-#define Level_GetOreCount ((sint32 (__cdecl* )(bool32 isProcessed))0x0041f830)
+//#define Level_GetOreCount ((sint32 (__cdecl* )(bool32 isProcessed))0x0041f830)
+sint32 __cdecl Level_GetOreCount(bool32 isProcessed);
 
 // <LegoRR.exe @0041f850>
-#define Level_AddStolenCrystals ((void (__cdecl* )(sint32 stolenCrystalAmount))0x0041f850)
+//#define Level_AddStolenCrystals ((void (__cdecl* )(sint32 stolenCrystalAmount))0x0041f850)
+void __cdecl Level_AddStolenCrystals(sint32 stolenCrystalAmount);
 
 // <LegoRR.exe @0041f870>
-#define Lego_SetRadarNoTrackObject ((void (__cdecl* )(bool32 noTrackObj))0x0041f870)
+//#define Lego_SetRadarNoTrackObject ((void (__cdecl* )(bool32 noTrackObj))0x0041f870)
+void __cdecl Lego_SetRadarNoTrackObject(bool32 noTrackObj);
 
 // <LegoRR.exe @0041f8a0>
 //#define Lego_IsNoclipOn ((bool32 (__cdecl* )(void))0x0041f8a0)
 __inline bool32 __cdecl Lego_IsNoclipOn(void) { return (legoGlobs.flags1 & GAME1_DEBUG_NOCLIP_FPS); }
 
 // <LegoRR.exe @0041f8b0>
-#define Level_IncCrystalsPickedUp ((void (__cdecl* )(void))0x0041f8b0)
+//#define Level_IncCrystalsPickedUp ((void (__cdecl* )(void))0x0041f8b0)
+void __cdecl Level_IncCrystalsPickedUp(void);
 
 // <LegoRR.exe @0041f8c0>
-#define Level_IncOrePickedUp ((void (__cdecl* )(void))0x0041f8c0)
+//#define Level_IncOrePickedUp ((void (__cdecl* )(void))0x0041f8c0)
+void __cdecl Level_IncOrePickedUp(void);
 
 // <LegoRR.exe @0041f8d0>
-#define Level_IncOreStored ((void (__cdecl* )(bool32 isProcessed))0x0041f8d0)
+//#define Level_IncOreStored ((void (__cdecl* )(bool32 isProcessed))0x0041f8d0)
+void __cdecl Level_IncOreStored(bool32 isProcessed);
+
+/// CUSTOM: Extension of Level_IncOreStored for units larger than 1.
+void __cdecl Level_AddOreStored(bool32 isProcessed, sint32 oreAmount);
 
 // <LegoRR.exe @0041f910>
-#define Level_SubtractOreStored ((void (__cdecl* )(bool32 isProcessed, sint32 oreAmount))0x0041f910)
+//#define Level_SubtractOreStored ((void (__cdecl* )(bool32 isProcessed, sint32 oreAmount))0x0041f910)
+void __cdecl Level_SubtractOreStored(bool32 isProcessed, sint32 oreAmount);
 
 // <LegoRR.exe @0041f950>
 // Gods_Go
 
 // <LegoRR.exe @0041f9b0>
-#define Lego_StartLevelEnding ((void (__cdecl* )(void))0x0041f9b0)
+//#define Lego_StartLevelEnding ((void (__cdecl* )(void))0x0041f9b0)
+void __cdecl Lego_StartLevelEnding(void);
 
 // <LegoRR.exe @0041fa70>
 //#define Lego_GetGameSpeed ((real32 (__cdecl* )(void))0x0041fa70)

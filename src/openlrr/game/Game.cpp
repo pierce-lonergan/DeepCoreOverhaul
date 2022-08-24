@@ -38,6 +38,7 @@
 #include "world/Map3D.h"
 #include "world/Roof.h"
 #include "world/SpiderWeb.h"
+#include "world/Teleporter.h"
 #include "Debug.h"
 #include "Game.h"
 
@@ -355,6 +356,187 @@ void LegoRR::Lego_SetNoMultiSelect(bool on)
 
 
 
+// <LegoRR.exe @0041f7a0>
+void __cdecl LegoRR::Level_IncCrystalsStored(void)
+{
+	Level_AddCrystalsStored(1);
+}
+
+/// CUSTOM: Extension of Level_IncOreStored for units larger than 1.
+void __cdecl LegoRR::Level_AddCrystalsStored(sint32 crystalAmount)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		legoGlobs.currLevel->crystals += crystalAmount;
+	}
+}
+
+// <LegoRR.exe @0041f7b0>
+void __cdecl LegoRR::Level_SubtractCrystalsStored(sint32 crystalAmount)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		legoGlobs.currLevel->crystals -= crystalAmount;
+	}
+}
+
+// <LegoRR.exe @0041f7d0>
+void __cdecl LegoRR::Level_AddCrystalsDrained(sint32 crystalDrainedAmount)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		legoGlobs.currLevel->crystalsDrained += crystalDrainedAmount;
+	}
+}
+
+// <LegoRR.exe @0041f7f0>
+void __cdecl LegoRR::Level_ResetCrystalsDrained(void)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		legoGlobs.currLevel->crystalsDrained = 0;
+	}
+}
+
+// <LegoRR.exe @0041f810>
+sint32 __cdecl LegoRR::Level_GetCrystalCount(bool32 includeDrained)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		sint32 crystals = legoGlobs.currLevel->crystals;
+		if (!includeDrained) {
+			// Exclude drained count.
+			crystals -= legoGlobs.currLevel->crystalsDrained;
+		}
+		return crystals;
+	}
+	/// FIX APPLY: Non-junk return value when not in a level.
+	return 0;
+}
+
+// <LegoRR.exe @0041f830>
+sint32 __cdecl LegoRR::Level_GetOreCount(bool32 isProcessed)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		if (!isProcessed) {
+			return legoGlobs.currLevel->ore;
+		}
+		else {
+			return legoGlobs.currLevel->studs;
+		}
+	}
+	/// FIX APPLY: Non-junk return value when not in a level.
+	return 0;
+}
+
+// <LegoRR.exe @0041f850>
+void __cdecl LegoRR::Level_AddStolenCrystals(sint32 stolenCrystalAmount)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		legoGlobs.currLevel->crystalsStolen += stolenCrystalAmount;
+	}
+}
+
+// <LegoRR.exe @0041f870>
+void __cdecl LegoRR::Lego_SetRadarNoTrackObject(bool32 noTrackObj)
+{
+	if (noTrackObj) {
+		legoGlobs.flags1 |= GAME1_RADAR_NOTRACKOBJECT;
+	}
+	else {
+		legoGlobs.flags1 &= ~GAME1_RADAR_NOTRACKOBJECT;
+	}
+}
+
+// <LegoRR.exe @0041f8a0>
+// inline Lego_IsNoclipOn
+
+// <LegoRR.exe @0041f8b0>
+void __cdecl LegoRR::Level_IncCrystalsPickedUp(void)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		legoGlobs.currLevel->crystalsPickedUp++;
+	}
+}
+
+// <LegoRR.exe @0041f8c0>
+void __cdecl LegoRR::Level_IncOrePickedUp(void)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		legoGlobs.currLevel->orePickedUp++;
+	}
+}
+
+// <LegoRR.exe @0041f8d0>
+void __cdecl LegoRR::Level_IncOreStored(bool32 isProcessed)
+{
+	Level_AddOreStored(isProcessed, 1);
+}
+
+/// CUSTOM: Extension of Level_IncOreStored for units larger than 1.
+void __cdecl LegoRR::Level_AddOreStored(bool32 isProcessed, sint32 oreAmount)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		if (!isProcessed) {
+			legoGlobs.currLevel->ore += oreAmount;
+		}
+		else {
+			legoGlobs.currLevel->studs += oreAmount;
+		}
+	}
+	if (!isProcessed) {
+		Panel_CryOreSideBar_ChangeOreMeter(true, oreAmount);
+	}
+	else {
+		Panel_CryOreSideBar_ChangeOreMeter(true, oreAmount * LEGO_STUDORECOUNT);
+	}
+}
+
+// <LegoRR.exe @0041f910>
+void __cdecl LegoRR::Level_SubtractOreStored(bool32 isProcessed, sint32 oreAmount)
+{
+	if (legoGlobs.currLevel != nullptr) {
+		if (!isProcessed) {
+			legoGlobs.currLevel->ore -= oreAmount;
+		}
+		else {
+			legoGlobs.currLevel->studs -= oreAmount;
+		}
+	}
+	if (!isProcessed) {
+		Panel_CryOreSideBar_ChangeOreMeter(false, oreAmount);
+	}
+	else {
+		/// FIX APPLY: Account for more than one stud being subtracted.
+		Panel_CryOreSideBar_ChangeOreMeter(false, oreAmount * LEGO_STUDORECOUNT);
+	}
+}
+
+// <LegoRR.exe @0041f950>
+// Gods_Go
+
+// <LegoRR.exe @0041f9b0>
+void __cdecl LegoRR::Lego_StartLevelEnding(void)
+{
+	if (!(legoGlobs.flags1 & GAME1_LEVELENDING)) {
+		legoGlobs.flags1 |= GAME1_LEVELENDING;
+
+		rewardGlobs.current.items[Reward_Figures].numDestroyed = NERPsRuntime_GetPreviousLevelObjectsBuilt("Pilot", 0);
+
+		Construction_DisableCryOreDrop(true); // Prevent tele'ed up objects from spawning their costs.
+		LegoObject_SetLevelEnding(true);
+		Teleporter_Start(TELEPORT_SERVIVE_VEHICLE,       0x1, 0x1);
+		Teleporter_Start(TELEPORT_SERVIVE_MINIFIGURE,    0x1, 0x1);
+		Teleporter_Start(TELEPORT_SERVIVE_BUILDING,      0x1, 0x1);
+		Teleporter_Start(TELEPORT_SERVIVE_ELECTRICFENCE, 0x1, 0x1);
+
+		Lego_SetPaused(false, false);
+		Interface_BackToMain();
+
+		if (panelGlobs.panelTable[Panel_Radar].flags & PANELTYPE_FLAG_UNK_2) {
+			Panel_ChangeFlags_BasedOnState(Panel_Radar);
+			Panel_ChangeFlags_BasedOnState(Panel_RadarFill);
+		}
+	}
+}
+
+// <LegoRR.exe @0041fa80>
+// Lego_Initialise
 
 
 // <LegoRR.exe @00424660>

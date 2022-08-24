@@ -313,7 +313,7 @@ void __cdecl LegoRR::LegoObject_Weapon_FUN_004375c0(LegoObject* liveObj, sint32 
 		LegoObject* crystalObj = LegoObject_FUN_00438d20(&blockPos, LegoObject_PowerCrystal, (LegoObject_ID)0, 0);
 		if (crystalObj == nullptr) break;
 
-		crystalObj = LegoObject_FUN_0043a910(crystalObj, LegoObject_PowerCrystal, (LegoObject_ID)0, 0);
+		crystalObj = LegoObject_SpawnCarryableObject(crystalObj, LegoObject_PowerCrystal, (LegoObject_ID)0, 0);
 		if (crystalObj == nullptr) break;
 
 		crystalObj->flags3 |= LIVEOBJ3_POWEROFF;
@@ -1254,10 +1254,8 @@ void __cdecl LegoRR::LegoObject_RequestPowerGridUpdate(void)
 		// Not in the update loop, go straight to power grid recalculation mode.
 		objectGlobs.flags |= LegoObject_GlobFlags::OBJECT_GLOB_FLAG_POWERUPDATING;
 
-		if (legoGlobs.currLevel != nullptr) {
-			// We need to reset this before PowerGrid recalculation.
-			legoGlobs.currLevel->crystalsDrained = 0;
-		}
+		// We need to reset this before PowerGrid recalculation.
+		Level_ResetCrystalsDrained();
 	}
 }
 
@@ -1299,9 +1297,9 @@ void __cdecl LegoRR::LegoObject_UpdateAll(real32 elapsedGame)
 
 	LegoObject_Flocks_Update_FUN_0044c1c0(&elapsedGame);
 
-	objectGlobs.LiveManager_TimerUnk -= elapsedGame;
-	if (objectGlobs.LiveManager_TimerUnk <= 0.0f) {
-		objectGlobs.LiveManager_TimerUnk = 125.0f;
+	objectGlobs.s_sound3DUpdateTimer -= elapsedGame;
+	if (objectGlobs.s_sound3DUpdateTimer <= 0.0f) {
+		objectGlobs.s_sound3DUpdateTimer = 5.0f * STANDARD_FRAMERATE; // Every 5 seconds
 		Lego_UpdateAll3DSounds(true);
 	}
 }
