@@ -57,6 +57,7 @@
 #define IDM_RENDERPANELS				512
 #define IDM_TOOLTIPSOUND				513
 // --------------
+#define IDM_RELOAD_KEYBINDS				580
 // &Options > Logging
 #define IDM_LOGGING_DEBUG				581
 #define IDM_LOGGING_TRACE				582

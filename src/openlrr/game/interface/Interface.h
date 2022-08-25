@@ -134,7 +134,7 @@ struct Interface_Globs // [LegoRR/Interface.c|struct:0x14ac|tags:GLOBS]
 	/*0fac,4*/	undefined4 field_fac;
 	/*0fb0,4*/	undefined4 field_fb0;
 	/*0fb4,10*/	Area2F areaf_fb4;
-	/*0fc4,4*/	bool32 bool_fc4;
+	/*0fc4,4*/	bool32 flashingState; // For block and icon flashing. false = off, true = on.
 	/*0fc8,4*/	real32 timer_fc8;
 	/*0fcc,4*/	Advisor_Type advisorType_fcc;
 	/*0fd0,4*/	Interface_MenuItemType menuItemType_fd0;
@@ -280,7 +280,8 @@ extern Interface_Globs & interfaceGlobs;
 void __cdecl Interface_DoF2InterfaceKeyAction(void);
 
 // <LegoRR.exe @0041c3a0>
-#define Interface_CallbackDoMenuIconKeyAction ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID))0x0041c3a0)
+//#define Interface_CallbackDoMenuIconKeyAction ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID))0x0041c3a0)
+bool32 __cdecl Interface_CallbackDoMenuIconKeyAction(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @0041c420>
 #define Interface_FUN_0041c420 ((void (__cdecl* )(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID, real32* param_4))0x0041c420)

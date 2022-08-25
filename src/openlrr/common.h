@@ -38,6 +38,7 @@
 #include <iterator>
 //#include <typeinfo>
 #include <memory>
+#include <stdexcept>
 
 // Windows C RunTime Header Files
 #include <direct.h>

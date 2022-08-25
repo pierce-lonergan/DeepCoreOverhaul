@@ -56,18 +56,18 @@ enum TutorialFlags : uint32 // [LegoRR/NERPs.c|flags:0x4|type:uint]
 {
 	TUTORIAL_FLAG_NONE     = 0,
 	TUTORIAL_FLAG_UNK_1    = 0x1,
-	TUTORIAL_FLAG_UNK_2    = 0x2,
-	TUTORIAL_FLAG_UNK_4    = 0x4,
-	TUTORIAL_FLAG_UNK_8    = 0x8,
+	TUTORIAL_FLAG_UNK_2    = 0x2, // Tutorial block flashing?
+	TUTORIAL_FLAG_UNK_4    = 0x4, // Click on this block to do something? (arrow?, wall highlight?) Used in Level_BlockPointerCheck.
+	TUTORIAL_FLAG_UNK_8    = 0x8, // Allow selection? Click on unit on this block? Used in Level_BlockPointerCheck.
 	TUTORIAL_FLAG_UNK_10   = 0x10,
 	TUTORIAL_FLAG_UNK_20   = 0x20,
 	TUTORIAL_FLAG_UNK_40   = 0x40,
-	TUTORIAL_FLAG_UNK_80   = 0x80,
+	TUTORIAL_FLAG_UNK_80   = 0x80, // Turn off action stations?
 	TUTORIAL_FLAG_UNK_100  = 0x100,
-	TUTORIAL_FLAG_UNK_200  = 0x200,
+	TUTORIAL_FLAG_UNK_200  = 0x200, // No selection box? (multiselect?)
 	TUTORIAL_FLAG_UNK_400  = 0x400,
 	TUTORIAL_FLAG_UNK_800  = 0x800,
-	TUTORIAL_FLAG_UNK_1000 = 0x1000,
+	TUTORIAL_FLAG_UNK_1000 = 0x1000, // No camera controls?
 };
 flags_end(TutorialFlags, 0x4);
 
@@ -362,6 +362,8 @@ extern NERPsFile_Globs & nerpsfileGlobs;
 
 #pragma region Functions
 
+ /// CUSTOM: Shorthand for checking if we're in a tutorial.
+inline bool NERPs_AnyTutorialFlags() { return nerpsruntimeGlobs.tutorialFlags != TUTORIAL_FLAG_NONE; }
 /// CUSTOM: Replacement for always using NERPFunc_GetTurorialFlags
 inline TutorialFlags NERPs_GetTutorialFlags() { return nerpsruntimeGlobs.tutorialFlags; }
 /// CUSTOM: Replacement for always using NERPFunc_SetTurorialFlags

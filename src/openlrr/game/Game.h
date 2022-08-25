@@ -354,7 +354,7 @@ struct Lego_Block // [LegoRR/Lego.c|struct:0x48|pack:1]
 	/*38,4*/	bool32 fallinUpper; // (fallin upper: 1 if fallin > 4)
 	/*3c,4*/	sint32 fallinIntensity; // (fallin scale: 1-4)
 	/*40,4*/	real32 fallinTimer; // (randomized with full fallin value)
-	/*44,4*/	undefined4 field_44;
+	/*44,4*/	undefined4 field_44; // Tutorial highlight state (1 == normal, 0 = tutorial color)
 	/*48*/
 };
 assert_sizeof(Lego_Block, 0x48);

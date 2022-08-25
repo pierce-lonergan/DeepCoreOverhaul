@@ -7,11 +7,13 @@
 
 #include "../interface/TextMessages.h"
 #include "../Game.h"
+#include "../Shortcuts.hpp"
 
 #include "NERPsFunctions.h"
 
 
 using Gods98::Keys;
+using Shortcuts::ShortcutID;
 
 
 /**********************************************************************************
@@ -69,12 +71,15 @@ sint32 __cdecl LegoRR::NERPFunc__SetMessage(sint32* stack)
 		// ...What is going on here? An infinite loop until the user presses enter??
 		// ...This is really bad.
 
-		while (!Input_IsKeyPressed(Keys::KEY_RETURN)) {
+		//while (!Input_IsKeyPressed(Keys::KEY_RETURN)) {
+		while (!Shortcut_IsPressed(ShortcutID::NERPsEndMessageWait)) {
 			/// CHANGE: Switch to full-blown update loop for proper mouse input support,
 			///         and not freezing the entire dang application.
 			// Use extension of Main_LoopUpdate that disables graphics updates, since we don't need that.
 			Gods98::Main_LoopUpdate2(false, false);
 			//Gods98::Input_ReadKeys();
+
+			Shortcuts::shortcutManager.Update(0.0f); // Dummy no elapsed time.
 		}
 	}
 

@@ -95,6 +95,7 @@ BEGIN
         MENUITEM "&Tooltip Sound",              IDM_TOOLTIPSOUND,CHECKED
 //#endif
         MENUITEM SEPARATOR
+        MENUITEM "Reload &Keybinds"             IDM_RELOAD_KEYBINDS
         POPUP "Logging"
         BEGIN
             MENUITEM "Debug",                   IDM_LOGGING_DEBUG

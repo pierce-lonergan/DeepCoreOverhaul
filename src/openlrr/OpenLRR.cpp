@@ -12,6 +12,7 @@
 #include "engine/Graphics.h"
 #include "engine/Main.h"
 #include "game/Game.h"
+#include "game/Shortcuts.hpp"
 #include "game/effects/LightEffects.h"
 #include "game/front/FrontEnd.h"
 #include "game/interface/hud/Bubbles.h"
@@ -363,6 +364,11 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_TOOLTIPSOUND:
 		//std::printf("IDM_TOOLTIPSOUND\n");
 		LegoRR::Lego_SetDisableToolTipSound(!LegoRR::Lego_IsDisableToolTipSound());
+		break;
+
+	case IDM_RELOAD_KEYBINDS:
+		//std::printf("IDM_RELOAD_KEYBINDS\n");
+		Shortcuts::shortcutManager.Load();
 		break;
 
 	case IDM_LOGGING_DEBUG:

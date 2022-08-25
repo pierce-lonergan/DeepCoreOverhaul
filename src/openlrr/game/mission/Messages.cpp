@@ -243,7 +243,11 @@ void __cdecl LegoRR::Message_Update(void)
 			AITask_QueueGotoBlock_Group(messageGlobs.selectedUnitList, messageGlobs.selectedUnitCount, &message->blockPos, message->argument2.boolean);
 			break;
 		case Message_FirstPerson: //0x9:
-			Message_EnterFirstPersonView(message->argument2.uinteger);
+			if (Message_EnterFirstPersonView(message->argument2.uinteger)) {
+				/// FIX APPLY: Properly open FP interface menu.
+				/// TODO: Should we allow disabling this functionality in-case users want to mess with menus?
+				Interface_OpenMenu_FUN_0041b200(Interface_Menu_FP, nullptr);
+			}
 			break;
 		case Message_TrackObject: //0xa:
 			if (messageGlobs.selectedUnitCount != 0) {
@@ -251,7 +255,14 @@ void __cdecl LegoRR::Message_Update(void)
 			}
 			break;
 		case Message_TopView: //0xb:
-			Lego_SetViewMode(ViewMode_Top, nullptr, 0);
+			if (Lego_GetViewMode() != ViewMode_Top) {
+				Lego_SetViewMode(ViewMode_Top, nullptr, 0);
+				/// FIX APPLY: Properly go back to non-FP interface menu.
+				/// TODO: Should we allow disabling this functionality in-case users want to mess with menus?
+				// Reduce is a shorthand for getting the right interface menu, while maintaining existing selection.
+				Message_ReduceSelectedUnits();
+				//Interface_OpenMenu_FUN_0041b200(Interface_Menu_Main, nullptr);
+			}
 			break;
 		case Message_PlaySample: //0xc:
 			SFX_Random_PlaySoundNormal(message->argument2.sfxID, false);

@@ -1832,6 +1832,8 @@ bool interop_hook_LegoRR_Interface(void)
 
 	// used by: Lego_HandleKeys
 	result &= hook_write_jmpret(0x0041c370, LegoRR::Interface_DoF2InterfaceKeyAction);
+	// internal, no need to hook these
+	//result &= hook_write_jmpret(0x0041c3a0, LegoRR::Interface_CallbackDoMenuIconKeyAction);
 
 	return_interop(result);
 }
