@@ -3,6 +3,7 @@
 
 #include "../../engine/drawing/DirectDraw.h"
 #include "../../engine/input/Input.h"
+#include "../../engine/input/Keys.h"
 
 #include "../interface/TextMessages.h"
 #include "../Game.h"
