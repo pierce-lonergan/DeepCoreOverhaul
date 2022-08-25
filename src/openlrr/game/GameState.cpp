@@ -1681,27 +1681,54 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 	/// BETA: RockFall. Show listset counts using the F8 key.
 	/// CHANGE: Instead of holding F8, F8 is now a toggle.
-	static bool sShowListSets = false;
+	/// DEBUG KEYBIND: [F8]  Switch between debug overlays for ListSets, NERPs, or nothing.
+	static uint32 sShowDebugOverlayType = 0;
 	if (Lego_IsAllowDebugKeys()) {
+		const uint32 DEBUGOVERLAY_LISTSETS = 1;
+		const uint32 DEBUGOVERLAY_NERPS    = 2;
+		const uint32 DEBUGOVERLAY_MAXTYPES = 3;
+		const sint32 dbgX = 100;
+		const sint32 dbgY = 100 - 12;
+		const uint32 r = 12;
+
 		if (Input_IsKeyPressed(Keys::KEY_F8)) {
-			sShowListSets = !sShowListSets;
+			sShowDebugOverlayType = (sShowDebugOverlayType + 1) % DEBUGOVERLAY_MAXTYPES;
 		}
-		if (sShowListSets) {
-			uint32 row = 0;
-			const uint32 r = 12;
-			Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, 100, 100+r*(row++), "AITasks %i", (sint32)aiListSet.EnumerateAlive().Count());
-			Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, 100, 100+r*(row++), "EFences %i", (sint32)efenceListSet.EnumerateAlive().Count());
-			Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, 100, 100+r*(row++), "Objects %i", (sint32)objectListSet.EnumerateAlive().Count());
-			// `CountAlive()` can only be used when we are SURE we've hooked
-			// and replaced all functions creating and removing listset items.
-			// Keeping the game module functions as `EnumerateAlive().Count()`, will
-			//  allow hooking and unhooking them without having to go back and change this.
-			Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, 100, 100+r*(row++), "Configs %i", (sint32)Gods98::configListSet.CountAlive());
-			Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, 100, 100+r*(row++), "Containers %i", (sint32)Gods98::containerListSet.CountAlive());
-			Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, 100, 100+r*(row++), "Fonts %i", (sint32)Gods98::fontListSet.CountAlive());
-			Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, 100, 100+r*(row++), "Images %i", (sint32)Gods98::imageListSet.CountAlive());
-			Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, 100, 100+r*(row++), "Meshes %i", (sint32)Gods98::meshListSet.CountAlive());
-			Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, 100, 100+r*(row++), "Viewports %i", (sint32)Gods98::viewportListSet.CountAlive());
+
+		switch (sShowDebugOverlayType) {
+		case DEBUGOVERLAY_LISTSETS:
+			{
+				uint32 row = 0;
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "[ListSets]");
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "AITasks %i", (sint32)aiListSet.EnumerateAlive().Count());
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "EFences %i", (sint32)efenceListSet.EnumerateAlive().Count());
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Objects %i", (sint32)objectListSet.EnumerateAlive().Count());
+				// `CountAlive()` can only be used when we are SURE we've hooked
+				// and replaced all functions creating and removing listset items.
+				// Keeping the game module functions as `EnumerateAlive().Count()`, will
+				//  allow hooking and unhooking them without having to go back and change this.
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Configs %i", (sint32)Gods98::configListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Containers %i", (sint32)Gods98::containerListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Fonts %i", (sint32)Gods98::fontListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Images %i", (sint32)Gods98::imageListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Meshes %i", (sint32)Gods98::meshListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Viewports %i", (sint32)Gods98::viewportListSet.CountAlive());
+			}
+			break;
+		case DEBUGOVERLAY_NERPS:
+			{
+				uint32 row = 0;
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "[NERPs]");
+				for (uint32 i = 0; i < _countof(nerpsruntimeGlobs.registers); i++) {
+					Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "R%i %i", i, (sint32)nerpsruntimeGlobs.registers[i]);
+				}
+				for (uint32 i = 0; i < _countof(nerpsruntimeGlobs.timers); i++) {
+					const real32 seconds = nerpsruntimeGlobs.timers[i] / 1000.0f;
+					Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Timer%i %0.3fs", i, seconds);
+				}
+				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Flags %04x", (uint32)NERPs_GetTutorialFlags());
+			}
+			break;
 		}
 	}
 
