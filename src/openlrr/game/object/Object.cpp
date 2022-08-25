@@ -1,6 +1,7 @@
 // Object.cpp : 
 //
 
+#include "../../engine/core/Maths.h"
 #include "../../engine/core/Utils.h"
 
 #include "../Game.h"
@@ -629,9 +630,13 @@ void __cdecl LegoRR::HiddenObject_ExposeBlock(const Point2I* blockPos)
 
 			LegoObject* liveObj;
 			if (hiddenObj->type == LegoObject_Building) {
-				// Convert radians to range [0,4], then wrap to a valid direction [0,3].
-				const uint32 rotationTemp = (uint32)(hiddenObj->heading * 0.1591549f * 8.0f);
-				const Direction rotation = (Direction)(rotationTemp % DIRECTION__COUNT);
+				// Convert radians to range [0,8], then wrap to a valid direction [0,3].
+				// This uses slices (like a pie chart) around each cardinal direction.
+				// So a value of 340deg or 41deg would still be closest to 0deg, not 270deg or 90deg.
+				//  (This is stored in radians, degrees are just for the example)
+				const uint32 rotationTemp = (uint32)(hiddenObj->heading * (8.0f / (M_PI * 2))); // (0.1591549f * 8.0f));
+				// Positive modulus of (rotation + 1). Use +1 to align pie slices for modulus operation.
+				const Direction rotation = (Direction)((((rotationTemp + 1) % DIRECTION__COUNT) + DIRECTION__COUNT) % DIRECTION__COUNT);
 
 				uint32 shapeCount = 0; // dummy init
 				const Point2I* shapePoints = Building_GetShapePoints(&legoGlobs.buildingData[hiddenObj->id], &shapeCount);
