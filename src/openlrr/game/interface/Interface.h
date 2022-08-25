@@ -240,7 +240,7 @@ extern Interface_Globs & interfaceGlobs;
 #define Interface_FUN_0041b2f0 ((sint32 (__cdecl* )(Interface_MenuType interfaceMenuType))0x0041b2f0)
 
 // <LegoRR.exe @0041b3a0>
-#define Interface_NotMainOrFirstPersonMenu ((bool32 (__cdecl* )(Interface_MenuType interfaceMenuType))0x0041b3a0)
+#define Interface_MenuTypeHasBackButton ((bool32 (__cdecl* )(Interface_MenuType interfaceMenuType))0x0041b3a0)
 
 // <LegoRR.exe @0041b3c0>
 #define Interface_FUN_0041b3c0 ((void (__cdecl* )(void))0x0041b3c0)

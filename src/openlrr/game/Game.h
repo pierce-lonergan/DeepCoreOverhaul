@@ -772,6 +772,10 @@ extern Lego_Globs2 legoGlobs2;
 #define Lego_ID(...) Config_ID(LegoRR::legoGlobs.gameName, __VA_ARGS__ )
 #define Main_ID(...) Config_ID(LegoRR::legoGlobs.gameName, "Main", __VA_ARGS__ )
 
+
+#define Typing_IsKeyPressed(k)	(Input_IsKeyDown((k)) && !gamectrlGlobs.typingState_Map[(k)])
+#define Typing_IsKeyReleased(k)	(Input_IsKeyUp((k)) && gamectrlGlobs.typingState_Map[(k)])
+
 #pragma endregion
 
 /**********************************************************************************
@@ -994,9 +998,12 @@ __inline real32 __cdecl Lego_GetElapsedAbs(void) { return legoGlobs.elapsedAbs; 
 // <LegoRR.exe @00422ff0>
 #define Lego_DrawRenameInput ((void (__cdecl* )(real32 elapsedAbs))0x00422ff0)
 
+// This function also has the essential behaviour of clearing INPUT.Key_Map.
+// Which prevents any functions called after this during the main loop from
+// triggering debug keys.
 // <LegoRR.exe @00423120>
-#define Lego_HandleRenameInput ((void (__cdecl* )(void))0x00423120)
-//void __cdecl Lego_HandleRenameInput(void);
+//#define Lego_HandleRenameInput ((void (__cdecl* )(void))0x00423120)
+void __cdecl Lego_HandleRenameInput(void);
 
 // <LegoRR.exe @00423210>
 //#define Lego_MainLoop ((bool32 (__cdecl* )(real32 elapsed))0x00423210)
@@ -1048,10 +1055,10 @@ void __cdecl Lego_Exit(void);
 // 
 // keyDownT is unused, and no keybinds exist.
 // keyDownR is unused, but debug keybinds exist for the rewards screen.
-// keyDownAnyShift is only needed by Lego_HandleWorld().
+// keyDownAddSelection is only needed by Lego_HandleWorld().
 // <LegoRR.exe @00424ff0>
-//#define Lego_HandleKeys ((bool32 (__cdecl* )(real32 elapsedGame, real32 elapsedInterface, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAnyShift))0x00424ff0)
-bool32 __cdecl Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterface, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAnyShift);
+//#define Lego_HandleKeys ((bool32 (__cdecl* )(real32 elapsedGame, real32 elapsedInterface, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAddSelection))0x00424ff0)
+bool32 __cdecl Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterface, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAddSelection);
 
 // <LegoRR.exe @00425a70>
 #define Lego_UpdateAll3DSounds ((bool32 (__cdecl* )(bool32 stopAll))0x00425a70)
@@ -1116,8 +1123,8 @@ __inline void __cdecl Lego_GetMouseWorldPosition(OUT Vector3F* vector) { *vector
 #define Lego_UpdateTopdownCamera ((void (__cdecl* )(real32 elapsedAbs))0x00426350)
 
 // <LegoRR.exe @00426450>
-#define Lego_HandleWorld ((void (__cdecl* )(real32 elapsedGame, real32 elapsedAbs, bool32 keyDownT, bool32 keyDownR, bool32 keyDownAnyShift))0x00426450)
-//void __cdecl Lego_HandleWorld(real32 elapsedGame, real32 elapsedAbs, bool32 keyDownT, bool32 keyDownR, bool32 keyDownAnyShift);
+#define Lego_HandleWorld ((void (__cdecl* )(real32 elapsedGame, real32 elapsedAbs, bool32 keyDownT, bool32 keyDownR, bool32 keyDownAddSelection))0x00426450)
+//void __cdecl Lego_HandleWorld(real32 elapsedGame, real32 elapsedAbs, bool32 keyDownT, bool32 keyDownR, bool32 keyDownAddSelection);
 
 // <LegoRR.exe @00427d30>
 #define Lego_LoadToolTipInfos ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x00427d30)
@@ -1578,7 +1585,7 @@ __inline Map3D* Lego_GetMap(void) { return Lego_GetLevel()->map; }
 #define Level_Block_SetDozerClearing ((void (__cdecl* )(const Point2I* blockPos, bool32 state))0x00433050)
 
 // <LegoRR.exe @004330b0>
-#define LiveObject_GetDamageFromSurface ((bool32 (__cdecl* )(LegoObject* liveObj, sint32 bx, sint32 by, real32 elapsedGame, OPTIONAL OUT real32* damage))0x004330b0)
+#define Level_GetObjectDamageFromSurface ((bool32 (__cdecl* )(LegoObject* liveObj, sint32 bx, sint32 by, real32 elapsedGame, OPTIONAL OUT real32* damage))0x004330b0)
 
 // <LegoRR.exe @004331f0>
 #define Level_Block_GetDirection ((uint32 (__cdecl* )(uint32 bx, uint32 by))0x004331f0)

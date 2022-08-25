@@ -102,7 +102,8 @@ bool32 __cdecl LegoRR::NERPsFile_LoadMessageFile(const char* filename)
 	// Sanity check
 	if (nerpsfileGlobs.messageBuffer == nullptr) {
 		//nerpsfileGlobs.messageBuffer = nullptr;
-		nerpsfileGlobs.soundsUNKCOUNT = nerpsfileGlobs.soundCount; // No idea what this is doing...
+		// soundsUNKCOUNT
+		nerpsfileGlobs.lineIndexArray_7c[0] = nerpsfileGlobs.soundCount; // No idea what this is doing...
 		return false;
 	}
 
@@ -224,7 +225,8 @@ bool32 __cdecl LegoRR::NERPsFile_LoadMessageFile(const char* filename)
 							nerpsfileGlobs.soundList[nerpsfileGlobs.soundCount].sound3DHandle = sound3DHandle;
 							nerpsfileGlobs.soundCount++;
 
-							nerpsfileGlobs.soundsUNKCOUNT = nerpsfileGlobs.soundCount;
+							// soundsUNKCOUNT
+							nerpsfileGlobs.lineIndexArray_7c[0] = nerpsfileGlobs.soundCount;
 						}
 					}
 				}
@@ -688,8 +690,8 @@ void __cdecl LegoRR::NERPs_Level_NERPMessage_Parse(const char* text, OPTIONAL OU
 								sint32 sound3DHandle = nerpsfileGlobs.soundList[i].sound3DHandle;
 
 								// Play the sound if it's not the currently-playing sound(?)
-								if (nerpsfileGlobs.soundsUNKCOUNT != i) {
-									nerpsfileGlobs.soundsUNKCOUNT = i;
+								if (nerpsfileGlobs.lineIndexArray_7c[0] != i) { // soundsUNKCOUNT
+									nerpsfileGlobs.lineIndexArray_7c[0] = i; // soundsUNKCOUNT
 
 									real32 playTime = Gods98::Sound3D_GetSamplePlayTime(sound3DHandle);
 

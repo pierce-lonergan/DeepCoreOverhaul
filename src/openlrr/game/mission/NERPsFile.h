@@ -266,15 +266,7 @@ struct NERPsFile_Globs // [LegoRR/NERPs.c|struct:0xb4|tags:GLOBS]
 	/*70,4*/	NERPMessageImage* imageList;
 	/*74,4*/	uint32 soundCount;
 	/*78,4*/	NERPMessageSound* soundList;
-	/*7c,4*/	undefined4 soundsUNKCOUNT;
-	/*80,4*/	undefined4 field_80;
-	/*84,4*/	undefined4 field_84;
-	/*88,4*/	undefined4 field_88;
-	/*8c,4*/	undefined4 field_8c;
-	/*90,4*/	undefined4 field_90;
-	/*94,4*/	undefined4 field_94;
-	/*98,4*/	undefined4 field_98;
-	/*9c,4*/	undefined4 field_9c;
+	/*7c,24*/	uint32 lineIndexArray_7c[9];
 	/*a0,4*/	uint32 uint_a0;
 	/*a4,4*/	sint32 int_a4; // (signedness known due to constant comparison)
 	/*a8,4*/	uint32 uint_a8;

@@ -819,7 +819,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 // <LegoRR.exe @00423210>
 bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 {
-	bool32 keyDownT, keyDownR, keyDownAnyShift;
+	bool32 keyDownT, keyDownR, keyDownAddSelection;
 
 	// Programmer mode 10 operates by booting up each level in the links one-by-one,
 	// Once started, a level immediately ends, then jumps right into the next level.
@@ -860,7 +860,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	const real32 elapsedInterface = (!timeStopped ? elapsedReal : 0.0f);
 
 	// In first person view, game speed is locked at 100%.
-	//  (...unless in programmer mode >= 2, in which case... speedy legoman go zooooooooom).
+	//  (...unless programmer mode >= 2, in which case... speedy legoman go zooooooooom).
 	const bool32 fpForceGameSpeed = ((legoGlobs.viewMode == ViewMode_FP) && (Gods98::Main_ProgrammerMode() < 2));
 	// TIME PASSED: In-game in the world. This *SHOULD* be used for all game logic and world animations.
 	const real32 elapsedWorld = (!fpForceGameSpeed ? (elapsedInterface * Lego_GetGameSpeed()) : (elapsedInterface * 1.0f));
@@ -1039,7 +1039,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 
 	// Output keyDown* parameters are later used by `Lego_unkGameLoop_FUN_00426450`.
-	bool32 dontExit = Lego_HandleKeys(elapsedWorld, elapsedInterface, &keyDownT, &keyDownR, &keyDownAnyShift);
+	bool32 dontExit = Lego_HandleKeys(elapsedWorld, elapsedInterface, &keyDownT, &keyDownR, &keyDownAddSelection);
 	if (!dontExit)
 		return false;
 
@@ -1077,7 +1077,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 	// Input keyDown* parameters are obtained from `Lego_HandleKeys`.
 	// Handle input/interactions between world and UI.
-	Lego_HandleWorld(elapsedReal, elapsedInterface, keyDownT, keyDownR, keyDownAnyShift);
+	Lego_HandleWorld(elapsedReal, elapsedInterface, keyDownT, keyDownR, keyDownAddSelection);
 
 
 	Map3D_Update((legoGlobs.currLevel)->map, elapsedWorld);
@@ -1405,6 +1405,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	}
 
 
+	/// TODO: Is it safe to check non-zero instead of TRUE (1)??
 	if ((Front_IsTriggerMissionRestart() == TRUE) || Gods98::Main_ProgrammerMode() == 11) {
 		Debug_ProgrammerMode11_LoadLevel();
 	}
@@ -1843,14 +1844,14 @@ void __cdecl LegoRR::Lego_Exit(void)
 // 
 // keyDownT is unused, and no keybinds exist.
 // keyDownR is unused, but debug keybinds exist for the rewards screen.
-// keyDownAnyShift is only needed by Lego_HandleWorld().
+// keyDownAddSelection is only needed by Lego_HandleWorld().
 // <LegoRR.exe @00424ff0>
-bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterface, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAnyShift)
+bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterface, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAddSelection)
 {
 	/// CHANGE: Move these to the top for clarity. These only appeared after return false cases, so there were no issues.
 	*keyDownT = false;
 	*keyDownR = false;
-	*keyDownAnyShift = false;
+	*keyDownAddSelection = false;
 
 
 	/// KEYBIND: [Return]  "Start/submit unit rename input."
@@ -1958,7 +1959,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 
 		/// CONFLICT KEYBIND: [LShift], [RShift]  Used by Lego_HandleWorld to avoid certain actions.
 		if (Input_IsKeyDown(Keys::KEY_LEFTSHIFT) || Input_IsKeyDown(Keys::KEY_RIGHTSHIFT)) {
-			*keyDownAnyShift = true;
+			*keyDownAddSelection = true;
 		}
 
 		if (legoGlobs.viewMode == ViewMode_Top &&

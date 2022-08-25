@@ -460,6 +460,9 @@ bool32 __cdecl Main_DumpUnknownPhrases(void);
 // <LegoRR.exe @004781f0>
 void __cdecl Main_LoopUpdate(bool32 clear);
 
+/// CUSTOM: Extension of Main_LoopUpdate to optionally disable all graphics updates.
+void Main_LoopUpdate2(bool clear, bool updateGraphics);
+
 // <LegoRR.exe @00478230>
 __inline MainCLFlags Main_GetCLFlags(void) { return mainGlobs.clFlags; }
 MainCLFlags __cdecl noinline(Main_GetCLFlags)(void);

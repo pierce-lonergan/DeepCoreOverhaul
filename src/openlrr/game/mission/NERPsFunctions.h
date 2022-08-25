@@ -937,7 +937,8 @@ namespace LegoRR
 #define NERPFunc__GetMessageTimer ((NERPsFunction)0x00456980)
 
 // <LegoRR.exe @00456990>
-#define NERPFunc__SetMessage ((NERPsFunction)0x00456990)
+//#define NERPFunc__SetMessage ((NERPsFunction)0x00456990)
+sint32 __cdecl NERPFunc__SetMessage(sint32* stack);
 
 // <LegoRR.exe @00456a80>
 #define NERPFunc__SetObjectiveSwitch ((NERPsFunction)0x00456a80)

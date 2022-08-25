@@ -581,8 +581,8 @@ void __cdecl LegoRR::LegoObject_SetCustomName(LegoObject* liveObj, OPTIONAL cons
 
 		// Copy up to Length-1. strncpy null-terminates all chars beyond the string up to excluding Length-1.
 		// So we'll need to null-terminate the final char ourselves.
-		std::strncpy(liveObj->customName, newCustomName, (OBJECT_CUSTOMNAMELENGTH - 1));
-		liveObj->customName[OBJECT_CUSTOMNAMELENGTH - 1] = '\0'; // Null-terminate final char, not handled by strncpy.
+		std::strncpy(liveObj->customName, newCustomName, OBJECT_MAXCUSTOMNAMECHARS);
+		liveObj->customName[OBJECT_MAXCUSTOMNAMECHARS] = '\0'; // Null-terminate final char, not handled by strncpy.
 	}
 	else {
 		// Remove custom name.

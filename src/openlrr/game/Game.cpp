@@ -15,6 +15,8 @@
 #include "effects/LightEffects.h"
 #include "effects/Smoke.h"
 #include "front/FrontEnd.h"
+#include "front/Reward.h"
+#include "interface/hud/Bubbles.h"
 #include "interface/Advisor.h"
 #include "interface/HelpWindow.h"
 #include "interface/InfoMessages.h"
@@ -537,6 +539,58 @@ void __cdecl LegoRR::Lego_StartLevelEnding(void)
 
 // <LegoRR.exe @0041fa80>
 // Lego_Initialise
+
+
+// <LegoRR.exe @00423120>
+void __cdecl LegoRR::Lego_HandleRenameInput(void)
+{
+	if (legoGlobs.renameInput != nullptr) {
+		uint32 inputLength = std::strlen(legoGlobs.renameInput);
+
+		if (Typing_IsKeyPressed(Keys::KEY_BACKSPACE)) {
+			// Backspace the last character.
+			if (inputLength > 0) {
+				legoGlobs.renameInput[inputLength - 1] = '\0';
+			}
+		}
+		else if (Typing_IsKeyReleased(Keys::KEY_RETURN) || Typing_IsKeyReleased(Keys::KEY_ESCAPE)) {
+			// Accept rename input. (We cannot reasonably make this a keybind).
+			legoGlobs.renameInput = nullptr;
+			Lego_SetPaused(false, false);
+		}
+		else {
+			// Type new characters.
+			for (uint32 keyCode = 0; keyCode < INPUT_MAXKEYS; keyCode++) {
+
+				if (inputLength >= OBJECT_MAXCUSTOMNAMECHARS)
+					break;
+
+				if (Typing_IsKeyPressed(keyCode)) {
+
+					sint32 keyChar = Front_Input_GetKeyCharacter(keyCode);
+					if (keyChar != 0) {
+						/// TODO: Enhancement to allow lowercase letters?
+						keyChar = std::toupper((sint32)keyChar);
+
+						legoGlobs.renameInput[inputLength] = (char)keyChar;
+						legoGlobs.renameInput[inputLength + 1] = '\0';
+						inputLength++;
+					}
+				}
+			}
+		}
+
+		// Required for using the Typing_ state macros.
+		// Copy key states to our typing state array.
+		// Then clear the real key states to prevent keybinds from triggering.
+		std::memcpy(gamectrlGlobs.typingState_Map, Gods98::INPUT.Key_Map, sizeof(Gods98::INPUT.Key_Map));
+		Input_ClearAllKeys();
+		//std::memset(Gods98::INPUT.Key_Map, 0, sizeof(Gods98::INPUT.Key_Map));
+	}
+}
+
+// <LegoRR.exe @00423210>
+// Lego_MainLoop
 
 
 // <LegoRR.exe @00424660>

@@ -830,18 +830,26 @@ bool32 __cdecl Gods98::Main_DumpUnknownPhrases(void)
 // <LegoRR.exe @004781f0>
 void __cdecl Gods98::Main_LoopUpdate(bool32 clear)
 {
+	Main_LoopUpdate2(clear, true);
+}
+
+/// CUSTOM: Extension of Main_LoopUpdate to optionally disable all graphics updates.
+void __cdecl Gods98::Main_LoopUpdate2(bool clear, bool updateGraphics)
+{
 	log_firstcall();
 
 	Main_HandleIO();
 	Input_ReadKeys();
 	Input_ReadMouse2();
 
-	// Update the device and flip the surfaces...
-	Graphics_Finalise3D();
-	DirectDraw_Flip();
+	if (updateGraphics) {
+		// Update the device and flip the surfaces...
+		Graphics_Finalise3D();
+		DirectDraw_Flip();
 
-	if (clear) DirectDraw_Clear(nullptr, 0 /*black*/);
-	mainGlobs.flags &= ~MainFlags::MAIN_FLAG_UPDATED;
+		if (clear) DirectDraw_Clear(nullptr, 0 /*black*/);
+		mainGlobs.flags &= ~MainFlags::MAIN_FLAG_UPDATED;
+	}
 
 	/// FIX APPLY: Allow the window close button to function within menus and screens by
 	///            forcefully exiting the game when LRR is deep in a nested UI loop.

@@ -189,7 +189,7 @@ enum LiveFlags3 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	                                 // since they manage to interrupt the selection immediately after...
 	LIVEOBJ3_UNK_200        = 0x200, // Set for RockMonster types, but haven't found usage yet.
 	LIVEOBJ3_UNK_400        = 0x400,
-	LIVEOBJ3_UNUSED_800     = 0x800, // Likely unused, but included to fill in the gaps.
+	LIVEOBJ3_UNUSED_800     = 0x800, // Observed on Rock Raider being pummeled by RockFallin.
 	LIVEOBJ3_CENTERBLOCKIDLE = 0x1000, // Used for vehicles. These units will only idle in the center of a block. Ignored if STATS1_ROUTEAVOIDANCE.
 	                                   // Only used in LegoObject_Route_AllocPtr_FUN_004419c0.
 	LIVEOBJ3_UNK_2000       = 0x2000,

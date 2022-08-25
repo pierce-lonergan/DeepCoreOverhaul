@@ -46,6 +46,7 @@
 #include "game/interface/Interface.h"
 #include "game/mission/Messages.h"
 #include "game/mission/NERPsFile.h"
+#include "game/mission/NERPsFunctions.h"
 #include "game/mission/PTL.h"
 #include "game/object/AITask.h"
 #include "game/object/BezierCurve.h"
@@ -1796,6 +1797,11 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x0041f9b0, LegoRR::Lego_StartLevelEnding);
 
+
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x00423120, LegoRR::Lego_HandleRenameInput);
+
+
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00424660, LegoRR::Lego_UpdateSceneFog);
 
@@ -1975,6 +1981,9 @@ bool interop_hook_LegoRR_NERPsFile(void)
 	result &= hook_write_jmpret(0x004535e0, LegoRR::NERPsRuntime_Execute);
 
 	result &= hook_write_jmpret(0x00456af0, LegoRR::NERPs_Level_NERPMessage_Parse);
+
+	// used by: NERPs script
+	result &= hook_write_jmpret(0x00456990, LegoRR::NERPFunc__SetMessage);
 
 	return_interop(result);
 }

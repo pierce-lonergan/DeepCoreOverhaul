@@ -113,16 +113,16 @@ void __cdecl LegoRR::Message_Initialise(void)
 // <LegoRR.exe @00452220>
 void __cdecl LegoRR::Message_RemoveEventsWithObject(LegoObject* deadObj)
 {
-	/// FIXME: Should we also be checking events at (1 - bx2)???
-    const bool32 bx2 = messageGlobs.eventAB;
-    uint32 count = messageGlobs.eventCounts[bx2];
+	/// FIXME: Should we also be checking events at (1 - ab)???
+    const bool32 ab = messageGlobs.eventAB;
+    uint32 count = messageGlobs.eventCounts[ab];
     for (uint32 i = 0; i < count; i++) {
 		/// FIXME: We should also be checking message types that use argument2 as an object!!!
-        if (deadObj == messageGlobs.eventLists[bx2][i].argumentObj) {
+        if (deadObj == messageGlobs.eventLists[ab][i].argumentObj) {
 
 			// Replace this removed message with the message at the end of the list.
-            messageGlobs.eventLists[bx2][i] = messageGlobs.eventLists[bx2][--count];
-            messageGlobs.eventCounts[bx2] = count;
+            messageGlobs.eventLists[ab][i] = messageGlobs.eventLists[ab][--count];
+            messageGlobs.eventCounts[ab] = count;
         }
     }
 }
@@ -170,11 +170,11 @@ void __cdecl LegoRR::Message_RegisterHotKeyEvent(Gods98::Keys key, Message_Type 
 // <LegoRR.exe @00452320>
 void __cdecl LegoRR::Message_PostEvent(Message_Type messageType, LegoObject* argument1Obj, Message_Argument argument2, OPTIONAL const Point2I* blockPos)
 {
-	const bool32 bx2 = messageGlobs.eventAB;
-    const uint32 index = messageGlobs.eventCounts[bx2];
+	const bool32 ab = messageGlobs.eventAB;
+    const uint32 index = messageGlobs.eventCounts[ab];
     if (index < MESSAGE_MAXEVENTS) {
-        messageGlobs.eventCounts[bx2]++;
-		Message_Event* message = &messageGlobs.eventLists[bx2][index];
+        messageGlobs.eventCounts[ab]++;
+		Message_Event* message = &messageGlobs.eventLists[ab][index];
 
         std::memset(message, 0, sizeof(Message_Event));
 
@@ -202,10 +202,10 @@ void __cdecl LegoRR::Message_Update(void)
 		}
 	}
 
-	const bool32 bx2 = messageGlobs.eventAB;
+	const bool32 ab = messageGlobs.eventAB;
 
-	for (uint32 i = 0; i < messageGlobs.eventCounts[bx2]; i++) {
-		PTL_TranslateEvent(&messageGlobs.eventLists[bx2][i]);
+	for (uint32 i = 0; i < messageGlobs.eventCounts[ab]; i++) {
+		PTL_TranslateEvent(&messageGlobs.eventLists[ab][i]);
 	}
 
 	// So I kind of understand what this dual-queue is for.
@@ -217,13 +217,13 @@ void __cdecl LegoRR::Message_Update(void)
 
 	/// FIXME: We're dealing with messages that could be referencing dead objects (that may be removed in earlier messages).
 	///        How the hell are we supposed to handle this!??
-	const uint32 count = messageGlobs.eventCounts[bx2];
-	messageGlobs.eventCounts[bx2] = 0;
-	messageGlobs.eventCounts[!bx2] = 0;
-	messageGlobs.eventAB = !bx2;
+	const uint32 count = messageGlobs.eventCounts[ab];
+	messageGlobs.eventCounts[ab] = 0;
+	messageGlobs.eventCounts[!ab] = 0;
+	messageGlobs.eventAB = !ab;
 
 	for (uint32 i = 0; i < count; i++) {
-		const Message_Event* message = &messageGlobs.eventLists[bx2][i];
+		const Message_Event* message = &messageGlobs.eventLists[ab][i];
 
 		switch (message->type) {
 		case Message_Select: //0x1:
