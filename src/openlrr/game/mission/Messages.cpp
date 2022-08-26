@@ -15,9 +15,13 @@
 #include "../world/Construction.h"
 #include "../world/ElectricFence.h"
 #include "../Game.h"
+#include "../Shortcuts.hpp"
 
 #include "PTL.h"
 #include "Messages.h"
+
+
+using Shortcuts::ShortcutID;
 
 
 /**********************************************************************************
@@ -555,8 +559,31 @@ bool32 __cdecl LegoRR::Message_SelectObject2(LegoObject* liveObj, bool32 noDoubl
 // <LegoRR.exe @00452b30>
 bool32 __cdecl LegoRR::Message_IsObjectSelectable(LegoObject* liveObj)
 {
-	if (liveObj->flags3 & LIVEOBJ3_CANSELECT) {
-		if (LegoObject_IsActive(liveObj, true) &&
+	bool canSelect = (liveObj->flags3 & LIVEOBJ3_CANSELECT);
+	bool ignoreActive = false;
+
+	if (!canSelect && Lego_IsAllowDebugKeys() && Lego_IsAllowEditMode()) {
+		if (Shortcut_IsDown(ShortcutID::Edit_SelectMonstersModifier)) {
+			if (liveObj->type == LegoObject_RockMonster || liveObj->type == LegoObject_SpiderWeb) {
+				canSelect = true;
+			}
+		}
+		if (Shortcut_IsDown(ShortcutID::Edit_SelectResourcesModifier)) {
+			if (liveObj->type == LegoObject_PowerCrystal || liveObj->type == LegoObject_Ore ||
+				liveObj->type == LegoObject_Barrier || liveObj->type == LegoObject_Dynamite ||
+				liveObj->type == LegoObject_OohScary)
+			{
+				canSelect = true;
+			}
+			else if (liveObj->type == LegoObject_ElectricFence && !(liveObj->flags2 & LIVEOBJ2_ACTIVEELECTRICFENCE)) {
+				ignoreActive = true;
+				canSelect = true;
+			}
+		}
+	}
+
+	if (canSelect) {
+		if ((ignoreActive || LegoObject_IsActive(liveObj, true)) &&
 			!(liveObj->flags2 & (LIVEOBJ2_THROWN|LIVEOBJ2_DRIVING)) &&
 			!(liveObj->flags1 & (LIVEOBJ1_SLIPPING|LIVEOBJ1_RESTING)) &&
 			(liveObj->type != LegoObject_Vehicle || !(liveObj->flags1 & LIVEOBJ1_CLEARING))) // Can't select dozer while in the clearing animation?
@@ -578,7 +605,7 @@ void __cdecl LegoRR::Message_ReduceSelectedUnits(void)
 	///           So much cleaner now...
 
 	// Disabled for initial implementation commit.
-	const bool allowSpecial = false; // (Gods98::Main_IsDebugComplete() && Lego_IsAllowEditMode());
+	const bool allowSpecial = (Lego_IsAllowDebugKeys() && Lego_IsAllowEditMode());
 
 	// Default to no reduce type (main interface, unselect all units).
 	Message_ReduceType reduceType = Message_ReduceType_Count;
@@ -624,21 +651,29 @@ void __cdecl LegoRR::Message_ReduceSelectedUnits(void)
 				// Special reduce types introduced in OpenLRR.
 				// Though some of these like Monster must have existed during development.
 				if (unit->type == LegoObject_RockMonster) {
-					reduceType = std::min(reduceType, Message_ReduceType_Monster);
+					if (Shortcut_IsDown(ShortcutID::Edit_SelectMonstersModifier)) {
+						reduceType = std::min(reduceType, Message_ReduceType_Monster);
+					}
 				}
 				// Unknown behaviour, so disabled for now.
 				else if (unit->type == LegoObject_SpiderWeb) {
-					reduceType = std::min(reduceType, Message_ReduceType_SpiderWeb);
+					if (Shortcut_IsDown(ShortcutID::Edit_SelectMonstersModifier)) {
+						reduceType = std::min(reduceType, Message_ReduceType_SpiderWeb);
+					}
 				}
 				// Can cause crashes with the AI, so disable this for now.
 				else if (unit->type == LegoObject_PowerCrystal || unit->type == LegoObject_Ore) {
-					reduceType = std::min(reduceType, Message_ReduceType_Resource);
+					if (Shortcut_IsDown(ShortcutID::Edit_SelectResourcesModifier)) {
+						reduceType = std::min(reduceType, Message_ReduceType_Resource);
+					}
 				}
 				// Unknown behaviour, so disabled for now.
 				else if (unit->type == LegoObject_Dynamite || unit->type == LegoObject_Barrier || unit->type == LegoObject_OohScary ||
 						 (unit->type == LegoObject_ElectricFence && !(unit->flags2 & LIVEOBJ2_ACTIVEELECTRICFENCE)))
 				{
-					reduceType = std::min(reduceType, Message_ReduceType_Equipment);
+					if (Shortcut_IsDown(ShortcutID::Edit_SelectResourcesModifier)) {
+						reduceType = std::min(reduceType, Message_ReduceType_Equipment);
+					}
 				}
 			}
 		}

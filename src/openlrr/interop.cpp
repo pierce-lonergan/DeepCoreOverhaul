@@ -2082,6 +2082,9 @@ bool interop_hook_LegoRR_Object(void)
 
 	result &= hook_write_jmpret(0x00439c50, LegoRR::LegoObject_RequestPowerGridUpdate);
 
+	// used by: Lego_UpdateSlug_FUN_004260f0, NERPFunc__GenerateSlug
+	result &= hook_write_jmpret(0x0043b010, LegoRR::LegoObject_TryGenerateSlug);
+
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x0043b530, LegoRR::LegoObject_UpdateAll);
 
@@ -2100,6 +2103,9 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: LegoObject_TeleportUp
 	result &= hook_write_jmpret(0x0044b0a0, LegoRR::LegoObject_FUN_0044b0a0);
 
+
+	// used by: Weapon_GunHitObject
+	result &= hook_write_jmpret(0x0044c2f0, LegoRR::LegoObject_Freeze);
 
 	return_interop(result);
 }
@@ -2256,7 +2262,7 @@ bool interop_hook_LegoRR_Stats(void)
 	result &= hook_write_jmpret(0x0046a590, LegoRR::StatsObject_GetLaserDamage);
 	result &= hook_write_jmpret(0x0046a5b0, LegoRR::StatsObject_GetFreezerDamage);
 	result &= hook_write_jmpret(0x0046a5d0, LegoRR::StatsObject_GetObjectFreezerTime);
-	result &= hook_write_jmpret(0x0046a5f0, LegoRR::StatsObject_Debug_ToggleObjectPower);
+	result &= hook_write_jmpret(0x0046a5f0, LegoRR::StatsObject_Debug_ToggleSelfPowered);
 	
 	return_interop(result);
 }

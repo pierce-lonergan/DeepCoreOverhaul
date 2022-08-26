@@ -100,7 +100,7 @@ bool Shortcuts::ShortcutManager::Initialise()
 
 	Shortcut_Register(Debug_StopRouting, "KEY_N");
 
-	Shortcut_Register(Debug_TogglePower, "KEY_END");
+	Shortcut_Register(Debug_ToggleSelfPowered, "KEY_END");
 
 	Shortcut_Register(Debug_EndAdvisorAnim, "!KEY_LEFTSHIFT+KEY_U");
 	Shortcut_Register(Debug_BeginAdvisorAnim, "KEY_LEFTSHIFT+KEY_U");
@@ -140,7 +140,7 @@ bool Shortcuts::ShortcutManager::Initialise()
 	Shortcut_Register(ChangeViewFP2, "KEY_TWO");
 	Shortcut_Register(ChangeViewTop, "KEY_THREE");
 	Shortcut_Register(TrackUnit, "KEY_FOUR");
-	Shortcut_Register(Debug_DestroyUnits, nullptr);
+	Shortcut_Register(Edit_DestroyUnits, nullptr);
 	Shortcut_Register(Cheat_MaxOutUnit, nullptr);
 
 	Shortcut_Register(Debug_ToggleUpgradeCarry, "KEY_FIVE");
@@ -170,6 +170,17 @@ bool Shortcuts::ShortcutManager::Initialise()
 	Shortcut_Register(Cheat_TopdownFPTurnRight, FPTurnRight);
 	Shortcut_Register(Cheat_TopdownFPStrafeLeft, FPStrafeLeft);
 	Shortcut_Register(Cheat_TopdownFPStrafeRight, FPStrafeRight);
+
+	Shortcut_Register(Edit_SelectMonstersModifier, "KEY_T");
+	Shortcut_Register(Edit_SelectResourcesModifier, "KEY_R");
+
+	Shortcut_Register(Edit_TogglePower, nullptr);
+	Shortcut_Register(Cheat_FreezeUnit, nullptr);
+	Shortcut_Register(Cheat_PlaceDynamite, nullptr);
+	Shortcut_Register(Cheat_PlaceDynamiteInstant, nullptr);
+	Shortcut_Register(Cheat_PlaceSonicBlaster, nullptr);
+	Shortcut_Register(Cheat_PlaceSonicBlasterInstant, nullptr);
+	Shortcut_Register(Cheat_KamikazeUnit, nullptr);
 
 	Shortcut_Register(ReloadKeyBinds, "KEY_LEFTCTRL+KEY_LEFTSHIFT+KEY_K|KEY_RIGHTCTRL+KEY_RIGHTSHIFT+KEY_K");
 

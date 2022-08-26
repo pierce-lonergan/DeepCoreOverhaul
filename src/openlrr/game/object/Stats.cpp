@@ -1166,7 +1166,7 @@ real32 __cdecl LegoRR::StatsObject_GetObjectFreezerTime(LegoRR::LegoObject* live
 }
 
 // <LegoRR.exe @0046a5f0>
-void __cdecl LegoRR::StatsObject_Debug_ToggleObjectPower(LegoRR::LegoObject* liveObj)
+void __cdecl LegoRR::StatsObject_Debug_ToggleSelfPowered(LegoRR::LegoObject* liveObj)
 {
 	/// WARNING: This actually modifies the stats for all objects of this type:index:level!
 	if (!(liveObj->stats->flags2 & STATS2_SELFPOWERED))

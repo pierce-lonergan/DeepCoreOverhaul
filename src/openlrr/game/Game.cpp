@@ -1251,14 +1251,38 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 	}
 
 	/// DEBUG KEYBIND: [End]  "Toggles power Off/On for currently selected building."
-	if (Message_AnyUnitSelected() && Shortcut_IsPressed(ShortcutID::Debug_TogglePower)) {
-		StatsObject_Debug_ToggleObjectPower(Message_GetPrimarySelectedUnit());
+	if (Message_AnyUnitSelected() && Shortcut_IsPressed(ShortcutID::Debug_ToggleSelfPowered)) {
+		StatsObject_Debug_ToggleSelfPowered(Message_GetPrimarySelectedUnit());
 	}
 
-	/// DEBUG KEYBIND: [E]  "Makes a monster emerge from a diggable (valid) wall at mousepoint."
+	/// DEBUG KEYBIND: [E]  "Makes a monster or slug emerge from a valid spawn wall/hole at mousepoint."
 	if (Shortcut_IsPressed(ShortcutID::Debug_EmergeMonster)) {
-		LegoObject_TryGenerateRMonster(&legoGlobs.rockMonsterData[legoGlobs.currLevel->EmergeCreature],
-									   LegoObject_RockMonster, legoGlobs.currLevel->EmergeCreature, mbx, mby);
+		// First see if a slughole is at mousepoint, and try to emerge a slug.
+		LegoObject* emergeObj = nullptr;
+		LegoObject_Type slugType = LegoObject_None; // dummy inits
+		LegoObject_ID slugID = LegoObject_ID_Invalid;
+		ObjectModel* slugModel = nullptr;
+		// Oh joy, only one legacy level even uses this property, everywhere else, Slug is hardcoded...
+		if (legoGlobs.currLevel->Slug != LegoObject_ID_Invalid) {
+			slugType = LegoObject_RockMonster;
+			slugID = legoGlobs.currLevel->Slug;
+			slugModel = &legoGlobs.rockMonsterData[legoGlobs.currLevel->Slug];
+		}
+		else {
+			if (!Lego_GetObjectByName("Slug", &slugType, &slugID, &slugModel))
+				slugID = LegoObject_ID_Invalid;
+		}
+		if (slugID != LegoObject_ID_Invalid) {
+			emergeObj = LegoObject_TryGenerateSlugAtBlock(slugModel,
+														  slugType, slugID,
+														  mbx, mby, 0.0f, false);
+		}
+
+		if (emergeObj == nullptr && legoGlobs.currLevel->EmergeCreature != LegoObject_ID_Invalid) {
+			// This wasn't a slughole, try to emerge a monster.
+			LegoObject_TryGenerateRMonster(&legoGlobs.rockMonsterData[legoGlobs.currLevel->EmergeCreature],
+										   LegoObject_RockMonster, legoGlobs.currLevel->EmergeCreature, mbx, mby);
+		}
 	}
 
 	/// DEBUG KEYBIND: [W]  "Performs unknown behaviour with the unfinished 'flood water' surface."
@@ -1583,7 +1607,7 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 	const bool cryOreExactMousePoint = true;
 
 	/// EDIT KEYBIND: NULL  "Places one crystal at mousepoint."
-	if (Lego_IsAllowEditMode() && Shortcut_IsPressed(ShortcutID::Edit_PlaceCrystal)) {
+	if (Lego_IsAllowEditMode() && Shortcut_IsPressed(ShortcutID::Edit_PlaceCrystal) && Level_Block_IsGround(mbx, mby)) {
 		Point2F wPos2D = { 0.0f }; // dummy init
 		if (cryOreExactMousePoint) {
 			Vector3F wPos3D = { 0.0f }; // dummy init
@@ -1593,7 +1617,7 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 		Level_GenerateCrystal(&mouseBlockPos, 0, (cryOreExactMousePoint ? &wPos2D : nullptr), false);
 	}
 	/// EDIT KEYBIND: NULL  "Places one ore piece at mousepoint."
-	if (Lego_IsAllowEditMode() && Shortcut_IsPressed(ShortcutID::Edit_PlaceOre)) {
+	if (Lego_IsAllowEditMode() && Shortcut_IsPressed(ShortcutID::Edit_PlaceOre) && Level_Block_IsGround(mbx, mby)) {
 		Point2F wPos2D = { 0.0f }; // dummy init
 		if (cryOreExactMousePoint) {
 			Vector3F wPos3D = { 0.0f }; // dummy init
@@ -1610,6 +1634,110 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 	/// CHEAT KEYBIND: NULL  "Increases the number of stored ore by 5."
 	if (Shortcut_IsPressed(ShortcutID::Cheat_IncreaseOreStored)) {
 		Level_AddOreStored(false, 5);
+	}
+
+	/// DEBUG KEYBIND: NULL  "Toggles the power of a building, or the sleeping state of a monster."
+	if (Lego_IsAllowEditMode() && Shortcut_IsPressed(ShortcutID::Edit_TogglePower) && Message_AnyUnitSelected()) {
+		LegoObject_SetPowerOn(Message_GetPrimarySelectedUnit(), (Message_GetPrimarySelectedUnit()->flags3 & LIVEOBJ3_POWEROFF));
+	}
+	/// DEBUG KEYBIND: NULL  "Freezes unit at mousepoint in a block of ice for 10 seconds."
+	if (mouseOverObj != nullptr && Shortcut_IsPressed(ShortcutID::Cheat_FreezeUnit)) {
+		LegoObject_Freeze(mouseOverObj, 10.0f); // Freeze for 10 seconds.
+	}
+
+	const bool placeDynBirdExactMousePoint = true;
+
+	/// DEBUG KEYBIND: NULL  "Causes an explosion at the all selected units' positions and kills them in the process."
+	if (Shortcut_IsPressed(ShortcutID::Cheat_KamikazeUnit) && Message_AnyUnitSelected()) {
+		const uint32 numSelected = Message_GetNumSelectedUnits();
+		LegoObject** selectedUnits = Message_GetSelectedUnits();
+
+		for (uint32 i = 0; i < numSelected; i++) {
+			LegoObject* unit = selectedUnits[i];
+
+			const real32 heading = LegoObject_GetHeading(unit);
+			Point2F wPos2D = { 0.0f }; // dummy init
+			LegoObject_GetPosition(unit, &wPos2D.x, &wPos2D.y);
+			LegoObject* dynamiteObj = LegoObject_CreateInWorld(legoGlobs.contDynamite, LegoObject_Dynamite, (LegoObject_ID)0, 0, wPos2D.x, wPos2D.y, heading);
+			// Set the dynamite explosion block to invalid coordinates (strangely not -1, -1).
+			dynamiteObj->targetBlockPos = Point2F { 0.0f, 0.0f };
+			LegoObject_StartTickDown(dynamiteObj, true);
+
+			// No tickdown, explode immediately.
+			dynamiteObj->health = -1.0f;
+			
+			if (unit->health >= 0.0f) {
+				unit->health = -1.0f;
+				switch (unit->type) {
+				case LegoObject_Building:
+				case LegoObject_Vehicle:
+				case LegoObject_MiniFigure:
+					// Destroy these object types normally.
+					unit->health = -1.0f;
+					break;
+				case LegoObject_RockMonster:
+					unit->health = -1.0f;
+					if (!(StatsObject_GetStatsFlags3(unit) & STATS3_SHOWHEALTHBAR) ||
+						(StatsObject_GetStatsFlags2(unit) & STATS2_USEHOLES))
+					{
+						// Remove unit by force. Either its a unit that doesn't "die",
+						//  or Slimy Slug burrowing is too slow for a kamikaze visual.
+						unit->flags3 |= LIVEOBJ3_REMOVING;
+					}
+					break;
+				default:
+					unit->health = -1.0f;
+					unit->flags3 |= LIVEOBJ3_REMOVING;
+					break;
+				}
+			}
+		}
+	}
+	/// DEBUG KEYBIND: NULL  "Spawns dynamite and starts the tickdown."
+	/// DEBUG KEYBIND: NULL  "Spawns dynamite at mousepoint that immediately explodes."
+	if ((Shortcut_IsPressed(ShortcutID::Cheat_PlaceDynamite) || Shortcut_IsPressed(ShortcutID::Cheat_PlaceDynamiteInstant)) &&
+		(Level_Block_IsGround(mbx, mby) || Level_Block_IsWall(mbx, mby)))
+	{
+		const real32 heading = Gods98::Maths_RandRange(0.0f, M_PI*2.0f);
+		Point2F wPos2D = { 0.0f }; // dummy init
+		if (placeDynBirdExactMousePoint) {
+			Vector3F wPos3D = { 0.0f }; // dummy init
+			Lego_GetMouseWorldPosition(&wPos3D);
+			Gods98::Maths_Vector3DMake2D(&wPos2D, &wPos3D);
+		}
+		else {
+			Map3D_BlockToWorldPos(Lego_GetMap(), mbx, mby, &wPos2D.x, &wPos2D.x);
+		}
+		LegoObject* dynamiteObj = LegoObject_CreateInWorld(legoGlobs.contDynamite, LegoObject_Dynamite, (LegoObject_ID)0, 0, wPos2D.x, wPos2D.y, heading);
+		// Set the block this is on, which will be demolished if its a wall.
+		dynamiteObj->targetBlockPos = Point2F { (real32)mbx, (real32)mby };
+		LegoObject_StartTickDown(dynamiteObj, true);
+		if (Shortcut_IsPressed(ShortcutID::Cheat_PlaceDynamiteInstant)) {
+			// No tickdown, explode immediately.
+			dynamiteObj->health = -1.0f;
+		}
+	}
+	/// DEBUG KEYBIND: NULL  "Spawns Sonic Blaster and starts the tickdown."
+	/// DEBUG KEYBIND: NULL  "Spawns a sonic blaster at mousepoint that immediately goes off."
+	if ((Shortcut_IsPressed(ShortcutID::Cheat_PlaceSonicBlaster) || Shortcut_IsPressed(ShortcutID::Cheat_PlaceSonicBlasterInstant)) &&
+		(Level_Block_IsGround(mbx, mby) || Level_Block_IsWall(mbx, mby)))
+	{
+		const real32 heading = Gods98::Maths_RandRange(0.0f, M_PI*2.0f);
+		Point2F wPos2D = { 0.0f }; // dummy init
+		if (placeDynBirdExactMousePoint) {
+			Vector3F wPos3D = { 0.0f }; // dummy init
+			Lego_GetMouseWorldPosition(&wPos3D);
+			Gods98::Maths_Vector3DMake2D(&wPos2D, &wPos3D);
+		}
+		else {
+			Map3D_BlockToWorldPos(Lego_GetMap(), mbx, mby, &wPos2D.x, &wPos2D.x);
+		}
+		LegoObject* oohScaryObj = LegoObject_CreateInWorld(legoGlobs.contOohScary, LegoObject_OohScary, (LegoObject_ID)0, 0, wPos2D.x, wPos2D.y, heading);
+		LegoObject_StartTickDown(oohScaryObj, true);
+		if (Shortcut_IsPressed(ShortcutID::Cheat_PlaceSonicBlasterInstant)) {
+			// No tickdown, go off immediately.
+			oohScaryObj->health = -1.0f;
+		}
 	}
 
 

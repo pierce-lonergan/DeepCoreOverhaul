@@ -459,7 +459,7 @@ real32 __cdecl StatsObject_GetFreezerDamage(LegoObject* liveObj);
 real32 __cdecl StatsObject_GetObjectFreezerTime(LegoObject* liveObj);
 
 // <LegoRR.exe @0046a5f0>
-void __cdecl StatsObject_Debug_ToggleObjectPower(LegoObject* liveObj);
+void __cdecl StatsObject_Debug_ToggleSelfPowered(LegoObject* liveObj);
 
 #pragma endregion
 

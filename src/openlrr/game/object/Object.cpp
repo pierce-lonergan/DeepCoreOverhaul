@@ -467,6 +467,35 @@ bool32 __cdecl LegoRR::LegoObject_Remove(LegoObject* deadObj)
 
 	AITask_RemoveTargetObjectReferences(deadObj);
 
+	/// FIX APPLY: Cleanup freeze object references.
+	if (deadObj->freezeObject != nullptr) {
+		if (deadObj->flags2 & LIVEOBJ2_FROZEN) {
+			// We're not the ice cube. Perform cleanup to remove the ice cube too.
+			deadObj->flags2 &= ~LIVEOBJ2_FROZEN;
+
+			Error_InfoF("Object @ %i with ice cube @ %i removed", (uint32)objectListSet.IndexOf(deadObj), (uint32)objectListSet.IndexOf(deadObj->freezeObject));
+
+			// Set ice cube to final stage of melting, where it won't interact with freezeObject.
+			deadObj->freezeObject->health = -1.0f;
+			deadObj->freezeObject->flags1 &= ~LIVEOBJ1_TELEPORTINGDOWN;
+			//deadObj->freezeObject->flags3 &= ~LIVEOBJ3_REMOVING; // Mark the ice cube for melting.
+			deadObj->freezeObject->flags3 |= LIVEOBJ3_REMOVING; // Mark the ice cube for melting.
+
+			// Link the ice cube object to itself, so that it can die in peace (and not reference a destroyed object)...
+			deadObj->freezeObject->freezeObject = deadObj->freezeObject;
+		}
+		else {
+			// This is the ice cube.
+			Error_InfoF("Ice cube @ %i removed", (uint32)objectListSet.IndexOf(deadObj));
+
+			// Make sure our object is unfrozen.
+			deadObj->freezeObject->flags2 &= ~LIVEOBJ2_FROZEN;
+			deadObj->freezeObject->freezeObject = nullptr;
+		}
+		// Unlink freeze object (one-way).
+		deadObj->freezeObject = nullptr;
+	}
+
 	// Clear first teleportDownObject field referencing this object.
 	LegoObject_RemoveTeleportDownReference(deadObj);
 
@@ -1080,8 +1109,8 @@ LegoRR::LegoObject* __cdecl LegoRR::LegoObject_Create_internal(void)
 	LegoObject* newLiveObj = objectListSet.Add();
 	ListSet::MemZero(newLiveObj);
 
-	newLiveObj->point_2f4.y = -1.0f;
-	newLiveObj->point_2f4.x = -1.0f;
+	newLiveObj->targetBlockPos.y = -1.0f;
+	newLiveObj->targetBlockPos.x = -1.0f;
 
 	return newLiveObj;
 }
@@ -1265,6 +1294,63 @@ void __cdecl LegoRR::LegoObject_RequestPowerGridUpdate(void)
 }
 
 
+// <LegoRR.exe @0043b010>
+LegoRR::LegoObject* __cdecl LegoRR::LegoObject_TryGenerateSlug(LegoObject* originObj, LegoObject_ID objID)
+{
+	if (objectGlobs.slugHoleCount != 0) {
+		Point2I blockPos = { 0 }; // dummy init
+		if (originObj == nullptr) {
+			const uint32 holeIndex = ((uint32)Gods98::Maths_Rand() % objectGlobs.slugHoleCount);
+			blockPos = objectGlobs.slugHoleBlocks[holeIndex];
+		}
+		else {
+			LegoObject_FindNearestSlugHole(originObj, &blockPos);
+		}
+		return LegoObject_TryGenerateSlugAtBlock(&legoGlobs.rockMonsterData[objID], LegoObject_RockMonster, objID,
+												 blockPos.x, blockPos.y, 0.0f, false);
+	}
+	return nullptr;
+}
+
+/// CUSTOM: Generation for slug with a specific block pos already specified.
+LegoRR::LegoObject* LegoRR::LegoObject_TryGenerateSlugAtBlock(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID, uint32 bx, uint32 by, real32 heading, bool assignHeading)
+{
+	if (objType != LegoObject_RockMonster)
+		return nullptr;
+
+	bool isSlugHole = false;
+	for (uint32 i = 0; i < objectGlobs.slugHoleCount; i++) {
+		if (objectGlobs.slugHoleBlocks[i].x == bx && objectGlobs.slugHoleBlocks[i].y == by) {
+			isSlugHole = true;
+			break;
+		}
+	}
+	if (!isSlugHole)
+		return nullptr;
+
+	// If no heading supplied, generate a random one.
+	if (!assignHeading) {
+		heading = Gods98::Maths_RandRange(0.0f, M_PI*2.0f);
+	}
+
+	Point2F wPos = { 0.0f }; // dummy init
+	Map3D_BlockToWorldPos(Lego_GetMap(), bx, by, &wPos.x, &wPos.y);
+	wPos.x += Maths_Sin(heading) * 12.75f;
+	wPos.y += Maths_Cos(heading) * 12.75f;
+
+	LegoObject* slugObj = LegoObject_CreateInWorld(objModel, objType, objID, 0, wPos.x, wPos.y, heading);
+	if (slugObj != nullptr) {
+		slugObj->flags1 |= LIVEOBJ1_EXPANDING;
+		slugObj->flags3 &= ~LIVEOBJ3_POWEROFF;
+
+		LegoObject_SetActivity(slugObj, Activity_Emerge, 0);
+		LegoObject_UpdateActivityChange(slugObj);
+		AITask_DoAnimationWait(slugObj);
+		Info_Send(Info_SlugEmerge, nullptr, slugObj, nullptr);
+	}
+	return slugObj;
+}
+
 
 // <LegoRR.exe @0043b530>
 void __cdecl LegoRR::LegoObject_UpdateAll(real32 elapsedGame)
@@ -1374,6 +1460,51 @@ void __cdecl LegoRR::LegoObject_FUN_0044b0a0(LegoObject* liveObj)
 }
 
 
+// <LegoRR.exe @0044c2f0>
+bool32 __cdecl LegoRR::LegoObject_Freeze(LegoObject* liveObj, real32 freezerTime)
+{
+	/// CHANGE: Allow other units to be frozen, this is a pointless restriction when CANFREEZE is a stat.
+	if (!(liveObj->flags2 & LIVEOBJ2_FROZEN) /*&& liveObj->type == LegoObject_RockMonster*/) {
+		liveObj->flags2 |= LIVEOBJ2_FROZEN;
+		liveObj->freezeTimer = freezerTime * STANDARD_FRAMERATE;
 
+		Point2F wPos = { 0.0f }; // dummy init
+		LegoObject_GetPosition(liveObj, &wPos.x, &wPos.y);
+		const real32 heading = LegoObject_GetHeading(liveObj);
+		
+		LegoObject* iceCubeObj = LegoObject_CreateInWorld(legoGlobs.contIceCube, LegoObject_IceCube, (LegoObject_ID)0, 0, wPos.x, wPos.y, heading);
+		Gods98::Container_SetActivity(iceCubeObj->other, "Start");
+		Gods98::Container_SetAnimationTime(iceCubeObj->other, 0.0f);
+		iceCubeObj->flags1 |= LIVEOBJ1_EXPANDING;
+
+		liveObj->freezeObject = iceCubeObj;
+		iceCubeObj->freezeObject = liveObj;
+
+		return true;
+	}
+	return false;
+}
+
+
+
+/// CUSTOM: Starts the tickdown for dynamite or sonic blaster.
+void LegoRR::LegoObject_StartTickDown(LegoObject* liveObj, bool showInfoMessage)
+{
+	if (liveObj->type == LegoObject_Dynamite || liveObj->type == LegoObject_OohScary) {
+		//liveObj->flags1 &= ~LIVEOBJ1_PLACING;
+		liveObj->flags3 |= LIVEOBJ3_UNK_10000;
+
+		Gods98::Container_SetActivity(liveObj->other, "TickDown");
+		Gods98::Container_SetAnimationTime(liveObj->other, 0.0f);
+
+		Point2I blockPos = { 0 }; // dummy init
+		LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+		Level_Block_SetBusyFloor(&blockPos, true);
+		
+		if (showInfoMessage) {
+			Info_Send(Info_DynamitePlaced, nullptr, liveObj, nullptr);
+		}
+	}
+}
 
 #pragma endregion

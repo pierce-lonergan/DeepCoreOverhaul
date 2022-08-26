@@ -144,7 +144,7 @@ enum ShortcutID
 	Debug_StopRouting, // [N]
 
 	// Toggles power Off/On for currently selected building.
-	Debug_TogglePower, // [End]
+	Debug_ToggleSelfPowered, // [End]
 
 	// Ends current advisor animation.
 	Debug_EndAdvisorAnim, // (!LShift)+[U]
@@ -199,7 +199,7 @@ enum ShortcutID
 	// Triggers CrystalFound InfoMessage at block (1,1).
 	Debug_InterfaceCrystalFoundMessage, // [Y]
 
-	// Emerges level-designated Monster at mousepoint.
+	// Makes a monster or slug emerge from a valid spawn wall/hole at mousepoint.
 	Debug_EmergeMonster, // [E]
 	// ( ! ) Commands selected monster to gather a boulder at the nearest wall.
 	Debug_CommandGatherBoulder, // [W]
@@ -213,7 +213,7 @@ enum ShortcutID
 	// Tracks the selected unit in the radar.
 	TrackUnit, // [4]
 	/// NEW: Deletes all selected units.
-	Debug_DestroyUnits, // NULL
+	Edit_DestroyUnits, // NULL
 	/// NEW: Levels up selected units to max level, and gives selected mini-figures all abilities.
 	Cheat_MaxOutUnit,
 
@@ -270,6 +270,26 @@ enum ShortcutID
 	/// NEW: Strafes (moves) the primary selected unit right in topdown view (while held).
 	Cheat_TopdownFPStrafeRight, // [X]
 
+	/// NEW: Hold down while selecting units to include enemy creatures.
+	Edit_SelectMonstersModifier, // [T]
+	/// NEW: Hold down while selecting units to include crystals and ore.
+	Edit_SelectResourcesModifier, // [R]
+
+	/// NEW: Toggles the power of a building, or the sleeping state of a monster.
+	Edit_TogglePower,
+	/// NEW: Freezes unit at mousepoint in a block of ice for 10 seconds.
+	Cheat_FreezeUnit,
+		
+	/// NEW: Spawns dynamite at mousepoint and begins the tickdown.
+	Cheat_PlaceDynamite,
+	/// NEW: Spawns dynamite at mousepoint that immediately explodes.
+	Cheat_PlaceDynamiteInstant,
+	/// NEW: Spawns a sonic blaster at mousepoint and begins the tickdown.
+	Cheat_PlaceSonicBlaster,
+	/// NEW: Spawns a sonic blaster at mousepoint that immediately goes off.
+	Cheat_PlaceSonicBlasterInstant,
+	/// NEW: Causes an explosion at the all selected units' positions and kills them in the process.
+	Cheat_KamikazeUnit,
 
 
 	/// NEW: Reloads the configuration file, allowing to change command bindings on the fly.

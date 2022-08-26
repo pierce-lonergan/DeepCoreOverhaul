@@ -1045,7 +1045,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		}
 	}
 	/// DEBUG KEYBIND: NULL  "Deletes all selected units."
-	if (Lego_IsAllowDebugKeys() && Shortcut_IsPressed(ShortcutID::Debug_DestroyUnits)) {
+	if (Lego_IsAllowDebugKeys() && Lego_IsAllowEditMode() && Shortcut_IsPressed(ShortcutID::Edit_DestroyUnits)) {
 		Message_PostEvent(Message_Debug_DestroyAll, nullptr, MESSAGE_ARGUMENT_NONE, nullptr);
 	}
 

@@ -1007,6 +1007,9 @@ enum LegoObject_ID : sint32
 	LegoObject_ID_Pilot = 0,
 
 	LegoObject_ID_Count = 15,
+
+	// Used to signify that a level has no designated slug, may be used elsewhere.
+	LegoObject_ID_Invalid = 20,
 };
 assert_sizeof(LegoObject_ID, 0x4);
 

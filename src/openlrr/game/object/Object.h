@@ -380,7 +380,7 @@ struct LegoObject // [LegoRR/LegoObject.c|struct:0x40c|tags:LISTSET]
 	/*2e8,4*/       const char* activityName1;
 	/*2ec,4*/       const char* activityName2; // Seems to be used with related objects like driven, swapped with activityName1.
 	/*2f0,4*/       AITask* aiTask; // Linked list of tasks (or null). Linked using the `AITask::next` field.
-	/*2f4,8*/       Point2F point_2f4; // (init: -1.0f, -1.0f)
+	/*2f4,8*/       Point2F targetBlockPos; // (init: -1.0f, -1.0f)
 	/*2fc,4*/       LegoObject* routeToObject; // other half of object_300
 	/*300,4*/       LegoObject* interactObject; // Used in combination with routeToObject for Upgrade station and RM boulders.
 	/*304,4*/       LegoObject* carryingThisObject;
@@ -883,14 +883,21 @@ void __cdecl LegoObject_RequestPowerGridUpdate(void);
 #define LegoObject_Callback_TryStampMiniFigureWithCrystal ((bool32 (__cdecl* )(LegoObject* targetObj, LegoObject* stamperObj))0x0043af50)
 
 // <LegoRR.exe @0043b010>
-#define LegoObject_TryGenerateSlug ((LegoObject* (__cdecl* )(LegoObject* originObj, LegoObject_ID objID))0x0043b010)
+//#define LegoObject_TryGenerateSlug ((LegoObject* (__cdecl* )(LegoObject* originObj, LegoObject_ID objID))0x0043b010)
+LegoObject* __cdecl LegoObject_TryGenerateSlug(LegoObject* originObj, LegoObject_ID objID);
+
+/// CUSTOM: Generation for slug with a specific block pos already specified.
+// Fails if `objType != LegoObject_RockMonster`.
+LegoObject* LegoObject_TryGenerateSlugAtBlock(ObjectModel* objModel, LegoObject_Type objType, LegoObject_ID objID, uint32 bx, uint32 by, real32 heading, bool assignHeading);
 
 // <LegoRR.exe @0043b160>
 #define LegoObject_TryGenerateRMonsterAtRandomBlock ((LegoObject* (__cdecl* )(void))0x0043b160)
+//LegoObject* __cdecl LegoObject_TryGenerateRMonsterAtRandomBlock(void);
 
 // Fails if `objType != LegoObject_RockMonster`.
 // <LegoRR.exe @0043b1f0>
 #define LegoObject_TryGenerateRMonster ((LegoObject* (__cdecl* )(CreatureModel* objModel, LegoObject_Type objType, LegoObject_ID objID, uint32 bx, uint32 by))0x0043b1f0)
+//LegoObject* __cdecl LegoObject_TryGenerateRMonster(CreatureModel* objModel, LegoObject_Type objType, LegoObject_ID objID, uint32 bx, uint32 by);
 
 // <LegoRR.exe @0043b530>
 //#define LegoObject_UpdateAll ((void (__cdecl* )(real32 elapsedGame))0x0043b530)
@@ -1460,7 +1467,8 @@ void __cdecl LegoObject_FUN_0044b0a0(LegoObject* liveObj);
 #define LegoObject_DestroyRockMonster_FUN_0044c290 ((bool32 (__cdecl* )(LegoObject* liveObj))0x0044c290)
 
 // <LegoRR.exe @0044c2f0>
-#define LegoObject_Freeze ((bool32 (__cdecl* )(LegoObject* liveObj, real32 freezerTime))0x0044c2f0)
+//#define LegoObject_Freeze ((bool32 (__cdecl* )(LegoObject* liveObj, real32 freezerTime))0x0044c2f0)
+bool32 __cdecl LegoObject_Freeze(LegoObject* liveObj, real32 freezerTime);
 
 // <LegoRR.exe @0044c3d0>
 #define LegoObject_FUN_0044c3d0 ((void (__cdecl* )(LegoObject* liveObj))0x0044c3d0)
@@ -1485,6 +1493,9 @@ void __cdecl LegoObject_FUN_0044b0a0(LegoObject* liveObj);
 
 // <LegoRR.exe @0044c8b0>
 #define LegoObject_Callback_CameraCycleFindUnit ((bool32 (__cdecl* )(LegoObject* liveObj, OPTIONAL bool32* pNoBuildings))0x0044c8b0)
+
+/// CUSTOM: Starts the tickdown for dynamite or sonic blaster.
+void LegoObject_StartTickDown(LegoObject* liveObj, bool showInfoMessage);
 
 #pragma endregion
 
