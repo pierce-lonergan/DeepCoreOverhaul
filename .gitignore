@@ -1,8 +1,9 @@
 ###########################################
 ## Added to .gitignore
 
-# Solution build directory
+# Solution build directory and language-specific build directories
 /bin
+/bin-*
 
 
 # Lazy method of hiding work-in-progress or local-only files with common extensions
