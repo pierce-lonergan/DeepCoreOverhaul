@@ -663,9 +663,9 @@ void __cdecl LegoRR::HiddenObject_ExposeBlock(const Point2I* blockPos)
 				// This uses slices (like a pie chart) around each cardinal direction.
 				// So a value of 340deg or 41deg would still be closest to 0deg, not 270deg or 90deg.
 				//  (This is stored in radians, degrees are just for the example)
-				const uint32 rotationTemp = (uint32)(hiddenObj->heading * (8.0f / (M_PI * 2))); // (0.1591549f * 8.0f));
+				const sint32 rotationTemp = (sint32)(hiddenObj->heading * (8.0f / (M_PI * 2))); // (0.1591549f * 8.0f));
 				// Positive modulus of (rotation + 1). Use +1 to align pie slices for modulus operation.
-				const Direction rotation = (Direction)((((rotationTemp + 1) % DIRECTION__COUNT) + DIRECTION__COUNT) % DIRECTION__COUNT);
+				const Direction rotation = (Direction)(((((rotationTemp + 1) / 2) % DIRECTION__COUNT) + DIRECTION__COUNT) % DIRECTION__COUNT);
 
 				uint32 shapeCount = 0; // dummy init
 				const Point2I* shapePoints = Building_GetShapePoints(&legoGlobs.buildingData[hiddenObj->id], &shapeCount);
