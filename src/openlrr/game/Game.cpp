@@ -1000,12 +1000,12 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareMapBlockToolTip(const Point2I* blockPos
 		if (block->terrain == Lego_SurfaceType_Lake || block->terrain == Lego_SurfaceType_Lava) {
 			surfType = (Lego_SurfaceType)block->terrain; // Lake ("Water") and Lava (overrides all other floor type flags).
 		}
-		else if (block->flags1 & BLOCK1_UNK_80000000) {
+		else if (block->flags1 & BLOCK1_ERODEACTIVE) {
 			// Tunnel: (what exactly is this flag? Considering we have a second case for Tunnel below)
 			//         Although possibly just an optimization. Flow for the second case jumps to here.
 			surfType = Lego_SurfaceType_Tunnel;
 		}
-		else if (!(block->flags1 & BLOCK1_CLEARED_UNK)) {
+		else if (!(block->flags1 & BLOCK1_CLEARED)) {
 			/// UNINLINED: Level_Block_GetRubbleLayers(blockPos) != 0
 			surfType = Lego_SurfaceType_Rubble; // Uncleared rubble
 		}
@@ -1173,10 +1173,11 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareMapBlockToolTip(const Point2I* blockPos
 
 			// Block flags: (consider another setting to remove this verbose info)
 			{
-				if (block->field_44 != 0 || block->short_22 != 0) {
-					std::sprintf(buffVal, "\nField44: %08x\nShort22: %04x",
-									 (uint32)block->field_44,
-									 (uint32)block->short_22);
+				if (block->tutoHighlightState != 0 || block->seamDigCount != 0) {
+					std::sprintf(buffVal, "\nTuto Hilite: %i\nSeam Digs: %i",
+									 (uint32)block->tutoHighlightState,
+									 (uint32)block->seamDigCount);
+					std::strcat(buffText, buffVal);
 				}
 
 				std::sprintf(buffVal, "\nFlags1: %08x\nFlags2: %08x",

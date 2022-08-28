@@ -177,56 +177,64 @@ flags_end(GameFlags3, 0x4);
 
 enum BlockFlags1 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 {
-	BLOCK1_NONE                    = 0,
-	BLOCK1_RUBBLE_LOW              = 0x1,
-	BLOCK1_RUBBLE_MEDIUM           = 0x2,
-	BLOCK1_RUBBLE_FULL             = 0x3,
-	BLOCK1_SURVEYED                = 0x4,
-	BLOCK1_FLOOR                   = 0x8,
-	BLOCK1_WALL                    = 0x10,
-	BLOCK1_REINFORCED              = 0x20,
-	BLOCK1_INCORNER                = 0x40,
-	BLOCK1_OUTCORNER               = 0x80,
-	BLOCK1_HIGHPOLY                = 0x100,
-	BLOCK1_NOTHOT                  = 0x200,
-	BLOCK1_BUILDINGSOLID           = 0x400,
-	BLOCK1_ROCKFALLFX              = 0x800,
-	BLOCK1_LANDSLIDING             = 0x1000,
-	BLOCK1_DIAGONAL                = 0x2000,
-	BLOCK1_SMOKE                   = 0x4000,
-	BLOCK1_BUILDINGPATH            = 0x8000,
-	BLOCK1_HIDDEN                  = 0x20000,
-	BLOCK1_DESTROYEDCONNECTION_UNK = 0x40000,
-	BLOCK1_BUSY_FLOOR              = 0x80000,
-	BLOCK1_FOUNDATION              = 0x100000,
-	BLOCK1_CLEARED_UNK             = 0x200000,
-	BLOCK1_UNK_400000              = 0x400000,
-	BLOCK1_UNK_800000              = 0x800000,
-	BLOCK1_UNK_1000000             = 0x1000000,
-	BLOCK1_EXPOSED                 = 0x4000000,
-	BLOCK1_BUSY_WALL               = 0x8000000,
-	BLOCK1_DOZERCLEARING           = 0x10000000,
-	BLOCK1_PATH                    = 0x20000000,
-	BLOCK1_LAYEDPATH               = 0x40000000,
-	BLOCK1_UNK_80000000            = 0x80000000,
+	BLOCK1_NONE                = 0,
+	//BLOCK1_RUBBLE_VERYLOW      = 0x0,
+	BLOCK1_RUBBLE_LOW          = 0x1,
+	BLOCK1_RUBBLE_MEDIUM       = 0x2,
+	BLOCK1_RUBBLE_FULL         = 0x3,
+	//BLOCK1_RUBBLE_MASK         = 0x3,
+	BLOCK1_SURVEYED            = 0x4,
+	BLOCK1_FLOOR               = 0x8,
+	BLOCK1_WALL                = 0x10,
+	BLOCK1_REINFORCED          = 0x20,
+	BLOCK1_INCORNER            = 0x40,
+	BLOCK1_OUTCORNER           = 0x80,
+	BLOCK1_HIGHPOLY            = 0x100,
+	BLOCK1_NOTHOT              = 0x200, // Units won't take lava damage over this surface.
+	BLOCK1_BUILDINGSOLID       = 0x400,
+	BLOCK1_ROCKFALLFX          = 0x800,
+	BLOCK1_LANDSLIDING         = 0x1000,
+	BLOCK1_DIAGONAL            = 0x2000,
+	BLOCK1_SMOKE               = 0x4000,
+	BLOCK1_BUILDINGPATH        = 0x8000,
+	BLOCK1_UNUSED_10000        = 0x10000,
+	BLOCK1_HIDDEN              = 0x20000,
+	BLOCK1_DESTROYEDCONNECTION = 0x40000,
+	BLOCK1_BUSY_FLOOR          = 0x80000,
+	BLOCK1_FOUNDATION          = 0x100000,
+	BLOCK1_CLEARED             = 0x200000, // This block is NOT rubble.
+	BLOCK1_EXPOSEDFLOORCHECKS  = 0x400000, // Used to handle extra checks for the first time blocks are are exposed as floors.
+	                                       // Unset if checks are needed.
+	BLOCK1_DIGREQUEST          = 0x800000, /// FIXME: this flag is required for the Rewards Diggable quota, but it's not set by drilling in FP.
+	BLOCK1_UNUSED_PATHTYPE     = 0x1000000, // Related to reward Diggable countdown ratio.
+	                                        // This flag is only checked in combination with other synthetic blocks (foundation, path, path stud).
+											// It's possible it's another unused type of synthetic block.
+	BLOCK1_UNUSED_2000000      = 0x2000000,
+	BLOCK1_EXPOSED             = 0x4000000,
+	BLOCK1_BUSY_WALL           = 0x8000000,
+	BLOCK1_DOZERCLEARING       = 0x10000000,
+	BLOCK1_PATH                = 0x20000000,
+	BLOCK1_LAYEDPATH           = 0x40000000,
+	BLOCK1_ERODEACTIVE         = 0x80000000,
 };
 flags_end(BlockFlags1, 0x4);
 
 
 enum BlockFlags2 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 {
-	BLOCK2_NONE             = 0,
-	BLOCK2_GENERATEPOWER    = 0x1,
-	BLOCK2_DRAINPOWER_TEMP  = 0x2,
-	BLOCK2_TOOLSTORE        = 0x4,
-	BLOCK2_FENCEREQUEST     = 0x8,
-	BLOCK2_UNK_10           = 0x10,
-	BLOCK2_SLUGHOLE_EXPOSED = 0x20,
-	BLOCK2_EMERGE_POINT     = 0x40,
-	BLOCK2_EMERGE_TRIGGER   = 0x80,
-	BLOCK2_POWERED          = 0x100,
-	BLOCK2_SLUGHOLE_HIDDEN  = 0x200,
-	BLOCK2_UNK_400          = 0x400,
+	BLOCK2_NONE              = 0,
+	BLOCK2_GENERATEPOWER     = 0x1,
+	BLOCK2_DRAINPOWER_TEMP   = 0x2,
+	BLOCK2_TOOLSTORE         = 0x4,
+	BLOCK2_FENCEREQUEST      = 0x8,
+	BLOCK2_ERODELOCKED       = 0x10,
+	BLOCK2_SLUGHOLE_EXPOSED  = 0x20,
+	BLOCK2_EMERGE_POINT      = 0x40,
+	BLOCK2_EMERGE_TRIGGER    = 0x80,
+	BLOCK2_POWERED           = 0x100,
+	BLOCK2_SLUGHOLE_HIDDEN   = 0x200,
+	BLOCK2_PATHSBUILTCOUNTED = 0x400, // A block is flagged with this if it's currently registered as a "built object".
+	                                  // This is then used to increment the number of paths built or destroyed in the level during Level_BlockUpdateSurface.
 };
 flags_end(BlockFlags2, 0x4);
 
@@ -344,7 +352,7 @@ struct Lego_Block // [LegoRR/Lego.c|struct:0x48|pack:1]
 	/*18,4*/	Lego_BlockActivity* activity;
 	/*1c,4*/	Smoke* smoke;
 	/*20,2*/	sint16 randomness;
-	/*22,2*/	sint16 short_22; // (some num value, observed: != 4)
+	/*22,2*/	uint16 seamDigCount; // Number of times a crystal/ore seam has been dug (destroyed at 4).
 	/*24,4*/	uint32 numLandSlides;
 	/*28,4*/	uint32 clickCount;
 	/*2c,4*/	sint32 generateCrystals;
@@ -354,7 +362,7 @@ struct Lego_Block // [LegoRR/Lego.c|struct:0x48|pack:1]
 	/*38,4*/	bool32 fallinUpper; // (fallin upper: 1 if fallin > 4)
 	/*3c,4*/	sint32 fallinIntensity; // (fallin scale: 1-4)
 	/*40,4*/	real32 fallinTimer; // (randomized with full fallin value)
-	/*44,4*/	undefined4 field_44; // Tutorial highlight state (1 == normal, 0 = tutorial color)
+	/*44,4*/	bool32 tutoHighlightState; // Tutorial block highlight color (false = tutorial color, true = normal).
 	/*48*/
 };
 assert_sizeof(Lego_Block, 0x48);
@@ -1352,7 +1360,7 @@ bool32 __cdecl Level_HandleEmergeTriggers(Lego_Level* level, const Point2I* bloc
 const char* __cdecl Level_Free(void);
 
 // <LegoRR.exe @0042f210>
-#define Level_Block_SetFlags1_200_AndUpdateSurface_LevelStruct428 ((void (__cdecl* )(Lego_Level* level, uint32 bx, uint32 by, bool32 setFlag200))0x0042f210)
+#define Level_Block_SetNotHot ((void (__cdecl* )(Lego_Level* level, uint32 bx, uint32 by, bool32 notHot))0x0042f210)
 
 // <LegoRR.exe @0042f280>
 #define Level_Block_ChoosePathTexture ((SurfaceTexture (__cdecl* )(sint32 bx, sint32 by, IN OUT uint8* direction, bool32 powered))0x0042f280)

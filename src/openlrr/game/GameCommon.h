@@ -118,6 +118,10 @@ typedef uint8 DirectionByte;
 
 #define LEGO_STUDORECOUNT		5
 
+#define LEGO_SEAMCRYORECOUNT	4	// Number of crystals/ore generated from a seam before being destroyed.
+#define LEGO_ERODESTAGECOUNT	4
+#define LEGO_RUBBLELAYERCOUNT	4
+
 #define OBJECT_CUSTOMNAMELENGTH		12
 #define OBJECT_MAXCUSTOMNAMECHARS	(OBJECT_CUSTOMNAMELENGTH - 1)
 
