@@ -171,7 +171,7 @@ void __cdecl LegoRR::Front_LevelSelect_LevelNamePrintF(Gods98::Font* font, sint3
 // <LegoRR.exe @00410300>
 void __cdecl LegoRR::Front_Callback_TriggerPlayCredits(void)
 {
-	Credits_Play(legoGlobs.CreditsTextFile, legoGlobs.bmpRSFont, legoGlobs.CreditsBackAVI);
+	Credits_Play(legoGlobs.CreditsTextFile, legoGlobs.fontCredits, legoGlobs.CreditsBackAVI);
 }
 
 // <LegoRR.exe @00410320>

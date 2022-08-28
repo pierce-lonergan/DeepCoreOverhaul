@@ -1964,7 +1964,7 @@ bool32 __cdecl LegoRR::Lego_EndLevel(void)
 	}
 	Lego_SetViewMode(ViewMode_Top, nullptr, 0);
 
-	Gods98::TextWindow_Clear(legoGlobs.textWnd_80);
+	Gods98::TextWindow_Clear(legoGlobs.textOnlyWindow);
 
 	// Default to using the next level specified in the level links. Otherwise ask the FrontEnd.
 	const char* nextLevelID = Level_Free();

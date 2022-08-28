@@ -147,17 +147,17 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 	Bubble_Initialise();
 
 
-	legoGlobs.bmpFONT5_HI    = Gods98::Font_Load("Interface\\Fonts\\FONT5_HI.bmp");
-	legoGlobs.bmpToolTipFont = Gods98::Font_Load("Interface\\Fonts\\ToolTipFont.bmp");
-	legoGlobs.bmpDeskTopFont = Gods98::Font_Load("Interface\\Fonts\\DeskTopFont.bmp");
-	legoGlobs.bmpfont5_HI    = Gods98::Font_Load("Interface\\Fonts\\font5_HI.bmp");
-	legoGlobs.bmpMbriefFONT  = Gods98::Font_Load("Interface\\Fonts\\MBriefFONT.bmp");
-	legoGlobs.bmpMbriefFONT2 = Gods98::Font_Load("Interface\\Fonts\\MBriefFONT2.bmp");
-	legoGlobs.bmpRSFont      = Gods98::Font_Load("Interface\\Fonts\\RSFont.bmp");
+	legoGlobs.fontStandard   = Gods98::Font_Load("Interface\\Fonts\\FONT5_HI.bmp");
+	legoGlobs.fontToolTip    = Gods98::Font_Load("Interface\\Fonts\\ToolTipFont.bmp");
+	legoGlobs.fontTallYellow = Gods98::Font_Load("Interface\\Fonts\\DeskTopFont.bmp");
+	legoGlobs.fontTextWindow = Gods98::Font_Load("Interface\\Fonts\\font5_HI.bmp");
+	legoGlobs.fontBriefingLo = Gods98::Font_Load("Interface\\Fonts\\MBriefFONT.bmp");
+	legoGlobs.fontBriefingHi = Gods98::Font_Load("Interface\\Fonts\\MBriefFONT2.bmp");
+	legoGlobs.fontCredits    = Gods98::Font_Load("Interface\\Fonts\\RSFont.bmp");
 
 
-	Info_Initialise(legoGlobs.bmpFONT5_HI);
-	Interface_Initialise(565, 18, legoGlobs.bmpToolTipFont);
+	Info_Initialise(legoGlobs.fontStandard); // This font is never used by the Info module.
+	Interface_Initialise(565, 18, legoGlobs.fontToolTip);
 
 	legoGlobs.rootCont = Gods98::Container_Initialise(legoGlobs.gameName);
 	if (legoGlobs.rootCont == nullptr)
@@ -184,7 +184,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		ToolTipRGB.blue  = (83.0f / 255.0f);// 0.3254902f;
 	}
 
-	ToolTip_Initialise(legoGlobs.bmpToolTipFont, 2, 1, 1.0f, Gods98::appWidth(), Gods98::appHeight(),
+	ToolTip_Initialise(legoGlobs.fontToolTip, 2, 1, 1.0f, Gods98::appWidth(), Gods98::appHeight(),
 					   32, ToolTipRGB.red, ToolTipRGB.green, ToolTipRGB.blue);
 
 	legoGlobs.CreditsTextFile = Gods98::Config_GetStringValue(legoConfig, Main_ID("CreditsTextFile"));
@@ -221,13 +221,13 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 	}
 
 	const Area2F fontRender80_rect = Area2F { 55.0f, 435.0f, 325.0f, 42.0f };
-	legoGlobs.textWnd_80 = Gods98::TextWindow_Create(legoGlobs.bmpfont5_HI, &fontRender80_rect, 0x400);
+	legoGlobs.textOnlyWindow = Gods98::TextWindow_Create(legoGlobs.fontTextWindow, &fontRender80_rect, 0x400);
 
 	const Area2F fontRender84_rect = Area2F { 55.0f, 435.0f, 260.0f, 42.0f };
-	legoGlobs.textWnd_84 = Gods98::TextWindow_Create(legoGlobs.bmpfont5_HI, &fontRender84_rect, 0x400);
+	legoGlobs.textImageWindow = Gods98::TextWindow_Create(legoGlobs.fontTextWindow, &fontRender84_rect, 0x400);
 
 	real32 textPauseTime = Config_GetRealValue(legoConfig, Main_ID("TextPauseTime"));
-	Text_Load(legoGlobs.textWnd_80, legoGlobs.textWnd_84, 316, 425, (textPauseTime * STANDARD_FRAMERATE));
+	Text_Load(legoGlobs.textOnlyWindow, legoGlobs.textImageWindow, 316, 425, (textPauseTime * STANDARD_FRAMERATE));
 
 
 	const Area2F MsgPanel_rect1 = Area2F { 55.0f, 435.0f, 325.0f, 42.0f };
@@ -245,10 +245,10 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 			Front_Util_StringReplaceChar(startMessage, '_', ' ');
 
 			if (versionString == nullptr) {
-				Gods98::TextWindow_PrintF(legoGlobs.textWnd_80, "\n%s", startMessage);
+				Gods98::TextWindow_PrintF(legoGlobs.textOnlyWindow, "\n%s", startMessage);
 			}
 			else {
-				Gods98::TextWindow_PrintF(legoGlobs.textWnd_80, "\n%s (%s)", startMessage, versionString);
+				Gods98::TextWindow_PrintF(legoGlobs.textOnlyWindow, "\n%s (%s)", startMessage, versionString);
 			}
 			Gods98::Mem_Free(startMessage); //util::free2(startMessage);
 		}
@@ -312,7 +312,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 	else
 		loaderProfileName = "LoaderProfile.txt";
 
-	Loader_Initialise(loadScreenName, shutdownScreenName, legoGlobs.bmpFONT5_HI, loaderProfileName,
+	Loader_Initialise(loadScreenName, shutdownScreenName, legoGlobs.fontStandard, loaderProfileName,
 					  progressBarDirection, progressBarName, &progressWindowRect, loadingText);
 
 	Loader_display_loading_bar("Game Data");
@@ -499,7 +499,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		Lego_LoadObjectTheNames(legoConfig);
 
 		if (Config_GetBoolOrFalse(legoConfig, Main_ID("HelpWindowOn"))) {
-			HelpWindow_SetFont(legoGlobs.bmpMbriefFONT2);
+			HelpWindow_SetFont(legoGlobs.fontBriefingHi);
 			HelpWindow_Initialise(legoConfig, legoGlobs.gameName);
 		}
 
@@ -663,7 +663,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 					(real32)std::atoi(Window_stringParts[2]),
 					(real32)std::atoi(Window_stringParts[3]),
 				};
-				legoGlobs.DialogTextWndTitle = Gods98::TextWindow_Create(legoGlobs.bmpMbriefFONT2, &Window_rect, 0x400);
+				legoGlobs.DialogTextWndTitle = Gods98::TextWindow_Create(legoGlobs.fontBriefingHi, &Window_rect, 0x400);
 			}
 		}
 
@@ -679,7 +679,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 					(real32)std::atoi(Window_stringParts[2]),
 					(real32)std::atoi(Window_stringParts[3]),
 				};
-				legoGlobs.DialogTextWndMessage = Gods98::TextWindow_Create(legoGlobs.bmpMbriefFONT, &Window_rect, 0x400);
+				legoGlobs.DialogTextWndMessage = Gods98::TextWindow_Create(legoGlobs.fontBriefingLo, &Window_rect, 0x400);
 			}
 		}
 
@@ -695,7 +695,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 					(real32)std::atoi(Window_stringParts[2]),
 					(real32)std::atoi(Window_stringParts[3]),
 				};
-				legoGlobs.DialogTextWndOK = Gods98::TextWindow_Create(legoGlobs.bmpMbriefFONT, &Window_rect, 0x400);
+				legoGlobs.DialogTextWndOK = Gods98::TextWindow_Create(legoGlobs.fontBriefingLo, &Window_rect, 0x400);
 			}
 		}
 
@@ -711,7 +711,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 					(real32)std::atoi(Window_stringParts[2]),
 					(real32)std::atoi(Window_stringParts[3]),
 				};
-				legoGlobs.DialogTextWndCancel = Gods98::TextWindow_Create(legoGlobs.bmpMbriefFONT, &Window_rect, 0x400);
+				legoGlobs.DialogTextWndCancel = Gods98::TextWindow_Create(legoGlobs.fontBriefingLo, &Window_rect, 0x400);
 			}
 		}
 
@@ -988,13 +988,13 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	if (++sMonitorFramesCountUp >= 200) {
 		const real32 timeDiff = (real32)(Gods98::Main_GetTime() - sFpsTimeGet);
 		if (legoGlobs.flags1 & GAME1_SHOWFPS) {
-			Gods98::TextWindow_PrintF(legoGlobs.textWnd_80, "\nFPS: %f", (double)(1.0f / ((timeDiff / 1000.0f) / 200.0f)));
+			Gods98::TextWindow_PrintF(legoGlobs.textOnlyWindow, "\nFPS: %f", (double)(1.0f / ((timeDiff / 1000.0f) / 200.0f)));
 		}
 
 		if (legoGlobs.flags1 & GAME1_SHOWMEMORY) {
 			uint32 totalMem, freeMem;
 			if (Gods98::DirectDraw_GetAvailTextureMem(&totalMem, &freeMem)) {
-				Gods98::TextWindow_PrintF(legoGlobs.textWnd_80, "\nTexture mem: %i avail: %i used: %i", totalMem, freeMem, totalMem - freeMem);
+				Gods98::TextWindow_PrintF(legoGlobs.textOnlyWindow, "\nTexture mem: %i avail: %i used: %i", totalMem, freeMem, totalMem - freeMem);
 			}
 		}
 
@@ -1091,7 +1091,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		legoGlobs.IsFallinsEnabled = !legoGlobs.IsFallinsEnabled;
 
 		const char* fallinMode = (legoGlobs.IsFallinsEnabled ? "On" : "Off");
-		Gods98::TextWindow_PrintF(legoGlobs.textWnd_80, "\nFallin Mode %s", fallinMode);
+		Gods98::TextWindow_PrintF(legoGlobs.textOnlyWindow, "\nFallin Mode %s", fallinMode);
 	}
 
 
@@ -1282,7 +1282,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		Panel_CryOreSideBar_Draw();
 		/// HARDCODED STUD ORE COUNT
 		const uint32 oreTotal = (legoGlobs.currLevel->ore + (legoGlobs.currLevel->studs * 5));
-		Panel_PrintF(Panel_CrystalSideBar, legoGlobs.bmpToolTipFont, 16, 469, true, "%i", oreTotal);
+		Panel_PrintF(Panel_CrystalSideBar, legoGlobs.fontToolTip, 16, 469, true, "%i", oreTotal);
 
 		Panel_FUN_0045a9f0(Panel_Information, elapsedInterface);
 		ScrollInfo_Update(false);
@@ -1304,7 +1304,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	}
 
 
-	Objective_Update(legoGlobs.textWnd_80, legoGlobs.currLevel, elapsedWorld, elapsedReal);
+	Objective_Update(legoGlobs.textOnlyWindow, legoGlobs.currLevel, elapsedWorld, elapsedReal);
 
 	if (Gods98::Main_ProgrammerMode() < 2) {
 		if ((legoGlobs.currLevel)->MaxStolen != 0.0f &&
@@ -1405,25 +1405,22 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	if (legoGlobs.flags1 & GAME1_DEBUG_SHOWVERTEXMODE) {
 
 		const char* showVertexMode = ((legoGlobs.flags1 & GAME1_VERTEXMODE) ? "Vertex" : "Block");
-		Gods98::Font_PrintF(legoGlobs.bmpDeskTopFont, 10, 10, "%s mode", showVertexMode);
+		Gods98::Font_PrintF(legoGlobs.fontTallYellow, 10, 10, "%s mode", showVertexMode);
 	}
-	if ((legoGlobs.flags1 & GAME1_VERTEXMODE) && legoGlobs.bool_c8) {
+	if ((legoGlobs.flags1 & GAME1_VERTEXMODE) && legoGlobs.digVertexShowPointer) {
 		Vector4F transform;
 		Vector3F vertPos;
-		Map3D_GetBlockFirstVertexPosition((legoGlobs.currLevel)->map, legoGlobs.pointi_c0.x, legoGlobs.pointi_c0.y, &vertPos);
+		Map3D_GetBlockFirstVertexPosition(legoGlobs.currLevel->map, legoGlobs.digVertexBlockPos.x, legoGlobs.digVertexBlockPos.y, &vertPos);
 
 		Gods98::Viewport_Transform(legoGlobs.viewMain, &transform, &vertPos);
-		Point2I pointerPos = {
-			(sint32) (uint32) (transform.x / transform.w),
-			(sint32) (uint32) (transform.y / transform.w),
+		const Point2I pointerPos = {
+			(sint32)(transform.x / transform.w),
+			(sint32)(transform.y / transform.w),
 		};
-		//transform.x = transform.x / transform.w;
-		//transform.y = transform.y / transform.w;
 
 		Pointer_SetCurrent_IfTimerFinished(Pointer_Drill);
-		//Pointer_DrawPointer((uint32)transform.x, (uint32)transform.y);
 		Pointer_DrawPointer((uint32)pointerPos.x, (uint32)pointerPos.y);
-		legoGlobs.flags1 &= ~GAME1_UNK_80000000;
+		legoGlobs.flags1 &= ~GAME1_VERTEXLOCKONPOINTER;
 	}
 
 	// UI LOGIC: Tooltips
@@ -1462,11 +1459,11 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 					// The compiler must have been drunk to choose this over the normal bit shifts....
 					//const uint32 upgLvl = upgrades->currentLevel;
 					//uVar11 = CONCAT44(upgLvl, upgLvl >> 1) & 0x100000001;
-					//Gods98::Font_PrintF(legoGlobs.bmpFONT5_HI, 0, 0, "Upgrade - (%i%i%i%i)",
+					//Gods98::Font_PrintF(legoGlobs.fontStandard, 0, 0, "Upgrade - (%i%i%i%i)",
 					//					upgLvl >> 3 & 1, upgLvl >> 2 & 1, (uint32)uVar11, (uint32)(uVar11 >> 0x20));
 
 					const uint32 upgLvl = upgrades->currentLevel;
-					Gods98::Font_PrintF(legoGlobs.bmpFONT5_HI, 0, 0, "Upgrade - (%i%i%i%i)",
+					Gods98::Font_PrintF(legoGlobs.fontStandard, 0, 0, "Upgrade - (%i%i%i%i)",
 										((upgLvl & UPGRADE_FLAG_CARRY) ? 1 : 0),
 										((upgLvl & UPGRADE_FLAG_SCAN)  ? 1 : 0),
 										((upgLvl & UPGRADE_FLAG_SPEED) ? 1 : 0),
@@ -1495,7 +1492,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		if (gamectrlGlobs.dbgSpeedChangeTimer > 0.0f) {
 			gamectrlGlobs.dbgSpeedChangeTimer -= elapsedInterface;
 			const real32 gameSpeedPercent = (Lego_GetGameSpeed() * 100.0f);
-			Gods98::Font_PrintF(legoGlobs.bmpFONT5_HI, 10, 80, "Game Speed %0.0f%%", (double)gameSpeedPercent);
+			Gods98::Font_PrintF(legoGlobs.fontStandard, 10, 80, "Game Speed %0.0f%%", (double)gameSpeedPercent);
 		}
 	}
 
@@ -1531,7 +1528,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		}
 
 		if (gamectrlGlobs.dbgRollOffChangeTimer > 0.0f) {
-			Gods98::Font_PrintF(legoGlobs.bmpFONT5_HI, 10, 80, "3D sound fall off: %f", (double)updateGlobs.dbgRollOffFactorValue);
+			Gods98::Font_PrintF(legoGlobs.fontStandard, 10, 80, "3D sound fall off: %f", (double)updateGlobs.dbgRollOffFactorValue);
 		}
 		gamectrlGlobs.dbgRollOffChangeTimer -= elapsedInterface;
 	}
@@ -1544,7 +1541,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		NERPsRuntime_UpdateTimers(elapsedInterface);
 	}
 	else {
-		Gods98::Font_PrintF(legoGlobs.bmpFONT5_HI, 0, 0, "NoNERPS");
+		Gods98::Font_PrintF(legoGlobs.fontStandard, 0, 0, "NoNERPS");
 	}
 
 
@@ -1662,34 +1659,34 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		case DEBUGOVERLAY_LISTSETS:
 			{
 				uint32 row = 0;
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "[ListSets]");
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "AITasks %i", (sint32)aiListSet.EnumerateAlive().Count());
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "EFences %i", (sint32)efenceListSet.EnumerateAlive().Count());
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Objects %i", (sint32)objectListSet.EnumerateAlive().Count());
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "[ListSets]");
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "AITasks %i", (sint32)aiListSet.EnumerateAlive().Count());
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "EFences %i", (sint32)efenceListSet.EnumerateAlive().Count());
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Objects %i", (sint32)objectListSet.EnumerateAlive().Count());
 				// `CountAlive()` can only be used when we are SURE we've hooked
 				// and replaced all functions creating and removing listset items.
 				// Keeping the game module functions as `EnumerateAlive().Count()`, will
 				//  allow hooking and unhooking them without having to go back and change this.
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Configs %i", (sint32)Gods98::configListSet.CountAlive());
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Containers %i", (sint32)Gods98::containerListSet.CountAlive());
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Fonts %i", (sint32)Gods98::fontListSet.CountAlive());
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Images %i", (sint32)Gods98::imageListSet.CountAlive());
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Meshes %i", (sint32)Gods98::meshListSet.CountAlive());
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Viewports %i", (sint32)Gods98::viewportListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Configs %i", (sint32)Gods98::configListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Containers %i", (sint32)Gods98::containerListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Fonts %i", (sint32)Gods98::fontListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Images %i", (sint32)Gods98::imageListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Meshes %i", (sint32)Gods98::meshListSet.CountAlive());
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Viewports %i", (sint32)Gods98::viewportListSet.CountAlive());
 			}
 			break;
 		case DEBUGOVERLAY_NERPS:
 			{
 				uint32 row = 0;
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "[NERPs]");
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "[NERPs]");
 				for (uint32 i = 0; i < _countof(nerpsruntimeGlobs.registers); i++) {
-					Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "R%i %i", i, (sint32)nerpsruntimeGlobs.registers[i]);
+					Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "R%i %i", i, (sint32)nerpsruntimeGlobs.registers[i]);
 				}
 				for (uint32 i = 0; i < _countof(nerpsruntimeGlobs.timers); i++) {
 					const real32 seconds = nerpsruntimeGlobs.timers[i] / 1000.0f;
-					Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Timer%i %0.3fs", i, seconds);
+					Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Timer%i %0.3fs", i, seconds);
 				}
-				Gods98::Font_PrintF(legoGlobs.bmpToolTipFont, dbgX, dbgY+r*(row++), "Flags %04x", (uint32)NERPs_GetTutorialFlags());
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Flags %04x", (uint32)NERPs_GetTutorialFlags());
 			}
 			break;
 		}
@@ -1791,10 +1788,10 @@ void __cdecl LegoRR::Lego_Shutdown_Full(void)
 	Gods98::Mem_Free(legoGlobs.langPath_name);
 
 
-	Gods98::TextWindow_Remove(legoGlobs.textWnd_80);
+	Gods98::TextWindow_Remove(legoGlobs.textOnlyWindow);
 
-	Gods98::Font_Remove(legoGlobs.bmpFONT5_HI);
-	Gods98::Font_Remove(legoGlobs.bmpToolTipFont);
+	Gods98::Font_Remove(legoGlobs.fontStandard);
+	Gods98::Font_Remove(legoGlobs.fontToolTip);
 
 	Effect_RemoveAll_RockFall();
 	AITask_Shutdown();
@@ -2131,7 +2128,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 			}
 
 			const char* onOff = ((legoGlobs.flags1 & GAME1_SHOWFPS) ? "ON" : "OFF");
-			TextWindow_PrintF(legoGlobs.textWnd_80, "\nFrame Rate Monitor: %s", onOff);
+			TextWindow_PrintF(legoGlobs.textOnlyWindow, "\nFrame Rate Monitor: %s", onOff);
 		}
 
 		/// CHANGE: No longer a debug key.
@@ -2170,7 +2167,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 			}
 
 			const char* onOff = ((legoGlobs.flags1 & GAME1_SHOWMEMORY) ? "ON" : "OFF");
-			TextWindow_PrintF(legoGlobs.textWnd_80, "\nMemory Monitor: %s", onOff);
+			TextWindow_PrintF(legoGlobs.textOnlyWindow, "\nMemory Monitor: %s", onOff);
 		}
 
 		/// DEBUG KEYBIND: [LCtrl]+[Return]  "Toggle Noclip in first/second person view."
@@ -2231,7 +2228,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 			}
 
 			const char* onOff = ((legoGlobs.flags1 & GAME1_USESFX) ? "ON" : "OFF");
-			TextWindow_PrintF(legoGlobs.textWnd_80, "\nSound Effects: %s", onOff);
+			TextWindow_PrintF(legoGlobs.textOnlyWindow, "\nSound Effects: %s", onOff);
 		}
 
 		/// CHANGE: No longer a debug key.
@@ -2241,7 +2238,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 			Lego_SetMusicOn(!(legoGlobs.flags1 & GAME1_USEMUSIC));
 
 			const char* onOff = ((legoGlobs.flags1 & GAME1_USEMUSIC) ? "ON" : "OFF");
-			TextWindow_PrintF(legoGlobs.textWnd_80, "\nMusic: %s", onOff);
+			TextWindow_PrintF(legoGlobs.textOnlyWindow, "\nMusic: %s", onOff);
 		}
 
 		/// CHANGE: Switch to normal debug mode *or* edit mode key (we want to hijack edit mode for something actually useful).

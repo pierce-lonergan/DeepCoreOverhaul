@@ -127,7 +127,7 @@ enum GameFlags1 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 	GAME1_LASERTRACKER          = 0x10000000,
 	GAME1_DEBUG_SHOWVERTEXMODE  = 0x20000000,
 	GAME1_DEBUG_NOCLIP_FPS      = 0x40000000,
-	GAME1_UNK_80000000          = 0x80000000,
+	GAME1_VERTEXLOCKONPOINTER   = 0x80000000, // Unset by unused Vertex Mode (SingleWidthDig) after forcefully drawing a 2nd pointer over a block corner.
 };
 flags_end(GameFlags1, 0x4);
 
@@ -476,15 +476,15 @@ struct Lego_Globs // [LegoRR/Lego.c|struct:0xf00|tags:GLOBS]
 	/*058,4*/       undefined4 field_58;
 	/*05c,4*/       undefined4 field_5c;
 	/*060,4*/       undefined4 field_60;
-	/*064,4*/       Gods98::Font* bmpFONT5_HI;
-	/*068,4*/       Gods98::Font* bmpToolTipFont;
-	/*06c,4*/       Gods98::Font* bmpDeskTopFont;
-	/*070,4*/       Gods98::Font* bmpfont5_HI;
-	/*074,4*/       Gods98::Font* bmpMbriefFONT;
-	/*078,4*/       Gods98::Font* bmpMbriefFONT2;
-	/*07c,4*/       Gods98::Font* bmpRSFont;
-	/*080,4*/       Gods98::TextWindow* textWnd_80;
-	/*084,4*/       Gods98::TextWindow* textWnd_84;
+	/*064,4*/       Gods98::Font* fontStandard; // Loader, Debug text, Level Select window, Pull-out info icon window, (unused) Info, Encyclopedia(?).
+	/*068,4*/       Gods98::Font* fontToolTip; // ToolTip, CryOre count, Unit custom name, Teleporter queued, Interface UPG(???), Info icon count.
+	/*06c,4*/       Gods98::Font* fontTallYellow; // (unused) Block / Vertex mode for unimplemented SingleWidthDig feature.
+	/*070,4*/       Gods98::Font* fontTextWindow; // TextMessage window (same as fontStandard).
+	/*074,4*/       Gods98::Font* fontBriefingLo; // Dark text color used by most menus that share the briefing menu background.
+	/*078,4*/       Gods98::Font* fontBriefingHi; // Bright text color used by most menus that share the briefing menu background.
+	/*07c,4*/       Gods98::Font* fontCredits; // Credits roll only.
+	/*080,4*/       Gods98::TextWindow* textOnlyWindow;
+	/*084,4*/       Gods98::TextWindow* textImageWindow; // Same as textOnlyWindow, but used instead when there's an image.
 	/*088,8*/       Point2F gotoNewPos; // Upcoming/current 2D world position used when programatically moving the camera.
 	/*090,8*/       Point2F gotoTargetPos; // Desired 2D world position used when programatically moving the camera (using Smooth option)
 	/*098,4*/       bool32 gotoSmooth; // When false, gotoNewPos is the target position (aka, camera smoothing).
@@ -497,8 +497,8 @@ struct Lego_Globs // [LegoRR/Lego.c|struct:0xf00|tags:GLOBS]
 	/*0b4,4*/       real32 float_b4;
 	/*0b8,4*/       real32 float_b8;
 	/*0bc,4*/       real32 float_bc;
-	/*0c0,8*/       Point2I pointi_c0;
-	/*0c8,4*/       bool32 bool_c8;
+	/*0c0,8*/       Point2I digVertexBlockPos;   // Drilling pointer block position for unused Vertex Mode (SingleWidthDig).
+	/*0c8,4*/       bool32 digVertexShowPointer; // Used with: digVertexBlockPos
 	/*0cc,4*/       char* langPowerCrystal_name; // (cfg: ObjectNames)
 	/*0d0,4*/       char* langOre_name; // (cfg: ObjectNames)
 	/*0d4,4*/       char* langProcessedOre_name; // (cfg: ObjectNames)

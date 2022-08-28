@@ -559,7 +559,7 @@ struct Front_Globs // [LegoRR/FrontEnd.c|struct:0x884|tags:GLOBS]
 	/*0ac,4*/	Gods98::Flic* overlayImageOrFlic; // Image* or Flic* type
 	/*0b0,4*/	uint32 overlayStartTime; // starting Main_GetTime (milliseconds)
 	/*0b4,4*/	uint32 overlayCurrTime; // current Main_GetTime (milliseconds)
-	/*0b8,4*/	Gods98::Font* versionFont; // (file: bmpMbriefFONT2)
+	/*0b8,4*/	Gods98::Font* versionFont; // (file: fontBriefingHi)
 	/*0bc,4*/	char* versionString; // (cfg: Main::Version)
 	/*0c0,450*/	SaveData saveData[6];
 	/*510,4*/	sint32 saveNumber;

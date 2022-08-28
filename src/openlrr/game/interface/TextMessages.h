@@ -63,8 +63,8 @@ struct Text_Globs // [LegoRR/Text.c|struct:0x4dc|tags:GLOBS]
 								    // From how this counter field is used. The decrement operation and counter value CHANGES ABSOLUTELY NOTHING.
 	/*484,4*/	char* currText; // Pointer to NERPsMessage raw text
 	/*488,4*/	real32 float_488;
-	/*48c,4*/	Gods98::TextWindow* textWnd_48c;
-	/*490,4*/	Gods98::TextWindow* textWnd_490;
+	/*48c,4*/	Gods98::TextWindow* textOnlyWindow;
+	/*490,4*/	Gods98::TextWindow* textImageWindow; // Same as textOnlyWindow, but used instead when there's an image.
 	/*494,4*/	undefined4 reserved1;
 	/*498,4*/	uint32 uint_498;
 	/*49c,10*/	Area2F MsgPanel_Rect1;
@@ -110,7 +110,7 @@ extern Text_Globs & textGlobs;
 #pragma region Functions
 
 // <LegoRR.exe @0046aab0>
-#define Text_Load ((void (__cdecl* )(Gods98::TextWindow* param_1, Gods98::TextWindow* param_2, sint32 imageX, sint32 imageY, real32 pauseTime))0x0046aab0)
+#define Text_Load ((void (__cdecl* )(Gods98::TextWindow* textOnlyWindow, Gods98::TextWindow* textImageWindow, sint32 imageX, sint32 imageY, real32 pauseTime))0x0046aab0)
 
 // <LegoRR.exe @0046ac10>
 #define Text_Initialise ((void (__cdecl* )(const char* filename, uint32 param_2, uint32 param_3, uint32 unused_int, const Area2F* param_5, const Area2F* unused_rect, real32 param_7))0x0046ac10)
