@@ -464,9 +464,9 @@ struct LegoObject_Globs // [LegoRR/LegoObject.c|struct:0xc644|tags:GLOBS]
 	/*c014,4*/      uint32 hiddenObjectCount;
 	/*c018,4*/      real32 dischargeBuildup; // When >= 1.0f, consume one crystal.
 	/*c01c,18*/     SaveStruct_18 savestruct18_c01c;
-	/*c034,400*/    LegoObject* cycleUnits[256]; // PTRLiveObject_ARRAY_004eb7c4
-	/*c434,4*/      uint32 cycleUnitCount; // COUNT_004ebbc4
-	/*c438,4*/      uint32 cycleBuildingCount; // COUNTBuildingsOnly_004ebbc8
+	/*c034,400*/    LegoObject* cycleUnits[OBJECT_MAXCYCLEUNITS];
+	/*c434,4*/      uint32 cycleUnitCount;
+	/*c438,4*/      uint32 cycleBuildingCount;
 	/*c43c,190*/    LegoObject* liveObjArray100_c43c[100]; // Used for water docking vehicles?
 	/*c5cc,4*/      uint32 uintCount_c5cc; // Count for liveObjArray100_c43c
 	/*c5d0,18*/     const char* abilityName[LegoObject_AbilityType_Count]; // [abilityType:6]
@@ -1488,11 +1488,24 @@ bool32 __cdecl LegoObject_Freeze(LegoObject* liveObj, real32 freezerTime);
 // <LegoRR.exe @0044c7f0>
 #define LegoObject_MiniFigureHasBeamEquipped2 ((bool32 (__cdecl* )(LegoObject* liveObj))0x0044c7f0)
 
+// Called by Panel_CheckCollision for type Panel_CameraControl.
 // <LegoRR.exe @0044c810>
-#define LegoObject_CameraCycleUnits ((void (__cdecl* )(void))0x0044c810)
+//#define LegoObject_CameraCycleUnits ((void (__cdecl* )(void))0x0044c810)
+void __cdecl LegoObject_CameraCycleUnits(void);
 
+/// CUSTOM: Wrapper around LegoObject_Callback_CameraCycleFindUnitByFlags with extra limit handling.
+bool LegoObject_CameraCycleFindNextUnitByFlags(LegoObject_TypeFlags objTypeFlags, OPTIONAL OUT bool* unitsExist);
+
+/// CUSTOM: Extension of LegoObject_Callback_CameraCycleFindUnit so that we can customize what objects are included in the cycle.
+bool LegoObject_Callback_CameraCycleFindUnitByFlags(LegoObject* liveObj, LegoObject_TypeFlags objTypeFlags, OPTIONAL IN OUT bool* unitsExist);
+
+// REPLACED BY: LegoObject_Callback_CameraCycleFindUnitByFlags
+// DATA: OPTIONAL bool32* pNoBuildings (defaults to false when NULL).
 // <LegoRR.exe @0044c8b0>
-#define LegoObject_Callback_CameraCycleFindUnit ((bool32 (__cdecl* )(LegoObject* liveObj, OPTIONAL bool32* pNoBuildings))0x0044c8b0)
+//#define LegoObject_Callback_CameraCycleFindUnit ((bool32 (__cdecl* )(LegoObject* liveObj, OPTIONAL void* pNoBuildings))0x0044c8b0)
+bool32 __cdecl LegoObject_Callback_CameraCycleFindUnit(LegoObject* liveObj, OPTIONAL void* pNoBuildings);
+
+
 
 /// CUSTOM: Starts the tickdown for dynamite or sonic blaster.
 void LegoObject_StartTickDown(LegoObject* liveObj, bool showInfoMessage);

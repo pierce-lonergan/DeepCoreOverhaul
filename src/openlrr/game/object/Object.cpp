@@ -3,6 +3,7 @@
 
 #include "../../engine/core/Maths.h"
 #include "../../engine/core/Utils.h"
+#include "../../engine/input/Input.h"
 
 #include "../Game.h"
 #include "../audio/SFX.h"
@@ -1483,6 +1484,139 @@ bool32 __cdecl LegoRR::LegoObject_Freeze(LegoObject* liveObj, real32 freezerTime
 		return true;
 	}
 	return false;
+}
+
+
+// <LegoRR.exe @0044c810>
+void __cdecl LegoRR::LegoObject_CameraCycleUnits(void)
+{
+	// Cycle-able units have now been validated since level-start (once the function exits).
+	objectGlobs.flags |= LegoObject_GlobFlags::OBJECT_GLOB_FLAG_CYCLEUNITS;
+
+	bool unitsExist = false; // Track if we've found the unit type to cycle through.
+
+	// Start by trying to cycle through buildings.
+	//bool32 noBuildings = false;
+	LegoObject_TypeFlags objTypeFlags = OBJECT_TYPE_FLAG_BUILDING;
+	if (LegoObject_CameraCycleFindNextUnitByFlags(objTypeFlags, &unitsExist))
+		return; // New building added to cycle list and camera moved. We're done.
+
+
+	// If no buildings are constructed, then cycle through minifigure unit types instead.
+	if (!unitsExist) {//objectGlobs.cycleBuildingCount == 0) {
+		// Change cycle unit type to minifigures.
+		//noBuildings = true;
+		objTypeFlags = OBJECT_TYPE_FLAG_MINIFIGURE;
+		if (LegoObject_CameraCycleFindNextUnitByFlags(objTypeFlags, &unitsExist))
+			return; // New minifigure added to cycle list and camera moved. We're done.
+	}
+
+	// If cycle-able units exist, then all valid units were already in the list.
+	if (unitsExist) {//objectGlobs.cycleUnitCount != 0) {
+		// Reset the cycle list, then jump to the first available unit of our cycle unit type (building or minifigure).
+
+		// This behavior is used so that the cycle list is guaranteed to not repeat itself until all units
+		// have been visited once. After all units have been visited, the list is started anew.
+		//  (This effectively functions like a music shuffle, without the intention of shuffling.)
+
+		// Note that the order of units may change if new valid units were created in the middle of a cycle,
+		// This is because the order of the cycle is first and foremost based on where the object is in the listSet,
+		// And the listSet is not intended to be ordered based on when a unit is added, as freed up slots earlier in
+		// the list may be used instead.
+		objectGlobs.cycleUnitCount = 0;
+		objectGlobs.cycleBuildingCount = 0;
+
+		// Find first unit to cycle to.
+		if (LegoObject_CameraCycleFindNextUnitByFlags(objTypeFlags, nullptr))
+			return; // First building/minifigure added to cycle list and camera moved. We're done.
+	}
+}
+
+/// CUSTOM: Wrapper around LegoObject_Callback_CameraCycleFindUnitByFlags with extra limit handling.
+bool LegoRR::LegoObject_CameraCycleFindNextUnitByFlags(LegoObject_TypeFlags objTypeFlags, OPTIONAL OUT bool* unitsExist)
+{
+	/// FIX APPLY: Handle cycleUnitCount limit here instead of in callback.
+	///            This allows us to restart the cycle immediately, instead of after one use.
+	if (objectGlobs.cycleUnitCount >= OBJECT_MAXCYCLEUNITS) {
+		// If we've reached the maximum possible units to cycle through then restart the list.
+		// We want to do this here so it's as early as possible in LegoObject_CameraCycleUnits,
+		//  to allow checking for all unit types.
+		objectGlobs.cycleUnitCount = 0;
+		objectGlobs.cycleBuildingCount = 0;
+	}
+
+	if (unitsExist) *unitsExist = false;
+
+	for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
+		if (LegoObject_Callback_CameraCycleFindUnitByFlags(obj, objTypeFlags, unitsExist))
+			return true; // New unit added to cycle list and camera moved.
+	}
+	return false;
+}
+
+/// CUSTOM: Extension of LegoObject_Callback_CameraCycleFindUnit so that we can customize what objects are included in the cycle.
+bool LegoRR::LegoObject_Callback_CameraCycleFindUnitByFlags(LegoObject* liveObj, LegoObject_TypeFlags objTypeFlags, OPTIONAL IN OUT bool* unitsExist)
+{
+	// Only check for units of a specific object type:
+	if (!LegoObject_TypeFlagsHasType(objTypeFlags, liveObj->type))
+		return false;
+
+	// Don't check for units already in cycleUnits:
+	for (uint32 i = 0; i < objectGlobs.cycleUnitCount; i++) {
+		if (objectGlobs.cycleUnits[i] == liveObj) {
+			if (unitsExist) *unitsExist = true;
+			return false;
+		}
+	}
+
+	if (objectGlobs.cycleUnitCount < OBJECT_MAXCYCLEUNITS) {
+		if (unitsExist) *unitsExist = true;
+
+		objectGlobs.cycleUnits[objectGlobs.cycleUnitCount++] = liveObj;
+		if (liveObj->type == LegoObject_Building)
+			objectGlobs.cycleBuildingCount++;
+
+		Lego_Goto(liveObj, nullptr, false);
+
+		// Move the topdown spotlight. Our cursor is over the panel interface, meaning it won't update the light movement.
+		uint32 bx, by; // dummy outputs
+
+		Vector3F wPos;
+		if (Map3D_GetIntersections(legoGlobs.currLevel->map, legoGlobs.viewMain, Gods98::msx(), Gods98::msy(), &bx, &by, &wPos)) {
+			Gods98::Container_SetPosition(legoGlobs.rootLight, nullptr, wPos.x, wPos.y, wPos.z - 250.0f);
+			return true; // Object found and camera moved successfully.
+		}
+		/// TODO: Should we still return true on failure when an new unit is found?
+	}
+	/// FIX APPLY: Failure on limit hit/failed camera move. Part of handling for reaching the limit fix.
+	return false;
+
+	/*else {
+		objectGlobs.cycleUnitCount = 0;
+		objectGlobs.cycleBuildingCount = 0;
+	}
+	return true; // Is returning true here intentional?
+	             // So cycle functionality breaks for one use after 256 building or minifigure units I guess...?
+	*/
+}
+
+// <LegoRR.exe @0044c8b0>
+bool32 __cdecl LegoRR::LegoObject_Callback_CameraCycleFindUnit(LegoObject* liveObj, OPTIONAL void* pNoBuildings)
+{
+	const bool32 noBuildings = (pNoBuildings != nullptr ? *(bool32*)pNoBuildings : false); // Default to false when NULL.
+
+	LegoObject_TypeFlags objTypeFlags;
+	if (noBuildings) objTypeFlags = OBJECT_TYPE_FLAG_MINIFIGURE;
+	else             objTypeFlags = OBJECT_TYPE_FLAG_BUILDING;
+
+	//if (noBuildings) {
+	//	if (liveObj->type != LegoObject_MiniFigure) return false;
+	//}
+	//else {
+	//	if (liveObj->type != LegoObject_Building) return false;
+	//}
+
+	return LegoObject_Callback_CameraCycleFindUnitByFlags(liveObj, objTypeFlags, nullptr);
 }
 
 

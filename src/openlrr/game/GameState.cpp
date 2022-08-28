@@ -2154,6 +2154,11 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 			}
 		}
 
+		/// KEYBIND: NULL  "Cycle the camera to the next building (or minifigure if no buildings) in the level."
+		if ((Lego_IsAllowDebugKeys() || !NERPs_AnyTutorialFlags()) && Shortcut_IsPressed(ShortcutID::CameraCycleNextUnit)) {
+			LegoObject_CameraCycleUnits();
+		}
+
 		/// DEBUG KEYBIND: [LCtrl]+[G]  "Toggle memory monitor."
 		if (Lego_IsAllowDebugKeys() && Shortcut_IsPressed(ShortcutID::Debug_ToggleMemoryMonitor)) {
 

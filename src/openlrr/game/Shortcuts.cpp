@@ -182,6 +182,9 @@ bool Shortcuts::ShortcutManager::Initialise()
 	Shortcut_Register(Cheat_PlaceSonicBlasterInstant, nullptr);
 	Shortcut_Register(Cheat_KamikazeUnit, nullptr);
 
+	Shortcut_Register(CameraCycleNextUnit, nullptr);
+
+
 	Shortcut_Register(ReloadKeyBinds, "KEY_LEFTCTRL+KEY_LEFTSHIFT+KEY_K|KEY_RIGHTCTRL+KEY_RIGHTSHIFT+KEY_K");
 
 

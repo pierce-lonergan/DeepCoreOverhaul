@@ -291,6 +291,9 @@ enum ShortcutID
 	/// NEW: Causes an explosion at the all selected units' positions and kills them in the process.
 	Cheat_KamikazeUnit,
 
+	/// NEW: Cycle the camera to the next building (or minifigure if no buildings) in the level.
+	CameraCycleNextUnit,
+
 
 	/// NEW: Reloads the configuration file, allowing to change command bindings on the fly.
 	ReloadKeyBinds, // [Ctrl]+[Shift]+[K]

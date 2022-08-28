@@ -121,6 +121,8 @@ typedef uint8 DirectionByte;
 #define OBJECT_CUSTOMNAMELENGTH		12
 #define OBJECT_MAXCUSTOMNAMECHARS	(OBJECT_CUSTOMNAMELENGTH - 1)
 
+#define OBJECT_MAXCYCLEUNITS	256
+
 #pragma endregion
 
 /**********************************************************************************
@@ -964,6 +966,10 @@ enum LegoObject_AbilityFlags : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uin
 };
 flags_end(LegoObject_AbilityFlags, 0x4);
 
+#define LegoObject_AbilityToFlag(abilityType) ((LegoObject_AbilityFlags)(1 << (abilityType)))
+
+#define LegoObject_AbilityFlagsHasType(abilityFlags, abilityType) ((abilityFlags) & LegoObject_AbilityToFlag((abilityType)))
+
 
 enum LegoObject_Type : sint32 // [LegoRR/LegoObject.c|enum:0x4|type:int]
 {
@@ -994,6 +1000,39 @@ enum LegoObject_Type : sint32 // [LegoRR/LegoObject.c|enum:0x4|type:int]
 	LegoObject_Type_Count,
 };
 assert_sizeof(LegoObject_Type, 0x4);
+
+
+// Note -1 is applied to all type flags because enum value 0 is LegoObject_None, and we need to skip it.
+enum LegoObject_TypeFlags : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint] Flags for specifying all (non-TVCamera) object types as a bitfield.
+{
+	OBJECT_TYPE_FLAG_NONE              = 0,
+	OBJECT_TYPE_FLAG_VEHICLE           = (1 << (LegoObject_Vehicle-1)),           // 0x1,
+	OBJECT_TYPE_FLAG_MINIFIGURE        = (1 << (LegoObject_MiniFigure-1)),        // 0x2,
+	OBJECT_TYPE_FLAG_ROCKMONSTER       = (1 << (LegoObject_RockMonster-1)),       // 0x4,
+	OBJECT_TYPE_FLAG_BUILDING          = (1 << (LegoObject_Building-1)),          // 0x8,
+	OBJECT_TYPE_FLAG_BOULDER           = (1 << (LegoObject_Boulder-1)),           // 0x10,
+	OBJECT_TYPE_FLAG_POWERCRYSTAL      = (1 << (LegoObject_PowerCrystal-1)),      // 0x20,
+	OBJECT_TYPE_FLAG_ORE               = (1 << (LegoObject_Ore-1)),               // 0x40,
+	OBJECT_TYPE_FLAG_DYNAMITE          = (1 << (LegoObject_Dynamite-1)),          // 0x80,
+	OBJECT_TYPE_FLAG_BARRIER           = (1 << (LegoObject_Barrier-1)),           // 0x100,
+	OBJECT_TYPE_FLAG_UPGRADEPART       = (1 << (LegoObject_UpgradePart-1)),       // 0x200,
+	OBJECT_TYPE_FLAG_ELECTRICFENCE     = (1 << (LegoObject_ElectricFence-1)),     // 0x400,
+	OBJECT_TYPE_FLAG_SPIDERWEB         = (1 << (LegoObject_SpiderWeb-1)),         // 0x800,
+	OBJECT_TYPE_FLAG_OOHSCARY          = (1 << (LegoObject_OohScary-1)),          // 0x1000,
+	OBJECT_TYPE_FLAG_ELECTRICFENCESTUD = (1 << (LegoObject_ElectricFenceStud-1)), // 0x2000,
+	OBJECT_TYPE_FLAG_PATH              = (1 << (LegoObject_Path-1)),              // 0x4000,
+	OBJECT_TYPE_FLAG_PUSHER            = (1 << (LegoObject_Pusher-1)),            // 0x8000,
+	OBJECT_TYPE_FLAG_FREEZER           = (1 << (LegoObject_Freezer-1)),           // 0x10000,
+	OBJECT_TYPE_FLAG_ICECUBE           = (1 << (LegoObject_IceCube-1)),           // 0x20000,
+	OBJECT_TYPE_FLAG_LASERSHOT         = (1 << (LegoObject_LaserShot-1)),         // 0x40000,
+
+	OBJECT_TYPE_FLAGS_ALL              = ((1 << (LegoObject_AbilityType_Count-1)) - 1), // 0x7ffff,
+};
+flags_end(LegoObject_TypeFlags, 0x4);
+
+#define LegoObject_TypeToFlag(objType) ((LegoObject_TypeFlags)(1 << ((objType)-1)))
+
+#define LegoObject_TypeFlagsHasType(objTypeFlags, objType) ((objTypeFlags) & LegoObject_TypeToFlag((objType)))
 
 
 // Hardcoded so many places in the game
@@ -1210,6 +1249,10 @@ enum LegoObject_UpgradeFlags : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uin
 	UPGRADE_FLAGS_ALL  = ((1 << LegoObject_UpgradeType_Count) - 1), // 0xf,
 };
 flags_end(LegoObject_UpgradeFlags, 0x4);
+
+#define LegoObject_UpgradeToFlag(upgradeType) ((LegoObject_UpgradeFlags)(1 << (upgradeType)))
+
+#define LegoObject_UpgradeFlagsHasType(upgradeFlags, upgradeType) ((upgradeFlags) & LegoObject_UpgradeToFlag((upgradeType)))
 
 
 enum WallHighlightType : sint32 // [LegoRR/Lego.c|enum:0x4|type:int|tags:BIGENUMALIAS] (white, gray, red, green, blue, dark-yellow)

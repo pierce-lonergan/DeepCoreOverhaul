@@ -2107,6 +2107,12 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: Weapon_GunHitObject
 	result &= hook_write_jmpret(0x0044c2f0, LegoRR::LegoObject_Freeze);
 
+
+	// used by: Panel_CheckCollision
+	result &= hook_write_jmpret(0x0044c810, LegoRR::LegoObject_CameraCycleUnits);
+	// internal, no need to hook these
+	//result &= hook_write_jmpret(0x0044c8b0, LegoRR::LegoObject_Callback_CameraCycleFindUnit);
+
 	return_interop(result);
 }
 
