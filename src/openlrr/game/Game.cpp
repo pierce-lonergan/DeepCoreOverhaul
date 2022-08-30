@@ -28,6 +28,7 @@
 #include "mission/Messages.h"
 #include "mission/NERPsFile.h"
 #include "mission/NERPsFunctions.h"
+#include "mission/Objective.h"
 #include "object/AITask.h"
 #include "object/Dependencies.h"
 #include "object/Object.h"
@@ -274,6 +275,62 @@ void LegoRR::Lego_SetDDrawClear(bool on)
 	else    legoGlobs.flags1 &= ~GAME1_DDRAWCLEAR;
 }
 
+
+void LegoRR::Lego_SetMusicOn(bool on)
+{
+	// I dislike these two flags so much...
+	if (Lego_GetLevel() == nullptr || Objective_IsShowing()) {
+		// Music isn't supposed to play when in the front end or the objective is showing.
+		if (on) {
+			// Don't turn the music off here if it is playing for some reason. 
+			// Let that be handled elsewhere by the responsible functions.
+			if (!Lego_IsMusicPlaying())
+				legoGlobs.flags2 |= GAME2_MUSICREADY;  // Ready, since we're not playing/not in-game.
+			else
+				legoGlobs.flags2 &= ~GAME2_MUSICREADY; // Not ready, since we're currently playing.
+		}
+		else {
+			if (Lego_IsMusicPlaying())
+				Lego_SetMusicPlaying(false);
+
+			legoGlobs.flags2 &= ~GAME2_MUSICREADY; // Not ready, since we're turned off.
+		}
+	}
+	else {
+		// Music is only supposed to play when we're in a level (and an objective isn't showing).
+		if (on) {
+			if (!Lego_IsMusicPlaying())
+				Lego_SetMusicPlaying(true);
+
+			legoGlobs.flags2 &= ~GAME2_MUSICREADY; // Not ready, since we're currently playing.
+		}
+		else {
+			if (Lego_IsMusicPlaying())
+				Lego_SetMusicPlaying(false);
+
+			legoGlobs.flags2 &= ~GAME2_MUSICREADY; // Not ready, since we're turned off.
+		}
+	}
+}
+
+void LegoRR::Lego_ChangeMusicPlaying(bool shouldPlay)
+{
+	if (!shouldPlay) {
+		if (Lego_IsMusicPlaying()) {
+			Lego_SetMusicPlaying(false);
+
+			legoGlobs.flags2 |= GAME2_MUSICREADY;  // Ready, since we're not playing/not in-game.
+		}
+	}
+	else {
+		if (!Lego_IsMusicPlaying() && (legoGlobs.flags2 & GAME2_MUSICREADY)) {
+			Lego_SetMusicPlaying(true);
+
+			legoGlobs.flags2 &= ~GAME2_MUSICREADY; // Not ready, since we're currently playing.
+		}
+	}
+}
+
 // <inlined>
 void LegoRR::Lego_SetDetailOn(bool on)
 {
@@ -515,7 +572,7 @@ void __cdecl LegoRR::Level_SubtractOreStored(bool32 isProcessed, sint32 oreAmoun
 // Gods_Go
 
 // <LegoRR.exe @0041f9b0>
-void __cdecl LegoRR::Lego_StartLevelEnding(void)
+void __cdecl LegoRR::Lego_QuitLevel(void)
 {
 	if (!(legoGlobs.flags1 & GAME1_LEVELENDING)) {
 		legoGlobs.flags1 |= GAME1_LEVELENDING;
@@ -524,10 +581,10 @@ void __cdecl LegoRR::Lego_StartLevelEnding(void)
 
 		Construction_DisableCryOreDrop(true); // Prevent tele'ed up objects from spawning their costs.
 		LegoObject_SetLevelEnding(true);
-		Teleporter_Start(TELEPORT_SERVIVE_VEHICLE,       0x1, 0x1);
-		Teleporter_Start(TELEPORT_SERVIVE_MINIFIGURE,    0x1, 0x1);
-		Teleporter_Start(TELEPORT_SERVIVE_BUILDING,      0x1, 0x1);
-		Teleporter_Start(TELEPORT_SERVIVE_ELECTRICFENCE, 0x1, 0x1);
+		Teleporter_Start(OBJECT_TYPE_FLAG_VEHICLE,       0x1, 0x1);
+		Teleporter_Start(OBJECT_TYPE_FLAG_MINIFIGURE,    0x1, 0x1);
+		Teleporter_Start(OBJECT_TYPE_FLAG_BUILDING,      0x1, 0x1);
+		Teleporter_Start(OBJECT_TYPE_FLAG_ELECTRICFENCE, 0x1, 0x1);
 
 		Lego_SetPaused(false, false);
 		Interface_BackToMain();
@@ -1782,6 +1839,53 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 }
 
 
+
+// <LegoRR.exe @004296d0>
+void __cdecl LegoRR::Lego_CDTrackPlayNextCallback(void)
+{
+	/// NOTE: This callback is only hit from Sound_Update when passing cdtrack = true.
+	///       Meaning this function will only be reached when music is enabled+actively playing.
+	Gods98::Sound_StopCD();
+	Lego_SetMusicPlaying(true);
+}
+
+// <LegoRR.exe @004296e0>
+void __cdecl LegoRR::Lego_SetMusicPlaying(bool32 on)
+{
+	if (on) {
+		legoGlobs.flags1 |= GAME1_MUSICPLAYING; // Playing state.
+		// ABOUT MUSIC FIX WINMM.DLL:
+		//  The Music Fix dll changes up most behaviour, and basically disables normal track randomization.
+		//  It's always randomized by the dll itself, and it will never report being stopped,
+		//   meaning Lego_CDTrackPlayNextCallback will never be called.
+
+		// StartTrack is likely what track to skip (it's 2 in Lego.cfg, so track 1 is likely reserved for non-game music???).
+		const uint32 track = legoGlobs.CDStartTrack - 1 + ((uint32)Gods98::Maths_Rand() % legoGlobs.CDTracks);
+
+		Gods98::Sound_PlayCDTrack(track, Gods98::SoundMode::Once, Lego_CDTrackPlayNextCallback);
+	}
+	else {
+		legoGlobs.flags1 &= ~GAME1_MUSICPLAYING; // Not playing state.
+		Gods98::Sound_StopCD();
+		Gods98::Sound_Update(false);
+	}
+}
+
+// <LegoRR.exe @00429740>
+void __cdecl LegoRR::Lego_SetSoundOn(bool32 on)
+{
+	if (on) {
+		legoGlobs.flags1 |= GAME1_USESFX;
+		SFX_SetSoundOn_AndStopAll(true);
+		return;
+	}
+	else {
+		legoGlobs.flags1 &= ~GAME1_USESFX;
+		SFX_SetSoundOn_AndStopAll(false);
+	}
+}
+
+
 // Move functionality from here into Lego_LoadLevel once that's implemented.
 /// CUSTOM: Extended version of `Lego_LoadLevel` that also handles storing the SeeThroughWalls property.
 /// CHANGE: Always allocate new memory for the level name, because its taken from various places that we can't rely on.
@@ -1956,6 +2060,9 @@ bool32 __cdecl LegoRR::Lego_EndLevel(void)
 	const bool32 isTutorialLevelSel = Front_IsTutorialSelected();
 
 	Gods98::Sound3D_StopAllSounds();
+
+	/// FIX APPLY: Turn off music when instantly exiting a level.
+	Lego_ChangeMusicPlaying(false); // End music.
 
 	if (Front_IsFrontEndEnabled()) {
 		Reward_CreateLevel();

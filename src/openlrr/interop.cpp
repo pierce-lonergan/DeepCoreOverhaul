@@ -47,6 +47,7 @@
 #include "game/mission/Messages.h"
 #include "game/mission/NERPsFile.h"
 #include "game/mission/NERPsFunctions.h"
+#include "game/mission/Objective.h"
 #include "game/mission/PTL.h"
 #include "game/object/AITask.h"
 #include "game/object/BezierCurve.h"
@@ -1643,7 +1644,7 @@ bool interop_hook_LegoRR_Advisor(void)
 	//result &= hook_write_jmpret(0x004019b0, LegoRR::Advisor_MoveAnimation);
 
 	// used by: Lego_HandleWorldDebugKeys, NERPFunc__FlashCallToArmsIcon, NERPsRuntime_UpdateTimers,
-	//          NERPsRuntime_FlashIcon, Objective_ProgrammerModeGT3_FUN_00458ba0, Objective_Update
+	//          NERPsRuntime_FlashIcon, Objective_StopShowing, Objective_Update
 	result &= hook_write_jmpret(0x00401a60, LegoRR::Advisor_End);
 
 	// internal, no need to hook these
@@ -1718,7 +1719,7 @@ bool interop_hook_LegoRR_FrontEnd(void)
 	bool result = true;
 
 	// Hook this function because we need to override level loading.
-	result &= hook_write_jmpret(0x00415150, LegoRR::Debug_ProgrammerMode11_LoadLevel);
+	result &= hook_write_jmpret(0x00415150, LegoRR::Front_RestartLevel);
 
 	// QoL apply for always-skippable splash screens and movies
 	result &= hook_write_jmpret(0x00415630, LegoRR::Front_PlayMovie);
@@ -1795,7 +1796,7 @@ bool interop_hook_LegoRR_Game(void)
 	result &= hook_write_jmpret(0x0041f910, LegoRR::Level_SubtractOreStored);
 
 	// used by: Lego_MainLoop
-	result &= hook_write_jmpret(0x0041f9b0, LegoRR::Lego_StartLevelEnding);
+	result &= hook_write_jmpret(0x0041f9b0, LegoRR::Lego_QuitLevel);
 
 
 	// used by: Lego_MainLoop
@@ -1817,7 +1818,15 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: Lego_HandleWorld
 	result &= hook_write_jmpret(0x00428810, LegoRR::Lego_HandleWorldDebugKeys);
 
-	// used by: Debug_ProgrammerMode11_LoadLevel, Lego_Shutdown_Full, Lego_EndLevel
+	// used by: Lego_SetMusicPlaying
+	result &= hook_write_jmpret(0x004296d0, LegoRR::Lego_CDTrackPlayNextCallback);
+	// used by: Front_Callback_CycleMusic, Lego_MainLoop, Lego_Shutdown_Full, Lego_Exit, Lego_HandleKeys,
+	//          Lego_CDTrackPlayNextCallback, Objective_StopShowing, Objective_Update
+	result &= hook_write_jmpret(0x004296e0, LegoRR::Lego_SetMusicPlaying);
+	// used by: Front_Callback_CycleSound, Lego_Initialise, Lego_Shutdown_Full, Lego_HandleKeys
+	result &= hook_write_jmpret(0x00429740, LegoRR::Lego_SetSoundOn);
+
+	// used by: Front_RestartLevel, Lego_Shutdown_Full, Lego_EndLevel
 	result &= hook_write_jmpret(0x0042eff0, LegoRR::Level_Free);
 
 	// used by: Lego_MainLoop, Lego_HandleKeys, Objective_HandleKeys
@@ -2097,7 +2106,7 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00449ec0, LegoRR::LegoObject_HideAllCertainObjects);
 
-	// used by: Lego_StartLevelEnding, Lego_LoadLevel, Objective_SetStatus
+	// used by: Lego_QuitLevel, Lego_LoadLevel, Objective_SetStatus
 	result &= hook_write_jmpret(0x0044b080, LegoRR::LegoObject_SetLevelEnding);
 
 	// used by: LegoObject_TeleportUp
@@ -2112,6 +2121,20 @@ bool interop_hook_LegoRR_Object(void)
 	result &= hook_write_jmpret(0x0044c810, LegoRR::LegoObject_CameraCycleUnits);
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x0044c8b0, LegoRR::LegoObject_Callback_CameraCycleFindUnit);
+
+	return_interop(result);
+}
+
+bool interop_hook_LegoRR_Objective(void)
+{
+	bool result = true;
+
+	// used by: Objective_HandleKeys, Objective_Update
+	result &= hook_write_jmpret(0x00458ba0, LegoRR::Objective_StopShowing);
+	// used by: Front_Options_Update, Lego_MainLoop, Lego_MainLoop, NERPFunc__GetObjectiveShowing, Objective_HandleKeys
+	result &= hook_write_jmpret(0x00458c60, LegoRR::Objective_IsShowing);
+	// used by: Lego_MainLoop, Lego_LoadLevel
+	result &= hook_write_jmpret(0x00458ea0, LegoRR::Objective_Update);
 
 	return_interop(result);
 }

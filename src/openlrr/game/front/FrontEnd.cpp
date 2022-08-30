@@ -1196,6 +1196,7 @@ void __cdecl LegoRR::Front_Callback_CycleAutoGameSpeed(sint32 cycle_On_Off)
 void __cdecl LegoRR::Front_Callback_CycleMusic(sint32 cycle_On_Off)
 {
 	Lego_SetMusicOn((cycle_On_Off == 0));
+	//Lego_SetMusicPlaying((cycle_On_Off == 0));
 }
 
 // <LegoRR.exe @00414df0>
@@ -1353,7 +1354,7 @@ void __cdecl LegoRR::Front_Callback_TriggerBackSave(void)
 }
 
 // <LegoRR.exe @00415150>
-void __cdecl LegoRR::Debug_ProgrammerMode11_LoadLevel(void)
+void __cdecl LegoRR::Front_RestartLevel(void)
 {
 	char tempLevelNameBuff[128];
 	std::strcpy(tempLevelNameBuff, legoGlobs.currLevel->name);
@@ -1367,6 +1368,7 @@ void __cdecl LegoRR::Debug_ProgrammerMode11_LoadLevel(void)
 	Lego_LoadLevel2(tempLevelNameBuff);
 	//Lego_LoadLevel2(Gods98::Util_StrCpy(tempLevelNameBuff));
 
+	// Make sure all menus are closed if we came from Restart Mission in the options menu.
 	MenuSet* menuSet = frontGlobs.pausedMenuSet;
 	for (sint32 i = 0; i < (sint32)menuSet->menuCount; i++) {
 

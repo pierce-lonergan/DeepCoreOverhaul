@@ -1030,6 +1030,9 @@ enum LegoObject_TypeFlags : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint] 
 	OBJECT_TYPE_FLAG_ICECUBE           = (1 << (LegoObject_IceCube-1)),           // 0x20000,
 	OBJECT_TYPE_FLAG_LASERSHOT         = (1 << (LegoObject_LaserShot-1)),         // 0x40000,
 
+	// Flags for which object types are serviced by the teleporter.
+	OBJECT_TYPE_FLAGS_TELEPORTED       = (OBJECT_TYPE_FLAG_VEHICLE|OBJECT_TYPE_FLAG_MINIFIGURE|OBJECT_TYPE_FLAG_BUILDING|OBJECT_TYPE_FLAG_ELECTRICFENCE),
+
 	OBJECT_TYPE_FLAGS_ALL              = ((1 << (LegoObject_AbilityType_Count-1)) - 1), // 0x7ffff,
 };
 flags_end(LegoObject_TypeFlags, 0x4);

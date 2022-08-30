@@ -989,8 +989,8 @@ void __cdecl Front_UpdateOptionsSliders(void);
 void __cdecl Front_Callback_TriggerBackSave(void);
 
 // <LegoRR.exe @00415150>
-//#define Debug_ProgrammerMode11_LoadLevel ((void (__cdecl* )(void))0x00415150)
-void __cdecl Debug_ProgrammerMode11_LoadLevel(void);
+//#define Front_RestartLevel ((void (__cdecl* )(void))0x00415150)
+void __cdecl Front_RestartLevel(void);
 
 // <LegoRR.exe @004151f0>
 void __cdecl Front_Save_GetLevelCompleteWithPoints(OPTIONAL SaveData* saveData, OUT char* buffer);

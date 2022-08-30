@@ -317,13 +317,13 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 
 	case IDM_MUSICON:
 		//std::printf("IDM_MUSICON\n");
-		Lego_SetMusicOn(!LegoRR::Lego_IsMusicOn());
+		LegoRR::Lego_SetMusicOn(!LegoRR::Lego_IsMusicOn());
 		updateOptionsMenuCycles();
 		break;
 
 	case IDM_SOUNDON:
 		//std::printf("IDM_SOUNDON\n");
-		Lego_SetSoundOn(!LegoRR::Lego_IsSoundOn());
+		LegoRR::Lego_SetSoundOn(!LegoRR::Lego_IsSoundOn());
 		updateOptionsMenuCycles();
 		break;
 

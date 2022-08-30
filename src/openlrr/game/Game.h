@@ -97,9 +97,10 @@ namespace LegoRR
 enum GameFlags1 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 {
 	GAME1_NONE                  = 0,
+	GAME1_UNUSED_1              = 0x1,
 	GAME1_RADARON               = 0x2,
 	GAME1_LEVELSTART            = 0x4,
-	GAME1_USEMUSIC              = 0x8,
+	GAME1_MUSICPLAYING          = 0x8, // Music is on and playing.
 	GAME1_USESFX                = 0x10,
 	GAME1_USEDETAIL             = 0x20,
 	GAME1_SHOWFPS               = 0x40,
@@ -146,11 +147,12 @@ enum GameFlags2 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 	GAME2_INOPTIONSMENU        = 0x100,
 	GAME2_CAMERAMOVING         = 0x200,
 	GAME2_MOUSE_INSIDEGAMEVIEW = 0x400,
-	GAME2_MUSICON              = 0x800,
+	GAME2_MUSICREADY           = 0x800, // Music is on, but not currently playing. Set by cfg: MusicOn.
 	GAME2_INMENU               = 0x1000,
 	GAME2_NOMULTISELECT        = 0x2000,
 	GAME2_MENU_HASNEXT         = 0x4000,
 	GAME2_MENU_HASPREVIOUS     = 0x8000,
+	GAME2_UNUSED_10000         = 0x10000,
 	GAME2_ALLOWRENAME          = 0x20000,
 	GAME2_RECALLOLOBJECTS      = 0x40000,
 	GAME2_GENERATESPIDERS      = 0x80000,
@@ -846,8 +848,18 @@ void Lego_SetRenderPanels(bool on);
 inline bool Lego_IsDDrawClear() { return (legoGlobs.flags1 & GAME1_DDRAWCLEAR); }
 void Lego_SetDDrawClear(bool on);
 
-// <inlined>
-inline bool Lego_IsMusicOn() { return (legoGlobs.flags1 & GAME1_USEMUSIC); }
+/// CUSTOM: Gets if music is enabled (either playing or ready to play).
+inline bool Lego_IsMusicOn() { return (legoGlobs.flags1 & GAME1_MUSICPLAYING) || (legoGlobs.flags2 & GAME2_MUSICREADY); }
+
+/// CUSTOM: Sets if music is enabled, and handles changing the playing state if required.
+void Lego_SetMusicOn(bool on);
+
+/// CUSTOM: Gets if music is actively playing.
+inline bool Lego_IsMusicPlaying() { return (legoGlobs.flags1 & GAME1_MUSICPLAYING); }
+
+/// CUSTOM: Updates the music playing state based on if we're in a context where music should play (specified by shouldPlay).
+///         This is an extension of the Lego_SetMusicPlaying function.
+void Lego_ChangeMusicPlaying(bool shouldPlay);
 
 // <inlined>
 inline bool Lego_IsSoundOn() { return (legoGlobs.flags1 & GAME1_USESFX); }
@@ -981,8 +993,8 @@ void __cdecl Level_SubtractOreStored(bool32 isProcessed, sint32 oreAmount);
 // Gods_Go
 
 // <LegoRR.exe @0041f9b0>
-//#define Lego_StartLevelEnding ((void (__cdecl* )(void))0x0041f9b0)
-void __cdecl Lego_StartLevelEnding(void);
+//#define Lego_QuitLevel ((void (__cdecl* )(void))0x0041f9b0)
+void __cdecl Lego_QuitLevel(void);
 
 // <LegoRR.exe @0041fa70>
 //#define Lego_GetGameSpeed ((real32 (__cdecl* )(void))0x0041fa70)
@@ -1113,10 +1125,10 @@ __inline void __cdecl Lego_GetMouseWorldPosition(OUT Vector3F* vector) { *vector
 #define Lego_UnkCameraTrack_InRadar_FUN_00426180 ((void (__cdecl* )(void))0x00426180)
 
 // <LegoRR.exe @00426210>
-#define Lego_SetMenuNextPosition ((void (__cdecl* )(const Point2F* position))0x00426210)
+#define Lego_SetMenuNextPosition ((void (__cdecl* )(OPTIONAL const Point2F* position))0x00426210)
 
 // <LegoRR.exe @00426250>
-#define Lego_SetMenuPreviousPosition ((void (__cdecl* )(const Point2F* position))0x00426250)
+#define Lego_SetMenuPreviousPosition ((void (__cdecl* )(OPTIONAL const Point2F* position))0x00426250)
 
 // <LegoRR.exe @00426290>
 #define Lego_SetFlags2_40_And_2_unkCamera ((void (__cdecl* )(bool32 onFlag40, bool32 onFlag2))0x00426290)
@@ -1208,13 +1220,17 @@ __inline Gods98::Container* __cdecl Lego_GetCurrentViewLight(void)
 #define Lego_SetViewMode ((void (__cdecl* )(ViewMode viewMode, LegoObject* liveObj, sint32 fpCameraFrame))0x00429520)
 
 // <LegoRR.exe @004296d0>
-#define Lego_CDTrackPlayNextCallback ((void (__cdecl* )(void))0x004296d0)
+//#define Lego_CDTrackPlayNextCallback ((void (__cdecl* )(void))0x004296d0)
+void __cdecl Lego_CDTrackPlayNextCallback(void);
 
+/// CHANGE: Only used internally by music handling functions, use Lego_ChangeMusicPlaying instead.
 // <LegoRR.exe @004296e0>
-#define Lego_SetMusicOn ((void (__cdecl* )(bool32 isMusicOn))0x004296e0)
+//#define Lego_SetMusicPlaying ((void (__cdecl* )(bool32 on))0x004296e0)
+void __cdecl Lego_SetMusicPlaying(bool32 on);
 
 // <LegoRR.exe @00429740>
-#define Lego_SetSoundOn ((void (__cdecl* )(bool32 isSoundOn))0x00429740)
+//#define Lego_SetSoundOn ((void (__cdecl* )(bool32 on))0x00429740)
+void __cdecl Lego_SetSoundOn(bool32 on);
 
 // <LegoRR.exe @00429780>
 //#define Lego_GetEmergeCreatureID ((LegoObject_ID (__cdecl* )(void))0x00429780)

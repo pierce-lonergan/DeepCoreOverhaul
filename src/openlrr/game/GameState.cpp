@@ -544,7 +544,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 
 		/// NOTE: This will be disabled again if Main::CDTracks property is 0 or missing.
 		if (Config_GetBoolOrFalse(legoConfig, Main_ID("MusicOn"))) {
-			legoGlobs.flags2 |= GAME2_MUSICON;
+			legoGlobs.flags2 |= GAME2_MUSICREADY;
 		}
 
 		/// FIXME: Sanity dictates we should assign CDStartTrack to a default value AFTER
@@ -558,7 +558,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 			// NOTE: 1 is probably a sanity value for when modulus/division is used for random tracks.
 			//       Even if music is disabled, it's only disabled in a way that allows the GUI to turn it back on.
 			legoGlobs.CDTracks = 1;
-			legoGlobs.flags2 &= ~GAME2_MUSICON;
+			legoGlobs.flags2 &= ~GAME2_MUSICREADY;
 		}
 
 
@@ -1295,7 +1295,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	const real32 advisorElapsed = (Objective_IsShowing() ? elapsedReal : elapsedInterface);
 	Advisor_Update(advisorElapsed);
 
-	Gods98::Sound_Update((legoGlobs.flags1 & GAME1_USEMUSIC));
+	Gods98::Sound_Update(Lego_IsMusicPlaying());
 
 
 	/// GAME/DEBUG LOGIC: NERPs script
@@ -1383,21 +1383,20 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 				}
 			}
 			else {
-				Lego_StartLevelEnding();
+				Lego_QuitLevel();
 				Lego_GetLevel()->status = LevelStatus::LEVELSTATUS_FAILED_CRYSTALS;
 				RewardQuota_CountUnits();
-				if (legoGlobs.flags1 & GAME1_USEMUSIC) {
-					legoGlobs.flags2 |= GAME2_MUSICON;
-					Lego_SetMusicOn(false);
-				}
+
+				// This is the only instance where music is stopped, while the level is still playing without an objective showing.
+				/// TODO: Maybe move this to Lego_QuitLevel???
+				Lego_ChangeMusicPlaying(false); // End music.
 			}
 		}
 	}
 
 
-	/// TODO: Is it safe to check non-zero instead of TRUE (1)??
-	if ((Front_IsTriggerMissionRestart() == TRUE) || Gods98::Main_ProgrammerMode() == 11) {
-		Debug_ProgrammerMode11_LoadLevel();
+	if (Front_IsTriggerMissionRestart() || Gods98::Main_ProgrammerMode() == 11) {
+		Front_RestartLevel();
 	}
 
 
@@ -1714,7 +1713,7 @@ void __cdecl LegoRR::Lego_Shutdown_Full(void)
 
 	Reward_Shutdown();
 
-	Lego_SetMusicOn(false);
+	Lego_ChangeMusicPlaying(false); // End music.
 	Lego_SetSoundOn(false);
 
 	Level_Free();
@@ -1822,7 +1821,7 @@ void __cdecl LegoRR::Lego_Shutdown_Full(void)
 // <LegoRR.exe @00424fd0>
 void __cdecl LegoRR::Lego_Exit(void)
 {
-	Lego_SetMusicOn(false);
+	Lego_ChangeMusicPlaying(false); // End music.
 	Gods98::Main_Exit();
 }
 #endif
@@ -2235,9 +2234,11 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 		/// HELPER KEYIND: [M]  "Toggle music On/Off."
 		if (Shortcut_IsPressed(ShortcutID::ToggleMusic)) {
 
-			Lego_SetMusicOn(!(legoGlobs.flags1 & GAME1_USEMUSIC));
+			Lego_SetMusicOn(!Lego_IsMusicOn());
+			//Lego_SetMusicPlaying(!Lego_IsMusicPlaying());
 
-			const char* onOff = ((legoGlobs.flags1 & GAME1_USEMUSIC) ? "ON" : "OFF");
+			const char* onOff = (Lego_IsMusicOn() ? "ON" : "OFF");
+			//const char* onOff = (Lego_IsMusicPlaying() ? "ON" : "OFF");
 			TextWindow_PrintF(legoGlobs.textOnlyWindow, "\nMusic: %s", onOff);
 		}
 

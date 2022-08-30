@@ -142,15 +142,16 @@ extern bool32 & g_Teleporter_BOOL_00504188;
 // <LegoRR.exe @0046a730>
 #define Teleporter_Add ((void (__cdecl* )(TeleporterService* teleporter))0x0046a730)
 
-// DATA: TeleportObjectType (pointer as value)
+// DATA: TeleportObjectType* (or LegoObject_TypeFlags*)
 // <LegoRR.exe @0046a750>
 #define Teleporter_LiveObjectCallback_Unk ((bool32 (__cdecl* )(LegoObject* liveObj, void* teleportObjType))0x0046a750)
 
+// Returns true when all units specified by the flags have been teleported up.
 // <LegoRR.exe @0046a780>
-#define Teleporter_ServiceAll ((bool32 (__cdecl* )(TeleportObjectType teleportObjTypes))0x0046a780)
+#define Teleporter_ServiceAll ((bool32 (__cdecl* )(LegoObject_TypeFlags teleportObjTypes))0x0046a780)
 
 // <LegoRR.exe @0046a7d0>
-#define Teleporter_Start ((void (__cdecl* )(TeleportObjectType teleportObjType, uint32 modeFlags, uint32 teleportFlags))0x0046a7d0)
+#define Teleporter_Start ((void (__cdecl* )(LegoObject_TypeFlags teleportObjType, uint32 modeFlags, uint32 teleportFlags))0x0046a7d0)
 
 // <LegoRR.exe @0046a880>
 #define Teleporter_LiveObjectCallback_Update ((bool32 (__cdecl* )(LegoObject* liveObj, void* data_unused))0x0046a880)
@@ -161,8 +162,10 @@ extern bool32 & g_Teleporter_BOOL_00504188;
 // <LegoRR.exe @0046a9f0>
 #define Teleporter_Update ((void (__cdecl* )(real32 elapsedGame))0x0046a9f0)
 
+// Returns the first object type matching the flags.
+// Only supports object types up to includeing LegoObject_OohScary.
 // <LegoRR.exe @0046aa20>
-#define Teleporter_GetServiceObjectType ((LegoObject_Type (__cdecl* )(TeleportObjectType teleportObjType))0x0046aa20)
+#define Teleporter_GetServiceObjectType ((LegoObject_Type (__cdecl* )(LegoObject_TypeFlags teleportObjType))0x0046aa20)
 
 #pragma endregion
 
