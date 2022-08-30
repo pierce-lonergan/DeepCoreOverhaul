@@ -1818,6 +1818,10 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: Lego_HandleWorld
 	result &= hook_write_jmpret(0x00428810, LegoRR::Lego_HandleWorldDebugKeys);
 
+	// used by: AITask_Callback_UpdateObject, LegoObject_TryRunAway
+	result &= hook_write_jmpret(0x004294f0, LegoRR::Lego_IsFPObject);
+	// used by: Lego_LoadLevel, Lego_EndLevel, Message_Update, Message_RemoveObjectReference, Message_EnterFirstPersonView
+	result &= hook_write_jmpret(0x00429520, LegoRR::Lego_SetViewMode);
 	// used by: Lego_SetMusicPlaying
 	result &= hook_write_jmpret(0x004296d0, LegoRR::Lego_CDTrackPlayNextCallback);
 	// used by: Front_Callback_CycleMusic, Lego_MainLoop, Lego_Shutdown_Full, Lego_Exit, Lego_HandleKeys,

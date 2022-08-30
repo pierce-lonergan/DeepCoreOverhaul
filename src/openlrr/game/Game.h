@@ -1214,10 +1214,12 @@ __inline Gods98::Container* __cdecl Lego_GetCurrentViewLight(void)
 // Returns TRUE if liveObj (or its drivenObj) is the first-person unit.
 // BUG: When in topdown view, returns TRUE if the objectFP is not NULL and matches the unit's drivenObj.
 // <LegoRR.exe @004294f0>
-#define Lego_IsFPObject ((bool32 (__cdecl* )(LegoObject* liveObj))0x004294f0)
+//#define Lego_IsFPObject ((bool32 (__cdecl* )(LegoObject* liveObj))0x004294f0)
+bool32 __cdecl Lego_IsFPObject(LegoObject* liveObj);
 
 // <LegoRR.exe @00429520>
-#define Lego_SetViewMode ((void (__cdecl* )(ViewMode viewMode, LegoObject* liveObj, sint32 fpCameraFrame))0x00429520)
+//#define Lego_SetViewMode ((void (__cdecl* )(ViewMode viewMode, LegoObject* liveObj, uint32 fpCameraFrame))0x00429520)
+void __cdecl Lego_SetViewMode(ViewMode viewMode, LegoObject* liveObj, uint32 fpCameraFrame);
 
 // <LegoRR.exe @004296d0>
 //#define Lego_CDTrackPlayNextCallback ((void (__cdecl* )(void))0x004296d0)

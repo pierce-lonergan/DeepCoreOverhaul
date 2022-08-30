@@ -42,6 +42,7 @@
 #include "world/Roof.h"
 #include "world/SpiderWeb.h"
 #include "world/Teleporter.h"
+#include "world/Water.h"
 #include "Debug.h"
 #include "Shortcuts.hpp"
 #include "Game.h"
@@ -1839,6 +1840,67 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 }
 
 
+
+// Returns TRUE if liveObj (or its drivenObj) is the first-person unit.
+// BUG: When in topdown view, returns TRUE if the objectFP is not NULL and matches the unit's drivenObj.
+// <LegoRR.exe @004294f0>
+bool32 __cdecl LegoRR::Lego_IsFPObject(LegoObject* liveObj)
+{
+	/// FIX APPLY: Only return true if we're in FP mode, beforehand the mode didn't matter if the drivenObject matched.
+	if (legoGlobs.viewMode == ViewMode_FP) {
+		return (liveObj == legoGlobs.objectFP ||
+				(liveObj->driveObject != nullptr && liveObj->driveObject == legoGlobs.objectFP));
+	}
+	return false;
+
+	/// OLD BUGGED LOGIC:
+	//if ((legoGlobs.viewMode == ViewMode_FP && liveObj == legoGlobs.objectFP) ||
+	//	(liveObj->driveObject != nullptr && liveObj->driveObject == legoGlobs.objectFP))
+	//{
+	//	return true;
+	//}
+	//return false;
+}
+
+// <LegoRR.exe @00429520>
+void __cdecl LegoRR::Lego_SetViewMode(ViewMode viewMode, LegoObject* liveObj, uint32 fpCameraFrame)
+{
+	if (viewMode == ViewMode_FP) {
+		const real32 smoothFOV = ((fpCameraFrame==0) ? 0.9f : 0.6f);
+
+		Camera_SetFPObject(legoGlobs.cameraFP, liveObj, fpCameraFrame);
+		Water_Debug_LogContainerMesh(true);
+		Map3D_SetEmissive(legoGlobs.currLevel->map, true);
+
+		legoGlobs.objectFP = liveObj;
+
+		if (liveObj->type == LegoObject_MiniFigure) {
+			LegoObject_DropCarriedObject(liveObj, false);
+		}
+
+		Gods98::Viewport_SetCamera(legoGlobs.viewMain, legoGlobs.cameraFP->contCam);
+		Gods98::Sound3D_MakeListener(Gods98::Container_GetMasterFrame(legoGlobs.cameraFP->contCam));
+		Gods98::Sound3D_SetMinDistForAtten(50.0f);
+		Gods98::Viewport_SmoothSetField(legoGlobs.viewMain, smoothFOV);
+		Gods98::Viewport_SetBackClip(legoGlobs.viewMain, legoGlobs.currLevel->BlockSize * legoGlobs.FPClipBlocks);
+	}
+	else if (viewMode == ViewMode_Top) {
+		if (legoGlobs.objectFP != nullptr) {
+			Lego_Goto(legoGlobs.objectFP, nullptr, false);
+		}
+		legoGlobs.cameraFP->trackObj = nullptr;
+		legoGlobs.objectFP = nullptr;
+
+		Water_Debug_LogContainerMesh(false);
+		Map3D_SetEmissive(legoGlobs.currLevel->map, false);
+		Gods98::Viewport_SetCamera(legoGlobs.viewMain, legoGlobs.cameraMain->contCam);
+		Gods98::Sound3D_MakeListener(Gods98::Container_GetMasterFrame(legoGlobs.cameraMain->contListener));
+		Gods98::Sound3D_SetMinDistForAtten(legoGlobs.MinDistFor3DSoundsOnTopView);
+		Gods98::Viewport_SetField(legoGlobs.viewMain, 0.5f);
+		Gods98::Viewport_SetBackClip(legoGlobs.viewMain, legoGlobs.TVClipDist);
+	}
+	legoGlobs.viewMode = viewMode;
+}
 
 // <LegoRR.exe @004296d0>
 void __cdecl LegoRR::Lego_CDTrackPlayNextCallback(void)
