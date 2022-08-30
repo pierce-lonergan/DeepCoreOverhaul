@@ -97,6 +97,18 @@ enum class SoundMode : uint32
 };
 assert_sizeof(SoundMode, 0x4);
 
+
+// (used internally)
+enum class Sound_CDMode
+{
+	None,  // All other values
+	Error, // Failed to get mode (or Music Fix dll returned "beef")
+	NotReady,
+	Paused,
+	Playing,
+	Stopped,
+};
+
 #pragma endregion
 
 /**********************************************************************************
@@ -177,6 +189,13 @@ extern char (& mciReturn)[MCI_RETURN_SIZE];
 
 #pragma region Functions
 
+/// CUSTOM: Returns the number of detected cdaudio tracks.
+uint32 Sound_CDTrackCount();
+
+/// CUSTOM: Returns true if the cdaudio is currently playing.
+bool Sound_IsCDPlaying();
+
+
 // <LegoRR.exe @00488e10>
 bool32 __cdecl Sound_Initialise(bool32 nosound);
 
@@ -213,20 +232,43 @@ sint32 __cdecl WaveReadFile(IN HMMIO hmmioIn, IN uint32 cbRead, OUT uint8* pbDes
 // <LegoRR.exe @00489490>
 sint32 __cdecl WaveCloseReadFile(IN HMMIO* phmmio, IN WAVEFORMATEX** ppwfxSrc);
 
+// Starts playing the specified track in the cdaudio device (or a random track for Music Fix dll).
 // <LegoRR.exe @004894d0>
 bool32 __cdecl Restart_CDTrack(sint32 track);
 
 // <LegoRR.exe @00489520>
 void __cdecl ReportCDError(void);
 
+// Returns true if the cdaudio device is playing and its current track is less than or equal to the specified.
 // <LegoRR.exe @00489540>
 bool32 __cdecl Status_CDTrack(sint32 track);
 
+// Opens and starts specified track in the cdaudio device (or a random track for Music Fix dll).
 // <LegoRR.exe @004895f0>
 bool32 __cdecl Play_CDTrack(sint32 track);
 
+// Stops and closes the cdaudio device.
 // <LegoRR.exe @00489660>
 bool32 __cdecl Stop_CDTrack(void);
+
+
+/// CUSTOM: Opens the cdaudio device if not already open, and returns its opened state (true if open).
+bool Open_CD();
+
+/// CUSTOM: Closes the cdaudio device if not already closed, and returns its closed state (true if closed)
+bool Close_CD();
+
+/// CUSTOM: Stops the cdaudio device without closing it.
+bool Stop_CD();
+
+/// CUSTOM: Returns the cdaudio playback mode (or Error on failure/Music Fix dll).
+Sound_CDMode Mode_CD();
+
+/// CUSTOM: Returns the number of cdaudio tracks (or -1 on failure/Music Fix dll).
+sint32 Count_CDTracks();
+
+/// CUSTOM: Returns the current cdaudio track (1-indexed?) (or -1 on failure/Music Fix dll).
+sint32 Current_CDTrack();
 
 #pragma endregion
 
