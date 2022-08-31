@@ -456,7 +456,7 @@ __inline IDirectSoundBuffer* lpDSStreamBuff(bool32 looping) { return looping?sou
 #define Sound3D_PlayOnCont(cont, sound, loop)				Sound3D_Play2(Gods98::Sound3DPlay::OnFrame, (cont)->masterFrame, (sound), (loop), nullptr)
 #define Sound3D_PlayOnPos(sound, loop, wPos)				Sound3D_Play2(Gods98::Sound3DPlay::OnPos, nullptr, (sound), (loop), (wPos))
 #define Sound3D_PlayNormal(sound, loop)						Sound3D_Play2(Gods98::Sound3DPlay::Normal, nullptr, (sound), (loop), nullptr)
-#define Sound3D_MakeContainerListener(cont)					Sound3D_MakeListener((cont)->masterFrame)
+#define Sound3D_MakeContainerListener(cont)					Sound3D_MakeListener(Gods98::Container_GetMasterFrame((cont)))
 #define SOUND3D_VOLUME_MAX		Gods98::Sound3D_MaxVolume()
 #define SOUND3D_VOLUME_MIN		Gods98::Sound3D_MinVolume()
 

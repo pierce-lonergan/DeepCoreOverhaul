@@ -316,7 +316,8 @@ sint32 __cdecl LegoRR::SFX_Random_PlaySoundNormal(SFX_ID sfxID, bool32 loop)
 
 			sint32 rngSound3DHandle = SFX_Random_GetSound3DHandle(sfxID);
 			if (rngSound3DHandle > 0) {
-				return Gods98::Sound3D_Play2(Gods98::Sound3DPlay::Normal, nullptr, rngSound3DHandle, loop, nullptr);
+				return Gods98::Sound3D_PlayNormal(rngSound3DHandle, loop);
+				//return Gods98::Sound3D_Play2(Gods98::Sound3DPlay::Normal, nullptr, rngSound3DHandle, loop, nullptr);
 			}
 			//return 0; // rngSound3DHandle; // return 0; // (EAX)
 		}
@@ -398,10 +399,12 @@ sint32 __cdecl LegoRR::SFX_Random_PlaySound3DOnFrame(IDirect3DRMFrame3* frame, S
 			if (rngSound3DHandle > 0) {
 
 				if (onFrame) {
-					return Sound3D_Play2(Gods98::Sound3DPlay::OnFrame, frame, rngSound3DHandle, loop, nullptr);
+					return Gods98::Sound3D_PlayOnFrame(frame, rngSound3DHandle, loop);
+					//return Sound3D_Play2(Gods98::Sound3DPlay::OnFrame, frame, rngSound3DHandle, loop, nullptr);
 				}
 				else {
-					return Sound3D_Play2(Gods98::Sound3DPlay::OnPos, nullptr, rngSound3DHandle, loop, wPos);
+					return Gods98::Sound3D_PlayOnPos(rngSound3DHandle, loop, wPos);
+					//return Sound3D_Play2(Gods98::Sound3DPlay::OnPos, nullptr, rngSound3DHandle, loop, wPos);
 				}
 			}
 		}

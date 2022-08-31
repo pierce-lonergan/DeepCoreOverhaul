@@ -44,6 +44,9 @@ typedef sint32 (__cdecl* NERPsFunction)(sint32* stack);
 
 #define NERPS_FUNCID_STOP 0
 
+#define NERPS_REGISTERCOUNT		8
+#define NERPS_TIMERCOUNT		4
+
 #pragma endregion
 
 /**********************************************************************************
@@ -54,20 +57,22 @@ typedef sint32 (__cdecl* NERPsFunction)(sint32* stack);
 
 enum TutorialFlags : uint32 // [LegoRR/NERPs.c|flags:0x4|type:uint]
 {
-	TUTORIAL_FLAG_NONE     = 0,
-	TUTORIAL_FLAG_UNK_1    = 0x1,
-	TUTORIAL_FLAG_UNK_2    = 0x2, // Tutorial block flashing?
-	TUTORIAL_FLAG_UNK_4    = 0x4, // Click on this block to do something? (arrow?, wall highlight?) Used in Level_BlockPointerCheck.
-	TUTORIAL_FLAG_UNK_8    = 0x8, // Allow selection? Click on unit on this block? Used in Level_BlockPointerCheck.
-	TUTORIAL_FLAG_UNK_10   = 0x10,
-	TUTORIAL_FLAG_UNK_20   = 0x20,
-	TUTORIAL_FLAG_UNK_40   = 0x40,
-	TUTORIAL_FLAG_UNK_80   = 0x80, // Turn off action stations?
-	TUTORIAL_FLAG_UNK_100  = 0x100,
-	TUTORIAL_FLAG_UNK_200  = 0x200, // No selection box? (multiselect?)
-	TUTORIAL_FLAG_UNK_400  = 0x400,
-	TUTORIAL_FLAG_UNK_800  = 0x800,
-	TUTORIAL_FLAG_UNK_1000 = 0x1000, // No camera controls?
+	TUTORIAL_FLAG_NONE          = 0,
+	TUTORIAL_FLAG_NOICONS       = 0x1,
+	TUTORIAL_FLAG_NOBLOCKACTION = 0x2, // Tutorial block flashing?
+	TUTORIAL_FLAG_NOMAP         = 0x4, // Click on this block to do something? (arrow?, wall highlight?) Used in Level_BlockPointerCheck.
+	TUTORIAL_FLAG_NOOBJECTS     = 0x8, // Allow selection? Click on unit on this block? Used in Level_BlockPointerCheck.
+	TUTORIAL_FLAG_NORADAR       = 0x10,
+	TUTORIAL_FLAG_NOOPTIONS     = 0x20,
+	TUTORIAL_FLAG_NOPRIORITIES  = 0x40,
+	TUTORIAL_FLAG_NOCALLTOARMS  = 0x80, // Turn off action stations?
+	TUTORIAL_FLAG_NOINFO        = 0x100,
+	TUTORIAL_FLAG_NOMULTISELECT = 0x200, // No selection box? (multiselect?)
+	TUTORIAL_FLAG_NOCYCLEUNITS  = 0x400,
+	TUTORIAL_FLAG_NOHELPWINDOW  = 0x800,
+	TUTORIAL_FLAG_NOCAMERA      = 0x1000, // No camera controls?
+
+	TUTORIAL_FLAGS_ALL          = 0x1fff,
 };
 flags_end(TutorialFlags, 0x4);
 
@@ -246,16 +251,16 @@ assert_sizeof(SearchNERPsTutorialAction, 0x2c);
 
 struct NERPsFile_Globs // [LegoRR/NERPs.c|struct:0xb4|tags:GLOBS]
 {
-	/*00,4*/	bool32 Camera_IsLockedOn;
-	/*04,4*/	LegoObject* Camera_LockedOnTarget;
-	/*08,8*/	Point2I pointi_8;
-	/*10,4*/	LegoObject* object_10;
-	/*14,4*/	bool32 bool_14;
-	/*18,4*/	real32 float_18;
-	/*1c,4*/	real32 float_1c;
-	/*20,4*/	bool32 bool_20;
-	/*24,4*/	real32 float_24;
-	/*28,4*/	real32 float_28;
+	/*00,4*/	bool32 camIsLockedOn;
+	/*04,4*/	uint32 camLockOnRecord; // Record object pointer (0-indexed).
+	/*08,8*/	Point2F camLockOnPos;
+	/*10,4*/	LegoObject* camLockOnObject; // Assigned based on the lock-on object, but never used.
+	/*14,4*/	bool32 camIsZooming;
+	/*18,4*/	real32 camZoomTotal; // Total amount to zoom specified by NERPs function.
+	/*1c,4*/	real32 camZoomMoved; // Amount of the total that has been zoomed. (amount left == total - moved)
+	/*20,4*/	bool32 camIsRotating;
+	/*24,4*/	real32 camRotTotal; // Total amount to rotate specified by NERPs function.
+	/*28,4*/	real32 camRotMoved; // Amount of the total that has been rotated. (amount left == total - moved)
 	/*2c,4*/	NERPsInstruction* instructions; // (script fileData)
 	/*30,4*/	uint32 scriptSize; // (script fileSize)
 	/*34,2c*/	undefined4 reserved1[11];
@@ -279,7 +284,7 @@ assert_sizeof(NERPsFile_Globs, 0xb4);
 
 struct NERPsRuntime_Globs // [LegoRR/NERPs.c|struct:0x68|tags:GLOBS]
 {
-	/*00,20*/	sint32 registers[8];
+	/*00,20*/	sint32 registers[NERPS_REGISTERCOUNT];
 	/*20,4*/	bool32 messagePermit; // allows NERPs messages to display in the TextMessage panel. (see: NERPFunc__SetMessagePermit)
 	/*24,4*/	undefined4 reserved1;
 	/*28,4*/	TutorialFlags tutorialFlags; // (this is the last field in a structure starting at 0x00)
@@ -290,7 +295,7 @@ struct NERPsRuntime_Globs // [LegoRR/NERPs.c|struct:0x68|tags:GLOBS]
 	/*3c,4*/	bool32 messageWait; // (see: NERPFunc__SetMessageWait)
 	/*40,4*/	bool32 logFuncCalls; // (always 0)
 	/*44,4*/	undefined4 reserved2;
-	/*48,10*/	real32 timers[4];
+	/*48,10*/	real32 timers[NERPS_TIMERCOUNT];
 	/*58,4*/	bool32 supressArrow; // (see: NERPFunc__SupressArrow)
 	/*5c,4*/	bool32 allowCameraMovement; // (see: NERPFunc__AllowCameraMovement)
 	/*60,4*/	real32 tutorialIconTimer;
@@ -307,8 +312,9 @@ assert_sizeof(NERPsRuntime_Globs, 0x68);
 
 #pragma region Globals
 
+ // No const so that we can hook functions.
 // <LegoRR.exe @004a6948>
-extern const NERPsFunctionSignature (& c_nerpsFunctions)[294];
+extern /*const*/ NERPsFunctionSignature (& c_nerpsFunctions)[294];
 
 // <LegoRR.exe @004a7710>
 extern const char* (& c_nerpsOperators)[11]; // = { "+", "#", "/", "\\", "?", ">", "<", "=", ">=", "<=", "!=" };
@@ -353,6 +359,7 @@ extern NERPsFile_Globs & nerpsfileGlobs;
 
 #pragma region Macros
 
+#define NERPs_hook_function(name)	LegoRR::NERPs_HookFunction(nameof(name), LegoRR::NERPFunc__## name)
 
 #pragma endregion
 
@@ -362,7 +369,11 @@ extern NERPsFile_Globs & nerpsfileGlobs;
 
 #pragma region Functions
 
- /// CUSTOM: Shorthand for checking if we're in a tutorial.
+/// CUSTOM: Interop for hooking NERPs functions without replacing the original calls.
+bool NERPs_HookFunction(const char* name, NERPsFunction function);
+
+
+/// CUSTOM: Shorthand for checking if we're in a tutorial.
 inline bool NERPs_AnyTutorialFlags() { return nerpsruntimeGlobs.tutorialFlags != TUTORIAL_FLAG_NONE; }
 /// CUSTOM: Replacement for always using NERPFunc_GetTurorialFlags
 inline TutorialFlags NERPs_GetTutorialFlags() { return nerpsruntimeGlobs.tutorialFlags; }
@@ -394,33 +405,40 @@ void __cdecl NERPsRuntime_Execute(real32 elapsedAbs);
 
 
 // <LegoRR.exe @00453bc0>
-#define NERPs_SetHasNextButton ((void (__cdecl* )(bool32 hasNextButton))0x00453bc0)
+//#define NERPs_SetHasNextButton ((void (__cdecl* )(bool32 hasNextButton))0x00453bc0)
+void __cdecl NERPs_SetHasNextButton(bool32 hasNextButton);
 
 // <LegoRR.exe @00453bd0>
-#define NERPs_PlayUnkSampleIndex_IfDat_004a773c ((void (__cdecl* )(void))0x00453bd0)
+//#define NERPs_PlayUnkSampleIndex_IfDat_004a773c ((void (__cdecl* )(void))0x00453bd0)
+void __cdecl NERPs_PlayUnkSampleIndex_IfDat_004a773c(void);
 
 // <LegoRR.exe @00453be0>
-#define NERPsRuntime_AdvanceMessage ((void (__cdecl* )(void))0x00453be0)
+//#define NERPsRuntime_AdvanceMessage ((void (__cdecl* )(void))0x00453be0)
+void __cdecl NERPsRuntime_AdvanceMessage(void);
 
 
 // [NERPFuncs...]
 
 
 // <LegoRR.exe @00453e70>
-#define NERPsRuntime_UpdateTimers ((void (__cdecl* )(real32 elapsed))0x00453e70)
+//#define NERPsRuntime_UpdateTimers ((void (__cdecl* )(real32 elapsed))0x00453e70)
+void __cdecl NERPsRuntime_UpdateTimers(real32 elapsed);
 
 
 // [NERPFuncs...]
 
 
-#define NERPsRuntime_EndExecute ((void (__cdecl*)(real32))0x00454060)
+// <LegoRR.exe @00454060>
+//#define NERPsRuntime_EndExecute ((void (__cdecl*)(real32))0x00454060)
+void __cdecl NERPsRuntime_EndExecute(real32 elapsedAbs);
 
 
 // [NERPFuncs...]
 
 
+// DATA: OUT LegoObject** out_liveObj
 // <LegoRR.exe @004542e0>
-#define NERPsRuntime_LiveObject_GetIfRockMonsterAnd_FUN_004542e0 ((bool32 (__cdecl* )(LegoObject* liveObj, OUT LegoObject** out_liveObj))0x004542e0)
+#define NERPsRuntime_LiveObject_GetIfRockMonsterAnd_FUN_004542e0 ((bool32 (__cdecl* )(LegoObject* liveObj, void* pOutLiveObj))0x004542e0)
 
 
 // [NERPFuncs...]

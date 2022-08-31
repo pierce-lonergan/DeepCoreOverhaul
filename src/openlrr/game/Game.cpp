@@ -1363,9 +1363,10 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 	if (Shortcut_IsPressed(ShortcutID::Debug_ToggleNoNERPs)) {
 		if (!(legoGlobs.flags1 & GAME1_DEBUG_NONERPS)) {
 			legoGlobs.flags1 |= GAME1_DEBUG_NONERPS;
-			// Clear tutorial flags.
-			TutorialFlags tutFlags = TUTORIAL_FLAG_NONE;
-			NERPFunc__SetTutorialFlags((sint32*)&tutFlags);
+			// Clear tutorial flags to remove all tutorial restrictions.
+			NERPs_SetTutorialFlags(TUTORIAL_FLAG_NONE);
+			//TutorialFlags tutFlags = TUTORIAL_FLAG_NONE;
+			//NERPFunc__SetTutorialFlags((sint32*)&tutFlags);
 		}
 		else {
 			legoGlobs.flags1 &= ~GAME1_DEBUG_NONERPS;
@@ -1879,7 +1880,7 @@ void __cdecl LegoRR::Lego_SetViewMode(ViewMode viewMode, LegoObject* liveObj, ui
 		}
 
 		Gods98::Viewport_SetCamera(legoGlobs.viewMain, legoGlobs.cameraFP->contCam);
-		Gods98::Sound3D_MakeListener(Gods98::Container_GetMasterFrame(legoGlobs.cameraFP->contCam));
+		Gods98::Sound3D_MakeContainerListener(legoGlobs.cameraFP->contCam);
 		Gods98::Sound3D_SetMinDistForAtten(50.0f);
 		Gods98::Viewport_SmoothSetField(legoGlobs.viewMain, smoothFOV);
 		Gods98::Viewport_SetBackClip(legoGlobs.viewMain, legoGlobs.currLevel->BlockSize * legoGlobs.FPClipBlocks);
@@ -1894,7 +1895,7 @@ void __cdecl LegoRR::Lego_SetViewMode(ViewMode viewMode, LegoObject* liveObj, ui
 		Water_Debug_LogContainerMesh(false);
 		Map3D_SetEmissive(legoGlobs.currLevel->map, false);
 		Gods98::Viewport_SetCamera(legoGlobs.viewMain, legoGlobs.cameraMain->contCam);
-		Gods98::Sound3D_MakeListener(Gods98::Container_GetMasterFrame(legoGlobs.cameraMain->contListener));
+		Gods98::Sound3D_MakeContainerListener(legoGlobs.cameraMain->contListener);
 		Gods98::Sound3D_SetMinDistForAtten(legoGlobs.MinDistFor3DSoundsOnTopView);
 		Gods98::Viewport_SetField(legoGlobs.viewMain, 0.5f);
 		Gods98::Viewport_SetBackClip(legoGlobs.viewMain, legoGlobs.TVClipDist);

@@ -127,6 +127,91 @@ typedef uint8 DirectionByte;
 
 #define OBJECT_MAXCYCLEUNITS	256
 
+
+// Built-in objects: MiniFigure names
+#define OBJECT_NAME_PILOT				"Pilot"			// Rock Raider
+
+
+// Built-in objects: RockMonster names
+#define OBJECT_NAME_ROCKMONSTER			"RockMonster"
+#define OBJECT_NAME_ICEMONSTER			"IceMonster"
+#define OBJECT_NAME_LAVAMONSTER			"LavaMonster"
+#define OBJECT_NAME_ROCKMONSTER_TINY	"TinyRM"
+#define OBJECT_NAME_ICEMONSTER_TINY		"TinyIM"
+// NOTE: Tiny Lava Monsters use Tiny Rock Monster models.
+#define OBJECT_NAME_LAVAMONSTER_TINY	OBJECT_NAME_ROCKMONSTER_TINY
+#define OBJECT_NAME_BAT					"Bat"
+#define OBJECT_NAME_SLUG				"Slug"
+#define OBJECT_NAME_SMALLSPIDER			"SmallSpider"
+// Unused monsters:
+#define OBJECT_NAME_SPIDER				"Spider"
+#define OBJECT_NAME_SNAKE				"Snake"
+#define OBJECT_NAME_SCORPION			"Scorpion"
+
+
+// Built-in objects: Small Vehicle names
+#define OBJECT_NAME_HOVERSCOUT			"Hoverboard"
+#define OBJECT_NAME_SMALLDIGGER			"SmallDigger"
+#define OBJECT_NAME_SMALLTRUCK			"SmallTruck"	// Small Transport Truck
+#define OBJECT_NAME_RAPIDRIDER			"SmallCat"
+#define OBJECT_NAME_SMALLMLP			"SmallMLP"		// Small Mobile Laser Cutter
+#define OBJECT_NAME_TUNNELSCOUT			"SmallHeli"
+
+//#define OBJECT_NAME_HOVERBOARD			"Hoverboard"	// Hover Scout
+//#define OBJECT_NAME_SMALLDIGGER			"SmallDigger"	// Small Digger
+//#define OBJECT_NAME_SMALLTRUCK			"SmallTruck"	// Small Transport Truck
+//#define OBJECT_NAME_SMALLCAT			"SmallCat"		// Rapid Rider
+//#define OBJECT_NAME_SMALLMLP			"SmallMLP"		// Small Mobile Laser Cutter
+//#define OBJECT_NAME_SMALLHELICOPTER		"SmallHeli"		// Tunnel Scout
+
+// Built-in objects: Large Vehicle names
+#define OBJECT_NAME_LOADERDOZER			"BullDozer"
+#define OBJECT_NAME_GRANITEGRINDER		"WalkerDigger"
+#define OBJECT_NAME_LARGEMLP			"LargeMLP"		// Large Mobile Laser Cutter
+#define OBJECT_NAME_CHROMECRUSHER		"LargeDigger"
+#define OBJECT_NAME_CARGOCARRIER		"LargeCat"
+#define OBJECT_NAME_TUNNELTRANSPORT		"LargeHeli"
+
+//#define OBJECT_NAME_BULLDOZER			"BullDozer"		// Loader Dozer
+//#define OBJECT_NAME_WALKERDIGGER		"WalkerDigger"	// Granite Grinder
+//#define OBJECT_NAME_LARGEMLP			"LargeMLP"		// Large Mobile Laser Cutter
+//#define OBJECT_NAME_LARGEDIGGER			"LargeDigger"	// Chrome Crusher
+//#define OBJECT_NAME_LARGECAT			"LargeCat"		// Cargo Carrier
+//#define OBJECT_NAME_LARGEHELICOPTER		"LargeHeli"		// Tunnel Transport
+
+
+// Built-in objects: Building names
+#define OBJECT_NAME_TOOLSTORE			"Toolstation"
+#define OBJECT_NAME_TELEPORTPAD			"TeleportPad"
+#define OBJECT_NAME_DOCKS				"Docks"
+#define OBJECT_NAME_POWERSTATION		"Powerstation"
+#define OBJECT_NAME_BARRACKS			"Barracks"		// Support Station
+#define OBJECT_NAME_UPGRADESTATION		"Upgrade"
+#define OBJECT_NAME_GEODOME				"Geo-dome"		// Geological Center
+#define OBJECT_NAME_OREREFINERY			"OreRefinery"
+#define OBJECT_NAME_GUNSTATION			"Gunstation"	// Mining Laser
+#define OBJECT_NAME_SUPERTELEPORT		"TeleportBIG"
+
+
+// Built-in objects: Misc names
+#define OBJECT_NAME_PATH				"Path"			// Fake object for counting paths built.
+#define OBJECT_NAME_ELECTRICFENCE		"ElectricFence"
+#define OBJECT_NAME_SPIDERWEB			"SpiderWeb"
+#define OBJECT_NAME_BARRIER				"Barrier"
+#define OBJECT_NAME_DYNAMITE			"Dynamite"
+#define OBJECT_NAME_OOHSCARY			"OohScary"		// Sonic Blaster
+#define OBJECT_NAME_ORE					"Ore"
+#define OBJECT_NAME_STUD				"ProcessedOre"
+#define OBJECT_NAME_POWERCRYSTAL		"PowerCrystal"
+
+
+// Built-in objects: Special names for fake objects.
+#define OBJECT_SPECIAL_NAME_TVCAMERA		"tvcamera"
+
+// Built-in objects: Names that are referenced, but don't exist.
+#define OBJECT_LEGACY_NAME_OREREFINERY		"Refinery"
+#define OBJECT_LEGACY_NAME_CRYSTALREFINERY	"CrystalRefinery"
+
 #pragma endregion
 
 /**********************************************************************************

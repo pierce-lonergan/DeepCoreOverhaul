@@ -12,6 +12,7 @@
 #include "../audio/SFX.h"
 #include "../interface/Advisor.h"
 #include "../interface/TextMessages.h"
+#include "../Game.h"
 #include "NERPsFile.h"
 #include "NERPsFunctions.h"
 
@@ -26,8 +27,9 @@
 //LegoRR::_Globs & LegoRR::Globs = *(LegoRR::_Globs*)0x;
 
 
+// No const so that we can hook functions.
 // <LegoRR.exe @004a6948>
-const LegoRR::NERPsFunctionSignature (& LegoRR::c_nerpsFunctions)[294] = *(LegoRR::NERPsFunctionSignature(*)[294])0x004a6948;
+/*const*/ LegoRR::NERPsFunctionSignature (& LegoRR::c_nerpsFunctions)[294] = *(LegoRR::NERPsFunctionSignature(*)[294])0x004a6948;
 
 // <LegoRR.exe @004a7710>
 const char* (& LegoRR::c_nerpsOperators)[11] = *(const char*(*)[11])0x004a7710; // = { "+", "#", "/", "\\", "?", ">", "<", "=", ">=", "<=", "!=" };
@@ -71,6 +73,21 @@ LegoRR::NERPsFile_Globs & LegoRR::nerpsfileGlobs = *(LegoRR::NERPsFile_Globs*)0x
  **********************************************************************************/
 
 #pragma region Functions
+
+/// CUSTOM: Interop for hooking NERPs functions without replacing the original calls.
+bool LegoRR::NERPs_HookFunction(const char* name, NERPsFunction function)
+{
+	for (uint32 i = 0; i < _countof(c_nerpsFunctions); i++) {
+		if (::_stricmp(c_nerpsFunctions[i].name, name) == 0) {
+			c_nerpsFunctions[i].function = function;
+			return true;
+		}
+	}
+	std::printf("NERPFunc: \"%s\" not found.\n", name);
+	return false;
+}
+
+
 
 // <LegoRR.exe @004530b0>
 bool32 __cdecl LegoRR::NERPsFile_LoadScriptFile(const char* filename)
@@ -121,7 +138,7 @@ bool32 __cdecl LegoRR::NERPsFile_LoadMessageFile(const char* filename)
 
 	//char unusedBuff[4096]; // Added length due to local unused buffers preventing memory corruption.
 	//char fileBuff[4096 /*FILE_MAXPATH + 1*/]; // Added length due to local unused buffers preventing memory corruption.
-	char fileBuff[FILE_MAXPATH + 1];
+	char fileBuff[FILE_MAXPATH + 1] = { '\0' }; // dummy init
 
 	bool newLine = true;
 
@@ -618,6 +635,205 @@ void __cdecl LegoRR::NERPsRuntime_Execute(real32 elapsedAbs)
 }
 
 
+// <LegoRR.exe @00453bc0>
+void __cdecl LegoRR::NERPs_SetHasNextButton(bool32 hasNextButton)
+{
+	// (global)
+	nerpsHasNextButton = hasNextButton;
+}
+
+// <LegoRR.exe @00453bd0>
+void __cdecl LegoRR::NERPs_PlayUnkSampleIndex_IfDat_004a773c(void)
+{
+	// (global)
+	if (nerpsHasNextButton) {
+		NERPs_PlayUnkSampleIndex();
+	}
+}
+
+
+// <LegoRR.exe @00453be0>
+void __cdecl LegoRR::NERPsRuntime_AdvanceMessage(void)
+{
+	Lego_SetPointerSFX(PointerSFX_Okay);
+	if (nerpsfileGlobs.int_a4 != 0) {
+		nerpsfileGlobs.int_a4--;
+
+		if (nerpsfileGlobs.int_a4 > 3) {
+			nerpsfileGlobs.int_a4 = 3;
+		}
+		if (nerpsfileGlobs.int_a4 > (sint32)nerpsfileGlobs.uint_a0) {
+			nerpsfileGlobs.int_a4 = nerpsfileGlobs.uint_a0;
+		}
+
+		char* text = NERPsFile_GetMessageLine(nerpsfileGlobs.lineIndexArray_7c[nerpsfileGlobs.uint_a0 - nerpsfileGlobs.int_a4]);
+		//char* text = NERPsFile_GetMessageLine(*(uint32*)((int)&nerpsfileGlobs + (nerpsfileGlobs.uint_a0 - nerpsfileGlobs.int_a4) * 4 + 0x7c));
+		Text_SetNERPsMessage(text, 0);
+		if (nerpsfileGlobs.int_a4 == 0) {
+			Lego_SetFlags2_40_And_2_unkCamera(false, true);
+
+			if (NERPs_AnyTutorialFlags()) {
+				sint32 gameSpeedStack[2] = { 100, false, };
+				NERPFunc__SetGameSpeed(gameSpeedStack);
+				/// ALT: Just use the underlying function behaviour(?)
+				//Lego_LockGameSpeed(false);
+				//Lego_SetGameSpeed(1.0f);
+			}
+		}
+		Lego_SetFlags2_80(true);
+	}
+	else {
+		if (nerpsBOOL_004a7740) {
+			nerpsBOOL_004a7740 = false;
+			nerpsfileGlobs.uint_a8++;
+		}
+	}
+}
+
+
+// <LegoRR.exe @00453e70>
+void __cdecl LegoRR::NERPsRuntime_UpdateTimers(real32 elapsed)
+{
+	const real32 delta = elapsed * 1000.0f / STANDARD_FRAMERATE; // Standard framerate to milliseconds.
+	for (uint32 i = 0; i < NERPS_TIMERCOUNT; i++) {
+		nerpsruntimeGlobs.timers[i] += delta;
+	}
+
+	if (nerpsruntimeGlobs.messageTimer == 0.0f) {
+		return; // Message timer isn't running(?)
+	}
+	else if (nerpsruntimeGlobs.messageTimer >= 0.0f) {
+		if (!nerpsHasNextButton || nerpsruntimeGlobs.nextArrowDisabled) {
+			nerpsruntimeGlobs.messageTimer -= delta;
+
+			if (nerpsruntimeGlobs.messageTimer <= 0.0f) {
+				nerpsruntimeGlobs.messageTimer = 0.0f;
+			}
+		}
+		else {
+			// nerpsruntimeGlobs.timerbool_2c is only used by this function, and set to 0 during initialisation.
+			if (nerpsruntimeGlobs.timerbool_2c && (!nerpsruntimeGlobs.supressArrow || nerpsfileGlobs.int_a4 > 0)) {
+			//if (nerpsruntimeGlobs.timerbool_2c && (!nerpsruntimeGlobs.supressArrow || (nerpsruntimeGlobs.supressArrow && nerpsfileGlobs.int_a4 > 0))) {
+				Lego_SetFlags2_40_And_2_unkCamera(nerpsBOOL_004a7740, true);
+			}
+			nerpsruntimeGlobs.timerbool_2c = nerpsBOOL_004a7740;
+
+			if (!nerpsBOOL_004a7740) {
+				nerpsruntimeGlobs.messageTimer = 0.0f;
+			}
+		}
+	}
+	else { //if (nerpsruntimeGlobs.messageTimer < 0.0f) {
+		nerpsruntimeGlobs.messageTimer = 0.0f;
+	}
+
+	if (nerpsfileGlobs.AdvisorTalkingMode && nerpsruntimeGlobs.messageTimer < 1000.0f) {
+		Advisor_End();
+	}
+}
+
+
+// <LegoRR.exe @00454060>
+void __cdecl LegoRR::NERPsRuntime_EndExecute(real32 elapsedAbs)
+{
+	// Update camera object lock-on.
+	if (nerpsfileGlobs.camIsLockedOn) {
+		// Smooth track object.
+		Point2I camLockOnBlock = { 0, 0 }; // dummy inits (assigned but unused)
+		if (nerpsfileGlobs.camLockOnObject != nullptr) {
+			// Locked-on to a real object.
+			LegoObject_GetBlockPos(nerpsfileGlobs.camLockOnObject, &camLockOnBlock.x, &camLockOnBlock.y);
+			LegoObject_GetPosition(nerpsfileGlobs.camLockOnObject, &nerpsfileGlobs.camLockOnPos.x, &nerpsfileGlobs.camLockOnPos.y);
+			Lego_Goto(nerpsfileGlobs.camLockOnObject, nullptr, true);
+		}
+		else if (nerpsfileGlobs.camLockOnRecord < 10) { // (0-indexed) Max record objects?
+			// Locked-on to a record object pointer.
+			LegoObject* recordObj;
+			if (!Lego_GetRecordObject(nerpsfileGlobs.camLockOnRecord, &recordObj)) {
+				nerpsfileGlobs.camIsLockedOn = false; // Record object likely no longer exists.
+			}
+			else {
+				LegoObject_GetBlockPos(recordObj, &camLockOnBlock.x, &camLockOnBlock.y);
+				LegoObject_GetPosition(recordObj, &nerpsfileGlobs.camLockOnPos.x, &nerpsfileGlobs.camLockOnPos.y);
+				Lego_Goto(recordObj, nullptr, true);
+			}
+		}
+	}
+
+	// Update camera zooming.
+	if (nerpsfileGlobs.camIsZooming) {
+		// Linear zoom over time.
+		const real32 zoomLeft = nerpsfileGlobs.camZoomTotal - nerpsfileGlobs.camZoomMoved;
+
+		/// FIX APPLY: The usage of multiply and divide was mistakenly reversed.
+		///            Meaning faster computers would just INSTANTLY zoom, but it was intended to zoom over-time.
+		//real32 zoomAmount = zoomLeft * (elapsedAbs / STANDARD_FRAMERATE);
+		real32 zoomAmount = nerpsfileGlobs.camZoomTotal * (elapsedAbs / STANDARD_FRAMERATE);
+		//real32 zoomAmount = nerpsfileGlobs.camZoomTotal / (elapsedAbs * STANDARD_FRAMERATE);
+
+		/// FIX APPLY: Cap zoom at intended remaining amount.
+		if (std::abs(zoomAmount) > std::abs(zoomLeft)) {
+			zoomAmount = zoomLeft;
+		}
+		nerpsfileGlobs.camZoomMoved += zoomAmount;
+
+		// End if remaining zoom is less than ~~5~~ 0.25 units (still add zoom this call though).
+		/// FIX APPLY: Properly check zoom left, before the condition was impossible to hit for totals > 5.
+		///            Since we're fixing this, also change the threshold to something reasonable for zoom levels.
+		/// REFACTOR: Just use abs.
+		if (std::abs(nerpsfileGlobs.camZoomMoved) > std::abs(nerpsfileGlobs.camZoomTotal) - 0.25f)
+		//if ((nerpsfileGlobs.camZoomMoved > nerpsfileGlobs.camZoomTotal - 5.0f) &&
+		//	(nerpsfileGlobs.camZoomMoved < nerpsfileGlobs.camZoomTotal + 5.0f))
+		{
+			nerpsfileGlobs.camIsZooming = false;
+			nerpsfileGlobs.camZoomMoved = 0.0f;
+		}
+
+		Camera_AddZoom(legoGlobs.cameraMain, zoomAmount);
+	}
+
+	// Update camera rotating.
+	if (nerpsfileGlobs.camIsRotating) {
+		// Smooth ease-out rotation over time.
+		/// FIX APPLY: Don't add camRotMoved for negative values, this just increases the rotation speed for CCW rotations.
+		const real32 rotateLeft = nerpsfileGlobs.camRotTotal - nerpsfileGlobs.camRotMoved;
+
+		/// JANK: WHY IS THIS the only usage of Lego_GetElapsedAbs??? The elapsedAbs parameter is even the same value, so whyyy!??
+		/// TODO: Why is this not using the STANDARD_FRAMERATE as units??
+		/// TODO: Is this REALLY intended to be smooth ease-out rotation, and they weren't just mixing up capping rotation??
+		//real32 rotateAmount = nerpsfileGlobs.camRotTotal * (Lego_GetElapsedAbs() / 18.0f); // (Lego_GetElapsedAbs() / 6.0f) / 3.0f;
+		real32 rotateAmount = rotateLeft * (Lego_GetElapsedAbs() / 18.0f); // (Lego_GetElapsedAbs() / 6.0f) / 3.0f;
+		//real32 rotateAmount = rotateLeft * (elapsedAbs / 18.0f); // (elapsedAbs / 6.0f) / 3.0f;
+
+		/// SANITY: Cap rotation at intended remaining amount.
+		///         This is normally not an issue due to the max elapsed time per tick, but handle it anyway.
+		if (std::abs(rotateAmount) > std::abs(rotateLeft)) {
+			rotateAmount = rotateLeft;
+		}
+		nerpsfileGlobs.camRotMoved += rotateAmount;
+
+		// End if remaining rotation is less than 1 degree (still add rotation this call though).
+		/// REFACTOR: Just use abs.
+		if (std::abs(nerpsfileGlobs.camRotMoved) > std::abs(nerpsfileGlobs.camRotTotal) - 1.0f)
+		//if ((nerpsfileGlobs.camRotTotal > 0.0f && (nerpsfileGlobs.camRotMoved > nerpsfileGlobs.camRotTotal - 1.0f)) ||
+		//	(nerpsfileGlobs.camRotTotal < 0.0f && (nerpsfileGlobs.camRotMoved < nerpsfileGlobs.camRotTotal + 1.0f)))
+		{
+			nerpsfileGlobs.camIsRotating = false;
+			nerpsfileGlobs.camRotMoved = 0.0f;
+		}
+		Camera_AddRotation(legoGlobs.cameraMain, rotateAmount * (M_PI / 180.0f)); // Degrees to radians.
+	}
+
+	// Set game speed to 100% during level outro(?) and outro objective message.
+	if (Lego_GetLevel()->status != LEVELSTATUS_INCOMPLETE) {
+		sint32 gameSpeedStack[2] = { 100, false, };
+		NERPFunc__SetGameSpeed(gameSpeedStack);
+		/// ALT: Just use the underlying function behaviour(?)
+		//Lego_LockGameSpeed(false);
+		//Lego_SetGameSpeed(1.0f);
+	}
+}
+
 
 // <LegoRR.exe @00456af0>
 void __cdecl LegoRR::NERPs_Level_NERPMessage_Parse(const char* text, OPTIONAL OUT char* buffer, bool32 updateTimer)
@@ -705,11 +921,11 @@ void __cdecl LegoRR::NERPs_Level_NERPMessage_Parse(const char* text, OPTIONAL OU
 										playTime = Gods98::Sound3D_GetSamplePlayTime(sound3DHandle);
 
 										SFX_SetGlobalSampleDurationIfLE0_AndNullifyHandle((real32)(playTime * STANDARD_FRAMERATE));
-										Gods98::Sound3D_Play2(Gods98::Sound3DPlay::Normal, nullptr, sound3DHandle, false, nullptr);
+										Gods98::Sound3D_PlayNormal(sound3DHandle, false);
+										//Gods98::Sound3D_Play2(Gods98::Sound3DPlay::Normal, nullptr, sound3DHandle, false, nullptr);
 										nerpsUnkSampleIndex = sound3DHandle;
 
-										TutorialFlags tflags = (TutorialFlags)NERPFunc__GetTutorialFlags(nullptr);
-										if (tflags == TUTORIAL_FLAG_NONE) {
+										if (!NERPs_AnyTutorialFlags()) {
 											Advisor_Start(Advisor_TalkInGame, true);
 											nerpsfileGlobs.AdvisorTalkingMode = true;
 										}

@@ -516,7 +516,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 
 		legoGlobs.viewMode = ViewMode_Top;
 		
-		Gods98::Sound3D_MakeListener(Gods98::Container_GetMasterFrame(legoGlobs.cameraMain->contListener));
+		Gods98::Sound3D_MakeContainerListener(legoGlobs.cameraMain->contListener);
 		Gods98::Sound3D_SetMinDistForAtten(legoGlobs.MinDistFor3DSoundsOnTopView);
 
 		const real32 mindist = Config_GetRealValue(legoConfig, Main_ID("mindist"));
@@ -1993,7 +1993,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 
 		if ((!legoGlobs2.topdownFPControlsOn || Message_GetPrimarySelectedUnit() == nullptr) &&
 			legoGlobs.viewMode == ViewMode_Top &&
-			!(NERPFunc__GetTutorialFlags(nullptr) & TUTORIAL_FLAG_UNK_1000)) // Freeze/control camera flag?
+			!(NERPs_GetTutorialFlags() & TUTORIAL_FLAG_NOCAMERA)) // Freeze/control camera flag?
 		{
 			// Topdown camera controls.
 

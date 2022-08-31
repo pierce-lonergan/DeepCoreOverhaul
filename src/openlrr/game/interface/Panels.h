@@ -47,6 +47,7 @@ enum Panel_GlobFlags : uint32
 {
 	PANEL_GLOB_FLAG_NONE = 0,
 
+	PANEL_GLOB_FLAG_UNK_1 = 0x1,
 	// Todo...
 };
 flags_end(Panel_GlobFlags, 0x4);

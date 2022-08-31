@@ -1985,20 +1985,405 @@ bool interop_hook_LegoRR_NERPsFile(void)
 
 	// NERPs interpreter functions (except for GetMessageLine)
 
+	// used by: Lego_LoadLevel
 	result &= hook_write_jmpret(0x004530b0, LegoRR::NERPsFile_LoadScriptFile);
+	// used by: Lego_LoadLevel
 	result &= hook_write_jmpret(0x00453130, LegoRR::NERPsFile_LoadMessageFile);
+	// used by: NERPsRuntime_AdvanceMessage, NERPFunc__SetMessage
 	result &= hook_write_jmpret(0x004534c0, LegoRR::NERPsFile_GetMessageLine);
+	// used by: Level_Free
 	result &= hook_write_jmpret(0x004534e0, LegoRR::NERPsFile_Free);
 
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x004535a0, LegoRR::NERPsRuntime_LoadLiteral);
 
+	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x004535e0, LegoRR::NERPsRuntime_Execute);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x00453bc0, LegoRR::NERPs_SetHasNextButton);
+	// used by: Lego_HandleWorld
+	result &= hook_write_jmpret(0x00453bd0, LegoRR::NERPs_PlayUnkSampleIndex_IfDat_004a773c);
+	// used by: Lego_HandleWorld, NERPFunc__AdvanceMessage
+	result &= hook_write_jmpret(0x00453be0, LegoRR::NERPsRuntime_AdvanceMessage);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x00453e70, LegoRR::NERPsRuntime_UpdateTimers);
+	// used by: NERPsRuntime_Execute
+	result &= hook_write_jmpret(0x00454060, LegoRR::NERPsRuntime_EndExecute);
 
+	// used by: 
+	//result &= hook_write_jmpret(0x, LegoRR::);
+
+
+	// used by: Text_SetNERPsMessage, Text_Update
 	result &= hook_write_jmpret(0x00456af0, LegoRR::NERPs_Level_NERPMessage_Parse);
 
-	// used by: NERPs script
-	result &= hook_write_jmpret(0x00456990, LegoRR::NERPFunc__SetMessage);
+
+
+	return_interop(result);
+}
+
+bool interop_hook_LegoRR_NERPsFunctions(void)
+{
+	bool result = true;
+
+	/// WARNING: ABSOLUTELY DO NOT EVER HOOK THESE FUNCTIONS DIRECTLY!!
+	// NERPFunc__False
+	// NERPFunc__True
+
+	// The following NERPs functions are used in places other than just the c_nerpsFunctions array.
+
+	// used by: NERPsRuntime_AdvanceMessage, NERPsRuntime_EndExecute
+	result &= hook_write_jmpret(0x00453b60, LegoRR::NERPFunc__SetGameSpeed);
+
+	// used by: Lego_HandleKeys
+	result &= hook_write_jmpret(0x00454e30, LegoRR::NERPFunc__SetLevelCompleted);
+
+	// used by: Lego_HandleKeys
+	result &= hook_write_jmpret(0x00454e40, LegoRR::NERPFunc__SetLevelFail);
+
+	// used by: AITask, Front, HelpWindow, Info, Interface, Lego, LegoObject, NERPs, Objective, Panel, Text
+	result &= hook_write_jmpret(0x00456500, LegoRR::NERPFunc__GetTutorialFlags);
+
+	// used by: Lego_HandleWorldDebugKeys, NERPFunc__ClickOnlyObjects, NERPFunc__ClickOnlyMap,
+	//          NERPFunc__ClickOnlyIcon, NERPFunc__ClickOnlyCalltoarms, NERPFunc__DisallowAll
+	result &= hook_write_jmpret(0x00456810, LegoRR::NERPFunc__SetTutorialFlags);
+
+	// used by: Lego_UnkObjective_CompleteSub_FUN_004262f0, NERPsFile_LoadScriptFile
+	result &= hook_write_jmpret(0x004568b0, LegoRR::NERPFunc__SetMessagePermit);
+
+	// used by: Objective_StopShowing
+	result &= hook_write_jmpret(0x00456a80, LegoRR::NERPFunc__SetObjectiveSwitch);
+
+
+	// The remaining NERPs functions can be hooked by writing to the c_nerpsFunctions array instead.
+
+	#pragma region NERPs_hook_function
+	// Also hooked directly.
+	result &= NERPs_hook_function(SetGameSpeed);
+	
+	result &= NERPs_hook_function(GetMessagesAreUpToDate);
+	result &= NERPs_hook_function(SupressArrow);
+	result &= NERPs_hook_function(AdvanceMessage);
+	result &= NERPs_hook_function(AllowCameraMovement);
+	result &= NERPs_hook_function(ClickOnlyObjects);
+	result &= NERPs_hook_function(ClickOnlyMap);
+	result &= NERPs_hook_function(ClickOnlyIcon);
+	result &= NERPs_hook_function(ClickOnlyCalltoarms);
+	result &= NERPs_hook_function(DisallowAll);
+	result &= NERPs_hook_function(FlashCallToArmsIcon);
+
+	result &= NERPs_hook_function(GetTimer0);
+	result &= NERPs_hook_function(GetTimer1);
+	result &= NERPs_hook_function(GetTimer2);
+	result &= NERPs_hook_function(GetTimer3);
+	result &= NERPs_hook_function(SetTimer0);
+	result &= NERPs_hook_function(SetTimer1);
+	result &= NERPs_hook_function(SetTimer2);
+	result &= NERPs_hook_function(SetTimer3);
+
+	result &= NERPs_hook_function(CameraLockOnMonster);
+
+	result &= NERPs_hook_function(CameraLockOnObject);
+	result &= NERPs_hook_function(CameraUnlock);
+	result &= NERPs_hook_function(CameraZoomIn);
+	result &= NERPs_hook_function(CameraZoomOut);
+	result &= NERPs_hook_function(CameraRotate);
+	//result &= NERPs_hook_function(GetSelectedRecordObject);
+	//result &= NERPs_hook_function(SetCrystalPriority);
+	//result &= NERPs_hook_function(SetMonsterAttackPowerstation);
+
+	//result &= NERPs_hook_function(SetMonsterAttackNowt);
+
+	//result &= NERPs_hook_function(GetRecordObjectAtTutorial);
+	//result &= NERPs_hook_function(GetRecordObjectAmountAtTutorial);
+
+	//result &= NERPs_hook_function(SetRecordObjectPointer);
+
+	//result &= NERPs_hook_function(GetOxygenLevel);
+	//result &= NERPs_hook_function(GenerateSlug);
+	//result &= NERPs_hook_function(SetAttackDefer);
+	//result &= NERPs_hook_function(SetCallToArms);
+	//result &= NERPs_hook_function(GetCallToArmsButtonClicked);
+	//result &= NERPs_hook_function(SetRockMonster);
+	//result &= NERPs_hook_function(GetRockMonstersDestroyed);
+
+	//result &= NERPs_hook_function(GetHiddenObjectsFound);
+	//result &= NERPs_hook_function(SetHiddenObjectsFound);
+	//result &= NERPs_hook_function(SetUpgradeBuildingIconClicked);
+	//result &= NERPs_hook_function(GetUpgradeBuildingIconClicked);
+	//result &= NERPs_hook_function(FlashUpgradeBuildingIcon);
+	//result &= NERPs_hook_function(SetGoBackIconClicked);
+	//result &= NERPs_hook_function(GetGoBackIconClicked);
+	//result &= NERPs_hook_function(FlashGoBackIcon);
+	//result &= NERPs_hook_function(GetRockMonsterRunningAway);
+
+	//result &= NERPs_hook_function(SetRockMonsterPainThreshold);
+	//result &= NERPs_hook_function(SetRockMonsterHealth);
+	//result &= NERPs_hook_function(SetPauseGame);
+	//result &= NERPs_hook_function(GetAnyKeyPressed);
+	//result &= NERPs_hook_function(SetIconPos);
+	//result &= NERPs_hook_function(SetIconSpace);
+	//result &= NERPs_hook_function(SetIconWidth);
+	// Also hooked directly.
+	result &= NERPs_hook_function(SetLevelCompleted);
+	result &= NERPs_hook_function(SetGameCompleted);
+	// Also hooked directly.
+	result &= NERPs_hook_function(SetLevelFail);
+	result &= NERPs_hook_function(SetGameFail);
+	//result &= NERPs_hook_function(SetTutorialPointer);
+
+	//result &= NERPs_hook_function(SetTutorialBlockClicks);
+	
+	//result &= NERPs_hook_function(SetTutorialCrystals);
+	
+	//result &= NERPs_hook_function(SetOreAtIconPositions);
+
+	//result &= NERPs_hook_function(GetMiniFigureSelected);
+	//result &= NERPs_hook_function(GetSmallTruckSelected);
+	//result &= NERPs_hook_function(GetSmallDiggerSelected);
+	//result &= NERPs_hook_function(GetRapidRiderSelected);
+	//result &= NERPs_hook_function(GetSmallHelicopterSelected);
+	//result &= NERPs_hook_function(GetGraniteGrinderSelected);
+	//result &= NERPs_hook_function(GetChromeCrusherSelected);
+
+	//result &= NERPs_hook_function(AddPoweredCrystals);
+	//result &= NERPs_hook_function(AddStoredOre);
+	
+	//result &= NERPs_hook_function(GetTutorialCrystals);
+	
+	//result &= NERPs_hook_function(GetTutorialBlockClicks);
+
+	//result &= NERPs_hook_function(GetMiniFigureinGraniteGrinder);
+	//result &= NERPs_hook_function(GetMiniFigureinChromeCrusher);
+	//result &= NERPs_hook_function(GetMiniFigureinSmallDigger);
+	//result &= NERPs_hook_function(GetMiniFigureinRapidRider);
+	//result &= NERPs_hook_function(GetMiniFigureinSmallTruck);
+	//result &= NERPs_hook_function(GetMiniFigureinSmallHelicopter);
+	//result &= NERPs_hook_function(SetBarracksLevel);
+	//result &= NERPs_hook_function(SetDocksLevel);
+	//result &= NERPs_hook_function(SetGeoDomeLevel);
+	//result &= NERPs_hook_function(SetPowerstationLevel);
+	//result &= NERPs_hook_function(SetToolStoreLevel);
+	//result &= NERPs_hook_function(SetGunstationLevel);
+	//result &= NERPs_hook_function(SetTeleportPadLevel);
+	//result &= NERPs_hook_function(SetSuperTeleportLevel);
+	//result &= NERPs_hook_function(SetUpgradeStationLevel);
+	//result &= NERPs_hook_function(GetBarracksSelected);
+	//result &= NERPs_hook_function(GetDocksSelected);
+	//result &= NERPs_hook_function(GetGeoDomeSelected);
+	//result &= NERPs_hook_function(GetPowerstationSelected);
+	//result &= NERPs_hook_function(GetToolStoreSelected);
+	//result &= NERPs_hook_function(GetGunstationSelected);
+	//result &= NERPs_hook_function(GetTeleportPadSelected);
+	//result &= NERPs_hook_function(GetSuperTeleportSelected);
+	//result &= NERPs_hook_function(GetUpgradeStationSelected);
+	//result &= NERPs_hook_function(GetPoweredBarracksBuilt);
+	//result &= NERPs_hook_function(GetPoweredDocksBuilt);
+	//result &= NERPs_hook_function(GetPoweredGeodomeBuilt);
+	//result &= NERPs_hook_function(GetPoweredPowerstationsBuilt);
+	//result &= NERPs_hook_function(GetPoweredToolStoresBuilt);
+	//result &= NERPs_hook_function(GetPoweredGunstationsBuilt);
+	//result &= NERPs_hook_function(GetPoweredTeleportsBuilt);
+	//result &= NERPs_hook_function(GetPoweredVehicleTeleportsBuilt);
+	//result &= NERPs_hook_function(GetPoweredUpgradeStationsBuilt);
+	//result &= NERPs_hook_function(GetBarracksBuilt);
+	//result &= NERPs_hook_function(GetDocksBuilt);
+	//result &= NERPs_hook_function(GetGeodomeBuilt);
+	//result &= NERPs_hook_function(GetPowerstationsBuilt);
+	//result &= NERPs_hook_function(GetToolStoresBuilt);
+	//result &= NERPs_hook_function(GetGunstationsBuilt);
+	//result &= NERPs_hook_function(GetTeleportsBuilt);
+	//result &= NERPs_hook_function(GetVehicleTeleportsBuilt);
+	//result &= NERPs_hook_function(GetUpgradeStationsBuilt);
+	//result &= NERPs_hook_function(GetLevel1BarracksBuilt);
+	//result &= NERPs_hook_function(GetLevel1DocksBuilt);
+	//result &= NERPs_hook_function(GetLevel1GeodomeBuilt);
+	//result &= NERPs_hook_function(GetLevel1PowerstationsBuilt);
+	//result &= NERPs_hook_function(GetLevel1ToolStoresBuilt);
+	//result &= NERPs_hook_function(GetLevel1GunstationsBuilt);
+	//result &= NERPs_hook_function(GetLevel1TeleportsBuilt);
+	//result &= NERPs_hook_function(GetLevel1VehicleTeleportsBuilt);
+	//result &= NERPs_hook_function(GetLevel1UpgradeStationsBuilt);
+	//result &= NERPs_hook_function(GetLevel2BarracksBuilt);
+	//result &= NERPs_hook_function(GetLevel2DocksBuilt);
+	//result &= NERPs_hook_function(GetLevel2GeodomeBuilt);
+	//result &= NERPs_hook_function(GetLevel2PowerstationsBuilt);
+	//result &= NERPs_hook_function(GetLevel2ToolStoresBuilt);
+	//result &= NERPs_hook_function(GetLevel2GunstationsBuilt);
+	//result &= NERPs_hook_function(GetLevel2TeleportsBuilt);
+	//result &= NERPs_hook_function(GetLevel2VehicleTeleportsBuilt);
+	//result &= NERPs_hook_function(GetLevel2UpgradeStationsBuilt);
+	//result &= NERPs_hook_function(GetBarracksIconClicked);
+	//result &= NERPs_hook_function(GetGeodomeIconClicked);
+	//result &= NERPs_hook_function(GetPowerstationIconClicked);
+	//result &= NERPs_hook_function(GetToolStoreIconClicked);
+	//result &= NERPs_hook_function(GetGunstationIconClicked);
+	//result &= NERPs_hook_function(GetTeleportPadIconClicked);
+	//result &= NERPs_hook_function(GetVehicleTransportIconClicked);
+	//result &= NERPs_hook_function(GetUpgradeStationIconClicked);
+	//result &= NERPs_hook_function(SetBarracksIconClicked);
+	//result &= NERPs_hook_function(SetGeodomeIconClicked);
+	//result &= NERPs_hook_function(SetPowerstationIconClicked);
+	//result &= NERPs_hook_function(SetToolStoreIconClicked);
+	//result &= NERPs_hook_function(SetGunstationIconClicked);
+	//result &= NERPs_hook_function(SetTeleportPadIconClicked);
+	//result &= NERPs_hook_function(SetVehicleTransportIconClicked);
+	//result &= NERPs_hook_function(SetUpgradeStationIconClicked);
+	//result &= NERPs_hook_function(FlashBarracksIcon);
+	//result &= NERPs_hook_function(FlashGeodomeIcon);
+	//result &= NERPs_hook_function(FlashPowerStationIcon);
+	//result &= NERPs_hook_function(FlashToolStoreIcon);
+	//result &= NERPs_hook_function(FlashGunstationIcon);
+	//result &= NERPs_hook_function(FlashTeleportPadIcon);
+	//result &= NERPs_hook_function(FlashVehicleTransportIcon);
+	//result &= NERPs_hook_function(FlashUpgradeStationIcon);
+	//result &= NERPs_hook_function(GetPathsBuilt);
+	//result &= NERPs_hook_function(GetStudCount);
+	//result &= NERPs_hook_function(GetSmallHelicoptersOnLevel);
+	//result &= NERPs_hook_function(GetGraniteGrindersOnLevel);
+	//result &= NERPs_hook_function(GetRapidRidersOnLevel);
+	//result &= NERPs_hook_function(GetSmallDiggersOnLevel);
+	//result &= NERPs_hook_function(GetSlugsOnLevel);
+	//result &= NERPs_hook_function(GetMiniFiguresOnLevel);
+	//result &= NERPs_hook_function(GetOreRefineriesBuilt);
+	//result &= NERPs_hook_function(GetCrystalRefineriesBuilt);
+	//result &= NERPs_hook_function(GetTeleportIconClicked);
+	//result &= NERPs_hook_function(GetDynamiteClicked);
+	//result &= NERPs_hook_function(GetMountIconClicked);
+	//result &= NERPs_hook_function(GetTrainIconClicked);
+	//result &= NERPs_hook_function(GetDropSonicBlasterIconClicked);
+	//result &= NERPs_hook_function(GetGetToolIconClicked);
+	//result &= NERPs_hook_function(GetGetPusherIconClicked);
+	//result &= NERPs_hook_function(GetGetSonicBlasterIconClicked);
+	//result &= NERPs_hook_function(GetTrainSailorIconClicked);
+	//result &= NERPs_hook_function(GetTrainPilotIconClicked);
+	//result &= NERPs_hook_function(GetTrainDriverIconClicked);
+	//result &= NERPs_hook_function(GetGetLaserIconClicked);
+	//result &= NERPs_hook_function(GetDismountIconClicked);
+	//result &= NERPs_hook_function(GetDigIconClicked);
+	//result &= NERPs_hook_function(GetBuildIconClicked);
+	//result &= NERPs_hook_function(GetLayPathIconClicked);
+	//result &= NERPs_hook_function(GetPlaceFenceIconClicked);
+	//result &= NERPs_hook_function(SetTeleportIconClicked);
+	//result &= NERPs_hook_function(SetDynamiteClicked);
+	//result &= NERPs_hook_function(SetTrainIconClicked);
+	//result &= NERPs_hook_function(SetTrainDriverIconClicked);
+	//result &= NERPs_hook_function(SetTrainSailorIconClicked);
+	//result &= NERPs_hook_function(SetGetToolIconClicked);
+	//result &= NERPs_hook_function(SetDropSonicBlasterIconClicked);
+	//result &= NERPs_hook_function(SetGetLaserIconClicked);
+	//result &= NERPs_hook_function(SetGetPusherIconClicked);
+	//result &= NERPs_hook_function(SetGetSonicBlasterIconClicked);
+	//result &= NERPs_hook_function(SetDismountIconClicked);
+	//result &= NERPs_hook_function(SetTrainPilotIconClicked);
+	//result &= NERPs_hook_function(SetMountIconClicked);
+	//result &= NERPs_hook_function(SetDigIconClicked);
+	//result &= NERPs_hook_function(SetBuildIconClicked);
+	//result &= NERPs_hook_function(SetLayPathIconClicked);
+	//result &= NERPs_hook_function(SetPlaceFenceIconClicked);
+	//result &= NERPs_hook_function(FlashTeleportIcon);
+	//result &= NERPs_hook_function(FlashDynamiteIcon);
+	//result &= NERPs_hook_function(FlashMountIcon);
+	//result &= NERPs_hook_function(FlashTrainIcon);
+	//result &= NERPs_hook_function(FlashTrainDriverIcon);
+	//result &= NERPs_hook_function(FlashTrainPilotIcon);
+	//result &= NERPs_hook_function(FlashTrainSailorIcon);
+	//result &= NERPs_hook_function(FlashDismountIcon);
+	//result &= NERPs_hook_function(FlashGetToolIcon);
+	//result &= NERPs_hook_function(FlashDropSonicBlasterIcon);
+	//result &= NERPs_hook_function(FlashGetLaserIcon);
+	//result &= NERPs_hook_function(FlashGetPusherIcon);
+	//result &= NERPs_hook_function(FlashGetSonicBlasterIcon);
+	//result &= NERPs_hook_function(FlashDigIcon);
+	//result &= NERPs_hook_function(FlashBuildIcon);
+	//result &= NERPs_hook_function(FlashLayPathIcon);
+	//result &= NERPs_hook_function(FlashPlaceFenceIcon);
+	result &= NERPs_hook_function(GetRandom);
+	result &= NERPs_hook_function(GetRandomTrueFalse);
+	result &= NERPs_hook_function(GetRandom10);
+	result &= NERPs_hook_function(GetRandom100);
+	result &= NERPs_hook_function(GetCrystalsPickedUp);
+	result &= NERPs_hook_function(GetCrystalsCurrentlyStored);
+
+	result &= NERPs_hook_function(False);
+	result &= NERPs_hook_function(Null);
+	result &= NERPs_hook_function(Stop);
+	result &= LegoRR::NERPs_HookFunction("**End Of List**", LegoRR::NERPFunc__End_Of_List);
+	result &= NERPs_hook_function(GetCrystalsUsed);
+	result &= NERPs_hook_function(GetCrystalsStolen);
+	result &= NERPs_hook_function(GetOreUsed);
+	result &= NERPs_hook_function(GetOreStolen);
+
+	result &= NERPs_hook_function(GetOrePickedUp);
+	result &= NERPs_hook_function(GetOreCurrentlyStored);
+	// Also hooked directly.
+	result &= NERPs_hook_function(GetTutorialFlags);
+	result &= NERPs_hook_function(GetR0);
+	result &= NERPs_hook_function(GetR1);
+	result &= NERPs_hook_function(GetR2);
+	result &= NERPs_hook_function(GetR3);
+	result &= NERPs_hook_function(GetR4);
+	result &= NERPs_hook_function(GetR5);
+	result &= NERPs_hook_function(GetR6);
+	result &= NERPs_hook_function(GetR7);
+	result &= NERPs_hook_function(AddR0);
+	result &= NERPs_hook_function(AddR1);
+	result &= NERPs_hook_function(AddR2);
+	result &= NERPs_hook_function(AddR3);
+	result &= NERPs_hook_function(AddR4);
+	result &= NERPs_hook_function(AddR5);
+	result &= NERPs_hook_function(AddR6);
+	result &= NERPs_hook_function(AddR7);
+	result &= NERPs_hook_function(SubR0);
+	result &= NERPs_hook_function(SubR1);
+	result &= NERPs_hook_function(SubR2);
+	result &= NERPs_hook_function(SubR3);
+	result &= NERPs_hook_function(SubR4);
+	result &= NERPs_hook_function(SubR5);
+	result &= NERPs_hook_function(SubR6);
+	result &= NERPs_hook_function(SubR7);
+	result &= NERPs_hook_function(SetR0);
+	result &= NERPs_hook_function(SetR1);
+	result &= NERPs_hook_function(SetR2);
+	result &= NERPs_hook_function(SetR3);
+	result &= NERPs_hook_function(SetR4);
+	result &= NERPs_hook_function(SetR5);
+	result &= NERPs_hook_function(SetR6);
+	result &= NERPs_hook_function(SetR7);
+	// Also hooked directly.
+	result &= NERPs_hook_function(SetTutorialFlags);
+	result &= NERPs_hook_function(GetTrainFlags);
+	result &= NERPs_hook_function(SetTrainFlags);
+	result &= NERPs_hook_function(GetMonstersOnLevel);
+	result &= NERPs_hook_function(GetBuildingsTeleported);
+	result &= NERPs_hook_function(SetBuildingsTeleported);
+	// Also hooked directly.
+	result &= NERPs_hook_function(SetMessagePermit);
+
+	result &= NERPs_hook_function(SetMessageWait);
+	result &= NERPs_hook_function(SetMessageTimerValues);
+	result &= NERPs_hook_function(GetMessageTimer);
+	result &= NERPs_hook_function(SetMessage);
+	// Also hooked directly.
+	result &= NERPs_hook_function(SetObjectiveSwitch);
+	result &= NERPs_hook_function(GetObjectiveSwitch);
+	result &= NERPs_hook_function(GetObjectiveShowing);
+
+	//result &= NERPs_hook_function(MakeSomeoneOnThisBlockPickUpSomethingOnThisBlock);
+
+	//result &= NERPs_hook_function(SetCongregationAtTutorial);
+	//result &= NERPs_hook_function(SetRockMonsterAtTutorial);
+	//result &= NERPs_hook_function(SetCameraGotoTutorial);
+	//result &= NERPs_hook_function(GetCameraAtTutorial);
+	//result &= NERPs_hook_function(GetTutorialBlockIsGround);
+	//result &= NERPs_hook_function(GetTutorialBlockIsPath);
+	//result &= NERPs_hook_function(SetTutorialBlockIsGround);
+	//result &= NERPs_hook_function(SetTutorialBlockIsPath);
+	//result &= NERPs_hook_function(GetUnitAtBlock);
+	//result &= NERPs_hook_function(GetMonsterAtTutorial);
+
+	result &= NERPs_hook_function(True);
+	#pragma endregion
 
 	return_interop(result);
 }
@@ -2436,19 +2821,18 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Interface();
 	result &= interop_hook_LegoRR_LegoCamera();
 	result &= interop_hook_LegoRR_Messages();
+	result &= interop_hook_LegoRR_NERPsFile();
+	result &= interop_hook_LegoRR_NERPsFunctions();
 	result &= interop_hook_LegoRR_Object();
 	result &= interop_hook_LegoRR_PTL();
+	result &= interop_hook_LegoRR_SFX();
+	result &= interop_hook_LegoRR_Smoke();
 	result &= interop_hook_LegoRR_Stats();
 	result &= interop_hook_LegoRR_Weapons();
 
 	// Only a few functions from each of these have been
 	// defined in order to fix certain original bugs.
 	result &= interop_hook_LegoRR_FrontEnd();
-	result &= interop_hook_LegoRR_SFX();
-	result &= interop_hook_LegoRR_Smoke();
-
-	// Implementation for NERPs interpreter.
-	result &= interop_hook_LegoRR_NERPsFile();
 	#pragma endregion
 
 

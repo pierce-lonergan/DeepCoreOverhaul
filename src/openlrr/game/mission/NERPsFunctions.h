@@ -12,101 +12,137 @@ namespace LegoRR
 {; // !<---
 
 /**********************************************************************************
+ ******** Macros
+ **********************************************************************************/
+
+#pragma region Macros
+
+#define NERPs_MakeFunction(name, args) NERPsFunctionSignature { nameof(name), NERPFunc__## name, (args) }
+
+#pragma endregion
+
+/**********************************************************************************
  ******** Functions
  **********************************************************************************/
 
 #pragma region Functions
 
+// Also used outside of NERPs scripting.
 // <LegoRR.exe @00453b60>
-#define NERPFunc__SetGameSpeed ((NERPsFunction)0x00453b60)
+//#define NERPFunc__SetGameSpeed ((NERPsFunction)0x00453b60)
+sint32 __cdecl NERPFunc__SetGameSpeed(sint32* stack);
 
 
 // [NERPsRuntime...]
 
 
 // <LegoRR.exe @00453cb0>
-#define NERPFunc__GetMessagesAreUpToDate ((NERPsFunction)0x00453cb0)
+//#define NERPFunc__GetMessagesAreUpToDate ((NERPsFunction)0x00453cb0)
+sint32 __cdecl NERPFunc__GetMessagesAreUpToDate(sint32* stack);
 
 // <LegoRR.exe @00453cd0>
-#define NERPFunc__SupressArrow ((NERPsFunction)0x00453cd0)
+//#define NERPFunc__SupressArrow ((NERPsFunction)0x00453cd0)
+sint32 __cdecl NERPFunc__SupressArrow(sint32* stack);
 
 // <LegoRR.exe @00453d10>
-#define NERPFunc__AdvanceMessage ((NERPsFunction)0x00453d10)
+//#define NERPFunc__AdvanceMessage ((NERPsFunction)0x00453d10)
+sint32 __cdecl NERPFunc__AdvanceMessage(sint32* stack);
 
 // <LegoRR.exe @00453d30>
-#define NERPFunc__AllowCameraMovement ((NERPsFunction)0x00453d30)
+//#define NERPFunc__AllowCameraMovement ((NERPsFunction)0x00453d30)
+sint32 __cdecl NERPFunc__AllowCameraMovement(sint32* stack);
 
 // <LegoRR.exe @00453d50>
-#define NERPFunc__ClickOnlyObjects ((NERPsFunction)0x00453d50)
+//#define NERPFunc__ClickOnlyObjects ((NERPsFunction)0x00453d50)
+sint32 __cdecl NERPFunc__ClickOnlyObjects(sint32* stack);
 
 // <LegoRR.exe @00453d80>
-#define NERPFunc__ClickOnlyMap ((NERPsFunction)0x00453d80)
+//#define NERPFunc__ClickOnlyMap ((NERPsFunction)0x00453d80)
+sint32 __cdecl NERPFunc__ClickOnlyMap(sint32* stack);
 
 // <LegoRR.exe @00453db0>
-#define NERPFunc__ClickOnlyIcon ((NERPsFunction)0x00453db0)
+//#define NERPFunc__ClickOnlyIcon ((NERPsFunction)0x00453db0)
+sint32 __cdecl NERPFunc__ClickOnlyIcon(sint32* stack);
 
 // <LegoRR.exe @00453de0>
-#define NERPFunc__ClickOnlyCalltoarms ((NERPsFunction)0x00453de0)
+//#define NERPFunc__ClickOnlyCalltoarms ((NERPsFunction)0x00453de0)
+sint32 __cdecl NERPFunc__ClickOnlyCalltoarms(sint32* stack);
 
 // <LegoRR.exe @00453e10>
-#define NERPFunc__DisallowAll ((NERPsFunction)0x00453e10)
+//#define NERPFunc__DisallowAll ((NERPsFunction)0x00453e10)
+sint32 __cdecl NERPFunc__DisallowAll(sint32* stack);
 
 // <LegoRR.exe @00453e40>
-#define NERPFunc__FlashCallToArmsIcon ((NERPsFunction)0x00453e40)
+//#define NERPFunc__FlashCallToArmsIcon ((NERPsFunction)0x00453e40)
+sint32 __cdecl NERPFunc__FlashCallToArmsIcon(sint32* stack);
 
 
 // [NERPsRuntime...]
 
 
 // <LegoRR.exe @00453f60>
-#define NERPFunc__GetTimer0 ((NERPsFunction)0x00453f60)
+//#define NERPFunc__GetTimer0 ((NERPsFunction)0x00453f60)
+sint32 __cdecl NERPFunc__GetTimer0(sint32* stack);
 
 // <LegoRR.exe @00453f70>
-#define NERPFunc__GetTimer1 ((NERPsFunction)0x00453f70)
+//#define NERPFunc__GetTimer1 ((NERPsFunction)0x00453f70)
+sint32 __cdecl NERPFunc__GetTimer1(sint32* stack);
 
 // <LegoRR.exe @00453f80>
-#define NERPFunc__GetTimer2 ((NERPsFunction)0x00453f80)
+//#define NERPFunc__GetTimer2 ((NERPsFunction)0x00453f80)
+sint32 __cdecl NERPFunc__GetTimer2(sint32* stack);
 
 // <LegoRR.exe @00453f90>
-#define NERPFunc__GetTimer3 ((NERPsFunction)0x00453f90)
+//#define NERPFunc__GetTimer3 ((NERPsFunction)0x00453f90)
+sint32 __cdecl NERPFunc__GetTimer3(sint32* stack);
 
 // <LegoRR.exe @00453fa0>
-#define NERPFunc__SetTimer0 ((NERPsFunction)0x00453fa0)
+//#define NERPFunc__SetTimer0 ((NERPsFunction)0x00453fa0)
+sint32 __cdecl NERPFunc__SetTimer0(sint32* stack);
 
 // <LegoRR.exe @00453fd0>
-#define NERPFunc__SetTimer1 ((NERPsFunction)0x00453fd0)
+//#define NERPFunc__SetTimer1 ((NERPsFunction)0x00453fd0)
+sint32 __cdecl NERPFunc__SetTimer1(sint32* stack);
 
 // <LegoRR.exe @00454000>
-#define NERPFunc__SetTimer2 ((NERPsFunction)0x00454000)
+//#define NERPFunc__SetTimer2 ((NERPsFunction)0x00454000)
+sint32 __cdecl NERPFunc__SetTimer2(sint32* stack);
 
 // <LegoRR.exe @00454030>
-#define NERPFunc__SetTimer3 ((NERPsFunction)0x00454030)
+//#define NERPFunc__SetTimer3 ((NERPsFunction)0x00454030)
+sint32 __cdecl NERPFunc__SetTimer3(sint32* stack);
 
 
 // [NERPsRuntime...]
 
 
 // <LegoRR.exe @004542a0>
-#define NERPFunc__CameraLockOnMonster ((NERPsFunction)0x004542a0)
+//#define NERPFunc__CameraLockOnMonster ((NERPsFunction)0x004542a0)
+sint32 __cdecl NERPFunc__CameraLockOnMonster(sint32* stack);
 
 
 // [NERPsRuntime...]
 
 
 // <LegoRR.exe @00454310>
-#define NERPFunc__CameraLockOnObject ((NERPsFunction)0x00454310)
+//#define NERPFunc__CameraLockOnObject ((NERPsFunction)0x00454310)
+sint32 __cdecl NERPFunc__CameraLockOnObject(sint32* stack);
 
 // <LegoRR.exe @00454330>
-#define NERPFunc__CameraUnlock ((NERPsFunction)0x00454330)
+//#define NERPFunc__CameraUnlock ((NERPsFunction)0x00454330)
+sint32 __cdecl NERPFunc__CameraUnlock(sint32* stack);
 
 // <LegoRR.exe @00454350>
-#define NERPFunc__CameraZoomIn ((NERPsFunction)0x00454350)
+//#define NERPFunc__CameraZoomIn ((NERPsFunction)0x00454350)
+sint32 __cdecl NERPFunc__CameraZoomIn(sint32* stack);
 
 // <LegoRR.exe @004543d0>
-#define NERPFunc__CameraZoomOut ((NERPsFunction)0x004543d0)
+//#define NERPFunc__CameraZoomOut ((NERPsFunction)0x004543d0)
+sint32 __cdecl NERPFunc__CameraZoomOut(sint32* stack);
 
 // <LegoRR.exe @00454440>
-#define NERPFunc__CameraRotate ((NERPsFunction)0x00454440)
+//#define NERPFunc__CameraRotate ((NERPsFunction)0x00454440)
+sint32 __cdecl NERPFunc__CameraRotate(sint32* stack);
 
 // <LegoRR.exe @004544e0>
 #define NERPFunc__GetSelectedRecordObject ((NERPsFunction)0x004544e0)
@@ -222,17 +258,24 @@ namespace LegoRR
 // <LegoRR.exe @00454e20>
 #define NERPFunc__SetIconWidth ((NERPsFunction)0x00454e20)
 
+// Also used outside of NERPs scripting.
 // <LegoRR.exe @00454e30>
-#define NERPFunc__SetLevelCompleted ((NERPsFunction)0x00454e30)
+//#define NERPFunc__SetLevelCompleted ((NERPsFunction)0x00454e30)
+sint32 __cdecl NERPFunc__SetLevelCompleted(sint32* stack);
+
 // ALIAS: NERPFunc__SetLevelCompleted
 // <LegoRR.exe @00454e30>
-#define NERPFunc__SetGameCompleted NERPFunc__SetLevelCompleted
+//#define NERPFunc__SetGameCompleted NERPFunc__SetLevelCompleted
+sint32 __cdecl NERPFunc__SetGameCompleted(sint32* stack);
 
+// Also used outside of NERPs scripting.
 // <LegoRR.exe @00454e40>
-#define NERPFunc__SetLevelFail ((NERPsFunction)0x00454e40)
+//#define NERPFunc__SetLevelFail ((NERPsFunction)0x00454e40)
+sint32 __cdecl NERPFunc__SetLevelFail(sint32* stack);
 
 // <LegoRR.exe @00454e60>
-#define NERPFunc__SetGameFail ((NERPsFunction)0x00454e60)
+//#define NERPFunc__SetGameFail ((NERPsFunction)0x00454e60)
+sint32 __cdecl NERPFunc__SetGameFail(sint32* stack);
 
 // <LegoRR.exe @00454e70>
 #define NERPFunc__SetTutorialPointer ((NERPsFunction)0x00454e70)
@@ -747,207 +790,274 @@ namespace LegoRR
 #define NERPFunc__FlashPlaceFenceIcon ((NERPsFunction)0x00456430)
 
 // <LegoRR.exe @00456450>
-#define NERPFunc__GetRandom ((NERPsFunction)0x00456450)
+//#define NERPFunc__GetRandom ((NERPsFunction)0x00456450)
+sint32 __cdecl NERPFunc__GetRandom(sint32* stack);
 
 // <LegoRR.exe @00456460>
-#define NERPFunc__GetRandomTrueFalse ((NERPsFunction)0x00456460)
+//#define NERPFunc__GetRandomTrueFalse ((NERPsFunction)0x00456460)
+sint32 __cdecl NERPFunc__GetRandomTrueFalse(sint32* stack);
 
 // <LegoRR.exe @00456470>
-#define NERPFunc__GetRandom10 ((NERPsFunction)0x00456470)
+//#define NERPFunc__GetRandom10 ((NERPsFunction)0x00456470)
+sint32 __cdecl NERPFunc__GetRandom10(sint32* stack);
 
 // <LegoRR.exe @00456490>
-#define NERPFunc__GetRandom100 ((NERPsFunction)0x00456490)
+//#define NERPFunc__GetRandom100 ((NERPsFunction)0x00456490)
+sint32 __cdecl NERPFunc__GetRandom100(sint32* stack);
 
 // <LegoRR.exe @004564b0>
-#define NERPFunc__GetCrystalsPickedUp ((NERPsFunction)0x004564b0)
+//#define NERPFunc__GetCrystalsPickedUp ((NERPsFunction)0x004564b0)
+sint32 __cdecl NERPFunc__GetCrystalsPickedUp(sint32* stack);
 
 // <LegoRR.exe @004564c0>
-#define NERPFunc__GetCrystalsCurrentlyStored ((NERPsFunction)0x004564c0)
+//#define NERPFunc__GetCrystalsCurrentlyStored ((NERPsFunction)0x004564c0)
+sint32 __cdecl NERPFunc__GetCrystalsCurrentlyStored(sint32* stack);
 
 
+// MERGED FUNCTION
 // <LegoRR.exe @004564d0>
-#define NERPFunc__False ((NERPsFunction)0x004564d0)
+//#define NERPFunc__False ((NERPsFunction)0x004564d0)
+sint32 __cdecl NERPFunc__False(sint32* stack);
 
 // ALIAS: NERPFunc__False
 // <LegoRR.exe @004564d0>
-#define NERPFunc__Null NERPFunc__False
+//#define NERPFunc__Null NERPFunc__False
+sint32 __cdecl NERPFunc__Null(sint32* stack);
 
 // ALIAS: NERPFunc__False (function behaviour is hardcoded, and is never actually called)
 // <LegoRR.exe @004564d0>
-#define NERPFunc__Stop NERPFunc__False
+//#define NERPFunc__Stop NERPFunc__False
+sint32 __cdecl NERPFunc__Stop(sint32* stack);
 
 // ALIAS: NERPFunc__False (dummy function used at the end-of-list entry for NERPs functions)
 // <LegoRR.exe @004564d0>
-#define NERPFunc__End_Of_List NERPFunc__False
+//#define NERPFunc__End_Of_List NERPFunc__False
+sint32 __cdecl NERPFunc__End_Of_List(sint32* stack);
 
 // ALIAS: NERPFunc__False (function is unimplemented)
 // <LegoRR.exe @004564d0>
-#define NERPFunc__GetCrystalsUsed NERPFunc__False
+//#define NERPFunc__GetCrystalsUsed NERPFunc__False
+sint32 __cdecl NERPFunc__GetCrystalsUsed(sint32* stack);
 
 // ALIAS: NERPFunc__False (function is unimplemented)
 // <LegoRR.exe @004564d0>
-#define NERPFunc__GetCrystalsStolen NERPFunc__False
+//#define NERPFunc__GetCrystalsStolen NERPFunc__False
+sint32 __cdecl NERPFunc__GetCrystalsStolen(sint32* stack);
 
 // ALIAS: NERPFunc__False (function is unimplemented)
 // <LegoRR.exe @004564d0>
-#define NERPFunc__GetOreUsed NERPFunc__False
+//#define NERPFunc__GetOreUsed NERPFunc__False
+sint32 __cdecl NERPFunc__GetOreUsed(sint32* stack);
 
 // ALIAS: NERPFunc__False (function is unimplemented)
 // <LegoRR.exe @004564d0>
-#define NERPFunc__GetOreStolen NERPFunc__False
+//#define NERPFunc__GetOreStolen NERPFunc__False
+sint32 __cdecl NERPFunc__GetOreStolen(sint32* stack);
 
 
 // <LegoRR.exe @004564e0>
-#define NERPFunc__GetOrePickedUp ((NERPsFunction)0x004564e0)
+//#define NERPFunc__GetOrePickedUp ((NERPsFunction)0x004564e0)
+sint32 __cdecl NERPFunc__GetOrePickedUp(sint32* stack);
 
 // <LegoRR.exe @004564f0>
-#define NERPFunc__GetOreCurrentlyStored ((NERPsFunction)0x004564f0)
+//#define NERPFunc__GetOreCurrentlyStored ((NERPsFunction)0x004564f0)
+sint32 __cdecl NERPFunc__GetOreCurrentlyStored(sint32* stack);
 
+// Also used outside of NERPs scripting.
 // <LegoRR.exe @00456500>
-#define NERPFunc__GetTutorialFlags ((TutorialFlags (__cdecl* )(sint32* stack))0x00456500)
+//#define NERPFunc__GetTutorialFlags ((TutorialFlags (__cdecl* )(sint32* stack))0x00456500)
+sint32 __cdecl NERPFunc__GetTutorialFlags(sint32* stack);
 
 // <LegoRR.exe @00456510>
-#define NERPFunc__GetR0 ((NERPsFunction)0x00456510)
+//#define NERPFunc__GetR0 ((NERPsFunction)0x00456510)
+sint32 __cdecl NERPFunc__GetR0(sint32* stack);
 
 // <LegoRR.exe @00456520>
-#define NERPFunc__GetR1 ((NERPsFunction)0x00456520)
+//#define NERPFunc__GetR1 ((NERPsFunction)0x00456520)
+sint32 __cdecl NERPFunc__GetR1(sint32* stack);
 
 // <LegoRR.exe @00456530>
-#define NERPFunc__GetR2 ((NERPsFunction)0x00456530)
+//#define NERPFunc__GetR2 ((NERPsFunction)0x00456530)
+sint32 __cdecl NERPFunc__GetR2(sint32* stack);
 
 // <LegoRR.exe @00456540>
-#define NERPFunc__GetR3 ((NERPsFunction)0x00456540)
+//#define NERPFunc__GetR3 ((NERPsFunction)0x00456540)
+sint32 __cdecl NERPFunc__GetR3(sint32* stack);
 
 // <LegoRR.exe @00456550>
-#define NERPFunc__GetR4 ((NERPsFunction)0x00456550)
+//#define NERPFunc__GetR4 ((NERPsFunction)0x00456550)
+sint32 __cdecl NERPFunc__GetR4(sint32* stack);
 
 // <LegoRR.exe @00456560>
-#define NERPFunc__GetR5 ((NERPsFunction)0x00456560)
+//#define NERPFunc__GetR5 ((NERPsFunction)0x00456560)
+sint32 __cdecl NERPFunc__GetR5(sint32* stack);
 
 // <LegoRR.exe @00456570>
-#define NERPFunc__GetR6 ((NERPsFunction)0x00456570)
+//#define NERPFunc__GetR6 ((NERPsFunction)0x00456570)
+sint32 __cdecl NERPFunc__GetR6(sint32* stack);
 
 // <LegoRR.exe @00456580>
-#define NERPFunc__GetR7 ((NERPsFunction)0x00456580)
+//#define NERPFunc__GetR7 ((NERPsFunction)0x00456580)
+sint32 __cdecl NERPFunc__GetR7(sint32* stack);
 
 // <LegoRR.exe @00456590>
-#define NERPFunc__AddR0 ((NERPsFunction)0x00456590)
+//#define NERPFunc__AddR0 ((NERPsFunction)0x00456590)
+sint32 __cdecl NERPFunc__AddR0(sint32* stack);
 
 // <LegoRR.exe @004565b0>
-#define NERPFunc__AddR1 ((NERPsFunction)0x004565b0)
+//#define NERPFunc__AddR1 ((NERPsFunction)0x004565b0)
+sint32 __cdecl NERPFunc__AddR1(sint32* stack);
 
 // <LegoRR.exe @004565d0>
-#define NERPFunc__AddR2 ((NERPsFunction)0x004565d0)
+//#define NERPFunc__AddR2 ((NERPsFunction)0x004565d0)
+sint32 __cdecl NERPFunc__AddR2(sint32* stack);
 
 // <LegoRR.exe @004565f0>
-#define NERPFunc__AddR3 ((NERPsFunction)0x004565f0)
+//#define NERPFunc__AddR3 ((NERPsFunction)0x004565f0)
+sint32 __cdecl NERPFunc__AddR3(sint32* stack);
 
 // <LegoRR.exe @00456610>
-#define NERPFunc__AddR4 ((NERPsFunction)0x00456610)
+//#define NERPFunc__AddR4 ((NERPsFunction)0x00456610)
+sint32 __cdecl NERPFunc__AddR4(sint32* stack);
 
 // <LegoRR.exe @00456630>
-#define NERPFunc__AddR5 ((NERPsFunction)0x00456630)
+//#define NERPFunc__AddR5 ((NERPsFunction)0x00456630)
+sint32 __cdecl NERPFunc__AddR5(sint32* stack);
 
 // <LegoRR.exe @00456650>
-#define NERPFunc__AddR6 ((NERPsFunction)0x00456650)
+//#define NERPFunc__AddR6 ((NERPsFunction)0x00456650)
+sint32 __cdecl NERPFunc__AddR6(sint32* stack);
 
 // <LegoRR.exe @00456670>
-#define NERPFunc__AddR7 ((NERPsFunction)0x00456670)
+//#define NERPFunc__AddR7 ((NERPsFunction)0x00456670)
+sint32 __cdecl NERPFunc__AddR7(sint32* stack);
 
 // <LegoRR.exe @00456690>
-#define NERPFunc__SubR0 ((NERPsFunction)0x00456690)
+//#define NERPFunc__SubR0 ((NERPsFunction)0x00456690)
+sint32 __cdecl NERPFunc__SubR0(sint32* stack);
 
 // <LegoRR.exe @004566b0>
-#define NERPFunc__SubR1 ((NERPsFunction)0x004566b0)
+//#define NERPFunc__SubR1 ((NERPsFunction)0x004566b0)
+sint32 __cdecl NERPFunc__SubR1(sint32* stack);
 
 // <LegoRR.exe @004566d0>
-#define NERPFunc__SubR2 ((NERPsFunction)0x004566d0)
+//#define NERPFunc__SubR2 ((NERPsFunction)0x004566d0)
+sint32 __cdecl NERPFunc__SubR2(sint32* stack);
 
 // <LegoRR.exe @004566f0>
-#define NERPFunc__SubR3 ((NERPsFunction)0x004566f0)
+//#define NERPFunc__SubR3 ((NERPsFunction)0x004566f0)
+sint32 __cdecl NERPFunc__SubR3(sint32* stack);
 
 // <LegoRR.exe @00456710>
-#define NERPFunc__SubR4 ((NERPsFunction)0x00456710)
+//#define NERPFunc__SubR4 ((NERPsFunction)0x00456710)
+sint32 __cdecl NERPFunc__SubR4(sint32* stack);
 
 // <LegoRR.exe @00456730>
-#define NERPFunc__SubR5 ((NERPsFunction)0x00456730)
+//#define NERPFunc__SubR5 ((NERPsFunction)0x00456730)
+sint32 __cdecl NERPFunc__SubR5(sint32* stack);
 
 // <LegoRR.exe @00456750>
-#define NERPFunc__SubR6 ((NERPsFunction)0x00456750)
+//#define NERPFunc__SubR6 ((NERPsFunction)0x00456750)
+sint32 __cdecl NERPFunc__SubR6(sint32* stack);
 
 // <LegoRR.exe @00456770>
-#define NERPFunc__SubR7 ((NERPsFunction)0x00456770)
+//#define NERPFunc__SubR7 ((NERPsFunction)0x00456770)
+sint32 __cdecl NERPFunc__SubR7(sint32* stack);
 
 // <LegoRR.exe @00456790>
-#define NERPFunc__SetR0 ((NERPsFunction)0x00456790)
+//#define NERPFunc__SetR0 ((NERPsFunction)0x00456790)
+sint32 __cdecl NERPFunc__SetR0(sint32* stack);
 
 // <LegoRR.exe @004567a0>
-#define NERPFunc__SetR1 ((NERPsFunction)0x004567a0)
+//#define NERPFunc__SetR1 ((NERPsFunction)0x004567a0)
+sint32 __cdecl NERPFunc__SetR1(sint32* stack);
 
 // <LegoRR.exe @004567b0>
-#define NERPFunc__SetR2 ((NERPsFunction)0x004567b0)
+//#define NERPFunc__SetR2 ((NERPsFunction)0x004567b0)
+sint32 __cdecl NERPFunc__SetR2(sint32* stack);
 
 // <LegoRR.exe @004567c0>
-#define NERPFunc__SetR3 ((NERPsFunction)0x004567c0)
+//#define NERPFunc__SetR3 ((NERPsFunction)0x004567c0)
+sint32 __cdecl NERPFunc__SetR3(sint32* stack);
 
 // <LegoRR.exe @004567d0>
-#define NERPFunc__SetR4 ((NERPsFunction)0x004567d0)
+//#define NERPFunc__SetR4 ((NERPsFunction)0x004567d0)
+sint32 __cdecl NERPFunc__SetR4(sint32* stack);
 
 // <LegoRR.exe @004567e0>
-#define NERPFunc__SetR5 ((NERPsFunction)0x004567e0)
+//#define NERPFunc__SetR5 ((NERPsFunction)0x004567e0)
+sint32 __cdecl NERPFunc__SetR5(sint32* stack);
 
 // <LegoRR.exe @004567f0>
-#define NERPFunc__SetR6 ((NERPsFunction)0x004567f0)
+//#define NERPFunc__SetR6 ((NERPsFunction)0x004567f0)
+sint32 __cdecl NERPFunc__SetR6(sint32* stack);
 
 // <LegoRR.exe @00456800>
-#define NERPFunc__SetR7 ((NERPsFunction)0x00456800)
+//#define NERPFunc__SetR7 ((NERPsFunction)0x00456800)
+sint32 __cdecl NERPFunc__SetR7(sint32* stack);
 
+// Also used outside of NERPs scripting.
 // <LegoRR.exe @00456810>
-#define NERPFunc__SetTutorialFlags ((NERPsFunction)0x00456810)
+//#define NERPFunc__SetTutorialFlags ((NERPsFunction)0x00456810)
+sint32 __cdecl NERPFunc__SetTutorialFlags(sint32* stack);
 
 // <LegoRR.exe @00456820>
-#define NERPFunc__GetTrainFlags ((NERPsFunction)0x00456820)
+//#define NERPFunc__GetTrainFlags ((NERPsFunction)0x00456820)
+sint32 __cdecl NERPFunc__GetTrainFlags(sint32* stack);
 
 // <LegoRR.exe @00456830>
-#define NERPFunc__SetTrainFlags ((NERPsFunction)0x00456830)
+//#define NERPFunc__SetTrainFlags ((NERPsFunction)0x00456830)
+sint32 __cdecl NERPFunc__SetTrainFlags(sint32* stack);
 
 // <LegoRR.exe @00456840>
-#define NERPFunc__GetMonstersOnLevel ((NERPsFunction)0x00456840)
+//#define NERPFunc__GetMonstersOnLevel ((NERPsFunction)0x00456840)
+sint32 __cdecl NERPFunc__GetMonstersOnLevel(sint32* stack);
 
 // <LegoRR.exe @00456880>
-#define NERPFunc__GetBuildingsTeleported ((NERPsFunction)0x00456880)
+//#define NERPFunc__GetBuildingsTeleported ((NERPsFunction)0x00456880)
+sint32 __cdecl NERPFunc__GetBuildingsTeleported(sint32* stack);
 
 // <LegoRR.exe @00456890>
-#define NERPFunc__SetBuildingsTeleported ((NERPsFunction)0x00456890)
+//#define NERPFunc__SetBuildingsTeleported ((NERPsFunction)0x00456890)
+sint32 __cdecl NERPFunc__SetBuildingsTeleported(sint32* stack);
 
+// Also used outside of NERPs scripting.
 // <LegoRR.exe @004568b0>
-#define NERPFunc__SetMessagePermit ((NERPsFunction)0x004568b0)
+//#define NERPFunc__SetMessagePermit ((NERPsFunction)0x004568b0)
+sint32 __cdecl NERPFunc__SetMessagePermit(sint32* stack);
 
 
 // [NERPsRuntime...]
 
 
 // <LegoRR.exe @00456920>
-#define NERPFunc__SetMessageWait ((NERPsFunction)0x00456920)
+//#define NERPFunc__SetMessageWait ((NERPsFunction)0x00456920)
+sint32 __cdecl NERPFunc__SetMessageWait(sint32* stack);
 
 // <LegoRR.exe @00456930>
-#define NERPFunc__SetMessageTimerValues ((NERPsFunction)0x00456930)
+//#define NERPFunc__SetMessageTimerValues ((NERPsFunction)0x00456930)
+sint32 __cdecl NERPFunc__SetMessageTimerValues(sint32* stack);
 
 // <LegoRR.exe @00456980>
-#define NERPFunc__GetMessageTimer ((NERPsFunction)0x00456980)
+//#define NERPFunc__GetMessageTimer ((NERPsFunction)0x00456980)
+sint32 __cdecl NERPFunc__GetMessageTimer(sint32* stack);
 
 // <LegoRR.exe @00456990>
 //#define NERPFunc__SetMessage ((NERPsFunction)0x00456990)
 sint32 __cdecl NERPFunc__SetMessage(sint32* stack);
 
+// Also used outside of NERPs scripting.
 // <LegoRR.exe @00456a80>
-#define NERPFunc__SetObjectiveSwitch ((NERPsFunction)0x00456a80)
+//#define NERPFunc__SetObjectiveSwitch ((NERPsFunction)0x00456a80)
+sint32 __cdecl NERPFunc__SetObjectiveSwitch(sint32* stack);
 
 // <LegoRR.exe @00456a90>
-#define NERPFunc__GetObjectiveSwitch ((NERPsFunction)0x00456a90)
+//#define NERPFunc__GetObjectiveSwitch ((NERPsFunction)0x00456a90)
+sint32 __cdecl NERPFunc__GetObjectiveSwitch(sint32* stack);
 
 // <LegoRR.exe @00456ab0>
-#define NERPFunc__GetObjectiveShowing ((NERPsFunction)0x00456ab0)
+//#define NERPFunc__GetObjectiveShowing ((NERPsFunction)0x00456ab0)
+sint32 __cdecl NERPFunc__GetObjectiveShowing(sint32* stack);
 
 
 // [NERPsRuntime...]
@@ -990,10 +1100,10 @@ sint32 __cdecl NERPFunc__SetMessage(sint32* stack);
 // <LegoRR.exe @00457760>
 #define NERPFunc__GetMonsterAtTutorial ((NERPsFunction)0x00457760)
 
-
 // MERGED FUNCTION
 // <LegoRR.exe @00484e50>
-#define NERPFunc__True ((NERPsFunction)0x00484e50)
+//#define NERPFunc__True ((NERPsFunction)0x00484e50)
+sint32 __cdecl NERPFunc__True(sint32* stack);
 
 
 #pragma endregion
