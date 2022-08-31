@@ -77,6 +77,10 @@ flags_scoped(Sound3DFlags) : uint32
 	SOUND3D_FLAG_ACTIVE = 0x2,
 	SOUND3D_FLAG_MULTI  = 0x4,
 	SOUND3D_FLAG_STREAM = 0x8,
+
+	// Storage for Sound3DPlay::Normal flag, so that we can adjust playback volume of live sounds.
+	// This flag takes up SOUND3D_MAXSIMULTANEOUS bits.
+	SOUND3D_PLAY_FLAG_NORMAL = (1<<(32-SOUND3D_MAXSIMULTANEOUS)), // Use the highest bits of the flags.
 };
 flags_scoped_end(Sound3DFlags, 0x4);
 
@@ -227,10 +231,44 @@ extern Sound3D_Globs & sound3DGlobs;
 #pragma endregion
 
 /**********************************************************************************
+ ******** Macros
+ **********************************************************************************/
+
+#pragma region Macros
+
+#define Sound3D_GetNormalPlayFlag(flags, idx)		\
+	((flags) & (Gods98::Sound3DFlags)((uint32)Gods98::Sound3DFlags::SOUND3D_PLAY_FLAG_NORMAL << (idx)))
+
+#define Sound3D_SetNormalPlayFlag(flags, idx, on)   \
+	if ((on)) (flags) |= (Gods98::Sound3DFlags)((uint32)Gods98::Sound3DFlags::SOUND3D_PLAY_FLAG_NORMAL << (idx)); \
+	else      (flags) &= ~(Gods98::Sound3DFlags)((uint32)Gods98::Sound3DFlags::SOUND3D_PLAY_FLAG_NORMAL << (idx))
+
+#pragma endregion
+
+/**********************************************************************************
  ******** Functions
  **********************************************************************************/
 
 #pragma region Functions
+
+/// CUSTOM: Clamps the volume in millibels to the range [Sound3D_MinVolume(), Sound3D_MaxVolume()].
+sint32 Sound3D_ClampVolume(sint32 mbVol);
+
+/// CUSTOM: Clamps the volume as a real to the range [0,1].
+real32 Sound3D_ClampVolumeReal(real32 fVol);
+
+/// CUSTOM: Converts the volume from millibels to a real in the range [0,1].
+real32 Sound3D_VolumeToReal(sint32 mbVol);
+
+/// CUSTOM: Converts the volume to millibels from a real in the range [0,1].
+sint32 Sound3D_VolumeFromReal(real32 fVol);
+
+/// CUSTOM: Gets the actual volume to use by scaling mbVol with the global volume.
+sint32 Sound3D_ScaleByGlobalVolume(sint32 mbVol);
+
+/// CUSTOM: Applies a reduction for non-3D sounds and then calls Sound3D_ScaleByGlobalVolume.
+sint32 Sound3D_GetFinalBufferVolume(Sound3D_SoundData* sound, uint32 voice);
+
 
 // <LegoRR.exe @0047a900>
 bool32 __cdecl Sound3D_Initialise(HWND hwndParent);
@@ -274,8 +312,18 @@ void __cdecl Sound3D_AddSoundRecord(IDirect3DRMFrame3* frame, IDirectSoundBuffer
 // <LegoRR.exe @0047b310>
 void __cdecl Sound3D_SetBufferVolume(sint32 handle, sint32 newvolume);
 
+/// CUSTOM: Updates global volume scaling for the sound while maintaining the normal sound volume reduction.
+void __cdecl Sound3D_UpdateBufferVolume(sint32 handle);
+
 // <LegoRR.exe @0047b390>
 sint32 __cdecl Sound3D_GetBufferVolume(sint32 handle);
+
+/// CUSTOM: Sets the sound buffer volume as a real in the range [0,1].
+inline void Sound3D_SetBufferVolumeReal(sint32 handle, real32 fVol) { Sound3D_SetBufferVolume(handle, Sound3D_VolumeFromReal(fVol)); }
+
+/// CUSTOM: Gets the sound buffer volume as a real in the range [0,1].
+inline real32 Sound3D_GetBufferVolumeReal(sint32 handle) { return Sound3D_VolumeToReal(Sound3D_GetBufferVolume(handle)); }
+
 
 // <LegoRR.exe @0047b3b0>
 IDirectSoundBuffer* __cdecl Sound3D_GetSoundBuffer(sint32 soundHandle);
@@ -336,6 +384,17 @@ void __cdecl Sound3D_SetGlobalVolumePrescaled(sint32 vol);
 
 // <LegoRR.exe @0047b810>
 void __cdecl Sound3D_SetVolumeToDefault(void);
+
+
+/// CUSTOM: Sets the global sound volume as a real in the range [0,1].
+inline void Sound3D_SetGlobalVolumeReal(real32 fVol) { Sound3D_SetGlobalVolume(Sound3D_VolumeFromReal(fVol)); }
+
+/// CUSTOM: Gets the global sound volume in millibels.
+inline sint32 Sound3D_GetGlobalVolume() { return sound3DGlobs.volume; }
+
+/// CUSTOM: Gets the global sound volume as a real in the range [0,1].
+inline real32 Sound3D_GetGlobalVolumeReal() { return Sound3D_VolumeToReal(Sound3D_GetGlobalVolume()); }
+
 
 // <LegoRR.exe @0047b840>
 bool32 __cdecl Sound3D_LoadSample(OUT Sound3D_SoundData* sound, const char* fName, bool32 simultaneous);

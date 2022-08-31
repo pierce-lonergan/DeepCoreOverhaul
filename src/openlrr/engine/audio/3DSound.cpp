@@ -31,6 +31,11 @@ const sint32 (& Gods98::c_SetGlobalVolumePrescaled_realVol)[11] = *(sint32(*)[11
 // <LegoRR.exe @005075b8>
 Gods98::Sound3D_Globs & Gods98::sound3DGlobs = *(Gods98::Sound3D_Globs*)0x005075b8;
 
+static real32 _sound3DRealGlobalVolume = 1.0f; // Shorthand for Sound3D_VolumeToReal(sound3DGlobs.volume) to avoid the extra calculations.
+
+static sint32 _sound3DStreamVolume = 0;
+static sint32 _sound3DLoopStreamVolume = 0;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -38,6 +43,84 @@ Gods98::Sound3D_Globs & Gods98::sound3DGlobs = *(Gods98::Sound3D_Globs*)0x005075
  **********************************************************************************/
 
 #pragma region Functions
+
+sint32 Gods98::Sound3D_ClampVolume(sint32 mbVol)
+{
+	return std::max(Sound3D_MinVolume(), std::min(Sound3D_MaxVolume(), mbVol));
+}
+
+real32 Gods98::Sound3D_ClampVolumeReal(real32 fVol)
+{
+	return std::max(0.0f, std::min(1.0f, fVol));
+}
+
+// other info: <https://social.msdn.microsoft.com/Forums/vstudio/en-US/7332a58b-d25e-4205-bc7a-c0d3e0b3a7a9/directsound-unable-to-set-volume-level?forum=vcgeneral>
+// other info: <https://www.dr-lex.be/info-stuff/volumecontrols.html>
+
+// see: <https://stackoverflow.com/questions/36072054/get-the-inverse-of-a-function-millibels-to-percentage-percentage-to-millibels>
+
+real32 Gods98::Sound3D_VolumeToReal(sint32 mbVol)
+{
+	mbVol = Sound3D_ClampVolume(mbVol);
+
+	//double exponent = ((mbVol / 1000.0) + 10.0);
+	//double numerator = (std::pow(2, exponent) - 1.0);
+	//real32 fVol = (real32)(numerator / 1023.0);
+
+	real32 fVol = (real32)((std::pow(2, (mbVol / 1000.0) + 10.0) - 1.0) / 1023.0);
+
+	return Sound3D_ClampVolumeReal(fVol);
+}
+
+sint32 Gods98::Sound3D_VolumeFromReal(real32 fVol)
+{
+	fVol = Sound3D_ClampVolumeReal(fVol);
+
+	//double attenuation = (1.0 / 1024.0) + (fVol * 1023.0 / 1024.0);
+	//double db = 10.0 * std::log2(attenuation);
+	//sint32 mbVol = (sint32)std::round(db * 100.0);
+
+	sint32 mbVol = (sint32)std::round(std::log2(((fVol * 1023.0) + 1.0) / 1024.0) * 1000.0);
+
+	return Sound3D_ClampVolume(mbVol);
+}
+
+sint32 Gods98::Sound3D_ScaleByGlobalVolume(sint32 mbVol)
+{
+	// Check if we can skip scaling alltogether.
+	if (Sound3D_GetGlobalVolume() == Sound3D_MaxVolume()) {
+		return mbVol; // Volume isn't scaled.
+	}
+	else if (mbVol == Sound3D_MaxVolume()) {
+		return Sound3D_GetGlobalVolume(); // Scaled value is global volume.
+	}
+	else {
+		// Use the pre-converted real global volume value.
+		return Sound3D_VolumeFromReal(Sound3D_VolumeToReal(mbVol) * _sound3DRealGlobalVolume);
+	}
+}
+
+sint32 Gods98::Sound3D_GetFinalBufferVolume(Sound3D_SoundData* sound, uint32 voice)
+{
+	sint32 mbVol = sound->volume;
+
+	if (Sound3D_GetNormalPlayFlag(sound->flags, voice)) {
+		/// CHANGE: This should really be applied as a scalar if the sound uses a volume less than max (which is never done in vanilla).
+		if (mbVol == Sound3D_MaxVolume()) {
+			mbVol -= 800; // Calculation can be simplified when volume is maxed.
+		}
+		else {
+			const real32 normalPlayScalar = Sound3D_VolumeToReal(-800);
+			mbVol = Sound3D_VolumeFromReal(Sound3D_VolumeToReal(mbVol) * normalPlayScalar);
+		}
+
+		//mbVol = Sound3D_ClampVolume(mbVol - 800);
+	}
+
+	return Sound3D_ScaleByGlobalVolume(mbVol);
+}
+
+
 
 // <LegoRR.exe @0047a900>
 bool32 __cdecl Gods98::Sound3D_Initialise(HWND hwndParent)
@@ -152,7 +235,8 @@ void __cdecl Gods98::Sound3D_ShutDown(void)
 
 	if( Sound3D_Initialised() )
 	{
-		Sound3D_SetGlobalVolume( sound3DGlobs.windowsVolume );
+		// We no longer want to take control over the Windows mixer volume.
+		//Sound3D_SetGlobalVolume( sound3DGlobs.windowsVolume );
 
 		lpDSBuff()->Stop();
 
@@ -464,11 +548,16 @@ sint32 __cdecl Gods98::Sound3D_Play2(Sound3DPlay play, IDirect3DRMFrame3* frame,
 
 			soundBuff->QueryInterface( IID_IDirectSound3DBuffer, (void**)&sound3DBuff );
 			
+			// Set information used to control sound volume.
+			Sound3D_SetNormalPlayFlag(sound->flags, sound->voice, (play == Sound3DPlay::Normal));
+
 			//DEFAULT SETTINGS
 			{
-				sint32 volume = sound->volume;
-				if (Sound3DPlay::Normal == play) volume -= 800;
-				soundBuff->SetVolume(volume);
+				//sint32 volume = sound->volume;
+				//if (play == Sound3DPlay::Normal) volume = Sound3D_ClampVolume(volume - 800);
+				//soundBuff->SetVolume(Sound3D_ScaleByGlobalVolume(volume));
+
+				soundBuff->SetVolume(Sound3D_GetFinalBufferVolume(sound, sound->voice));
 			}
 
 			sound3DBuff->SetMinDistance( sound3DGlobs.minDistanceForAttentuation, DS3D_DEFERRED );
@@ -540,21 +629,40 @@ void __cdecl Gods98::Sound3D_SetBufferVolume(sint32 handle, sint32 newvolume)
 {
 	log_firstcall();
 
-	IDirectSoundBuffer* soundBuff;
-	Sound3D_SoundData* sound;
-	sound = &sound3DGlobs.soundTable[handle];
+	Sound3D_SoundData* sound = &sound3DGlobs.soundTable[handle];
 	sound->volume = (Sound3D_CheckVolumeLimits(newvolume) ? newvolume : 0);
-	// Now set the volume to the buffer
+	// Erase the normal sound volume reduction before applying the new volume.
 	if (sound->flags & Sound3DFlags::SOUND3D_FLAG_MULTI) {
-		for (uint32 i=0; i<SOUND3D_MAXSIMULTANEOUS; i++) {
-			if (soundBuff=sound->lpDsb3D[i]) {
-				soundBuff->SetVolume(sound->volume);
+		for (uint32 i = 0; i < SOUND3D_MAXSIMULTANEOUS; i++) {
+			if (sound->lpDsb3D[i]) {
+				Sound3D_SetNormalPlayFlag(sound->flags, i, false);
 			}
 		}
-	} else if (soundBuff=sound->lpDsb3D[0]) {
-		soundBuff->SetVolume(sound->volume);
+	}
+	else if (sound->lpDsb3D[0]) {
+		Sound3D_SetNormalPlayFlag(sound->flags, 0, false);
+	}
+	Sound3D_UpdateBufferVolume(handle);
+}
+
+
+void Gods98::Sound3D_UpdateBufferVolume(sint32 handle)
+{
+	IDirectSoundBuffer* soundBuff;
+	Sound3D_SoundData* sound = &sound3DGlobs.soundTable[handle];
+	// Now set the volume to the buffer
+	if (sound->flags & Sound3DFlags::SOUND3D_FLAG_MULTI) {
+		for (uint32 i = 0; i < SOUND3D_MAXSIMULTANEOUS; i++) {
+			if (soundBuff = sound->lpDsb3D[i]) {
+				soundBuff->SetVolume(Sound3D_GetFinalBufferVolume(sound, i));
+			}
+		}
+	}
+	else if (soundBuff = sound->lpDsb3D[0]) {
+		soundBuff->SetVolume(Sound3D_GetFinalBufferVolume(sound, 0));
 	}
 }
+
 
 // <LegoRR.exe @0047b390>
 sint32 __cdecl Gods98::Sound3D_GetBufferVolume(sint32 handle)
@@ -869,8 +977,24 @@ void __cdecl Gods98::Sound3D_SetGlobalVolume(sint32 vol)
 		if( Sound3D_CheckVolumeLimits(vol) )
 		{
 			sound3DGlobs.volume = vol;
+			_sound3DRealGlobalVolume = Sound3D_VolumeToReal(vol); // Cache real volume for faster calculations.
 
-			lpDSBuff()->SetVolume( vol );
+			// Update volume for all non-streaming sounds:
+			for (uint32 i = 0; i < SOUND3D_MAXSAMPLES; i++) {
+				if (sound3DGlobs.soundTable[i].flags & Sound3DFlags::SOUND3D_FLAG_USED) {
+					Sound3D_UpdateBufferVolume(i);
+				}
+			}
+
+			// Update volume for non-looping and looping streams:
+			if (lpDSStreamBuff(false)) {
+				lpDSStreamBuff(false)->SetVolume(Sound3D_ScaleByGlobalVolume(_sound3DStreamVolume));
+			}
+			if (lpDSStreamBuff(true)) {
+				lpDSStreamBuff(true)->SetVolume(Sound3D_ScaleByGlobalVolume(_sound3DLoopStreamVolume));
+			}
+
+			//lpDSBuff()->SetVolume( vol );
 
 			//if( sound3DGlobs.streamData.playing && sound3DGlobs.streamData.fileOpen )
 			//	lpDSStreamBuff()->SetVolume( vol );
@@ -890,6 +1014,7 @@ void __cdecl Gods98::Sound3D_SetGlobalVolumePrescaled(sint32 vol)
 	if (vol < 0 || vol > 10) return;
 
 	Sound3D_SetGlobalVolume(c_SetGlobalVolumePrescaled_realVol[vol]);
+	//Sound3D_SetGlobalVolumeReal((real32)vol / 10.0f);
 }
 
 // <LegoRR.exe @0047b810>
@@ -900,9 +1025,14 @@ void __cdecl Gods98::Sound3D_SetVolumeToDefault(void)
 	if( Sound3D_Initialised() )
 	{
 		static_assert(SOUND3D_DEFAULTSOUNDVOLUME == -300, "SOUND3D_DEFAULTSOUNDVOLUME does not match that of LegoRR");
-		sound3DGlobs.volume = SOUND3D_DEFAULTSOUNDVOLUME;
 
-		lpDSBuff()->SetVolume( SOUND3D_DEFAULTSOUNDVOLUME );
+		/// NOTE: Originally -300, but because music is still scaled by the mixer volume,
+		///        we should set it to Max to remain like it used to sound together with music.
+		Sound3D_SetGlobalVolume(Sound3D_MaxVolume());
+
+		//sound3DGlobs.volume = SOUND3D_DEFAULTSOUNDVOLUME;
+
+		//lpDSBuff()->SetVolume( SOUND3D_DEFAULTSOUNDVOLUME );
 
 		//if( sound3DGlobs.streamData.playing && sound3DGlobs.streamData.fileOpen )
 		//	lpDSStreamBuff()->SetVolume( SOUND3D_DEFAULTSOUNDVOLUME );
@@ -1104,6 +1234,10 @@ bool32 __cdecl Gods98::Sound3D_Stream_Play(const char* fName, bool32 loop, sint3
 	if (loop) streamData = &sound3DGlobs.loopStreamData;
 	else streamData = &sound3DGlobs.streamData;
 
+	// Store volume so that we can scale it when the global volume is changed.
+	if (loop) _sound3DLoopStreamVolume = volume;
+	else      _sound3DStreamVolume     = volume;
+
 	if (streamData->playing || streamData->fileOpen) Sound3D_Stream_Stop(loop);
 
 	if (Sound3D_Stream_BufferSetup(fName, loop, volume)) {
@@ -1141,6 +1275,10 @@ bool32 __cdecl Gods98::Sound3D_Stream_Stop(bool32 looping)
 		lpDSStreamBuff(looping)->Stop();
 		WaveCloseReadFile(&streamData->wiWave.hmmio, &streamData->wiWave.pwfx);
 		lpDSStreamBuff(looping)->Release();
+
+		/// SANITY: Set to nullptr so we can properly check for existence.
+		if (looping) sound3DGlobs.lpDSLoopStreamBuff = nullptr;
+		else         sound3DGlobs.lpDSStreamBuff     = nullptr;
 
 		streamData->fileOpen = false;
 	}
@@ -1215,7 +1353,7 @@ bool32 __cdecl Gods98::Sound3D_Stream_BufferSetup(const char* waveFName, bool32 
 
 	}
 
-	lpDSStreamBuff(loop)->SetVolume(volume);
+	lpDSStreamBuff(loop)->SetVolume(Sound3D_ScaleByGlobalVolume(volume));
 			
     streamData->wiWave.bFoundEnd = false;
 	streamData->wiWave.dwNextWriteOffset = 0;
