@@ -96,6 +96,8 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 	char Button_buffer[128];
 	char* ProgressWindow_stringParts[10];
 
+	const uint32 loadStartTime = Gods98::Main_GetTime();
+
 	legoGlobs.DragBoxRGB = ColourRGBF { 0.2f, 0.7f, 1.0f }; // { 51, 178.5, 255 }
 
 	SurfaceType_RegisterName(Lego_SurfaceType_Tunnel);
@@ -789,6 +791,8 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		/// CUSTOM: Track completion of Lego_Initialise, so that we know what modifications can be made to global variables.
 		legoGlobs2.legoInit = true;
 
+		const uint32 loadTime = Gods98::Main_GetTime() - loadStartTime;
+		Error_InfoF("Loading took %.03f seconds", (double)loadTime/1000.0);
 
 		const char* startLevelName;
 		/// ALTERATION: allow -startlevel command line option to ALWAYS boot directly into a level.

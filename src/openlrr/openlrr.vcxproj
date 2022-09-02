@@ -102,6 +102,7 @@
       <ConformanceMode>true</ConformanceMode>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,6 +128,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_WINDOWS;_USRDLL;_GODS98COMPILE;_GODS98_USEWAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -175,6 +177,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\resources\resource.h" />
+    <ClInclude Include="cmdline\CLGen.h" />
+    <ClInclude Include="cmdline\CommandLine.hpp" />
     <ClInclude Include="common.h" />
     <ClInclude Include="dllmain.h" />
     <ClInclude Include="engine\audio\3DSound.h" />
@@ -306,6 +310,8 @@
     <None Include="game\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cmdline\CLGen.cpp" />
+    <ClCompile Include="cmdline\CommandLine.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="engine\audio\3DSound.cpp" />
     <ClCompile Include="engine\audio\Sound.cpp" />

@@ -8,6 +8,9 @@
 
 #include "geometry.h"
 
+#include "../cmdline/CLGen.h"
+#include "../cmdline/CommandLine.hpp"
+
 #include "audio/Sound.h"
 #include "video/Animation.h"
 #include "core/Config.h"
@@ -52,6 +55,15 @@ namespace Gods98
 }
 #pragma endregion
 
+/**********************************************************************************
+ ******** Constants
+ **********************************************************************************/
+
+#pragma region Constants
+
+#define MAIN_PRODUCTREGISTRY	"SOFTWARE\\LEGO Media\\Games\\Rock Raiders"
+
+#pragma endregion
 
 /**********************************************************************************
  ******** Globals
@@ -63,6 +75,12 @@ namespace Gods98
 Gods98::Main_Globs & Gods98::mainGlobs = *(Gods98::Main_Globs*)0x00506800;
 
 Gods98::Main_Globs2 Gods98::mainGlobs2 = { 0 };
+
+Gods98::Main_CommandLineOptions Gods98::mainOptions = Gods98::Main_CommandLineOptions();
+
+// Visual styles with dll: <https://stackoverflow.com/a/25271493/7517185>
+static HANDLE visualStyles_hActCtx = INVALID_HANDLE_VALUE;
+static ULONG_PTR visualStyles_cookie = 0;
 
 #pragma endregion
 
@@ -342,23 +360,186 @@ sint32 __cdecl Gods98::noinline(appHeight)(void)
 }
 
 
+/// CUSTOM: Run before OpenLRR initialisation to perform command line parsing and initial setup.
+bool Gods98::Main_Initialise(_In_ HINSTANCE hInstanceDll,
+							 _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
+							 _In_ LPSTR     lpCmdLine, _In_     sint32    nCmdShow)
+{
+	log_firstcall();
+
+	//bool32 setup = false, nosound = false, insistOnCD = false;
+	const char* productName = nullptr;
+	const char* productRegistry = nullptr;
+
+	// <https://docs.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-getcommandlinea>
+	// From MS Docs: `LPSTR GetCommandLineA();`
+	//  "The lifetime of the returned value is managed by the system,
+	//   applications should not free or modify this value."
+	//
+	//  ...good GODS, what have they done!??
+	/// FIX LEGORR: Create a copy of string returned by `::GetCommandLineA();`
+	///  (replaces `::GetCommandLineA();` with variable `getCL`, and frees memory when done)
+	char* getCL = Util_StrCpy(::GetCommandLineA());
+	char* cl;
+	char* s;
+	for (s = cl = getCL; *cl != '\0'; cl++) {
+		if (*cl == '\\') s = cl+1;		// Find the last backslash.
+	}
+	std::strcpy(mainGlobs.programName, s);
+
+	// zero-out double quote '\"' characters (hopefully it's impossible for it to start with a quote character)
+	for (s = mainGlobs.programName; *s != '\0'; s++) {
+		if (*s == '"') *s = '\0';		// Terminate at any '"'.
+	}
+	// find the last '.' for file extension
+	for (s = cl = mainGlobs.programName; *cl != '\0'; cl++) {
+		if (*cl == '.') s = cl+1;	// Find the last dot.
+	}
+
+	if (s != mainGlobs.programName) {
+		// separate executable name from extension,
+		// this name without extension will be the basis for many constant lookups
+		::_strupr(s);																	// Ensure .exe is in upper case.
+		if (s = std::strstr(mainGlobs.programName, ".EXE")) *s = '\0';					// Strip off .EXE
+
+		/// OPENLRR TEMP: Use the '-' as a separator for the base exe name
+		if (s = std::strstr(mainGlobs.programName, "-")) *s = '\0';					// Strip off '-'
+	}
+	Mem_Free(getCL); // no longer used
+
+
+	/// OLD LEGORR: Product mutex name was hardcoded to this:
+	productName = MUTEX_NAME; // "Lego Rock Raiders";
+	/// NEW GODS98: Mutex setup is called later than in LegoRR
+	//productName = mainGlobs.programName;
+	productRegistry = MAIN_PRODUCTREGISTRY;
+
+	/// NEW GODS98: Not called in LegoRR WinMain
+	// Moved after mutex check, so we wont't need to call ::CoUninitialize() there.
+	::CoInitialize(nullptr);
+
+	//HANDLE hActCtx;
+	ACTCTX actCtx;
+	std::memset(&actCtx, 0, sizeof(actCtx));
+	actCtx.cbSize = sizeof(actCtx);
+	actCtx.hModule = hInstanceDll;
+	actCtx.lpResourceName = MAKEINTRESOURCE(1); // Manifest resource file
+	actCtx.dwFlags = ACTCTX_FLAG_HMODULE_VALID | ACTCTX_FLAG_RESOURCE_NAME_VALID;
+
+	// Enable manifest visual styles (which can't be turned on normally from a dll).
+	visualStyles_hActCtx = ::CreateActCtxA(&actCtx);
+	if (visualStyles_hActCtx != INVALID_HANDLE_VALUE) {
+		::ActivateActCtx(visualStyles_hActCtx, &visualStyles_cookie);
+	}
+
+
+	// Setup the default globals
+	mainGlobs.className = mainGlobs.programName;
+	mainGlobs.active = false;
+	mainGlobs.exit = false;
+	mainGlobs.stateSet = false;
+	mainGlobs.hInst = hInstance;
+	mainGlobs.fixedFrameTiming = 0.0f;
+	mainGlobs.flags = MainFlags::MAIN_FLAG_NONE;
+	mainGlobs2.windowScale = 1;
+
+	// Define default command line settings:
+	//mainOptions.menu = true;
+	//mainOptions.log = false;
+	mainGlobs.flags |= MainFlags::MAIN_FLAG_WINDOW; // Windowed selected in Mode Selection dialog by default.
+
+	/// NEW GODS98: Not present in LegoRR.exe
+//	//mainGlobs.flags |= MainFlags::MAIN_FLAG_BEST;
+	//mainGlobs.flags |= MainFlags::MAIN_FLAG_DUALMOUSE;
+
+	// Handle command line arguments
+	{
+		mainOptions.arguments.clear();
+
+		// Split the passed command line arguments.
+		// The command line arguments have the program name, parse and skip it.
+		// lpCmdLine DOES NOT include the program name argument.
+		CommandLine::SplitArguments(lpCmdLine, mainOptions.arguments, false);// true, true);
+
+		if (!mainOptions.arguments.empty() && CommandLine::ArgumentEquals(mainOptions.arguments[0], "clgen")) {
+			CLGen::CLGen_WinMain(hInstanceDll, hPrevInstance, lpCmdLine, nCmdShow);
+			return false;
+		}
+
+		/// OPENLRR CUSTOM: Option to disable StandardParameters
+		// We need to parse this early.
+		// Usage: -noclgen
+		mainOptions.noCLGen = CommandLine::FindOption(mainOptions.arguments, "-noclgen");
+
+		// Usage: -cl <presetname>
+		// Manually specify a configuration for command line options using the existing CLGen.dat format.
+		std::string param;
+		if (CommandLine::FindParameter(mainOptions.arguments, "-cl", param)) {
+			mainOptions.noCLGen = true;
+			mainOptions.clgenName = param;
+
+			if (CLGen::CLGen_Open(CLGEN_FILENAME)) {
+				for (uint32 i = 0; i < CLGen::CLGen_GetPresetCount(); i++) {
+					const CLGen::CLGen_Preset* preset = CLGen::CLGen_GetPreset(i);
+					if (CommandLine::ArgumentEquals(preset->displayName, mainOptions.clgenName.value())) {
+
+						// Append these arguments at the end of our existing command line arguments.
+						CommandLine::SplitArguments(preset->options, mainOptions.arguments, false);
+						break;
+					}
+				}
+				CLGen::CLGen_Close();
+			}
+		}
+		else {
+			char clgenCmdLine[4096] = { '\0' }; // dummy init
+			if (!mainOptions.noCLGen.value_or(false) &&
+				Registry_GetValue(productRegistry, "StandardParameters", RegistryValue::String, clgenCmdLine, sizeof(clgenCmdLine)))
+			{
+				// Append these arguments at the end of our existing command line arguments.
+				CommandLine::SplitArguments(clgenCmdLine, mainOptions.arguments, false);
+			}
+		}
+
+		// Parse and process all command line arguments.
+		Main_ParseCommandLineOptions();
+	}
+
+	// OpenLRR: This might be handy later on
+	//	if (Util_StrIStr(lpCmdLine, "-setup")) setup = true;
+
+
+	if (mainOptions.noInstance.value_or(false)) {
+		char mutexName[128];
+		std::sprintf(mutexName, "%s Mutex", productName);
+		::CreateMutexA(nullptr, true, mutexName);
+		if (::GetLastError() == ERROR_ALREADY_EXISTS) {
+			::MessageBoxA(nullptr, "Another instance of OpenLRR is already running", nullptr, MB_OK);
+			return false;  // App is already running
+		}
+	}
+
+	return true;
+}
+
 // <LegoRR.exe @00477a60>
 sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 							          _In_ LPSTR     lpCmdLine, _In_     sint32    nCmdShow)
 {
 	log_firstcall();
 
-	bool32 setup = false, nosound = false, insistOnCD = false;
+	bool32 setup = false; // , nosound = false, insistOnCD = false;
 	const char* productName = nullptr;
 	const char* productRegistry = nullptr;
-	char mutexName[128];
 	char noHALMsg[1024];
 
+#if false
+	char mutexName[128];
 
 	/// OLD LEGORR: Mutex setup is called at the very beginning in LegoRR
 	///  (but it's essential to be the first here)
 	/*productName = "Lego Rock Raiders";
-	productRegistry = "SOFTWARE\\LEGO Media\\Games\\Rock Raiders";
+	productRegistry = MAIN_PRODUCTREGISTRY;
 
 	if (productName) { // this is never false
 		std::sprintf(mutexName, "%s Mutex", productName);
@@ -388,7 +569,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 	char* getCL = Util_StrCpy(::GetCommandLineA());
 	char* cl;
 	char* s;
-	for (s=cl= ::GetCommandLineA() ; *cl!='\0' ; cl++) if (*cl == '\\') s = cl+1;		// Find the last backslash.
+	for (s=cl= getCL ; *cl!='\0' ; cl++) if (*cl == '\\') s = cl+1;		// Find the last backslash.
 	std::strcpy(mainGlobs.programName, s);
 
 	// zero-out double quote '\"' characters (hopefully it's impossible for it to start with a quote character)
@@ -412,7 +593,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 	productName = MUTEX_NAME; // "Lego Rock Raiders";
 	/// NEW GODS98: Mutex setup is called later than in LegoRR
 	//productName = mainGlobs.programName;
-	productRegistry = "SOFTWARE\\LEGO Media\\Games\\Rock Raiders";
+	productRegistry = MAIN_PRODUCTREGISTRY;
 
 	if (productName) { // this realistically shoudn't ever be false
 		std::sprintf(mutexName, "%s Mutex", productName);
@@ -421,11 +602,6 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 			return 0;  // App is already running
 		}
 	}
-
-
-	/// NEW GODS98: Not called in LegoRR WinMain
-	// Moved after mutex check, so we wont't need to call ::CoUninitialize() there.
-	::CoInitialize(nullptr);
 
 
 	// Setup the default globals
@@ -437,7 +613,20 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 	mainGlobs.fixedFrameTiming = 0.0f;
 	mainGlobs.flags = MainFlags::MAIN_FLAG_NONE;
 	mainGlobs2.windowScale = 1;
+#endif
 
+	/// OLD LEGORR: Product mutex name was hardcoded to this:
+	productName = MUTEX_NAME; // "Lego Rock Raiders";
+	/// NEW GODS98: Mutex setup is called later than in LegoRR
+	//productName = mainGlobs.programName;
+	productRegistry = MAIN_PRODUCTREGISTRY;
+
+
+	/// NEW GODS98: Not called in LegoRR WinMain
+	// Moved after mutex check, so we wont't need to call ::CoUninitialize() there.
+	//::CoInitialize(nullptr);
+
+#if false
 	{
 		char commandLine[1024];
 		char tempStr[1024];
@@ -451,6 +640,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 		//mainGlobs.flags |= MainFlags::MAIN_FLAG_DUALMOUSE;
 		Main_ParseCommandLine(commandLine, &nosound, &insistOnCD);
 	}
+#endif
 
 	if (!Registry_GetValue(productRegistry, "NoHALMessage", RegistryValue::String, noHALMsg, sizeof(noHALMsg))) {
 		std::sprintf(noHALMsg, "No DirectX 3D accelerator could be found.");
@@ -462,13 +652,17 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 
 	/// OPENLRR TEMP: Heavier measures against OpenLRR-named executables causing crashes from WAD load failures
 	const char* wadProgramName = "LegoRR";
-	if (::_stricmp(mainGlobs.programName, "OpenLRR") != 0 &&
-		::_stricmp(mainGlobs.programName, "OpenLRR-d") != 0)
-	{
-		// Only use the executable name when not "OpenLRR(-d)". This is a terrible solution...
-		wadProgramName = mainGlobs.programName;
-	}
-	File_Initialise(wadProgramName, insistOnCD, productRegistry);
+	if (mainOptions.wadName.has_value()) wadProgramName = mainOptions.wadName->c_str();
+
+	// Initialise to default directories before setting up file system.
+	// This can be better-handled once we decide to stop using the native fileGlobs memory.
+	if (mainOptions.dataDir.has_value()) File_SetDataDir(mainOptions.dataDir.value());
+	if (mainOptions.wadDir.has_value()) File_SetWadDir(mainOptions.wadDir.value());
+	File_SetDataPriority(mainOptions.dataFirst.value_or(false));
+	File_SetWadsEnabled(!mainOptions.noWads.value_or(false));
+	File_SetCDEnabled(!mainOptions.noCD.value_or(false));
+
+	File_Initialise(wadProgramName, mainOptions.insistOnCD.value_or(false), productRegistry);
 
 	Config_Initialise();
 	/// OLD LEGORR: This is called earlier than in Gods98
@@ -487,7 +681,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 
 	if (Main_InitApp(hInstance)) {
 		DirectDraw_Initialise(mainGlobs.hWnd);
-		if (Sound_Initialise(nosound) &&
+		if (Sound_Initialise(mainOptions.noSound.value_or(false)) &&
 			Init_Initialise(setup /*true in LegoRR*/,
 							mainGlobs.flags & MainFlags::MAIN_FLAG_DEBUGMODE,
 							mainGlobs.flags & MainFlags::MAIN_FLAG_BEST,
@@ -655,6 +849,14 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 
 	Error_Shutdown();
 
+	if (visualStyles_hActCtx != INVALID_HANDLE_VALUE) {
+		// Turn off visual styles
+		::DeactivateActCtx(0, visualStyles_cookie);
+		::ReleaseActCtx(visualStyles_hActCtx);
+		visualStyles_hActCtx = INVALID_HANDLE_VALUE;
+		visualStyles_cookie = 0;
+	}
+
 	/// NEW GODS98: Not called in LegoRR WinMain
 	::CoUninitialize();
 
@@ -669,6 +871,346 @@ void __cdecl Gods98::Main_Exit(void)
 	///  called here either, making Main_Exit an inline alias for `std::exit(0);`
 	::CoUninitialize();
 	std::exit(0);
+}
+
+
+/// CUSTOM:
+void Gods98::Main_ParseCommandLineOptions()
+{
+	using namespace CommandLine;
+
+	const std::vector<std::string>& args = mainOptions.arguments; // Shorthand name
+
+	std::string param;
+	//std::vector<std::string> params;
+
+	if (FindOption(args, "-insistOnCD")) mainOptions.insistOnCD = true;
+	if (FindOption(args, "-nosound")) mainOptions.noSound = true;
+
+
+	// Debug options:
+	if (FindOption(args, "-debug")) {
+		mainGlobs.flags |= MainFlags::MAIN_FLAG_DEBUGMODE;
+	}
+	if (FindOption(args, "-debugcomplete")) {
+		/// REFACTOR: Instead of automatically including `-debug` due to how arguments *were* searched for,
+		///           Add the flag manually for this option.
+		mainGlobs.flags |= MainFlags::MAIN_FLAG_DEBUGMODE;
+		mainGlobs.flags |= MainFlags::MAIN_FLAG_DEBUGCOMPLETE;
+	}
+	if (FindOption(args, "-testercall")) {
+		mainGlobs.flags |= MainFlags::MAIN_FLAG_TESTERCALL;
+		mainGlobs.programmerLevel = 2;
+	}
+	if (FindOption(args, "-testlevels")) mainGlobs.flags |= MainFlags::MAIN_FLAG_LEVELSOPEN;
+	if (FindOption(args, "-showversion")) mainGlobs.flags |= MainFlags::MAIN_FLAG_SHOWVERSION;
+
+	// Window options:
+	if (FindOption(args, "-best")) mainGlobs.flags |= MainFlags::MAIN_FLAG_BEST;
+	if (FindOption(args, "-window")) mainGlobs.flags |= MainFlags::MAIN_FLAG_WINDOW;
+	if (FindOption(args, "-fullscreen")) mainGlobs.flags &= ~MainFlags::MAIN_FLAG_WINDOW;
+
+	if (FindOption(args, "-dualmouse")) mainGlobs.flags |= MainFlags::MAIN_FLAG_DUALMOUSE;
+	if (FindOption(args, "-nodualmouse")) mainGlobs.flags &= ~MainFlags::MAIN_FLAG_DUALMOUSE;
+
+	// Graphics handling options:
+	if (FindOption(args, "-nm")) mainGlobs.flags |= MainFlags::MAIN_FLAG_DONTMANAGETEXTURES;
+	if (FindOption(args, "-ftm")) mainGlobs.flags |= MainFlags::MAIN_FLAG_FORCETEXTUREMANAGEMENT;
+	if (FindOption(args, "-fvf")) mainGlobs.flags |= MainFlags::MAIN_FLAG_FORCEVERTEXFOG;
+
+	// Reduce resource options:
+	if (FindOption(args, "-reduceanimation")) mainGlobs.flags |= MainFlags::MAIN_FLAG_REDUCEANIMATION;
+	if (FindOption(args, "-reduceflics")) mainGlobs.flags |= MainFlags::MAIN_FLAG_REDUCEFLICS;
+	if (FindOption(args, "-reduceimages")) mainGlobs.flags |= MainFlags::MAIN_FLAG_REDUCEIMAGES;
+	if (FindOption(args, "-reducepromeshes")) mainGlobs.flags |= MainFlags::MAIN_FLAG_REDUCEPROMESHES;
+	if (FindOption(args, "-reducesamples")) mainGlobs.flags |= MainFlags::MAIN_FLAG_REDUCESAMPLES;
+
+
+	// Usage: -cleansaves
+	// Set this to cause reinitialisation of the save games.
+	if (FindOption(args, "-cleansaves")) mainGlobs.flags |= MainFlags::MAIN_FLAG_CLEANSAVES;
+	
+
+#ifdef CONFIG_DEVELOPMENTMODE
+
+	if (FindOption(args, "-langdump")) mainGlobs.flags |= MainFlags::MAIN_FLAG_LANGDUMPUNKNOWN;
+
+	if (FindParameter(args, "-langsuffix", param)) {
+		std::strcpy(mainGlobs.languageName, param.c_str());
+		mainGlobs.flags |= MainFlags::MAIN_FLAG_SAVELANGFILE;
+	}
+
+	{
+		const char* langTable[NUM_LANG] = {
+			"040c-french", "0007-german", "000a-spanish", "0010-italian",
+			"0013-dutch", "0006-danish", "001d-swedish", "0014-norwegian"
+		};
+
+		fileGlobs.langCheck = false;
+		char langDir[128];
+		std::memset(fileGlobs.langDir, 0, _MAX_PATH);
+
+		for (uint32 i = 0; i < _countof(langTable); i++) {
+			//const char* lp = langTable[i] + 5; // start after the "XXXX-"
+			//char langLine[30];
+			// i.e. "-french"
+			//std::sprintf(langLine, "-%s", lp);
+			auto langLine = std::string(lp).insert(0, 1, '-');
+			//auto langLine = std::string(langTable[i]).substr(5).insert(0, 1, '-');
+			if (FindOption(args, langLine)) {
+				// i.e. "languages\\040c-french"
+				//      "@languages\\040c-french\\french"
+				std::sprintf(fileGlobs.langDir, "languages\\%s", langTable[i]);
+				std::sprintf(langDir, "@languages\\%s\\%s", langTable[i], lp);
+				fileGlobs.langCheck = true;
+			}
+		}
+
+		if (fileGlobs.langCheck) {
+			char temp[128];
+			std::sprintf(temp, "%s.new.lang", langDir);
+			Config_SetLanguageDatabase(temp);
+			std::sprintf(temp, "%s.cct", langDir);
+			Config_SetCharacterTable(temp);
+		}
+	}
+
+	if (FindParameter(args, "-langfile", param)) {
+		Config_SetLanguageDatabase(param.c_str());
+	}
+	if (FindParameter(args, "-CharTable", param)) {
+		Config_SetCharacterTable(param.c_str());
+	}
+	if (FindParameter(args, "-charconvertfile", param)) {
+		Config_SetCharacterConvertFile(param.c_str());
+	}
+#endif // CONFIG_DEVELOPMENTMODE
+
+
+	// Usage: -startlevel <Levels::Name>
+	if (FindParameter(args, "-startlevel", param)) {
+		std::strcpy(mainGlobs.startLevel, param.c_str());
+
+		mainGlobs.flags |= MainFlags::MAIN_FLAG_STARTLEVEL;
+	}
+
+	// Usage: -flags <decnumber>
+	// Usage: -flags 0x<hexnumber>
+	if (FindParameter(args, "-flags", param)) {
+		if (param.length() >= 1 && param[0] == '-') {
+			// Signed decimal, allow shortcut like "-1" for all flags.
+			mainGlobs.clFlags = static_cast<MainCLFlags>(std::atoi(param.c_str()));
+		}
+		else if (param.length() >= 2 && param[0] == '0' && std::tolower(param[1]) == 'x') {
+			// Unsigned hex.
+			mainGlobs.clFlags = static_cast<MainCLFlags>(std::strtoul(param.c_str() + 2, nullptr, 16));
+		}
+		else {
+			// Unsigned decimal.
+			mainGlobs.clFlags = static_cast<MainCLFlags>(std::strtoul(param.c_str(), nullptr, 10));
+		}
+	}
+
+	// Usage: -fpslock <framerate>
+	if (FindParameter(args, "-fpslock", param)) {
+		uint32 fps = static_cast<uint32>(std::max(0, std::atoi(param.c_str())));
+		if (fps != 0) {
+			mainGlobs.fixedFrameTiming = STANDARD_FRAMERATE / (real32)fps;
+		}
+	}
+
+	// Usage: -programmer [level=1]
+	if (FindParameter(args, "-programmer", param)) {
+		mainGlobs.programmerLevel = static_cast<uint32>(std::max(0, std::atoi(param.c_str())));
+		if (mainGlobs.programmerLevel == 0)
+			mainGlobs.programmerLevel = 1; // Default level if number isn't specified.
+	}
+	else {
+		mainGlobs.programmerLevel = 0;
+	}
+
+
+	/// LRRCE: Custom commandline options used by Community Edition.
+	// Usage: -res <W>x<H>
+	// Usage: -res <W>,<H>
+	// Change the resolution of the game.
+	// Note that support for this is not guaranteed. Things likely will break.
+	if (FindParameter(args, "-res", param)) {
+		// Valid separators: 'x', 'X', or ','
+		size_t idx = param.find('x');
+		if (idx == std::string::npos) idx = param.find('X');
+		if (idx == std::string::npos) idx = param.find(',');
+		if (idx != std::string::npos) {
+
+			mainOptions.res = Size2U {
+				static_cast<uint32>(std::max(0, std::atoi(param.substr(0, idx).c_str()))),
+				static_cast<uint32>(std::max(0, std::atoi(param.substr(idx + 1).c_str()))),
+			};
+
+			if (mainOptions.res->width == 0 || mainOptions.res->height == 0) {
+				mainOptions.res = std::nullopt;
+			}
+		}
+	}
+
+	// Usage: -pos <X>,<Y>
+	// Change the X,Y position of the window on startup.
+	if (FindParameter(args, "-pos", param)) {
+		// Valid separators: ','
+		size_t idx = param.find(',');
+		if (idx != std::string::npos) {
+
+			mainOptions.pos = Point2I {
+				std::atoi(param.substr(0, idx).c_str()),
+				std::atoi(param.substr(idx + 1).c_str()),
+			};
+
+			//if (mainOptions.pos->x == 0 || mainOptions.pos->y == 0) {
+			//	mainOptions.pos = std::nullopt; // non-zero values are treated as disabled
+			//}
+		}
+	}
+
+	// Usage: -bpp <bitdepth>
+	// Change the bit depth used for mode selection during game startup.
+	// Valid options: 8, 16, 24, 32
+	// Note that support for this is not guaranteed. Things WILL break.
+	if (FindParameter(args, "-bpp", param)) {
+		mainOptions.bitDepth = static_cast<uint32>(std::max(0, std::atoi(param.c_str())));
+
+		if (*mainOptions.bitDepth != 8  && *mainOptions.bitDepth != 16 &&
+			*mainOptions.bitDepth != 24 && *mainOptions.bitDepth != 32)
+		{
+			mainOptions.bitDepth = std::nullopt; // Invalid bit depths are disabled
+		}
+	}
+
+	// Usage: -datadir <directory>
+	// Change the folder where loose Data files are searched for. This replaces the "Data" folder name.
+	// i.e -datadir "C:\OpenLRR\GameFiles" will look for "C:\OpenLRR\GameFiles\Lego.cfg".
+	if (FindParameter(args, "-datadir", param)) {
+		if (!param.empty()) {
+			// Strip trailing slash
+			if (param.back() == '/' || param.back() == '\\') {
+				param = param.substr(0, param.length() - 1);
+			}
+
+			mainOptions.dataDir = param;
+		}
+	}
+	// Usage: -waddir <directory>
+	// Change the folder where WAD files are searched for.
+	if (FindParameter(args, "-waddir", param) && !param.empty()) {
+		// Strip trailing slash
+		if (param.back() == '/' || param.back() == '\\') {
+			param = param.substr(0, param.length() - 1);
+		}
+
+		mainOptions.wadDir = param;
+	}
+
+	// Check for this command first, so that -wadname and -gamename can have priority,
+	// Usage: -name <name>
+	// A shorthand for using both the -wadname and -gamename options seen below.
+	if (FindParameter(args, "-name", param) && !param.empty()) {
+		mainOptions.wadName = param;
+		mainOptions.gameName = param;
+	}
+	// Usage: -wadname <name>
+	// Changes the name used to look for WAD files with.
+	if (FindParameter(args, "-wadname", param)) {
+		mainOptions.wadName = param;
+	}
+	// Usage: -gamename <Legoname>
+	// Changes the root property name used in Lego.cfg lookup. Name should ALWAYS start with "Lego".
+	// Includes all CFG-like files: .cfg, .ae, .ol, .ptl
+	if (FindParameter(args, "-gamename", param) && !param.empty()) {
+		mainOptions.gameName = param;
+	}
+
+	// Usage: -scale <number>
+	// Changes integer scaling of the window.
+	// i.e. -scale 2 creates a window that is twice as large as the game resolution.
+	if (FindParameter(args, "-scale", param)) {
+		mainGlobs2.windowScale = static_cast<uint32>(std::max(0, std::atoi(param.c_str())));
+	}
+	if (mainGlobs2.windowScale <= 0)
+		mainGlobs2.windowScale = 1; // Default scale. Whether invalid or command not used.
+
+
+	// usage: -noCD
+	// usage: -useCD
+	// Disable checking for files on the CD (requires that necessary Data files are stored locally).
+	if (FindOption(args, "-noCD")) mainOptions.noCD = true;
+	if (FindOption(args, "-useCD")) mainOptions.noCD = false;
+	// usage: -nowad
+	// usage: -isewad
+	// Disable checking for files in WAD files (all required files must be extracted to the Data directory).
+	if (FindOption(args, "-nowad")) mainOptions.noWads = true;
+	if (FindOption(args, "-usewad")) mainOptions.noWads = false;
+
+	// Usage: -datafirst
+	// Usage: -wadfirst
+	// Loose Data files will be loaded before those found in WAD files.
+	// Useful for when only a handful of files need to be modified, while all others are unchanged.
+	if (FindOption(args, "-datafirst")) mainOptions.dataFirst = true;
+	if (FindOption(args, "-wadfirst")) mainOptions.dataFirst = false;
+
+	// Usage: -log
+	// Usage: -nolog
+	// The Console log window will start showing or hidden.
+	if (FindOption(args, "-log")) mainOptions.log = true;
+	if (FindOption(args, "-nolog")) mainOptions.log = false;
+
+	// Usage: -menu
+	// Usage: -nomenu
+	// The System menu bar will start showing or hidden.
+	if (FindOption(args, "-menu")) mainOptions.menu = true;
+	if (FindOption(args, "-nomenu")) mainOptions.menu = false;
+
+	// Usage: -nointro
+	// Splash videos and images will not display at all on startup (rather than displaying but always being skippable).
+	if (FindOption(args, "-nointro")) mainOptions.noIntro = true;
+	// Usage: -novideo
+	// Disables non-startup videos like level intros and the end-game outro.
+	if (FindOption(args, "-novideo")) mainOptions.noVideo = true;
+	// Usage: -noskip
+	// Disables the ability to skip normally-unskippable videos.
+	if (FindOption(args, "-noskip")) mainOptions.noSkip = true;
+
+
+	// Usage: -nomutex
+	// Multiple instances of OpenLRR will be allowed to run at the same time.
+	if (FindOption(args, "-noinstance")) mainOptions.noInstance = true;
+
+
+	// Usage: -loglevels nodebug,notrace,noinfo,warn,fatal
+	// Turn on or off individual levels of logging.
+	if (FindParameter(args, "-loglevels", param) && !param.empty()) {
+		size_t start = 0;
+		size_t end = 0; // dummy init
+		do {
+			end = param.find(',', start);
+
+			std::string logType = param.substr(start, std::min(end, param.length()));
+
+			// Check for the "no" (off) prefix.
+			const bool on = !ArgumentStartsWith(logType, "no");
+			if (!on) logType = logType.substr(2);
+
+			if (ArgumentEquals(logType, "debug")) Error_SetDebugVisible(on);
+			if (ArgumentEquals(logType, "trace")) Error_SetTraceVisible(on);
+			if (ArgumentEquals(logType, "info"))  Error_SetInfoVisible(on);
+			if (ArgumentEquals(logType, "warn"))  Error_SetWarnVisible(on);
+			if (ArgumentEquals(logType, "fatal")) Error_SetFatalVisible(on);
+
+			start = end + 1;
+		} while (end != std::string::npos);
+	}
+
+
+	// Save this so we can choose when to modify commandline options.
+	mainGlobs2.cmdlineParsed = true;
 }
 
 
@@ -1431,6 +1973,7 @@ LRESULT __cdecl Gods98::Main_WndProc_Windowed(HWND hWnd, UINT message, WPARAM wP
 		//break; // -> `return 0;` (was break intentional?)
 	case WM_RBUTTONDBLCLK:
 		INPUT.rDoubleClicked = true;
+		return 0;
 		//break; // -> `return 0;` (was break intentional?)
 
 	case WM_ACTIVATEAPP:

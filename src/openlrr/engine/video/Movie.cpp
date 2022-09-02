@@ -92,14 +92,15 @@ bool Gods98::G98CMovie::OpenAMStream(const char* fName, IAMMultiMediaStream** lp
 }
 
 // <LegoRR.exe @00472650>
-Gods98::G98CMovie::G98CMovie(const char* fName, IDirectDrawSurface3* bSurf3, IDirectDraw2* ddraw2)
-	: m_sampleBaseStream(nullptr), m_sampleStream(nullptr), m_baseSurf(nullptr), m_surf(nullptr), m_sample(nullptr)
-	, m_movieRect({0,0,0,0}) // added, not originally part of ctor
+Gods98::G98CMovie::G98CMovie(OPTIONAL const char* fName, IDirectDrawSurface3* bSurf3, IDirectDraw2* ddraw2)
+	: m_amStream(nullptr), m_err(0), m_sampleBaseStream(nullptr), m_sampleStream(nullptr),
+	m_baseSurf(nullptr), m_surf(nullptr), m_sample(nullptr), m_bSurf(bSurf3),
+	m_movieRect({0,0,0,0}), m_filename(nullptr), m_ddraw2(ddraw2)
 {
 	log_firstcall();
 
-	this->m_bSurf = bSurf3;
-	this->m_ddraw2 = ddraw2;
+	//this->m_bSurf = bSurf3;
+	//this->m_ddraw2 = ddraw2;
 
 	::CoInitialize(nullptr);
 
@@ -200,8 +201,8 @@ Gods98::Movie_t* __cdecl Gods98::Movie_Load(const char* fName)
 	log_firstcall();
 
 	char cdFileName[512];
-	IDirectDraw2* ddraw2;
-	IDirectDrawSurface3* bSurf3;
+	IDirectDraw2* ddraw2 = nullptr; // dummyt init
+	IDirectDrawSurface3* bSurf3 = nullptr; // dummy init
 
 	/* actual start of C++ function */
 	const char* name = File_VerifyFilename(fName);

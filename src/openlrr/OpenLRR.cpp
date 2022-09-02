@@ -825,7 +825,10 @@ void __cdecl Gods98::Gods_Go(const char* programName)
 
 	// The program name MUST start with Lego* if we want all cfg,ae,ptl,ol assets to function.
 	// NOTE: This does not change WAD filename access, that has to be handled in Main_WinMain.
-	if (::_stricmp(programName, "OpenLRR") == 0 ||
+	if (Gods98::mainOptions.gameName.has_value()) {
+		std::strcpy(openlrrGlobs.legoProgramName, Gods98::mainOptions.gameName->c_str());
+	}
+	else if (::_stricmp(programName, "OpenLRR") == 0 ||
 		::_stricmp(programName, "OpenLRR-d") == 0)
 	{
 		// Forcefully default to the standard "LegoRR" name. This is a terrible solution...
@@ -875,8 +878,19 @@ void __cdecl Gods98::Gods_Go(const char* programName)
 
 sint32 __stdcall LaunchOpenLRR(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, sint32 nCmdShow)
 {
+	if (!Gods98::Main_Initialise(OpenLRR_hInstDll(), hInstance, hPrevInstance, lpCmdLine, nCmdShow)) {
+		return 0;
+	}
+
 	openlrrGlobs.hInstMain = hInstance;
-	openlrrGlobs.conout = MakeConsole();
+	if (Gods98::mainOptions.log.value_or(true))
+		openlrrGlobs.conout = MakeConsole();
+
+
+	//std::printf("lpCmdline: %s\n", lpCmdLine);
+	//for (size_t i = 0; i < Gods98::mainOptions.arguments.size(); i++) {
+	//	std::printf("arguments[%i]: %s\n", (sint32)i, Gods98::mainOptions.arguments[i].c_str());
+	//}
 
     const char* methodName;
     switch (openlrrGlobs.method) {
@@ -913,7 +927,8 @@ sint32 __stdcall LaunchOpenLRR(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
         Gods98::Main_SetIcon(openlrrGlobs.iconList[(uint32)OpenLRRIcon::Native], false);
 
     Gods98::Main_SetAccel(openlrrGlobs.accels, false);
-    Gods98::Main_SetMenu(openlrrGlobs.menu, false);
+	if (Gods98::mainOptions.menu.value_or(true))
+		Gods98::Main_SetMenu(openlrrGlobs.menu, false);
     Gods98::Main_SetWindowCallback(OpenLRR_WindowCallback);
 
     Gods98::Main_SetCursorVisibility(Gods98::CursorVisibility::TitleBar);

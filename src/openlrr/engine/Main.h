@@ -256,6 +256,78 @@ struct Main_Globs2
 	uint32				windowScale;
 };
 
+
+struct Main_CommandLineOptions
+{
+	std::vector<std::string> arguments;
+
+	/// EXTRA COMMAND LINE:
+	// Present in LegoRR (but moved outside WinMain, so we need to store them)
+	std::optional<bool>			noSound;		// -nosound
+	std::optional<bool>			insistOnCD;		// -insistOnCD
+
+	// Present in LRR:CE
+	std::optional<Point2I>		pos;			// -pos <X>,<Y> : Overrides startup window position.
+	std::optional<Size2U>		res;			// -res <W>x<H> : Overrides the display resolution (not supported by engine).
+	std::optional<uint32>		bitDepth;		// -bpp <BPP> : Overrides the display bit depth (not supported by engine).
+	std::optional<bool>			noIntro;		// -nointro : Disables splash screens.
+	std::optional<bool>			noVideo;		// -novideo : Disables non-startup videos.
+	std::optional<bool>			noSkip;			// -noskip : Disables the ability to skip normally-unskippable videos.
+	std::optional<bool>			log;			// -log / -nolog : Opens console logging window.
+	std::optional<bool>			menu;			// -menu / -nomenu : Enable/disable the system menu on startup.
+
+	// Not present in LRR:CE (exclusive to OpenLRR)
+	std::optional<bool>			noCD;			// -noCD / -useCD : CD will not be used when searching for game files.
+	std::optional<bool>			noWads;			// -nowad / -usewad : WAD files will not be used when searching game for files.
+	std::optional<bool>			dataFirst;		// -datafirst / -wadfirst : Overrides file system priority, putting the Data directory before WAD files.
+	std::optional<std::string>	dataDir;		// -datadir <folder\path> : Overrides the default Data directory.
+	std::optional<std::string>	wadDir;			// -waddir <folder\path> : Overrides the directory where WAD files are looked for.
+	std::optional<std::string>	wadName;		// -name / -wadname <filename> : Overrides the name used for WAD file lookup. (No extension)
+	std::optional<std::string>	gameName;		// -name / -gamename <filename> : Overrides the name used for root CFG property lookup. (No extension)
+	
+	std::optional<std::string>	clgenName;		// -cl <presetname> : Specify a preset for command line options using the existing CLGen.dat format.
+	std::optional<bool>			noCLGen;		// -noclgen : Disables StandardParameters options assigned by CLGen.
+	std::optional<bool>			noInstance;		// -noinstance : Allows this instance of OpenLRR to run even if other instances are running.
+
+	/*std::string			startLevel; // Main_GetStartLevel
+
+
+	uint32				fogMethod; // Container_SetFogMode, Main_SetupDirect3D
+	real32				fixedFrameTiming; // RewardScroll_DrawLabels
+	//mainGlobs\.(?!flags)[a-zA-Z_][a-zA-Z_0-9]*
+	uint32				appWidth;		// Credits_Play, Front_Menu_Update, Front_Callback_SelectMissionItem, Interface_Initialise, Lego_DrawRenameInput, Lego_HandleKeys, Lego_UpdateTopdownCamera, Lego_LoadLevel, SaveMenu_ConfirmMessage_FUN_004354f0, Objective_HandleKeys, Reward_PrepareScroll, Input_ReadMouse2
+	uint32				appHeight;
+
+	uint32				programmerLevel; // Main_ProgrammerMode, Front_IsIntrosEnabled, Front_IsFrontEndEnabled, Front_Levels_UpdateAvailable_Recursive, Gods_Go, Lego_MainLoop, Lego_Shutdown_Full, Objective_Update
+
+	MainCLFlags			clFlags; // Main_GetCLFlags
+
+	// Flags
+	bool				forceVertexFog; // Main_SetupDirect3D
+	bool				dualMouse;
+	
+	bool				debugMode; // WinMain -> Init_Initialise
+	bool				best; // WinMain -> Init_Initialise
+	bool				window; // WinMain -> Init_Initialise
+	bool				forceTextureManagement; // Main_DisableTextureManagement
+	bool				noTextureManagement; // Container_LoadTextureSurface, Main_DisableTextureManagement, Mesh_SetMeshRenderDesc, Mesh_SetRenderDesc, Mesh_StoreTextureAndMat, Mesh_RestoreTextureAndMat, Mesh_SetGroupRenderDesc, Mesh_RenderTriangleList
+	bool				reduceSamples; // Lego_Initialise -> Lego_LoadSamples, Lws_SetupSoundTriggers
+	bool				reduceAnimation; // Advisor_LoadAnims, Front_Initialise, Container_Load -> "Activities"
+	bool				reduceImages; // Bubble_LoadBubbles, Pointer_LoadPointers, Reward_LoadItemBoxImages, Reward_LoadItemImages
+	bool				showVersion; // Front_Menu_Update, Lego_Initialise
+	bool				reduceFlics; // Front_LoadMenuSet, Reward_LoadItemFlics
+	bool				levelsOpen; // Front_Levels_UpdateAvailable_Recursive
+	bool				testerCall; // Front_Callback_SelectMissionItem
+	bool				cleanSaves; // Front_Save_LoadAllSaveFiles
+	bool				debugComplete; // Lego_HandleKeys (enable level end, oxygen commands)
+	bool				reducePromeshes; // Lego_LoadDetailMeshes, LegoObject_LoadMeshLOD
+
+	// Not commandline options
+	bool				mipMapEnabled; // Container_TextureLoadCallback, Main_Setup3D
+	bool				fullScreen; // Main_DispatchMessage, Main_SetupDisplay, Main_AdjustWindowRect, Main_WndProc_Fullscreen, Main_WndProc_Windowed, Main_WndProc, Input_ReadKeys
+	*/
+};
+
 #pragma endregion
 
 /**********************************************************************************
@@ -269,6 +341,8 @@ extern Main_Globs & mainGlobs;
 
 /// CUSTOM: Extension of `Main_Globs` for OpenLRR-exclusive globals
 extern Main_Globs2 mainGlobs2;
+
+extern Main_CommandLineOptions mainOptions;
 
 #pragma endregion
 
@@ -327,6 +401,13 @@ __inline bool32 Main_IsCommandLineParsed(void) { return mainGlobs2.cmdlineParsed
 
 /// CUSTOM: Get if Main_SetupDisplay has been called.
 __inline bool32 Main_IsDisplaySetup(void) { return mainGlobs2.displaySetup; }
+
+
+inline bool Main_IsIntrosEnabled() { return !mainOptions.noIntro.value_or(false); }
+
+inline bool Main_IsVideosEnabled() { return !mainOptions.noVideo.value_or(false); }
+
+inline bool Main_IsSkippingEnabled() { return !mainOptions.noSkip.value_or(false); }
 
 
 /// CUSTOM: A wrapper for the WINAPI Sleep function.
@@ -437,6 +518,11 @@ sint32 __cdecl noinline(appHeight)(void);
 __inline sint32 appHeight(void) { return mainGlobs.appHeight; }
 
 
+/// CUSTOM: Run before OpenLRR initialisation to perform command line parsing and initial setup.
+bool Main_Initialise(_In_ HINSTANCE hInstanceDll,
+					 _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
+					 _In_ LPSTR     lpCmdLine, _In_     sint32    nCmdShow);
+
 // <LegoRR.exe @00477a60>
 sint32 __stdcall Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 							  _In_ LPSTR     lpCmdLine, _In_     sint32    nCmdShow);
@@ -445,6 +531,9 @@ sint32 __stdcall Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrev
 // <missing>
 void __cdecl Main_Exit(void);
 
+
+/// CUSTOM:
+void Main_ParseCommandLineOptions();
 
 // <LegoRR.exe @00477eb0>
 void __cdecl Main_ParseCommandLine(const char* lpCmdLine, OUT bool32* nosound, OUT bool32* insistOnCD);

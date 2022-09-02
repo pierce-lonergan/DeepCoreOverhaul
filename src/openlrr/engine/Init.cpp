@@ -66,24 +66,40 @@ bool32 __cdecl Gods98::Init_Initialise(bool32 setup, bool32 debug, bool32 best, 
 	initGlobs.selFullScreen = initGlobs.wasFullScreen = false;
 	initGlobs.validModeCount = 0;
 
-//	Init_AddValidMode(0, 0, 8);
-//	Init_AddValidMode(0, 0, 16);			// Any 16bit mode
-//	Init_AddValidMode(0, 0, 24);
-//	Init_AddValidMode(0, 0, 32);
+	const Point2I cmdPos = mainOptions.pos.value_or(Point2I { 100, 100 });
+	const Size2U cmdRes = mainOptions.res.value_or(Size2U { 640, 480 });
+	const uint32 cmdBitDepth = mainOptions.bitDepth.value_or(16);
 
-//	Init_AddValidMode(640, 400, 16);
-//	Init_AddValidMode(640, 400, 32);
-//	if (debug) Init_AddValidMode(640, 480, 8);
-	Init_AddValidMode(640, 480, 16);
-//	Init_AddValidMode(640, 480, 24);
-	//Init_AddValidMode(800, 600, 16);
-	//Init_AddValidMode(1024, 768, 16);
+	// Ensure the user-specified res/bpp is always first.
+	auto bitDepths = array_of<uint32>(cmdBitDepth,
+									  16
+									  //24,
+									  //32,
+									  //8
+									  );
+
+	auto sizes = array_of<Size2U>(cmdRes,
+								  //Size2U { 0, 0 },
+								  Size2U { 640, 480 });
+
+	auto debugSizes = array_of<Size2U>(Size2U { 800, 600 },
+									   Size2U { 1024, 768 });
+
+	// Order bit depths lowest-to-highest.
+	//std::sort(bitDepths.begin(), bitDepths.end());
+
+	// Populate size and bit-depth combinations, duplicates will be removed by Init_AddValidMode.
+	for (Size2U size : sizes) {
+		for (uint32 bpp : bitDepths)
+			Init_AddValidMode(size.width, size.height, bpp);
+	}
 
 	if (debug) {
-		Init_AddValidMode(800, 600, 16);
-		Init_AddValidMode(1024, 768, 16);
+		for (Size2U debugSize : debugSizes) {
+			for (uint32 bpp : bitDepths)
+				Init_AddValidMode(debugSize.width, debugSize.height, bpp);
+		}
 	}
-//	Init_AddValidMode(640, 480, 32);
 
 	DirectDraw_EnumDrivers(initGlobs.drivers, &initGlobs.driverCount);
 	if (initGlobs.driverCount) {
@@ -132,9 +148,10 @@ bool32 __cdecl Gods98::Init_Initialise(bool32 setup, bool32 debug, bool32 best, 
 
 		if (rval == IDOK) {
 
+
 			if (initGlobs.selFullScreen) ok = DirectDraw_SetupFullScreen(initGlobs.selDriver, initGlobs.selDevice, initGlobs.selMode);
-			else if (initGlobs.selMode) ok = DirectDraw_SetupWindowed(initGlobs.selDevice, 100, 100, initGlobs.selMode->width, initGlobs.selMode->height);
-			else ok = DirectDraw_SetupWindowed(initGlobs.selDevice, 40, 40, 640, 480); // only hit when !best && !setup (?)
+			else if (initGlobs.selMode) ok = DirectDraw_SetupWindowed(initGlobs.selDevice, cmdPos.x, cmdPos.y, initGlobs.selMode->width, initGlobs.selMode->height);
+			else ok = DirectDraw_SetupWindowed(initGlobs.selDevice, cmdPos.x, cmdPos.y, 640, 480); // Only hit when !best && !setup (?) Original pos: 40,40
 
 			return ok;
 
@@ -307,6 +324,14 @@ void __cdecl Gods98::Init_SetDeviceList(HWND hWndDlg)
 void __cdecl Gods98::Init_AddValidMode(uint32 width, uint32 height, uint32 depth)
 {
 	log_firstcall();
+
+	/// CHANGE: Prevent adding duplicate modes to the list.
+	for (uint32 i = 0; i < initGlobs.validModeCount; i++) {
+		const Graphics_Mode* mode = &initGlobs.validModes[i];
+		if (mode->width == width && mode->height == height && mode->bitDepth == depth) {
+			return; // Already in list.
+		}
+	}
 
 	initGlobs.validModes[initGlobs.validModeCount].width = width;
 	initGlobs.validModes[initGlobs.validModeCount].height = height;

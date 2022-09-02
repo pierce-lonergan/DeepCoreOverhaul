@@ -46,7 +46,7 @@ private:
 
 public:
 	// <LegoRR.exe @00472650>
-	G98CMovie(const char* fName, IDirectDrawSurface3* bSurf3, IDirectDraw2* ddraw2);
+	G98CMovie(OPTIONAL const char* fName, IDirectDrawSurface3* bSurf3, IDirectDraw2* ddraw2);
 	// <LegoRR.exe @004726f0>
 	~G98CMovie();
 

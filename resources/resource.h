@@ -216,10 +216,10 @@
 //
 // Subtract 100 from all 200's IDs to get real CLGen values.
 // (prevents conflicts with init.rc)
-#define IDD_SELECTORDIALOG				201		// 2057 : DIALOG : "Video Card selector"
+#define IDD_CLGEN_PRESETDIALOG			201		// 2057 : DIALOG : "Video Card selector"
 #define IDI_CLGEN						203		// 2057 : ICON_GROUP : (CLGen.exe main icon)
-#define IDC_SELECT						1001	// IDD_SELECTORDIALOG : COMBOBOX : "Select Video Card type:"
-#define IDC_SELECTTEXT					1006	// IDD_SELECTORDIALOG : LTEXT : "Select:"
+#define IDC_CLGEN_SELECT				1101	// IDD_CLGEN_PRESETDIALOG : COMBOBOX : "Select Video Card type:"
+#define IDC_CLGEN_SELECTTEXT			1106	// IDD_CLGEN_PRESETDIALOG : LTEXT : "Select:"
 
 
 /////////////////////////////////////////////////////////////////////

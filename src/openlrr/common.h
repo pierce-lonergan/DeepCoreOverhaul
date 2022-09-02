@@ -39,6 +39,8 @@
 //#include <typeinfo>
 #include <memory>
 #include <stdexcept>
+#include <optional>
+#include <algorithm>
 
 // Windows C RunTime Header Files
 #include <direct.h>

@@ -1725,6 +1725,7 @@ bool interop_hook_LegoRR_FrontEnd(void)
 	result &= hook_write_jmpret(0x00415630, LegoRR::Front_PlayMovie);
 	result &= hook_write_jmpret(0x004156f0, LegoRR::Front_PlayIntroSplash);
 	result &= hook_write_jmpret(0x00415840, LegoRR::Front_PlayIntroMovie);
+	result &= hook_write_jmpret(0x004158c0, LegoRR::Front_PlayLevelMovie);
 
 	return_interop(result);
 }

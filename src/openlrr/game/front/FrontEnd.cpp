@@ -1513,13 +1513,15 @@ bool32 __cdecl LegoRR::Front_Options_Update(real32 elapsed, Menu_ModalType modal
 void __cdecl LegoRR::Front_PlayMovie(Gods98::Movie_t* mov, bool32 skippable)
 {
     /// QOL APPLY: Always skippable movies/splashes (TODO: move this to optional?)
-    skippable = true;
+	if (Gods98::Main_IsSkippingEnabled())
+		skippable = true;
 
     // NOTE: Speed is not supported by Movie_Update
     const real32 MOVIE_SPEED = 1.0f;
 
     // HARDCODED SCREEN RESOLUTION!!
-    Rect2I destRect = { 0, 0, 640, 480 };
+	/// FIX APPLY: Don't use hardcoded resolutions.
+    Rect2I destRect = { 0, 0, Gods98::appWidth(), Gods98::appHeight() };
     real32 timer = 0.0;
 
     while (Gods98::Movie_Update(mov, MOVIE_SPEED, &destRect)) {
@@ -1539,10 +1541,15 @@ void __cdecl LegoRR::Front_PlayMovie(Gods98::Movie_t* mov, bool32 skippable)
 // <LegoRR.exe @004156f0>
 void __cdecl LegoRR::Front_PlayIntroSplash(const char* imageKey, bool32 skippable, const char* timeKey)
 {
-    /// QOL APPLY: Always skippable movies/splashes (TODO: move this to optional?)
-    skippable = true;
+	/// QOL: Option to disable intro startup splashes.
+	if (!Gods98::Main_IsIntrosEnabled())
+		return;
 
-    real32 seconds = Config_GetRealValue(Lego_Config(), Config_ID(Lego_GameName(), "Main", timeKey));
+    /// QOL APPLY: Always skippable movies/splashes (TODO: move this to optional?)
+	if (Gods98::Main_IsSkippingEnabled())
+		skippable = true;
+
+    real32 seconds = Config_GetRealValue(Lego_Config(), Main_ID(timeKey));
     if (seconds == 0.0f)
         seconds = 3.0; // default time, in seconds
 
@@ -1551,7 +1558,7 @@ void __cdecl LegoRR::Front_PlayIntroSplash(const char* imageKey, bool32 skippabl
 
     if (imageKey != nullptr) {
         Gods98::Image* image;
-        const char* fName = Gods98::Config_GetTempStringValue(Lego_Config(), Config_ID(Lego_GameName(), "Main", imageKey));
+        const char* fName = Gods98::Config_GetTempStringValue(Lego_Config(), Main_ID(imageKey));
 
         if (fName && (image = Gods98::Image_LoadBMP(fName))) {
             while (true) {
@@ -1576,13 +1583,14 @@ void __cdecl LegoRR::Front_PlayIntroSplash(const char* imageKey, bool32 skippabl
 // <LegoRR.exe @00415840>
 void __cdecl LegoRR::Front_PlayIntroMovie(const char* movieKey, bool32 skippable)
 {
-    /// QOL APPLY: Always skippable movies/splashes (TODO: move this to optional?)
-    skippable = true;
+	/// QOL: Option to disable intro startup videos.
+	if (!Gods98::Main_IsIntrosEnabled())
+		return;
 
     if (movieKey != nullptr) {
         /// CHANGE: No need to allocate memory for the string
-        const char* fName = Gods98::Config_GetTempStringValue(Lego_Config(), Config_ID(Lego_GameName(), "Main", movieKey));
-        //char* fName = Gods98::Config_GetStringValue(Lego_Config(), Config_ID(Lego_GameName(), "Main", movieKey));
+        const char* fName = Gods98::Config_GetTempStringValue(Lego_Config(), Main_ID(movieKey));
+        //char* fName = Gods98::Config_GetStringValue(Lego_Config(), Main_ID(movieKey));
 
         if (fName && Gods98::File_Exists(fName)) {
             Gods98::Movie_t* mov = Gods98::Movie_Load(fName);
@@ -1599,9 +1607,13 @@ void __cdecl LegoRR::Front_PlayIntroMovie(const char* movieKey, bool32 skippable
 // <LegoRR.exe @004158c0>
 void __cdecl LegoRR::Front_PlayLevelMovie(const char* levelName, bool32 skippable)
 {
+	/// QOL: Option to disable level startup videos.
+	if (!Gods98::Main_IsVideosEnabled())
+		return;
+
 	if (levelName != nullptr) {
 		/// CHANGE: No need to allocate memory for the string
-		const char* fName = Gods98::Config_GetTempStringValue(Lego_Config(), Config_ID(Lego_GameName(), levelName, "Video"));
+		const char* fName = Gods98::Config_GetTempStringValue(Lego_Config(), Lego_ID(levelName, "Video"));
 
 		if (fName && Gods98::File_Exists(fName)) {
 			Gods98::Movie_t* mov = Gods98::Movie_Load(fName);
