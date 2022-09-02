@@ -207,13 +207,13 @@ void __cdecl AITask_Initialise(void);
 #define AITask_SetPriorityType ((void (__cdecl* )(AITask* aiTask, AI_Priority priorityType))0x00401fa0)
 
 // <LegoRR.exe @00401fd0>
-#define AITask_Game_SetAITaskValue2 ((void (__cdecl* )(sint32 index, uint32 aiTaskValue))0x00401fd0)
+#define AITask_Game_SetPriorityValue ((void (__cdecl* )(AI_Priority priorityType, uint32 aiTaskValue))0x00401fd0)
 
 // <LegoRR.exe @00401fe0>
-#define AITask_Game_SetIsPriorityDisabled ((void (__cdecl* )(sint32 priorityIndex, bool32 isDisabled))0x00401fe0)
+#define AITask_Game_SetPriorityOff ((void (__cdecl* )(AI_Priority priorityType, bool32 off))0x00401fe0)
 
 // <LegoRR.exe @00401ff0>
-#define AITask_Game_IsPriorityDisabled ((bool32 (__cdecl* )(sint32 priorityIndex))0x00401ff0)
+#define AITask_Game_IsPriorityOff ((bool32 (__cdecl* )(AI_Priority priorityType))0x00401ff0)
 
 // <LegoRR.exe @00402000>
 //#define AITask_Shutdown ((void (__cdecl* )(void))0x00402000)
@@ -391,7 +391,7 @@ void __cdecl AITask_RemoveGetToolReferences(AITask* aiTask);
 #define AITask_DoRepair ((void (__cdecl* )(LegoObject* liveObj))0x00403450)
 
 // <LegoRR.exe @00403490>
-#define AITask_LiveObject_FUN_00403490 ((void (__cdecl* )(LegoObject* liveObj))0x00403490)
+#define AITask_StopRepairForObject ((void (__cdecl* )(LegoObject* liveObj))0x00403490)
 
 // <LegoRR.exe @004034f0>
 #define AITask_Game_PTL_GotoOrRMGoto ((void (__cdecl* )(LegoObject* liveObj, const Point2I* blockPos, OPTIONAL AITask* referrerTask))0x004034f0)

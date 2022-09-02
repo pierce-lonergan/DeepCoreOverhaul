@@ -12,6 +12,8 @@
 #include "../audio/SFX.h"
 #include "../interface/Advisor.h"
 #include "../interface/TextMessages.h"
+#include "../object/AITask.h"
+#include "../object/Stats.h"
 #include "../Game.h"
 #include "NERPsFile.h"
 #include "NERPsFunctions.h"
@@ -746,7 +748,7 @@ void __cdecl LegoRR::NERPsRuntime_EndExecute(real32 elapsedAbs)
 			LegoObject_GetPosition(nerpsfileGlobs.camLockOnObject, &nerpsfileGlobs.camLockOnPos.x, &nerpsfileGlobs.camLockOnPos.y);
 			Lego_Goto(nerpsfileGlobs.camLockOnObject, nullptr, true);
 		}
-		else if (nerpsfileGlobs.camLockOnRecord < 10) { // (0-indexed) Max record objects?
+		else if (nerpsfileGlobs.camLockOnRecord < OBJECT_MAXRECORDOBJECTS) { // (0-indexed)
 			// Locked-on to a record object pointer.
 			LegoObject* recordObj;
 			if (!Lego_GetRecordObject(nerpsfileGlobs.camLockOnRecord, &recordObj)) {
@@ -832,6 +834,45 @@ void __cdecl LegoRR::NERPsRuntime_EndExecute(real32 elapsedAbs)
 		//Lego_LockGameSpeed(false);
 		//Lego_SetGameSpeed(1.0f);
 	}
+}
+
+
+// DATA: SearchNERPsSetMonsterAttack* search
+// <LegoRR.exe @004545c0>
+bool32 __cdecl LegoRR::NERPs_LegoObject_Callback_SetMonsterAttack(LegoObject* liveObj, void* pSearch)
+{
+	const SearchNERPsSetMonsterAttack* search = (SearchNERPsSetMonsterAttack*)pSearch;
+
+	if (liveObj != nullptr) {
+		sint32 bx = 0, by = 0; // dummy inits
+		LegoObject_GetBlockPos(liveObj, &bx, &by);
+
+		if (Level_Block_IsSolidBuilding(bx, by, true)) {
+			// Original function logic was trippy, but logically it boils down to:
+			// if ( (A & sflags2) && (A != -1)) FAIL
+			// if (!(B & sflags2) && (B != -1)) FAIL
+			// It's impossible for A to conflict with B, despite what it looks like.
+
+			const StatsFlags2 sflags2 = StatsObject_GetStatsFlags2(liveObj);
+
+			// Exclude objects with flags.
+			if ((search->sflags2Exclude & sflags2) && (search->sflags2Exclude != STATS2_FLAGS_ALL))
+				return false;
+
+			// Exclude objects without flags.
+			if (!(search->sflags2Include & sflags2) && (search->sflags2Include != STATS2_FLAGS_ALL))
+				return false;
+
+			/// FIX APPLY: We don't need exact booleans anymore since its filtered out by the NERPFuncs.
+			if (!search->stopAttacking) {
+				AITask_DoRepair(liveObj);
+			}
+			else {
+				AITask_StopRepairForObject(liveObj);
+			}
+		}
+	}
+	return false;
 }
 
 

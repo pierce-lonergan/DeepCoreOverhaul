@@ -576,7 +576,7 @@ struct Lego_Globs // [LegoRR/Lego.c|struct:0xf00|tags:GLOBS]
 	/*2ec,4*/       Gods98::Container* contSmashPath;
 	/*2f0,4*/       Gods98::Container* contLaserShot;
 	/*2f4,4*/       SelectPlace* selectPlace;
-	/*2f8,28*/      LegoObject* recordObjs[10];
+	/*2f8,28*/      LegoObject* recordObjs[OBJECT_MAXRECORDOBJECTS];
 	/*320,4*/       uint32 recordObjsCount;
 	/*324,10*/      Area2F radarScreenRect;
 	/*334,4*/       real32 tvTiltOrZoom_334;

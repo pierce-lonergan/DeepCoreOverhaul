@@ -231,8 +231,8 @@ uint32 __cdecl Message_GetNumSelectedUnits(void);
 void __cdecl Message_CleanupSelectedUnitsCount(void);
 
 // <LegoRR.exe @004528d0>
-//#define Message_IsUnitSelected ((bool32 (__cdecl* )(LegoObject* liveObj, OUT uint32* index))0x004528d0)
-bool32 __cdecl Message_IsUnitSelected(LegoObject* liveObj, OUT uint32* index);
+//#define Message_IsUnitSelected ((bool32 (__cdecl* )(LegoObject* liveObj, OPTIONAL OUT uint32* index))0x004528d0)
+bool32 __cdecl Message_IsUnitSelected(LegoObject* liveObj, OPTIONAL OUT uint32* index);
 
 // <LegoRR.exe @00452910>
 bool32 __cdecl Message_FindIndexOfObject(LegoObject** objsTable, uint32 objsCount, LegoObject* thisObj, OPTIONAL OUT uint32* index);

@@ -8,6 +8,8 @@
 #include "../../engine/geometry.h"
 #include "../../engine/undefined.h"
 
+#include "../object/Stats.h"
+
 #include "../GameCommon.h"
 
 
@@ -42,10 +44,13 @@ typedef sint32 (__cdecl* NERPsFunction)(sint32* stack);
 
 #pragma region Constants
 
-#define NERPS_FUNCID_STOP 0
+#define NERPS_FUNCID_STOP		0
 
 #define NERPS_REGISTERCOUNT		8
 #define NERPS_TIMERCOUNT		4
+
+#define NERPS_GETLEVELS_ALL		-1
+#define NERPS_GETLEVELS_POWERED	-2
 
 #pragma endregion
 
@@ -249,6 +254,39 @@ struct SearchNERPsTutorialAction // [LegoRR/search.c|struct:0x2c]
 assert_sizeof(SearchNERPsTutorialAction, 0x2c);
 
 
+struct SearchNERPsSetObjectHealthPain // [LegoRR/search.c|struct:0xc]
+{
+	/*0,4*/	enum class Type : uint32 { // (0 = runningAway, 1 = painThreshold, 2 = Health)
+		GetRunningAway,
+		SetPainThreshold,
+		SetHealth,
+	} type;
+	/*4,4*/	uint32 runningAwayCount; // Only for healthType 0 (incremented)
+	/*8,4*/	real32 painHealthValue; // Only for healthTypes 1,2 (assigns)
+	/*c*/
+};
+assert_sizeof(SearchNERPsSetObjectHealthPain, 0xc);
+
+
+struct SearchNERPsCountRecordObjects // [LegoRR/search.c|struct:0x8]
+{
+	/*0,4*/	uint32 count;
+	/*4,4*/	LegoObject* recordObj;
+	/*8*/
+};
+assert_sizeof(SearchNERPsCountRecordObjects, 0x8);
+
+
+struct SearchNERPsSetMonsterAttack // [LegoRR/search.c|struct:0xc]
+{
+	/*0,4*/	StatsFlags2 sflags2Exclude; // Fails the search if the target object has any of these flags (and is not 0xffffffff).
+	/*4,4*/	StatsFlags2 sflags2Include; // Fails the search if the target object has none of these flags (and is not 0xffffffff).
+	/*8,4*/ bool32 stopAttacking; // EXACT BOOL (0 = start attacking, 1 = stop attacking)
+	/*c*/
+};
+assert_sizeof(SearchNERPsSetMonsterAttack, 0xc);
+
+
 struct NERPsFile_Globs // [LegoRR/NERPs.c|struct:0xb4|tags:GLOBS]
 {
 	/*00,4*/	bool32 camIsLockedOn;
@@ -444,10 +482,10 @@ void __cdecl NERPsRuntime_EndExecute(real32 elapsedAbs);
 // [NERPFuncs...]
 
 
-// DATA: unknown (currently uint32*)
+// DATA: SearchNERPsSetMonsterAttack* search
 // <LegoRR.exe @004545c0>
-#define NERPs_LiveObject_Callback_FUN_004545c0 ((bool32 (__cdecl* )(LegoObject* liveObj, void* param_2))0x004545c0)
-
+//#define NERPs_LegoObject_Callback_SetMonsterAttack ((bool32 (__cdecl* )(LegoObject* liveObj, void* pSearch))0x004545c0)
+bool32 __cdecl NERPs_LegoObject_Callback_SetMonsterAttack(LegoObject* liveObj, void* pSearch);
 
 // [NERPFuncs...]
 
@@ -457,11 +495,11 @@ void __cdecl NERPsRuntime_EndExecute(real32 elapsedAbs);
 
 // DATA: SearchSetObjectsLevel_8c*
 // <LegoRR.exe @00454740>
-#define NERPs_LiveObject_Callback_SetLevelOfObjects ((bool32 (__cdecl* )(LegoObject* liveObj, void* search))0x00454740)
+#define NERPs_LiveObject_Callback_SetLevelOfObjects ((bool32 (__cdecl* )(LegoObject* liveObj, void* pSearch))0x00454740)
 
-// DATA: SearchCountRecordObjects_8*
+// DATA: SearchNERPsCountRecordObjects* search
 // <LegoRR.exe @00454780>
-#define NERPs_LiveObject_Callback_CountRecordObjectsAtBlock ((bool32 (__cdecl* )(BlockPointer* blockPointer, sint32 bx, sint32 by, void* search))0x00454780)
+#define NERPs_LiveObject_Callback_CountRecordObjectsAtBlock ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, void* search))0x00454780)
 
 
 // [NERPFuncs...]
@@ -491,7 +529,7 @@ void __cdecl NERPsRuntime_EndExecute(real32 elapsedAbs);
 // [NERPFuncs...]
 
 
-// DATA: SearchSetObjectHealthPain_c*
+// DATA: SearchNERPsSetObjectHealthPain* search
 // <LegoRR.exe @00454c70>
 #define NERPs_LiveObject_Callback_SetRockMonsterHealthType ((bool32 (__cdecl* )(LegoObject* liveObj, void* search))0x00454c70)
 
@@ -505,22 +543,25 @@ void __cdecl NERPsRuntime_EndExecute(real32 elapsedAbs);
 // <LegoRR.exe @00454ed0>
 #define NERPsRuntime_FlashSubmenuIcon ((sint32 (__cdecl* )(const char* objName, bool32 flash))0x00454ed0)
 
+// DATA: sint32* pClickCount
 // <LegoRR.exe @00454f10>
-#define NERPsRuntime_Enumerate_SetTutorialBlockClicks ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, sint32* pClickCount))0x00454f10)
+#define NERPsRuntime_Enumerate_SetTutorialBlockClicks ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, void* pClickCount))0x00454f10)
 
 
 // [NERPFuncs...]
 
 
+// DATA: sint32* pCrystalCount
 // <LegoRR.exe @00454f60>
-#define NERPsRuntime_Enumerate_SetTutorialCrystals ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, sint32* pCrystalCount))0x00454f60)
+#define NERPsRuntime_Enumerate_SetTutorialCrystals ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, void* pCrystalCount))0x00454f60)
 
 
 // [NERPFuncs...]
 
 
+// DATA: sint32* pGenerateOre
 // <LegoRR.exe @00454ff0>
-#define NERPs_SetOreAtBlock ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, sint32* pGenerateOre))0x00454ff0)
+#define NERPs_SetOreAtBlock ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, void* pGenerateOre))0x00454ff0)
 
 
 // [NERPFuncs...]
@@ -543,15 +584,17 @@ void __cdecl NERPsRuntime_EndExecute(real32 elapsedAbs);
 // [NERPFuncs...]
 
 
+// DATA: sint32* tutorialCrystals
 // <LegoRR.exe @004553f0>
-#define NERPsRuntime_Callback_GetTutorialCrystals ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, OUT sint32* tutorialCrystals))0x004553f0)
+#define NERPsRuntime_Callback_GetTutorialCrystals ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, OUT void* pTutorialCrystals))0x004553f0)
 
 
 // [NERPFuncs...]
 
 
+// DATA: sint32* clicks
 // <LegoRR.exe @00455450>
-#define NERPsRuntime_Callback_GetTutorialBlockClicks ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, OUT sint32* clicks))0x00455450)
+#define NERPsRuntime_Callback_GetTutorialBlockClicks ((bool32 (__cdecl* )(BlockPointer* blockPointer, uint32 bx, uint32 by, OUT void* pClicks))0x00455450)
 
 
 // [NERPFuncs...]
@@ -608,11 +651,13 @@ void __cdecl NERPs_Level_NERPMessage_Parse(const char* text, OPTIONAL OUT char* 
 // <LegoRR.exe @00456f70>
 #define NERPsRuntime_EnumerateBlockPointers ((void (__cdecl* )(sint32 blockPointerID, NERPsBlockPointerCallback callback, void* data))0x00456f70)
 
+// DATA: SearchNERPsTutorialAction* search
 // <LegoRR.exe @00456fc0>
 #define NERPsRuntime_TutorialActionCallback ((bool32 (__cdecl* )(BlockPointer* unused, uint32 bx, uint32 by, SearchNERPsTutorialAction* search))0x00456fc0)
 
+// DATA: SearchNERPsTutorialAction* search
 // <LegoRR.exe @00457320>
-#define NERPs_LiveObject_CallbackCheck_FUN_00457320 ((bool32 (__cdecl* )(LegoObject* liveObj, sint32 level))0x00457320)
+#define NERPs_LiveObject_CallbackCheck_FUN_00457320 ((bool32 (__cdecl* )(LegoObject* liveObj, void* pSearch))0x00457320)
 
 // <LegoRR.exe @00457390>
 #define NERPs_LiveObject_Callback_SetBool3f8IfAtBlockPos_FUN_00457390 ((bool32 (__cdecl* )(LegoObject* liveObj, SearchNERPsTutorialAction* search))0x00457390)

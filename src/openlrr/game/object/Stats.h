@@ -112,6 +112,8 @@ enum StatsFlags2 : uint32 // [LegoRR/Stats.c|flags:0x4|type:uint]
 	STATS2_DONTSHOWONRADAR        = 0x20000000,
 	STATS2_INVISIBLEDRIVER        = 0x40000000,
 	STATS2_UNSELECTABLE           = 0x80000000,
+
+	STATS2_FLAGS_ALL              = 0xffffffff,
 };
 flags_end(StatsFlags2, 0x4);
 

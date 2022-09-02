@@ -461,7 +461,7 @@ void __cdecl LegoRR::Message_CleanupSelectedUnitsCount(void)
 }
 
 // <LegoRR.exe @004528d0>
-bool32 __cdecl LegoRR::Message_IsUnitSelected(LegoObject* liveObj, OUT uint32* index)
+bool32 __cdecl LegoRR::Message_IsUnitSelected(LegoObject* liveObj, OPTIONAL OUT uint32* index)
 {
 	// These two checks are slightly different, the first doesn't care about the selected flag,
 	//  the other doesn't care about appearing in the list.
