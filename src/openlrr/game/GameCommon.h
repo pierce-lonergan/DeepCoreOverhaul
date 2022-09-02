@@ -68,6 +68,9 @@ typedef uint8 DirectionByte;
 
 #pragma region Constants
 
+#define LEGO_CONFIGFILENAME				"Lego.cfg"
+
+
 #define OBJECT_MAXTYPES			20
 #define OBJECT_MAXIDS			15
 #define OBJECT_MAXLEVELS		16

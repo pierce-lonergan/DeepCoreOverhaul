@@ -195,7 +195,7 @@ bool32 __cdecl Gods98::File_FindDataCD(void)
 {
 	log_firstcall();
 
-	/// FUTURE COMMANDLINE OPTION: -noCD "Never try to open files from, or locate the CD."
+	/// COMMANDLINE OPTION: -noCD "Never try to open files from, or locate the CD."
 	if (!_useCD)
 		return false;
 
@@ -223,18 +223,16 @@ bool32 __cdecl Gods98::File_SetBaseSearchPath(const char* basePath)
 {
 	log_firstcall();
 
-	sint32 len;
-	if (!basePath || (len = (sint32)std::strlen(basePath)) > MAX_WAD_BASE_PATH || !len)
-	{
-		std::memset(fileGlobs.wadBasePath, 0, MAX_WAD_BASE_PATH);
-		fileGlobs.basePathSet = false;
-		return false;
-	}
-	else
-	{
+	size_t len = (basePath ? std::strlen(basePath) : 0);
+	if (len > 0 && len < MAX_WAD_BASE_PATH) {
 		std::strcpy(fileGlobs.wadBasePath, basePath);
 		fileGlobs.basePathSet = true;
 		return true;
+	}
+	else {
+		std::memset(fileGlobs.wadBasePath, 0, sizeof(fileGlobs.wadBasePath));
+		fileGlobs.basePathSet = false;
+		return false;
 	}
 }
 
@@ -283,7 +281,7 @@ bool32 __cdecl Gods98::File_GetCDFilePath(IN OUT char* path, const char* fname)
 {
 	log_firstcall();
 
-	/// FUTURE COMMANDLINE OPTION: -noCD "Never try to open files from, or locate the CD."
+	/// COMMANDLINE OPTION: -noCD "Never try to open files from, or locate the CD."
 	if (!_useCD)
 		return false;
 
@@ -365,8 +363,18 @@ Gods98::File* Gods98::File_Open2(const char* fName, const char* mode, FileFlags 
 {
 	log_firstcall();
 
+	bool dataFirst = _dataFirst;
+	switch (fileFlags & FileFlags::FILE_FLAGS_PRIORITYMASK) {
+	case FileFlags::FILE_FLAG_DATAPRIORITY:
+		dataFirst = true;
+		break;
+	case FileFlags::FILE_FLAG_WADPRIORITY:
+		dataFirst = false;
+		break;
+	}
+
 	bool useStd = !(fileFlags & FileFlags::FILE_FLAG_NOSTD);
-	bool useCD  = !(fileFlags & FileFlags::FILE_FLAG_NOCD);
+	bool useCD  = _useCD && !(fileFlags & FileFlags::FILE_FLAG_NOCD);
 	switch (fileFlags & FileFlags::FILE_FLAGS_PATHMASK) {
 	case FileFlags::FILE_FLAG_DATADIR:
 	case FileFlags::FILE_FLAG_EXEDIR:
@@ -379,9 +387,9 @@ Gods98::File* Gods98::File_Open2(const char* fName, const char* mode, FileFlags 
 
 	const char* fullName = File_VerifyFilename2(fName, fileFlags);
 
-	/// FUTURE COMMANDLINE OPTION: -datafirst "Data files have precedence over WAD files."
-	if (_dataFirst && useStd && Util_StrIStr(mode, "r") != nullptr) {
-		// _dataFirst does NOT include checking the CD.
+	/// COMMANDLINE OPTION: -datafirst "Data files have precedence over WAD files."
+	if (dataFirst && useStd && Util_StrIStr(mode, "r") != nullptr) {
+		// dataFirst does NOT include checking the CD.
 		FILE* stdfile;
 		if (stdfile = std::fopen(fullName, mode)) {
 			// Don't slow things down by opening the file twice (first to verify).
@@ -406,7 +414,7 @@ Gods98::File* Gods98::File_Open2(const char* fName, const char* mode, FileFlags 
 				return file;
 			}
 		}
-		if ((_useCD && useCD) && file->std == nullptr) {
+		if (useCD && file->std == nullptr) {
 			if (Util_StrIStr(mode, "w") == nullptr) { // CDROM is readonly
 				char cdName[FILE_MAXPATH];
 				if (File_GetCDFilePath(cdName, fName)) {
@@ -627,7 +635,7 @@ bool32 Gods98::File_Exists2(const char* fName, FileFlags fileFlags)
 	log_firstcall();
 
 	bool useStd = !(fileFlags & FileFlags::FILE_FLAG_NOSTD);
-	bool useCD  = !(fileFlags & FileFlags::FILE_FLAG_NOCD);
+	bool useCD  = _useCD && !(fileFlags & FileFlags::FILE_FLAG_NOCD);
 	switch (fileFlags & FileFlags::FILE_FLAGS_PATHMASK) {
 	case FileFlags::FILE_FLAG_DATADIR:
 	case FileFlags::FILE_FLAG_EXEDIR:
@@ -650,7 +658,7 @@ bool32 Gods98::File_Exists2(const char* fName, FileFlags fileFlags)
 				return true;
 			}
 		}
-		if ((_useCD && useCD) && f == nullptr) {
+		if (useCD && f == nullptr) {
 			char cdName[FILE_MAXPATH];
 			if (File_GetCDFilePath(cdName, fName)) {
 				if (f = std::fopen(cdName, "r")) {
@@ -832,9 +840,19 @@ Gods98::FileSys Gods98::_File_CheckSystem2(const char* fName, const char* mode, 
 
 	if (!fName || !mode || !std::strlen(fName) || !std::strlen(mode)) return FileSys::Error;
 
+	bool dataFirst = _dataFirst;
+	switch (fileFlags & FileFlags::FILE_FLAGS_PRIORITYMASK) {
+	case FileFlags::FILE_FLAG_DATAPRIORITY:
+		dataFirst = true;
+		break;
+	case FileFlags::FILE_FLAG_WADPRIORITY:
+		dataFirst = false;
+		break;
+	}
+
 	bool useStd = !(fileFlags & FileFlags::FILE_FLAG_NOSTD);
-	bool useWad = !(fileFlags & FileFlags::FILE_FLAG_NOWAD);
-	bool useCD  = !(fileFlags & FileFlags::FILE_FLAG_NOCD);
+	bool useWad = _useWads && !(fileFlags & FileFlags::FILE_FLAG_NOWAD);
+	bool useCD  = _useCD   && !(fileFlags & FileFlags::FILE_FLAG_NOCD);
 	switch (fileFlags & FileFlags::FILE_FLAGS_PATHMASK) {
 	case FileFlags::FILE_FLAG_DATADIR:
 		break;
@@ -849,14 +867,14 @@ Gods98::FileSys Gods98::_File_CheckSystem2(const char* fName, const char* mode, 
 	}
 
 	if (Util_StrIStr(mode, "w") != nullptr) { // WAD is readonly
-		if (useStd || (_useCD && useCD)) {
+		if (useStd) {
 			// File must be opened as stdC
 			return FileSys::Standard;
 		}
 	}
 	else {
-		/// FUTURE COMMANDLINE OPTION: Data files have precedence over WAD files.
-		if (_dataFirst && useStd && (_useWads && useWad)) { // Only perform the check if wads are in-use.
+		/// COMMANDLINE OPTION: Data files have precedence over WAD files.
+		if (dataFirst && useStd && useWad) { // Only perform the check if wads are in-use.
 			FILE* f;
 			if (f = std::fopen(fName, mode)) {
 				std::fclose(f);
@@ -864,11 +882,11 @@ Gods98::FileSys Gods98::_File_CheckSystem2(const char* fName, const char* mode, 
 			}
 		}
 
-		if ((_useWads && useWad) && Wad_IsFileInWad(_File_GetWadName(fName), currWadHandle) != WAD_ERROR) {
+		if (useWad && Wad_IsFileInWad(_File_GetWadName(fName), currWadHandle) != WAD_ERROR) {
 			// The file is in the wad so we can use the wad version
 			return FileSys::Wad;
 		}
-		else if (useStd || (_useCD && useCD)) {
+		else if (useStd || useCD) {
 			// Otherwise we will try the normal file system
 			return FileSys::Standard;
 		}
@@ -1258,6 +1276,64 @@ void __cdecl Gods98::File_CheckFile(const char* fileName)
 }
 
 
+
+/// CUSTOM: Shorthand for normalizing path separators, and other optional changes.
+bool Gods98::File_NormalizePath(IN OUT std::string& path, bool fullpath, bool stripTrailingSlash)
+{
+	if (!path.empty()) {
+		// Normalize path separators.
+		for (size_t i = 0; i < path.length(); i++) {
+			if (path[i] == '/') path[i] = '\\';
+		}
+
+		if (stripTrailingSlash && path.back() == '\\') {
+			path.pop_back();
+			if (path.empty())
+				return false;
+		}
+
+		if (fullpath) {
+			char buffer[_MAX_PATH] = { '\0' };
+			if (!::_fullpath(buffer, path.c_str(), sizeof(buffer)))
+				return false;
+
+			path = buffer;
+		}
+		return true;
+	}
+	return false;
+}
+
+/// CUSTOM: Shorthand for normalizing path separators, and other optional changes.
+bool Gods98::File_NormalizePath(IN OUT char* path, bool fullpath, bool stripTrailingSlash)
+{
+	size_t length = std::strlen(path);
+	if (length > 0) {
+		// Normalize path separators.
+		for (size_t i = 0; i < length; i++) {
+			if (path[i] == '/') path[i] = '\\';
+		}
+
+		if (stripTrailingSlash && path[length - 1] == '\\') {
+			path[length - 1] = '\0';
+			length--;
+			if (length == 0)
+				return false;
+		}
+
+		if (fullpath) {
+			char buffer[_MAX_PATH] = { '\0' };
+			if (!::_fullpath(buffer, path, sizeof(buffer)))
+				return false;
+
+			std::strcpy(buffer, path);
+		}
+		return true;
+	}
+	return false;
+}
+
+
 /// CUSTOM:
 std::string Gods98::File_GetWorkingDir()
 {
@@ -1284,23 +1360,14 @@ std::string Gods98::File_GetExeDir()
 ///         This must be called before File_Initialise.
 void Gods98::File_SetDataDir(const std::string& initDataDir)
 {
-	char dataDir[sizeof(fileGlobs.dataDir)];
 	if (!initDataDir.empty()) {
+		// Normalize separators, convert to fullpath, and strip trailing slash.
 		std::string s = initDataDir;
-		// Convert forward slashes to backslashes
-		for (size_t i = 0; i < s.length(); i++) {
-			if (s[i] == '/') s[i] = '\\';
-		}
-		if (!s.empty() && s[s.length() - 1] == '\\') { // check last char
-			s = s.substr(0, s.length() - 1); // don't support trailing slashes (this also prevents using the root folder without a drive)
-		}
-
-
-		if (!s.empty()) {
-			::_fullpath(dataDir, s.c_str(), sizeof(dataDir));
-			_initDataDirectory = dataDir;
+		if (File_NormalizePath(s, true, true) && !s.empty()) {
+			_initDataDirectory = s;
 			return;
 		}
+
 		// Don't support root directory. Fallthrough to setting the default Data directory.
 	}
 
@@ -1316,20 +1383,13 @@ void Gods98::File_SetDataDir(const std::string& initDataDir)
 void Gods98::File_SetWadDir(const std::string& initWadDir)
 {
 	if (!initWadDir.empty()) {
+		// Normalize separators, convert to fullpath, and strip trailing slash.
 		std::string s = initWadDir;
-		// Convert forward slashes to backslashes
-		for (size_t i = 0; i < s.length(); i++) {
-			if (s[i] == '/') s[i] = '\\';
-		}
-		if (!s.empty() && s[s.length() - 1] == '\\') { // check last char
-			s = s.substr(0, s.length() - 1); // don't support trailing slashes (this also prevents using the root folder without a drive)
-		}
-
-
-		if (!s.empty()) {
+		if (File_NormalizePath(s, true, true) && !s.empty()) {
 			_initWadDirectory = s;
 			return;
 		}
+
 		// Don't support root directory. Fallthrough to setting the default Data directory.
 	}
 

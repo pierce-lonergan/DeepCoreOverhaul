@@ -369,7 +369,6 @@ bool Gods98::Main_Initialise(_In_ HINSTANCE hInstanceDll,
 
 	//bool32 setup = false, nosound = false, insistOnCD = false;
 	const char* productName = nullptr;
-	const char* productRegistry = nullptr;
 
 	// <https://docs.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-getcommandlinea>
 	// From MS Docs: `LPSTR GetCommandLineA();`
@@ -412,7 +411,6 @@ bool Gods98::Main_Initialise(_In_ HINSTANCE hInstanceDll,
 	productName = MUTEX_NAME; // "Lego Rock Raiders";
 	/// NEW GODS98: Mutex setup is called later than in LegoRR
 	//productName = mainGlobs.programName;
-	productRegistry = MAIN_PRODUCTREGISTRY;
 
 	/// NEW GODS98: Not called in LegoRR WinMain
 	// Moved after mutex check, so we wont't need to call ::CoUninitialize() there.
@@ -494,7 +492,7 @@ bool Gods98::Main_Initialise(_In_ HINSTANCE hInstanceDll,
 		else {
 			char clgenCmdLine[4096] = { '\0' }; // dummy init
 			if (!mainOptions.noCLGen.value_or(false) &&
-				Registry_GetValue(productRegistry, "StandardParameters", RegistryValue::String, clgenCmdLine, sizeof(clgenCmdLine)))
+				Registry_GetValue(MAIN_PRODUCTREGISTRY, "StandardParameters", RegistryValue::String, clgenCmdLine, sizeof(clgenCmdLine)))
 			{
 				// Append these arguments at the end of our existing command line arguments.
 				CommandLine::SplitArguments(clgenCmdLine, mainOptions.arguments, false);
@@ -530,7 +528,6 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 
 	bool32 setup = false; // , nosound = false, insistOnCD = false;
 	const char* productName = nullptr;
-	const char* productRegistry = nullptr;
 	char noHALMsg[1024];
 
 #if false
@@ -539,7 +536,6 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 	/// OLD LEGORR: Mutex setup is called at the very beginning in LegoRR
 	///  (but it's essential to be the first here)
 	/*productName = "Lego Rock Raiders";
-	productRegistry = MAIN_PRODUCTREGISTRY;
 
 	if (productName) { // this is never false
 		std::sprintf(mutexName, "%s Mutex", productName);
@@ -593,7 +589,6 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 	productName = MUTEX_NAME; // "Lego Rock Raiders";
 	/// NEW GODS98: Mutex setup is called later than in LegoRR
 	//productName = mainGlobs.programName;
-	productRegistry = MAIN_PRODUCTREGISTRY;
 
 	if (productName) { // this realistically shoudn't ever be false
 		std::sprintf(mutexName, "%s Mutex", productName);
@@ -619,7 +614,6 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 	productName = MUTEX_NAME; // "Lego Rock Raiders";
 	/// NEW GODS98: Mutex setup is called later than in LegoRR
 	//productName = mainGlobs.programName;
-	productRegistry = MAIN_PRODUCTREGISTRY;
 
 
 	/// NEW GODS98: Not called in LegoRR WinMain
@@ -631,7 +625,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 		char commandLine[1024];
 		char tempStr[1024];
 
-		if (Registry_GetValue(productRegistry, "StandardParameters", RegistryValue::String, tempStr, sizeof(tempStr))) {
+		if (Registry_GetValue(MAIN_PRODUCTREGISTRY, "StandardParameters", RegistryValue::String, tempStr, sizeof(tempStr))) {
 			std::sprintf(commandLine, "%s %s", lpCmdLine, tempStr);
 		} else std::sprintf(commandLine, "%s", lpCmdLine);
 
@@ -642,7 +636,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 	}
 #endif
 
-	if (!Registry_GetValue(productRegistry, "NoHALMessage", RegistryValue::String, noHALMsg, sizeof(noHALMsg))) {
+	if (!Registry_GetValue(MAIN_PRODUCTREGISTRY, "NoHALMessage", RegistryValue::String, noHALMsg, sizeof(noHALMsg))) {
 		std::sprintf(noHALMsg, "No DirectX 3D accelerator could be found.");
 	}
 
@@ -650,19 +644,18 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 	Error_Initialise();
 	Mem_Initialise();
 
-	/// OPENLRR TEMP: Heavier measures against OpenLRR-named executables causing crashes from WAD load failures
-	const char* wadProgramName = "LegoRR";
-	if (mainOptions.wadName.has_value()) wadProgramName = mainOptions.wadName->c_str();
-
 	// Initialise to default directories before setting up file system.
 	// This can be better-handled once we decide to stop using the native fileGlobs memory.
-	if (mainOptions.dataDir.has_value()) File_SetDataDir(mainOptions.dataDir.value());
-	if (mainOptions.wadDir.has_value()) File_SetWadDir(mainOptions.wadDir.value());
+	if (mainOptions.dataDir) File_SetDataDir(mainOptions.dataDir.value());
+	if (mainOptions.wadDir) File_SetWadDir(mainOptions.wadDir.value());
 	File_SetDataPriority(mainOptions.dataFirst.value_or(false));
 	File_SetWadsEnabled(!mainOptions.noWads.value_or(false));
 	File_SetCDEnabled(!mainOptions.noCD.value_or(false));
 
-	File_Initialise(wadProgramName, mainOptions.insistOnCD.value_or(false), productRegistry);
+	const char* wadFileName = "LegoRR";
+	if (mainOptions.wadName) wadFileName = mainOptions.wadName->c_str();
+
+	File_Initialise(wadFileName, mainOptions.insistOnCD.value_or(false), MAIN_PRODUCTREGISTRY);
 
 	Config_Initialise();
 	/// OLD LEGORR: This is called earlier than in Gods98
@@ -691,7 +684,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 			Animation_Initialise(DirectDraw());
 
 			Draw_Initialise(nullptr);
-			/// NEW GODS98: This is called in LegoRR_Initialise, but not in Gods98
+			/// NEW GODS98: This is called in Lego_Initialise, but not in Gods98
 			//Image_Initialise();
 
 			/// NEW GODS98: This is called later than in LegoRR
@@ -886,6 +879,10 @@ void Gods98::Main_ParseCommandLineOptions()
 
 	if (FindOption(args, "-insistOnCD")) mainOptions.insistOnCD = true;
 	if (FindOption(args, "-nosound")) mainOptions.noSound = true;
+
+	// Usage: -help
+	//  (functionality not added yet)
+	if (FindOption(args, "-help")) mainOptions.help = true;
 
 
 	// Debug options:
@@ -1089,24 +1086,18 @@ void Gods98::Main_ParseCommandLineOptions()
 	// Change the folder where loose Data files are searched for. This replaces the "Data" folder name.
 	// i.e -datadir "C:\OpenLRR\GameFiles" will look for "C:\OpenLRR\GameFiles\Lego.cfg".
 	if (FindParameter(args, "-datadir", param)) {
-		if (!param.empty()) {
-			// Strip trailing slash
-			if (param.back() == '/' || param.back() == '\\') {
-				param = param.substr(0, param.length() - 1);
-			}
-
+		// Strip trailing slash.
+		if (File_NormalizePath(param, false, true) && !param.empty()) {
 			mainOptions.dataDir = param;
 		}
 	}
 	// Usage: -waddir <directory>
 	// Change the folder where WAD files are searched for.
 	if (FindParameter(args, "-waddir", param) && !param.empty()) {
-		// Strip trailing slash
-		if (param.back() == '/' || param.back() == '\\') {
-			param = param.substr(0, param.length() - 1);
+		// Strip trailing slash.
+		if (File_NormalizePath(param, false, true) && !param.empty()) {
+			mainOptions.wadDir = param;
 		}
-
-		mainOptions.wadDir = param;
 	}
 
 	// Check for this command first, so that -wadname and -gamename can have priority,
@@ -1192,7 +1183,7 @@ void Gods98::Main_ParseCommandLineOptions()
 		do {
 			end = param.find(',', start);
 
-			std::string logType = param.substr(start, std::min(end, param.length()));
+			std::string logType = param.substr(start, std::min(end, param.length()) - start);
 
 			// Check for the "no" (off) prefix.
 			const bool on = !ArgumentStartsWith(logType, "no");
@@ -1208,6 +1199,32 @@ void Gods98::Main_ParseCommandLineOptions()
 		} while (end != std::string::npos);
 	}
 
+	// Usage: -cfgfirst
+	// Look for Lego.cfg file in the Data Directory before WAD files.
+	if (FindOption(args, "-cfgfirst")) mainOptions.configFirst = true;
+
+	// Usage: -cfgfile <filename>
+	// Change the name of the Lego.cfg config file to load (must be a relative datadir path).
+	if (FindParameter(args, "-cfgfile", param) && !param.empty()) {
+		// Uniform slashes.
+		Gods98::File_NormalizePath(param);
+		mainOptions.configName = param;
+	}
+
+	// Usage: -cfgadd <filename>
+	// Append extra configs to the Lego.cfg config to overwrite properties (command can be used multiple times).
+	for (size_t i = 0; i < args.size(); i++) {
+		const auto& arg = args[i];
+		if (ArgumentEquals(arg, "-cfgadd") && i + 1 < args.size()) {
+			param = args[i+1];
+			if (!param.empty()) {
+				// Uniform slashes.
+				Gods98::File_NormalizePath(param);
+				mainOptions.configAppends.push_back(param);
+				i++; // Skip past and consume parameter.
+			}
+		}
+	}
 
 	// Save this so we can choose when to modify commandline options.
 	mainGlobs2.cmdlineParsed = true;

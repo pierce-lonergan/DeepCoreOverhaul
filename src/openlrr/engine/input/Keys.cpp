@@ -26,7 +26,7 @@ void __cdecl Gods98::Keys_Initialise(void)
 {
 	log_firstcall();
 
-	for (uint32 loop = 0; loop < 256; loop++) {
+	for (uint32 loop = 0; loop < _countof(keyGlobs.keyName); loop++) {
 		keyGlobs.keyName[loop] = nullptr;
 	}
 
@@ -139,7 +139,7 @@ bool32 __cdecl Gods98::Key_Find(const char* name, OUT Keys* keyID)
 {
 	log_firstcall();
 
-	for (uint32 loop = 0; loop < 256; loop++) {
+	for (uint32 loop = 0; loop < _countof(keyGlobs.keyName); loop++) {
 		if (keyGlobs.keyName[loop] && ::_stricmp(keyGlobs.keyName[loop], name) == 0) {
 			*keyID = (Keys)loop;
 			return true;

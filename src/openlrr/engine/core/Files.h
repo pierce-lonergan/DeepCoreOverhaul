@@ -35,7 +35,6 @@ typedef void (__cdecl* FileLoadCallback)(const char* filename, uint32 fileSize, 
 #define FILE_DATADIRNAME				"Data"
 #define FILE_KEYFILENAME				"cd.key"
 #define FILE_DELMEFILENAME				"delme.dat"
-#define FILE_CONFIGFILENAME				"lego.cfg"
 #define FILE_MAXPATH					260
 
 #define FILE_DEBUG_RLISTSIZE			2000
@@ -87,14 +86,22 @@ flags_scoped(FileFlags) : uint32
 	FILE_FLAG_NOCD         = 0x40, // Exclude looking in the CD file system.
 								   // Used with: FILE_FLAG_DATADIR, FILE_FLAG_EXEDIR (FILE_FLAG_BASEDIR)
 
-	//FILE_FLAG_DATAPRIORITY = 0x80, // Files will attempt to load from the dataDir before checking WAD files. (excludes CD files)
+	FILE_FLAGS_ONLYSTD     = (FILE_FLAG_NOWAD|FILE_FLAG_NOCD),  // Only look in the standard file system.
+	FILE_FLAGS_ONLYWAD     = (FILE_FLAG_NOSTD|FILE_FLAG_NOCD),  // Only look in WAD files.
+	FILE_FLAGS_ONLYCD      = (FILE_FLAG_NOSTD|FILE_FLAG_NOWAD), // Only look in the CD file system.
 
-	FILE_FLAG_NOVERIFY     = 0x100,  // File path will not be checked for rogue ".\\" or "..\\" path parts.
-								     // DO NOT USE THIS FLAG FOR USER-PROVIDED CONTENT.
-								     // Used with: FILE_FLAG_DATADIR, FILE_FLAG_EXEDIR (FILE_FLAG_BASEDIR)
+	FILE_FLAG_NOVERIFY     = 0x80, // File path will not be checked for rogue ".\\" or "..\\" path parts.
+								   // DO NOT USE THIS FLAG FOR USER-PROVIDED CONTENT.
+								   // Used with: FILE_FLAG_DATADIR, FILE_FLAG_EXEDIR (FILE_FLAG_BASEDIR)
+
+	FILE_FLAG_DEFAULTPRIORITY = 0x000,
+	FILE_FLAG_DATAPRIORITY    = 0x100, // Will attempt to load from the dataDir before checking WAD files. (excludes CD files)
+	FILE_FLAG_WADPRIORITY     = 0x200, // Will attempt to load from WAD files before checking the dataDir.
+
+	FILE_FLAGS_PRIORITYMASK   = (FILE_FLAG_DEFAULTPRIORITY|FILE_FLAG_DATAPRIORITY|FILE_FLAG_WADPRIORITY),
 
 
-	FILE_FLAGS_DEFAULT     = (FILE_FLAG_DATADIR), // Default flags used when not using File_<Function>2 calls.
+	FILE_FLAGS_DEFAULT     = (FILE_FLAG_DATADIR|FILE_FLAG_DEFAULTPRIORITY), // Default flags used when not using File_<Function>2 calls.
 };
 flags_scoped_end(FileFlags, 0x4);
 
@@ -392,6 +399,15 @@ void __cdecl File_CheckDirectory(const char* dirName);
 
 // <LegoRR.exe @00480830>
 void __cdecl File_CheckFile(const char* fileName);
+
+
+/// CUSTOM: Shorthand for normalizing path separators, and other optional changes.
+///         Returns false when fullpath fails, or if the resulting path is empty.
+bool File_NormalizePath(IN OUT std::string& path, bool fullpath = false, bool stripTrailingSlash = false);
+
+/// CUSTOM: Shorthand for normalizing path separators, and other optional changes.
+///         Returns false when fullpath fails, or if the resulting path is empty.
+bool File_NormalizePath(IN OUT char* path, bool fullpath = false, bool stripTrailingSlash = false);
 
 
 /// CUSTOM:

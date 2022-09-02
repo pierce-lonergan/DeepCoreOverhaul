@@ -825,7 +825,7 @@ void __cdecl Gods98::Gods_Go(const char* programName)
 
 	// The program name MUST start with Lego* if we want all cfg,ae,ptl,ol assets to function.
 	// NOTE: This does not change WAD filename access, that has to be handled in Main_WinMain.
-	if (Gods98::mainOptions.gameName.has_value()) {
+	if (Gods98::mainOptions.gameName) {
 		std::strcpy(openlrrGlobs.legoProgramName, Gods98::mainOptions.gameName->c_str());
 	}
 	else if (::_stricmp(programName, "OpenLRR") == 0 ||

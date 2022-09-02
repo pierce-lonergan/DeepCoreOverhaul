@@ -86,42 +86,59 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 		// Change any return/tab/blah/blah characters to zero...
 		// Clear anything after a semi-colon until the next return character.
 
-		bool32 commentMode = false;
+		bool commentMode = false;
 		for (s = rootConf->fileData, loop = 0; loop < fileSize; loop++) {
+			const char c = *s;
 
-			if (*s == ';') commentMode = true;
-			else if (*s == '\n') commentMode = false;
+			if (c == CONFIG_COMMENTCHAR) commentMode = true;
+			else if (c == '\n') commentMode = false;
 
-			if (commentMode || (*s == '\t' || *s == '\n' || *s == '\r' || *s == ' ')) *s = '\0';
+			if (commentMode || (c == '\t' || c == '\n' || c == '\r' || c == ' ')) *s = '\0';
 
 			s++;
 		}
 
 		// Replace the semi-colons that were removed by the language converter...
-		//for (loop = 0; loop < fileSize; loop++) if (FONT_LASTCHARACTER + 1 == rootConf->fileData[loop]) rootConf->fileData[loop] = ';';
+		//for (loop = 0; loop < fileSize; loop++) {
+		//	if (rootConf->fileData[loop] == FONT_LASTCHARACTER + 1)
+		//		rootConf->fileData[loop] = CONFIG_COMMENTCHAR;
+		//}
 
 		// Run through the file data and point in the config structures
 
 		Config* conf = rootConf;
 		for (s = rootConf->fileData, loop = 0; loop < fileSize; loop++) {
-			if (*s != '\0') {
-				if (*s == '}' && s[1] == '\0') {
+			const char c = *s;
+
+			if (c != '\0') {
+				const char cnext = s[1];
+
+				if (c == CONFIG_CLOSEBLOCKCHAR && cnext == '\0') {
+					// Close block.
+					Error_WarnF((conf->itemName!=nullptr), "Config close brace \"%s\" used between item name and value.", CONFIG_CLOSEBLOCK);
+					Error_FatalF((conf->depth == 0), "Config close brace \"%s\" used at depth 0.", CONFIG_CLOSEBLOCK);
 					conf->depth--;
 				}
 				else if (conf->itemName == nullptr) {
-					Error_Fatal((*s == '{'), "Config");
+					// Assign item key.
+					Error_WarnF((c==CONFIG_OPENBLOCKCHAR && cnext=='\0'), "Config open brace \"%s\" used for item name.", CONFIG_OPENBLOCK);
 					conf->itemName = s;
 				}
 				else {
+					// Assign item value.
 					conf->dataString = s;
 					conf = Config_Create(conf);
-					if (*s == '{' && s[1] == '\0') conf->depth++;
+					// Open block.
+					if (c==CONFIG_OPENBLOCKCHAR && cnext=='\0') conf->depth++;
+					Error_WarnF((c==CONFIG_CLOSEBLOCKCHAR && cnext=='\0'), "Config close brace \"%s\" used for item value.", CONFIG_CLOSEBLOCK);
 				}
 
+				// Skip whitespace.
 				for ( ; loop < fileSize; loop++) if (*(s++) == '\0') break;
-
 			}
-			else s++;
+			else {
+				s++;
+			}
 		}
 
 	}
@@ -174,7 +191,7 @@ const Gods98::Config* __cdecl Gods98::Config_FindArray(const Config* root, const
 	const Config* conf;
 	if (conf = Config_FindItem(root, name)) {
 		/// FIX LEGORR: Ensure next linked item is not null before accessing.
-		if (conf->linkNext && conf->depth < conf->linkNext->depth) {
+		if (conf->linkNext != nullptr && conf->depth < conf->linkNext->depth) {
 			return conf->linkNext;
 		}
 	}
@@ -254,7 +271,7 @@ bool32 __cdecl Gods98::Config_GetRGBValue(const Config* root, const char* string
 	log_firstcall();
 
 	char* argv[100];
-	bool32 res = false;
+	bool res = false;
 
 	char* str;
 	if (str = Config_GetStringValue(root, stringID)) {
@@ -280,7 +297,7 @@ bool32 __cdecl Gods98::Config_GetCoord(const Config* root, const char* stringID,
 	Error_Fatal(!x || !y, "Null passed as x or y");
 
 	char* argv[100];
-	bool32 res = false;
+	bool res = false;
 
 	char* str;
 	if (str = Config_GetStringValue(root, stringID)) {
@@ -329,10 +346,15 @@ void __cdecl Gods98::Config_Free(Config* root)
 {
 	log_firstcall();
 
-	Error_Fatal(root->fileData = nullptr, "Only pass the root (loaded) config structure to Config_Free()");
+	Error_Fatal(root->fileData == nullptr, "Only pass the root (loaded) config structure to Config_Free()");
 
-	Mem_Free(root->fileData);
 	while (root) {
+		/// CHANGE: Allow other config properties to store string data allocations.
+		if (root->fileData) {
+			Mem_Free(root->fileData);
+			root->fileData = nullptr;
+		}
+
 		Config* next = const_cast<Config*>(root->linkNext);
 		Config_Remove(root);
 		root = next;
@@ -406,7 +428,7 @@ const Gods98::Config* __cdecl Gods98::Config_FindItem(const Config* conf, const 
 
 	char* argv[CONFIG_MAXDEPTH];
 	char* tempstring = Util_StrCpy(stringID);
-	uint32 count = Util_Tokenise(tempstring, argv, "::");
+	uint32 count = Util_Tokenise(tempstring, argv, CONFIG_SEPARATOR);
 
 	// First find anything that matches the depth of the request
 	// then see if the hierarchy matches the request.
@@ -414,16 +436,16 @@ const Gods98::Config* __cdecl Gods98::Config_FindItem(const Config* conf, const 
 	while (conf) {
 		if (conf->depth == count - 1) {
 
-			bool32 wildcard = false;
+			bool wildcard = false;
 
 			if (count == 1) {
 				const char* s;
 				uint32 index = 0;
 				for (s = conf->itemName; *s != '\0'; s++) {
-					if (*s == '*') break;
+					if (*s == CONFIG_WILDCARDCHAR) break;
 					index++;
 				}
-				if (*s == '*') {
+				if (*s == CONFIG_WILDCARDCHAR) {
 					wildcard = (::_strnicmp(argv[count - 1], conf->itemName, index) == 0);
 				}
 			}
@@ -441,10 +463,10 @@ const Gods98::Config* __cdecl Gods98::Config_FindItem(const Config* conf, const 
 							const char* s;
 							uint32 index = 0;
 							for (s = backConf->itemName; *s != '\0'; s++) {
-								if (*s == '*') break;
+								if (*s == CONFIG_WILDCARDCHAR) break;
 								index++;
 							}
-							if (*s == '*') {
+							if (*s == CONFIG_WILDCARDCHAR) {
 								wildcard = (::_strnicmp(argv[currDepth - 1], backConf->itemName, index) == 0);
 							}
 						}
@@ -485,6 +507,35 @@ void __cdecl Gods98::Config_AddList(void)
 {
 	// NOTE: This function is no longer called, configListSet.Add already handles this.
 	configListSet.AddList();
+}
+
+
+
+
+uint32 Gods98::Config_CountItems(const Config* arrayItem)
+{
+	uint32 count = 0;
+	while (arrayItem != nullptr) {
+		count++;
+		arrayItem = Config_GetNextItem(arrayItem);
+	}
+	return count;
+}
+
+void Gods98::Config_AppendConfig(Config* root, Config* config)
+{
+	Error_Fatal((root->depth != 0), "Cannot append to a config that does not start at depth 0.");
+	Error_Fatal((config->depth != 0), "Cannot append a new config that does not start at depth 0.");
+	Error_Fatal((config->linkPrev != nullptr), "Appended config is not the root.");
+
+	Config* next = root;
+	do {
+		root = next;
+		next = const_cast<Config*>(root->linkNext);
+	} while (next != nullptr);
+
+	root->linkNext = config;
+	config->linkPrev = root;
 }
 
 #pragma endregion

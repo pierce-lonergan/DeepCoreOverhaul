@@ -42,6 +42,18 @@ enum Keys : uint8; // from `engine/input/Keys.h`
 
 #define CONFIG_SEPARATOR			"::"
 
+#define CONFIG_COMMENTCHAR			';'
+#define CONFIG_COMMENT				";"
+
+#define CONFIG_WILDCARDCHAR			'*'
+#define CONFIG_WILDCARD				"*"
+
+#define CONFIG_OPENBLOCKCHAR		'{'
+#define CONFIG_OPENBLOCK			"{"
+
+#define CONFIG_CLOSEBLOCKCHAR		'}'
+#define CONFIG_CLOSEBLOCK			"}"
+
 #pragma endregion
 
 /**********************************************************************************
@@ -215,6 +227,10 @@ const Config* __cdecl Config_FindItem(const Config* conf, const char* stringID);
 // <LegoRR.exe @00479750>
 void __cdecl Config_AddList(void);
 
+
+uint32 Config_CountItems(const Config* arrayItem);
+
+void Config_AppendConfig(Config* root, Config* config);
 
 
 #define Config_GetIntValue(c,s)		std::atoi(Gods98::Config_GetTempStringValue((c),(s))?Gods98::Config_GetTempStringValue((c),(s)):"")

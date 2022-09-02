@@ -167,7 +167,19 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 
 	Gods98::Container_SetTriggerFrameCallback(LegoObject_TriggerFrameCallback, nullptr);
 
-	legoGlobs.config = Gods98::Config_Load("Lego.cfg");
+
+	/// NEW: Handle extra command line options for config loading.
+	{
+		// Handle overriding the root config name.
+		const char* rootConfigName = Gods98::Main_GetConfigName(LEGO_CONFIGFILENAME);
+
+		// Handle overriding the load location priority of the root config.
+		Gods98::FileFlags rootConfigFlags = Gods98::FileFlags::FILE_FLAGS_DEFAULT;
+		if (Gods98::Main_IsConfigDataPriority())
+			rootConfigFlags |= Gods98::FileFlags::FILE_FLAG_DATAPRIORITY;
+
+		legoGlobs.config = Gods98::Config_Load2(rootConfigName, rootConfigFlags);
+	}
 	Gods98::Config* legoConfig = legoGlobs.config;
 	if (legoGlobs.config == nullptr) {
 		//goto LAB_0042274b;
@@ -175,8 +187,17 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		return false;
 	}
 
+	/// NEW: Handle command line option to append additional configs.
+	for (const auto& nextConfigName : Gods98::Main_GetConfigAppends()) {
+		Gods98::Config* nextConfig = Gods98::Config_Load2(nextConfigName.c_str(), Gods98::FileFlags::FILE_FLAG_DATAPRIORITY);
+		Error_WarnF((nextConfig==nullptr), "Could not append config. Failed to load: %s", nextConfigName.c_str());
+		if (nextConfig != nullptr) {
+			Gods98::Config_AppendConfig(legoConfig, nextConfig);
+		}
+	}
+
 	/// NEW: Store LoseFocusAndPause property so that we don't need to look it up on-demand.
-	legoGlobs2.loseFocusAndPause = Config_GetBoolOrFalse(legoGlobs.config, Main_ID("LoseFocusAndPause"));
+	legoGlobs2.loseFocusAndPause = Config_GetBoolOrFalse(legoConfig, Main_ID("LoseFocusAndPause"));
 
 	ColourRGBF ToolTipRGB = { 0.0f }; // dummy init
 
@@ -771,7 +792,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		Front_ResetSaveNumber();
 
 		if (Front_IsFrontEndEnabled()) {
-			Front_Initialise(legoGlobs.config);
+			Front_Initialise(legoConfig);
 		}
 
 		Advisor_Initialise(legoGlobs.gameName, legoGlobs.cameraMain, legoGlobs.viewMain);

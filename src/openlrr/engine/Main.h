@@ -266,7 +266,8 @@ struct Main_CommandLineOptions
 	std::optional<bool>			noSound;		// -nosound
 	std::optional<bool>			insistOnCD;		// -insistOnCD
 
-	// Present in LRR:CE
+	std::optional<bool>			help;			// -help : (functionality not added yet)
+
 	std::optional<Point2I>		pos;			// -pos <X>,<Y> : Overrides startup window position.
 	std::optional<Size2U>		res;			// -res <W>x<H> : Overrides the display resolution (not supported by engine).
 	std::optional<uint32>		bitDepth;		// -bpp <BPP> : Overrides the display bit depth (not supported by engine).
@@ -276,7 +277,6 @@ struct Main_CommandLineOptions
 	std::optional<bool>			log;			// -log / -nolog : Opens console logging window.
 	std::optional<bool>			menu;			// -menu / -nomenu : Enable/disable the system menu on startup.
 
-	// Not present in LRR:CE (exclusive to OpenLRR)
 	std::optional<bool>			noCD;			// -noCD / -useCD : CD will not be used when searching for game files.
 	std::optional<bool>			noWads;			// -nowad / -usewad : WAD files will not be used when searching game for files.
 	std::optional<bool>			dataFirst;		// -datafirst / -wadfirst : Overrides file system priority, putting the Data directory before WAD files.
@@ -288,6 +288,10 @@ struct Main_CommandLineOptions
 	std::optional<std::string>	clgenName;		// -cl <presetname> : Specify a preset for command line options using the existing CLGen.dat format.
 	std::optional<bool>			noCLGen;		// -noclgen : Disables StandardParameters options assigned by CLGen.
 	std::optional<bool>			noInstance;		// -noinstance : Allows this instance of OpenLRR to run even if other instances are running.
+
+	std::optional<bool>         configFirst;	// -cfgfirst : Look for Lego.cfg file in the Data Directory before WAD files.
+	std::optional<std::string>	configName;		// -cfgfile <filename> : Change the name of the Lego.cfg config file to load (must be a relative datadir path).
+	std::vector<std::string>	configAppends;	// -cfgadd <filename> : Append extra configs to the Lego.cfg config to overwrite properties (command can be used multiple times).
 
 	/*std::string			startLevel; // Main_GetStartLevel
 
@@ -408,6 +412,12 @@ inline bool Main_IsIntrosEnabled() { return !mainOptions.noIntro.value_or(false)
 inline bool Main_IsVideosEnabled() { return !mainOptions.noVideo.value_or(false); }
 
 inline bool Main_IsSkippingEnabled() { return !mainOptions.noSkip.value_or(false); }
+
+inline bool Main_IsConfigDataPriority() { return mainOptions.configFirst.value_or(false); }
+
+inline const char* Main_GetConfigName(const char* defaultName) { return (mainOptions.configName ? mainOptions.configName->c_str() : defaultName); }
+
+inline const std::vector<std::string>& Main_GetConfigAppends() { return mainOptions.configAppends; }
 
 
 /// CUSTOM: A wrapper for the WINAPI Sleep function.
