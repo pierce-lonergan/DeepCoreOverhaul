@@ -436,7 +436,7 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_LIGHTEFFECTS:
 		//std::printf("IDM_LIGHTEFFECTS\n");
 		LegoRR::gamectrlGlobs.dbgF9DisableLightEffects = !LegoRR::gamectrlGlobs.dbgF9DisableLightEffects;
-		LightEffects_SetDisabled(LegoRR::gamectrlGlobs.dbgF9DisableLightEffects);
+		LegoRR::LightEffects_SetDisabled(LegoRR::gamectrlGlobs.dbgF9DisableLightEffects);
 		break;
 
 	case IDM_DETAILON:

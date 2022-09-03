@@ -2,6 +2,8 @@
 
 #include "../common.h"
 
+#include "geometry.h"
+
 
 #pragma region Colour Structs
 
@@ -13,6 +15,12 @@ struct ColourRGBI {
 			/*0,4*/ uint32 red;
 			/*4,4*/ uint32 green;
 			/*8,4*/ uint32 blue;
+			/*c*/
+		};
+		struct {
+			/*0,4*/ uint32 r;
+			/*4,4*/ uint32 g;
+			/*8,4*/ uint32 b;
 			/*c*/
 		};
 		/*0,c*/ std::array<uint32, 3> channels;
@@ -29,7 +37,14 @@ struct ColourRGBF {
 			/*8,4*/ real32 blue;
 			/*c*/
 		};
-		/*0,c*/ std::array<real32, 3> channels;
+		struct {
+			/*0,4*/ real32 r;
+			/*4,4*/ real32 g;
+			/*8,4*/ real32 b;
+			/*c*/
+		};
+		/*0,c*/		Vector3F vec3;
+		/*0,c*/		std::array<real32, 3> channels;
 		/*c*/
 	};
 }; assert_sizeof(ColourRGBF, 0xc);
@@ -38,13 +53,21 @@ struct ColourRGBF {
 struct ColourRGBAI {
 	union {
 		struct {
-			/*0,4*/ uint32 red;
-			/*4,4*/ uint32 green;
-			/*8,4*/ uint32 blue;
-			/*c,4*/ uint32 alpha;
+			/*00,4*/ uint32 red;
+			/*04,4*/ uint32 green;
+			/*08,4*/ uint32 blue;
+			/*0c,4*/ uint32 alpha;
 			/*10*/
 		};
-		/*0,10*/ std::array<uint32, 4> channels;
+		struct {
+			/*00,4*/ uint32 r;
+			/*04,4*/ uint32 g;
+			/*08,4*/ uint32 b;
+			/*0c,4*/ uint32 a;
+			/*10*/
+		};
+		/*00,c*/	ColourRGBI rgb;
+		/*00,10*/	std::array<uint32, 4> channels;
 		/*10*/
 	};
 }; assert_sizeof(ColourRGBAI, 0x10);
@@ -53,13 +76,23 @@ struct ColourRGBAI {
 struct ColourRGBAF {
 	union {
 		struct {
-			/*0,4*/ real32 red;
-			/*4,4*/ real32 green;
-			/*8,4*/ real32 blue;
-			/*c,4*/ real32 alpha;
+			/*00,4*/ real32 red;
+			/*04,4*/ real32 green;
+			/*08,4*/ real32 blue;
+			/*0c,4*/ real32 alpha;
 			/*10*/
 		};
-		/*0,10*/ std::array<real32, 4> channels;
+		struct {
+			/*00,4*/ real32 r;
+			/*04,4*/ real32 g;
+			/*08,4*/ real32 b;
+			/*0c,4*/ real32 a;
+			/*10*/
+		};
+		/*00,c*/	ColourRGBF rgb;
+		/*00,c*/	Vector3F vec3;
+		/*00,10*/	Vector4F vec4;
+		/*00,10*/	std::array<real32, 4> channels;
 		/*10*/
 	};
 }; assert_sizeof(ColourRGBAF, 0x10);
@@ -76,6 +109,12 @@ struct ColourRGBPacked {
 			/*2,1*/ uint8 blue;
 			/*3*/
 		};
+		struct {
+			/*0,1*/ uint8 r;
+			/*1,1*/ uint8 g;
+			/*2,1*/ uint8 b;
+			/*3*/
+		};
 		/*0,3*/ std::array<uint8, 3> channels;
 		/*3*/
 	};
@@ -89,6 +128,13 @@ struct ColourRGBAPacked {
 			/*1,1*/ uint8 green;
 			/*2,1*/ uint8 blue;
 			/*3,1*/ uint8 alpha;
+			/*4*/
+		};
+		struct {
+			/*0,1*/ uint8 r;
+			/*1,1*/ uint8 g;
+			/*2,1*/ uint8 b;
+			/*3,1*/ uint8 a;
 			/*4*/
 		};
 		/*0,4*/ std::array<uint8, 4> channels;
@@ -108,6 +154,12 @@ struct ColourBGRPacked {
 			/*2,1*/ uint8 red;
 			/*3*/
 		};
+		struct {
+			/*0,1*/ uint8 b;
+			/*1,1*/ uint8 g;
+			/*2,1*/ uint8 r;
+			/*3*/
+		};
 		/*0,3*/ std::array<uint8, 3> channels;
 		/*3*/
 	};
@@ -121,6 +173,13 @@ struct ColourBGRAPacked {
 			/*1,1*/ uint8 green;
 			/*2,1*/ uint8 red;
 			/*3,1*/ uint8 alpha;
+			/*4*/
+		};
+		struct {
+			/*0,1*/ uint8 b;
+			/*1,1*/ uint8 g;
+			/*2,1*/ uint8 r;
+			/*3,1*/ uint8 a;
 			/*4*/
 		};
 		/*0,4*/ std::array<uint8, 4> channels;

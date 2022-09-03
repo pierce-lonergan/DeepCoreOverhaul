@@ -39,8 +39,16 @@ char* __cdecl Util_GetLine(IN OUT char** buffer, const char* bufferEnd);
 // <LegoRR.exe @00477700>
 uint32 __cdecl Util_Tokenise(IN OUT char* str, OUT char** argv, const char* sep);
 
+/// CUSTOM: Util_Tokenise with an upper limit on the number of arguments.
+///         Return the total number of arguments found regardless of count (for error detection).
+uint32 Util_TokeniseSafe(IN OUT char* str, OUT char** argv, const char* sep, uint32 count);
+
 // <LegoRR.exe @00477770>
 uint32 __cdecl Util_WSTokenise(IN OUT char* str, OUT char** argv);
+
+/// CUSTOM: Util_WSTokenise with an upper limit on the number of arguments.
+///         Return the total number of arguments found regardless of count (for error detection).
+uint32 Util_WSTokeniseSafe(IN OUT char* str, OUT char** argv, uint32 count);
 
 // (char* ::_strdup(const char*))
 // <LegoRR.exe @00477810>

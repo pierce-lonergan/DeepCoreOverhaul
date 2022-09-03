@@ -39,6 +39,7 @@
 #include "engine/Init.h"
 
 #include "game/audio/SFX.h"
+#include "game/effects/LightEffects.h"
 #include "game/effects/Smoke.h"
 #include "game/front/Credits.h"
 #include "game/front/FrontEnd.h"
@@ -1918,6 +1919,56 @@ bool interop_hook_LegoRR_LegoCamera(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_LightEffects(void)
+{
+	bool result = true;
+
+	// used by: Lego_LoadLighting
+	result &= hook_write_jmpret(0x0044c9d0, LegoRR::LightEffects_Initialise);
+	// internal, no need to hook these
+	//result &= hook_write_jmpret(0x0044ca20, LegoRR::LightEffects_ResetSpotlightColour);
+	// used by: Lego_HandleWorldDebugKeys
+	result &= hook_write_jmpret(0x0044ca50, LegoRR::LightEffects_SetDisabled);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x0044ca80, LegoRR::LightEffects_Load);
+	// used by: LightEffects_Load
+	result &= hook_write_jmpret(0x0044cab0, LegoRR::LightEffects_LoadBlink);
+	// used by: LightEffects_LoadBlink
+	result &= hook_write_jmpret(0x0044cc30, LegoRR::LightEffects_SetBlink);
+	// used by: LightEffects_Load
+	result &= hook_write_jmpret(0x0044cc80, LegoRR::LightEffects_LoadFade);
+	// used by: LightEffects_LoadFade
+	result &= hook_write_jmpret(0x0044ced0, LegoRR::LightEffects_SetFade);
+	// used by: LightEffects_Load
+	result &= hook_write_jmpret(0x0044cf60, LegoRR::LightEffects_LoadMove);
+	// used by: LightEffects_LoadMove
+	result &= hook_write_jmpret(0x0044d1b0, LegoRR::LightEffects_SetMove);
+	// used by: Lego_HandleWorldDebugKeys
+	result &= hook_write_jmpret(0x0044d230, LegoRR::LightEffects_InvalidatePosition);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0044d260, LegoRR::LightEffects_Update);
+	// used by: LightEffects_Update
+	result &= hook_write_jmpret(0x0044d2b0, LegoRR::LightEffects_UpdateSpotlightColour);
+	// used by: LightEffects_Update
+	result &= hook_write_jmpret(0x0044d390, LegoRR::LightEffects_UpdateBlink);
+	// internal, no need to hook these
+	//result &= hook_write_jmpret(0x0044d510, LegoRR::LightEffects_FlipSign);
+	// used by: LightEffects_Update
+	result &= hook_write_jmpret(0x0044d540, LegoRR::LightEffects_UpdateFade);
+	// used by: LightEffects_UpdateFade
+	result &= hook_write_jmpret(0x0044d9d0, LegoRR::LightEffects_RandomizeFadeSpeedRGB);
+	// used by: LightEffects_Update
+	result &= hook_write_jmpret(0x0044da20, LegoRR::LightEffects_UpdateMove);
+	// internal, no need to hook these
+	//result &= hook_write_jmpret(0x0044dc60, LegoRR::LightEffects_CheckMoveLimit);
+	// used by: Lego_HandleWorld
+	result &= hook_write_jmpret(0x0044dce0, LegoRR::LightEffects_SetDimmerMode);
+	// used by: LightEffects_Update
+	result &= hook_write_jmpret(0x0044dd10, LegoRR::LightEffects_UpdateDimmer);
+
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Messages(void)
 {
 	bool result = true;
@@ -2821,6 +2872,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Game();
 	result &= interop_hook_LegoRR_Interface();
 	result &= interop_hook_LegoRR_LegoCamera();
+	result &= interop_hook_LegoRR_LightEffects();
 	result &= interop_hook_LegoRR_Messages();
 	result &= interop_hook_LegoRR_NERPsFile();
 	result &= interop_hook_LegoRR_NERPsFunctions();

@@ -507,7 +507,7 @@ bool Gods98::Main_Initialise(_In_ HINSTANCE hInstanceDll,
 	//	if (Util_StrIStr(lpCmdLine, "-setup")) setup = true;
 
 
-	if (mainOptions.noInstance.value_or(false)) {
+	if (!mainOptions.noInstance.value_or(false)) {
 		char mutexName[128];
 		std::sprintf(mutexName, "%s Mutex", productName);
 		::CreateMutexA(nullptr, true, mutexName);

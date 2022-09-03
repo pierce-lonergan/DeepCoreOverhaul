@@ -86,23 +86,41 @@ struct Coord2U {
 
 // POINT
 struct Point2I {
-	/*0,4*/ sint32 x;
-	/*4,4*/ sint32 y;
-	/*8*/
+	union {
+		struct {
+			/*0,4*/ sint32 x;
+			/*4,4*/ sint32 y;
+			/*8*/
+		};
+		/*0,8*/		std::array<sint32, 2> values;
+		/*8*/
+	};
 }; assert_sizeof(Point2I, 0x8);
 
 struct Point2U {
-	/*0,4*/ uint32 x;
-	/*4,4*/ uint32 y;
-	/*8*/
+	union {
+		struct {
+			/*0,4*/ uint32 x;
+			/*4,4*/ uint32 y;
+			/*8*/
+		};
+		/*0,8*/		std::array<uint32, 2> values;
+		/*8*/
+	};
 }; assert_sizeof(Point2U, 0x8);
 
 
 // (VECTOR2D)
 struct Point2F {
-	/*0,4*/ real32 x;
-	/*4,4*/ real32 y;
-	/*8*/
+	union {
+		struct {
+			/*0,4*/ real32 x;
+			/*4,4*/ real32 y;
+			/*8*/
+		};
+		/*0,8*/		std::array<real32, 2> values;
+		/*8*/
+	};
 }; assert_sizeof(Point2F, 0x8);
 
 //typedef Point2F Vector2F;
@@ -110,79 +128,135 @@ struct Point2F {
 
 // D3DVECTOR (VECTOR3D)
 struct Vector3F {
-	/*0,4*/ real32 x;
-	/*4,4*/ real32 y;
-	/*8,4*/ real32 z;
-	/*c*/
+	union {
+		struct {
+			/*0,4*/ real32 x;
+			/*4,4*/ real32 y;
+			/*8,4*/ real32 z;
+			/*c*/
+		};
+		/*0,8*/		Point2F vec2;
+		/*0,c*/		std::array<real32, 3> values;
+		/*c*/
+	};
 }; assert_sizeof(Vector3F, 0xc);
 
 
 // D3DRMVECTOR4D (VECTOR4D)
 struct Vector4F {
-	/*00,4*/ real32 x;
-	/*04,4*/ real32 y;
-	/*08,4*/ real32 z;
-	/*0c,4*/ real32 w;
-	/*10*/
+	union {
+		struct {
+			/*00,4*/ real32 x;
+			/*04,4*/ real32 y;
+			/*08,4*/ real32 z;
+			/*0c,4*/ real32 w;
+			/*10*/
+		};
+		/*00,c*/	Vector3F vec3;
+		/*00,10*/	std::array<real32, 4> values;
+		/*10*/
+	};
 }; assert_sizeof(Vector4F, 0x10);
 
 
 // (MATRIX3D)
 struct Matrix3F {
-	/*0,24*/ union {
-		real32 m[3][3];
-		Vector3F v[3];
+	union {
+		/*0,24*/ real32 m[3][3];
+		/*0,24*/ Vector3F v[3];
+		/*24*/
 	};
-	/*24*/
 }; assert_sizeof(Matrix3F, 0x24);
 
 
 // D3DMATRIX, D3DRMMATRIX4D (MATRIX4D)
 struct Matrix4F {
-	/*0,40*/ union {
-		real32 m[4][4];
-		Vector4F v[4];
+	union {
+		/*0,40*/ real32 m[4][4];
+		/*0,40*/ Vector4F v[4];
+		/*40*/
 	};
-	/*40*/
 }; assert_sizeof(Matrix4F, 0x40);
 
 
 // SIZE
 struct Size2I {
-	/*0,4*/ sint32 width;
-	/*4,4*/ sint32 height;
-	/*8*/
+	union {
+		struct {
+			/*0,4*/ sint32 width;
+			/*4,4*/ sint32 height;
+			/*8*/
+		};
+		/*0,8*/	Point2I point2;
+		/*0,8*/	std::array<sint32, 2> values;
+		/*8*/
+	};
 }; assert_sizeof(Size2I, 0x8);
 
 struct Size2U {
-	/*0,4*/ uint32 width;
-	/*4,4*/ uint32 height;
-	/*8*/
+	union {
+		struct {
+			/*0,4*/ uint32 width;
+			/*4,4*/ uint32 height;
+			/*8*/
+		};
+		/*0,8*/	Point2U point2;
+		/*0,8*/	std::array<uint32, 2> values;
+		/*8*/
+	};
 }; assert_sizeof(Size2U, 0x8);
 
 struct Size2F {
-	/*0,4*/ real32 width;
-	/*4,4*/ real32 height;
-	/*8*/
+	union {
+		struct {
+			/*0,4*/ real32 width;
+			/*4,4*/ real32 height;
+			/*8*/
+		};
+		/*0,8*/	Point2F vec2;
+		/*0,8*/	std::array<real32, 2> values;
+		/*8*/
+	};
 }; assert_sizeof(Size2F, 0x8);
 
 
 struct Range2I {
-	/*0,4*/ sint32 min;
-	/*4,4*/ sint32 max;
-	/*8*/
+	union {
+		struct {
+			/*0,4*/ sint32 min;
+			/*4,4*/ sint32 max;
+			/*8*/
+		};
+		/*0,8*/	Point2I point2;
+		/*0,8*/	std::array<sint32, 2> values;
+		/*8*/
+	};
 }; assert_sizeof(Range2I, 0x8);
 
 struct Range2U {
-	/*0,4*/ uint32 min;
-	/*4,4*/ uint32 max;
-	/*8*/
+	union {
+		struct {
+			/*0,4*/ uint32 min;
+			/*4,4*/ uint32 max;
+			/*8*/
+		};
+		/*0,8*/	Point2U point2;
+		/*0,8*/	std::array<uint32, 2> values;
+		/*8*/
+	};
 }; assert_sizeof(Range2U, 0x8);
 
 struct Range2F {
-	/*0,4*/ real32 min;
-	/*4,4*/ real32 max;
-	/*8*/
+	union {
+		struct {
+			/*0,4*/ real32 min;
+			/*4,4*/ real32 max;
+			/*8*/
+		};
+		/*0,8*/	Point2F vec2;
+		/*0,8*/	std::array<real32, 2> values;
+		/*8*/
+	};
 }; assert_sizeof(Range2F, 0x8);
 
 
@@ -201,6 +275,8 @@ struct Area2I {
 			/*08,8*/ Size2I  size;
 			/*10*/
 		};
+		/*00,10*/	std::array<sint32, 4> values;
+		/*10*/
 	};
 }; assert_sizeof(Area2I, 0x10);
 
@@ -219,6 +295,8 @@ struct Area2U {
 			/*08,8*/ Size2U  size;
 			/*10*/
 		};
+		/*00,10*/	std::array<uint32, 4> values;
+		/*10*/
 	};
 }; assert_sizeof(Area2U, 0x10);
 
@@ -237,35 +315,55 @@ struct Area2F {
 			/*08,8*/ Size2F  size;
 			/*10*/
 		};
+		/*00,10*/	std::array<real32, 4> values;
+		/*10*/
 	};
 }; assert_sizeof(Area2F, 0x10);
 
 
 // RECT (margin rect)
 struct Rect2I {
-	/*00,4*/ sint32 left;
-	/*04,4*/ sint32 top;
-	/*08,4*/ sint32 right;
-	/*0c,4*/ sint32 bottom;
-	/*10*/
+	union {
+		struct {
+			/*00,4*/ sint32 left;
+			/*04,4*/ sint32 top;
+			/*08,4*/ sint32 right;
+			/*0c,4*/ sint32 bottom;
+			/*10*/
+		};
+		/*00,10*/	std::array<sint32, 4> values;
+		/*10*/
+	};
 }; assert_sizeof(Rect2I, 0x10);
 
 // (margin rect)
 struct Rect2U {
-	/*00,4*/ uint32 left;
-	/*04,4*/ uint32 top;
-	/*08,4*/ uint32 right;
-	/*0c,4*/ uint32 bottom;
-	/*10*/
+	union {
+		struct {
+			/*00,4*/ uint32 left;
+			/*04,4*/ uint32 top;
+			/*08,4*/ uint32 right;
+			/*0c,4*/ uint32 bottom;
+			/*10*/
+		};
+		/*00,10*/	std::array<uint32, 4> values;
+		/*10*/
+	};
 }; assert_sizeof(Rect2U, 0x10);
 
 // (margin rect)
 struct Rect2F {
-	/*00,4*/ real32 left;
-	/*04,4*/ real32 top;
-	/*08,4*/ real32 right;
-	/*0c,4*/ real32 bottom;
-	/*10*/
+	union {
+		struct {
+			/*00,4*/ real32 left;
+			/*04,4*/ real32 top;
+			/*08,4*/ real32 right;
+			/*0c,4*/ real32 bottom;
+			/*10*/
+		};
+		/*00,10*/	std::array<real32, 4> values;
+		/*10*/
+	};
 }; assert_sizeof(Rect2F, 0x10);
 
 
@@ -336,8 +434,13 @@ struct Box3F {
 struct Vertex {
 	/*00,c*/ Vector3F position;
 	/*0c,c*/ Vector3F normal;
-	/*18,4*/ real32 tu;
-	/*1c,4*/ real32 tv;
+	/*18,8*/ union {
+		struct {
+			/*18,4*/ real32 tu;
+			/*1c,4*/ real32 tv;
+		};
+		/*18,8*/	Point2F tuv;
+	};
 	/*20,4*/ colour32 colour;
 	/*24*/
 }; assert_sizeof(Vertex, 0x24);

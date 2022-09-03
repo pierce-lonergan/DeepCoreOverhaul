@@ -297,7 +297,7 @@ Vector3F* __cdecl Gods98::noinline(Maths_Vector3DScale)(OUT Vector3F* r, const V
 //__inline Vector3F* Maths_Vector3DScale(OUT Vector3F* r, const Vector3F* a, real32 f) { r->x = a->x*f; r->y = a->y*f; r->z = a->z*f; return r; }
 
 // <LegoRR.exe @00401690>
-Vector3F* __cdecl Gods98::noinline(Maths_Vector3DNormalize)(OUT Vector3F* r)
+Vector3F* __cdecl Gods98::noinline(Maths_Vector3DNormalize)(IN OUT Vector3F* r)
 {
 	log_firstcall();
 

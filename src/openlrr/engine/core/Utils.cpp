@@ -40,46 +40,59 @@ char* __cdecl Gods98::Util_GetLine(IN OUT char** buffer, const char* bufferEnd)
 // <LegoRR.exe @00477700>
 uint32 __cdecl Gods98::Util_Tokenise(IN OUT char* str, OUT char** argv, const char* sep)
 {
-	log_firstcall();
-
-	if (str[0] == '\0') return 0;
-
-	char* s = str;
-	uint32 count = 0, sl = std::strlen(sep);
-
-	argv[count++] = str;
-	while (*s != '\0') {
-		if (std::strncmp(sep, s, sl) == 0) {
-			*s = '\0';
-			argv[count++] = s + sl;
-		}
-		s++;
-	}
-
-	return count;
+	return Util_TokeniseSafe(str, argv, sep, std::numeric_limits<uint32>::max());
 }
 
-// <LegoRR.exe @00477770>
-uint32 __cdecl Gods98::Util_WSTokenise(IN OUT char* str, OUT char** argv)
+/// CUSTOM: Util_Tokenise with an upper limit on the number of arguments.
+uint32 Gods98::Util_TokeniseSafe(IN OUT char* str, OUT char** argv, const char* sep, uint32 count)
 {
 	log_firstcall();
 
 	if (str[0] == '\0') return 0;
 
 	char* s = str;
-	uint32 count = 0;
+	const size_t len = std::strlen(sep);
+	uint32 index = 0;
 
-	argv[count++] = str;
+	if (index < count) argv[index++] = str;
+	while (*s != '\0') {
+		if (std::strncmp(sep, s, len) == 0) {
+			*s = '\0';
+			if (index < count) argv[index++] = s + len;
+		}
+		s++;
+	}
+
+	return index;
+}
+
+// <LegoRR.exe @00477770>
+uint32 __cdecl Gods98::Util_WSTokenise(IN OUT char* str, OUT char** argv)
+{
+	return Util_WSTokeniseSafe(str, argv, std::numeric_limits<uint32>::max());
+}
+
+/// CUSTOM: Util_WSTokenise with an upper limit on the number of arguments.
+uint32 Gods98::Util_WSTokeniseSafe(IN OUT char* str, OUT char** argv, uint32 count)
+{
+	log_firstcall();
+
+	if (str[0] == '\0') return 0;
+
+	char* s = str;
+	uint32 index = 0;
+
+	if (index < count) argv[index++] = str;
 	while (*s != '\0') {
 		if (std::isspace((uchar8)*s)) {
 			*s++ = '\0';
 			while (std::isspace((uchar8)*s)) s++;
-			argv[count++] = s;
+			if (index < count) argv[index++] = s;
 		}
 		else s++;
 	}
 
-	return count;
+	return index;
 }
 
 // (char* ::_strdup(const char*))

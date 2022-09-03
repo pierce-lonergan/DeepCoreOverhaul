@@ -9,6 +9,9 @@
 #pragma once
 
 #include "../../common.h"
+
+#include "../geometry.h"
+
 //#include "../input/Keys.h"
 #include "Files.h"
 #include "ListSet.hpp"
@@ -202,6 +205,38 @@ bool32 __cdecl Config_GetRGBValue(const Config* root, const char* stringID, OUT 
 
 // <missing>
 bool32 __cdecl Config_GetCoord(const Config* root, const char* stringID, OUT real32* x, OUT real32* y, OPTIONAL OUT real32* z);
+
+
+bool Config_GetIntValues(const Config* root, const char* stringID, const char* sep, OUT sint32* values, uint32 count);
+
+bool Config_GetRealValues(const Config* root, const char* stringID, const char* sep, OUT real32* values, uint32 count);
+
+
+bool Config_GetPoint2I(const Config* root, const char* stringID, const char* sep, OUT Point2I* point);
+
+bool Config_GetSize2I(const Config* root, const char* stringID, const char* sep, OUT Size2I* size);
+
+bool Config_GetRange2I(const Config* root, const char* stringID, const char* sep, OUT Range2I* range);
+
+bool Config_GetArea2I(const Config* root, const char* stringID, const char* sep, OUT Area2I* area);
+
+bool Config_GetRect2I(const Config* root, const char* stringID, const char* sep, OUT Rect2I* rect);
+
+
+bool Config_GetPoint2F(const Config* root, const char* stringID, const char* sep, OUT Point2F* point);
+
+bool Config_GetSize2F(const Config* root, const char* stringID, const char* sep, OUT Size2F* size);
+
+bool Config_GetRange2F(const Config* root, const char* stringID, const char* sep, OUT Range2F* range);
+
+bool Config_GetArea2F(const Config* root, const char* stringID, const char* sep, OUT Area2F* area);
+
+bool Config_GetRect2F(const Config* root, const char* stringID, const char* sep, OUT Rect2F* rect);
+
+bool Config_GetVector3F(const Config* root, const char* stringID, const char* sep, OUT Vector3F* vector);
+
+bool Config_GetVector4F(const Config* root, const char* stringID, const char* sep, OUT Vector4F* vector);
+
 
 // <missing>
 bool32 __cdecl Config_GetKey(const Config* root, const char* stringID, OUT Keys* key);

@@ -270,12 +270,12 @@ bool32 __cdecl Gods98::Config_GetRGBValue(const Config* root, const char* string
 {
 	log_firstcall();
 
-	char* argv[100];
+	char* argv[3];
 	bool res = false;
 
 	char* str;
 	if (str = Config_GetStringValue(root, stringID)) {
-		if (Util_Tokenise(str, argv, ":") == 3) {
+		if (Util_TokeniseSafe(str, argv, ":", 3) == 3) {
 			*r = std::atoi(argv[0]) / 255.0f;
 			*g = std::atoi(argv[1]) / 255.0f;
 			*b = std::atoi(argv[2]) / 255.0f;
@@ -296,12 +296,12 @@ bool32 __cdecl Gods98::Config_GetCoord(const Config* root, const char* stringID,
 {
 	Error_Fatal(!x || !y, "Null passed as x or y");
 
-	char* argv[100];
+	char* argv[3];
 	bool res = false;
 
 	char* str;
 	if (str = Config_GetStringValue(root, stringID)) {
-		uint32 argc = Util_Tokenise(str, argv, ",");
+		const uint32 argc = Util_TokeniseSafe(str, argv, ",", 3);
 
 		if (z == nullptr) { // FORMAT: x,y
 			if (argc == 2) {
@@ -327,6 +327,116 @@ bool32 __cdecl Gods98::Config_GetCoord(const Config* root, const char* stringID,
 	}
 
 	return res;
+}
+
+bool Gods98::Config_GetIntValues(const Config* root, const char* stringID, const char* sep, OUT sint32* values, uint32 count)
+{
+	bool res = false;
+
+	char* str;
+	if (str = Config_GetStringValue(root, stringID)) {
+		// Allocate a larger array if count is too high.
+		char* argv[128];
+		char** argv2 = argv;
+		if (count > _countof(argv)) argv2 = new char*[count];
+
+		if (Util_TokeniseSafe(str, argv2, sep, count) == count) {
+			for (uint32 i = 0; i < count; i++) {
+				values[i] = std::atoi(argv2[i]);
+			}
+			res = true;
+		}
+
+		// Free if we've allocated a larger array, and aren't using the stack.
+		if (argv2 != argv) delete[] argv2;
+		Mem_Free(str);
+	}
+	return res;
+}
+
+bool Gods98::Config_GetRealValues(const Config* root, const char* stringID, const char* sep, OUT real32* values, uint32 count)
+{
+	bool res = false;
+
+	char* str;
+	if (str = Config_GetStringValue(root, stringID)) {
+		// Allocate a larger array if count is too high.
+		char* argv[128];
+		char** argv2 = argv;
+		if (count > _countof(argv)) argv2 = new char*[count];
+
+		if (Util_TokeniseSafe(str, argv2, sep, count) == count) {
+			for (uint32 i = 0; i < count; i++) {
+				values[i] = static_cast<real32>(std::atof(argv2[i]));
+			}
+			res = true;
+		}
+
+		// Free if we've allocated a larger array, and aren't using the stack.
+		if (argv2 != argv) delete[] argv2;
+		Mem_Free(str);
+	}
+	return res;
+}
+
+bool Gods98::Config_GetPoint2I(const Config* root, const char* stringID, const char* sep, OUT Point2I* point)
+{
+	return Config_GetIntValues(root, stringID, sep, point->values.data(), point->values.size());
+}
+
+bool Gods98::Config_GetSize2I(const Config* root, const char* stringID, const char* sep, OUT Size2I* size)
+{
+	return Config_GetIntValues(root, stringID, sep, size->values.data(), size->values.size());
+}
+
+bool Gods98::Config_GetRange2I(const Config* root, const char* stringID, const char* sep, OUT Range2I* range)
+{
+	return Config_GetIntValues(root, stringID, sep, range->values.data(), range->values.size());
+}
+
+bool Gods98::Config_GetArea2I(const Config* root, const char* stringID, const char* sep, OUT Area2I* area)
+{
+	return Config_GetIntValues(root, stringID, sep, area->values.data(), area->values.size());
+}
+
+bool Gods98::Config_GetRect2I(const Config* root, const char* stringID, const char* sep, OUT Rect2I* rect)
+{
+	return Config_GetIntValues(root, stringID, sep, rect->values.data(), rect->values.size());
+}
+
+bool Gods98::Config_GetPoint2F(const Config* root, const char* stringID, const char* sep, OUT Point2F* point)
+{
+	return Config_GetRealValues(root, stringID, sep, point->values.data(), point->values.size());
+}
+
+bool Gods98::Config_GetSize2F(const Config* root, const char* stringID, const char* sep, OUT Size2F* size)
+{
+	return Config_GetRealValues(root, stringID, sep, size->values.data(), size->values.size());
+}
+
+bool Gods98::Config_GetRange2F(const Config* root, const char* stringID, const char* sep, OUT Range2F* range)
+{
+	return Config_GetRealValues(root, stringID, sep, range->values.data(), range->values.size());
+}
+
+bool Gods98::Config_GetArea2F(const Config* root, const char* stringID, const char* sep, OUT Area2F* area)
+{
+	return Config_GetRealValues(root, stringID, sep, area->values.data(), area->values.size());
+}
+
+bool Gods98::Config_GetRect2F(const Config* root, const char* stringID, const char* sep, OUT Rect2F* rect)
+{
+	return Config_GetRealValues(root, stringID, sep, rect->values.data(), rect->values.size());
+}
+
+bool Gods98::Config_GetVector3F(const Config* root, const char* stringID, const char* sep, OUT Vector3F* vector)
+{
+	return Config_GetRealValues(root, stringID, sep, vector->values.data(), vector->values.size());
+}
+
+bool Gods98::Config_GetVector4F(const Config* root, const char* stringID, const char* sep, OUT Vector4F* vector)
+{
+	return Config_GetRealValues(root, stringID, sep, vector->values.data(), vector->values.size());
 }
 
 
@@ -428,7 +538,8 @@ const Gods98::Config* __cdecl Gods98::Config_FindItem(const Config* conf, const 
 
 	char* argv[CONFIG_MAXDEPTH];
 	char* tempstring = Util_StrCpy(stringID);
-	uint32 count = Util_Tokenise(tempstring, argv, CONFIG_SEPARATOR);
+	uint32 count = Util_TokeniseSafe(tempstring, argv, CONFIG_SEPARATOR, CONFIG_MAXDEPTH);
+	Error_Fatal((count > CONFIG_MAXDEPTH), "Config StringID exceeds max depth");
 
 	// First find anything that matches the depth of the request
 	// then see if the hierarchy matches the request.

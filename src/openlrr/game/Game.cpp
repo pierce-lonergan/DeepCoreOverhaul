@@ -1383,14 +1383,14 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 		gamectrlGlobs.dbgF10InvertLighting = !gamectrlGlobs.dbgF10InvertLighting;
 		real32 dirZ;
 		if (!gamectrlGlobs.dbgF10InvertLighting) {
-			Gods98::Container_SetPosition(legoGlobs.spotlightTop, (legoGlobs.cameraMain)->cont3, 200.0f, 140.0f, -130.0f);
+			Gods98::Container_SetPosition(legoGlobs.spotlightTop, legoGlobs.cameraMain->cont3, 200.0f, 140.0f, -130.0f);
 			dirZ = 0.75f;
 		}
 		else {
-			Gods98::Container_SetPosition(legoGlobs.spotlightTop, (legoGlobs.cameraMain)->cont3, 250.0f, 190.0f, 20.0f);
+			Gods98::Container_SetPosition(legoGlobs.spotlightTop, legoGlobs.cameraMain->cont3, 250.0f, 190.0f, 20.0f);
 			dirZ = 0.0f;
 		}
-		Gods98::Container_SetOrientation(legoGlobs.spotlightTop, (legoGlobs.cameraMain)->cont3, -1.0f, -0.8f, dirZ, 0.0f, 1.0f, 0.0f);
+		Gods98::Container_SetOrientation(legoGlobs.spotlightTop, legoGlobs.cameraMain->cont3, -1.0f, -0.8f, dirZ, 0.0f, 1.0f, 0.0f);
 		LightEffects_InvalidatePosition();
 	}
 

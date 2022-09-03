@@ -164,11 +164,23 @@ __inline Point2F* Maths_Vector2DSubtract(OUT Point2F* r, const Point2F* a, const
 // <inlined>
 __inline Point2F* Maths_Vector2DAdd(OUT Point2F* r, const Point2F* a, const Point2F* b) { r->x = a->x+b->x; r->y = a->y+b->y; return r; }
 
+/// CUSTOM:
+inline Point2F* Maths_Vector2DMultiply(OUT Point2F* r, const Point2F* a, const Point2F* b) { r->x = (a->x*b->x); r->y = (a->y*b->y); return r; }
+
+/// CUSTOM:
+inline Point2F* Maths_Vector2DDivide(OUT Point2F* r, const Point2F* a, const Point2F* b) { r->x = (a->x/b->x); r->y = (a->y/b->y); return r; }
+
+/// CUSTOM:
+inline Point2F* Maths_Vector2DAbs(IN OUT Point2F* r) { r->x = std::abs(r->x); r->y = std::abs(r->y); return r; }
+
+/// CUSTOM:
+inline Point2F* Maths_Vector3DNegate(IN OUT Point2F* r) { r->x = -r->x; r->y = -r->y; return r; }
+
 // <inlined>
 __inline Point2F* Maths_Vector2DScale(OUT Point2F* r, const Point2F* a, real32 f) { r->x = a->x*f; r->y = a->y*f; return r; }
 
 // <inlined>
-__inline Point2F* Maths_Vector2DNormalize(OUT Point2F* r) { Maths_Vector2DScale(r, r, 1.0f/Maths_Vector2DLength(r)); return r; }
+__inline Point2F* Maths_Vector2DNormalize(IN OUT Point2F* r) { Maths_Vector2DScale(r, r, 1.0f/Maths_Vector2DLength(r)); return r; }
 
 // <inlined>
 __inline Point2F* Maths_Vector2DSetLength(OUT Point2F* r, const Point2F* a, real32 l) { real32 m = Maths_Vector2DModulus(a); return Maths_Vector2DScale(r, a, (1.0f/m) * l); }
@@ -198,6 +210,17 @@ __inline Vector3F* Maths_Vector3DAdd(OUT Vector3F* r, const Vector3F* a, const V
 Vector3F* __cdecl noinline(Maths_Vector3DSubtract)(OUT Vector3F* r, const Vector3F* a, const Vector3F* b);
 __inline Vector3F* Maths_Vector3DSubtract(OUT Vector3F* r, const Vector3F* a, const Vector3F* b) { r->x = (a->x-b->x); r->y = (a->y-b->y); r->z = (a->z-b->z); return r; }
 
+/// CUSTOM:
+inline Vector3F* Maths_Vector3DMultiply(OUT Vector3F* r, const Vector3F* a, const Vector3F* b) { r->x = (a->x*b->x); r->y = (a->y*b->y); r->z = (a->z*b->z); return r; }
+
+/// CUSTOM:
+inline Vector3F* Maths_Vector3DDivide(OUT Vector3F* r, const Vector3F* a, const Vector3F* b) { r->x = (a->x/b->x); r->y = (a->y/b->y); r->z = (a->z/b->z); return r; }
+
+/// CUSTOM:
+inline Vector3F* Maths_Vector3DAbs(IN OUT Vector3F* r) { r->x = std::abs(r->x); r->y = std::abs(r->y); r->z = std::abs(r->z); return r; }
+
+/// CUSTOM:
+inline Vector3F* Maths_Vector3DNegate(IN OUT Vector3F* r) { r->x = -r->x; r->y = -r->y; r->z = -r->z; return r; }
 
 // <inlined>
 __inline real32 Maths_Vector3DDotProduct(const Vector3F* a, const Vector3F* b) { return (a->x*b->x) + (a->y*b->y) + (a->z*b->z); }
@@ -208,8 +231,8 @@ Vector3F* __cdecl noinline(Maths_Vector3DScale)(OUT Vector3F* r, const Vector3F*
 __inline Vector3F* Maths_Vector3DScale(OUT Vector3F* r, const Vector3F* a, real32 f) { r->x = a->x*f; r->y = a->y*f; r->z = a->z*f; return r; }
 
 // <LegoRR.exe @00401690>
-Vector3F* __cdecl noinline(Maths_Vector3DNormalize)(OUT Vector3F* r);
-__inline Vector3F* Maths_Vector3DNormalize(OUT Vector3F* r) { Maths_Vector3DScale(r, r, 1.0f/Maths_Vector3DLength(r)); return r; }
+Vector3F* __cdecl noinline(Maths_Vector3DNormalize)(IN OUT Vector3F* r);
+__inline Vector3F* Maths_Vector3DNormalize(IN OUT Vector3F* r) { Maths_Vector3DScale(r, r, 1.0f/Maths_Vector3DLength(r)); return r; }
 
 /// CUSTOM:
 __inline Vector3F* Maths_Vector3DSetLength(OUT Vector3F* r, const Vector3F* a, real32 l) { real32 m = Maths_Vector3DModulus(a); return Maths_Vector3DScale(r, a, (1.0f/m) * l); }
