@@ -317,7 +317,7 @@ struct Main_CommandLineOptions
 	bool				noTextureManagement; // Container_LoadTextureSurface, Main_DisableTextureManagement, Mesh_SetMeshRenderDesc, Mesh_SetRenderDesc, Mesh_StoreTextureAndMat, Mesh_RestoreTextureAndMat, Mesh_SetGroupRenderDesc, Mesh_RenderTriangleList
 	bool				reduceSamples; // Lego_Initialise -> Lego_LoadSamples, Lws_SetupSoundTriggers
 	bool				reduceAnimation; // Advisor_LoadAnims, Front_Initialise, Container_Load -> "Activities"
-	bool				reduceImages; // Bubble_LoadBubbles, Pointer_LoadPointers, Reward_LoadItemBoxImages, Reward_LoadItemImages
+	bool				reduceImages; // Bubble_LoadBubbles, Pointer_Load, Reward_LoadItemBoxImages, Reward_LoadItemImages
 	bool				showVersion; // Front_Menu_Update, Lego_Initialise
 	bool				reduceFlics; // Front_LoadMenuSet, Reward_LoadItemFlics
 	bool				levelsOpen; // Front_Levels_UpdateAvailable_Recursive

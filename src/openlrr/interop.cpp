@@ -45,6 +45,7 @@
 #include "game/front/FrontEnd.h"
 #include "game/interface/Advisor.h"
 #include "game/interface/Interface.h"
+#include "game/interface/Pointers.h"
 #include "game/mission/Messages.h"
 #include "game/mission/NERPsFile.h"
 #include "game/mission/NERPsFunctions.h"
@@ -2581,6 +2582,34 @@ bool interop_hook_LegoRR_Objective(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Pointers(void)
+{
+	bool result = true;
+	
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x0045caf0, LegoRR::Pointer_Initialise);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x0045cd30, LegoRR::Pointer_Load);
+	// used by: Info_SetText_internal, Pointer_Load
+	result &= hook_write_jmpret(0x0045ce90, LegoRR::Pointer_GetType);
+	// used by: Info_SetText_internal
+	result &= hook_write_jmpret(0x0045ced0, LegoRR::Pointer_GetImage);
+	// used by: Front_Menu_Update, Lego_Initialise, Lego_MainLoop, Lego_HandleRadarInput,
+	//          Lego_HandleWorld, Level_SetPointer_FromSurfaceType, LegoObject_UnkBuildingPlaceDirection,
+	//          Reward_LoopUpdate
+	result &= hook_write_jmpret(0x0045cee0, LegoRR::Pointer_SetCurrent_IfTimerFinished);
+	// used by: Lego_SetPointerSFX
+	result &= hook_write_jmpret(0x0045cf00, LegoRR::Pointer_SetCurrent);
+	// used by: Front_Menu_Update, Lego_HandleWorld
+	result &= hook_write_jmpret(0x0045cf20, LegoRR::Pointer_GetCurrentType);
+	// used by: Front_Menu_Update, Lego_MainLoop, Reward_LoopUpdate
+	result &= hook_write_jmpret(0x0045cf30, LegoRR::Pointer_DrawPointer);
+	// used by: Lego_MainLoop, Reward_LoopUpdate
+	result &= hook_write_jmpret(0x0045d050, LegoRR::Pointer_Update);
+	
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_PTL(void)
 {
 	bool result = true;
@@ -2913,6 +2942,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_NERPsFunctions();
 	result &= interop_hook_LegoRR_Object();
 	//result &= interop_hook_LegoRR_Objective();
+	result &= interop_hook_LegoRR_Pointers();
 	result &= interop_hook_LegoRR_PTL();
 	result &= interop_hook_LegoRR_SFX();
 	result &= interop_hook_LegoRR_Smoke();

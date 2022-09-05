@@ -31,6 +31,7 @@ namespace Gods98
 #pragma region Forward Declarations
 
 struct File; // from `engine/core/Files.h`
+struct Image; // from `engine/drawing/Images.h`
 
 #pragma endregion
 
@@ -252,6 +253,16 @@ struct SOUNDARRAY
 	/*11c*/
 };
 assert_sizeof(SOUNDARRAY, 0x11c);
+
+
+// Union used when an image can be either static or animated.
+union Image_Flic
+{
+	/*0,4*/ Image* image;
+	/*0,4*/ Flic* flic;
+	/*4*/
+};
+assert_sizeof(Image_Flic, 0x4);
 
 #pragma endregion
 

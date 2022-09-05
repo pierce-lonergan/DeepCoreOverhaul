@@ -69,6 +69,7 @@ bool interop_hook_LegoRR_NERPsFile(void);
 bool interop_hook_LegoRR_NERPsFunctions(void);
 bool interop_hook_LegoRR_Object(void);
 bool interop_hook_LegoRR_Objective(void);
+bool interop_hook_LegoRR_Pointers(void);
 bool interop_hook_LegoRR_PTL(void);
 bool interop_hook_LegoRR_SFX(void);
 bool interop_hook_LegoRR_Smoke(void);

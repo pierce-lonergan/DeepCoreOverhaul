@@ -644,7 +644,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		Lego_LoadMiscObjects(legoConfig);
 
 
-		Pointer_LoadPointers(Gods98::Config_FindArray(legoConfig, Lego_ID("Pointers")));
+		Pointer_Load(Gods98::Config_FindArray(legoConfig, Lego_ID("Pointers")));
 		Pointer_SetCurrent_IfTimerFinished(Pointer_Standard);
 
 		/// CHANGE: Move this handling to before Message_Update. We're handling keybinds differently now.
