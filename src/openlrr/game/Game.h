@@ -775,6 +775,9 @@ extern Lego_Globs2 legoGlobs2;
  */
 #define blockValue(l, bx, by)			((l)->blocks[blockIndex((l),(bx),(by))])
 
+#define blockInBounds(l, bx, by)		((static_cast<sint32>((bx)) >= 0 && static_cast<uint32>((bx)) < (l)->width) && \
+										 (static_cast<sint32>((by)) >= 0 && static_cast<uint32>((by)) < (l)->height))
+
 
 #define SurfaceType_RegisterName(n)		(legoGlobs.surfaceName[n]=#n)
 #define ToolType_RegisterName(n)		(legoGlobs.toolName[n]=#n)

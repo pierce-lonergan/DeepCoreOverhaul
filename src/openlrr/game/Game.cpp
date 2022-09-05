@@ -1870,7 +1870,7 @@ void __cdecl LegoRR::Lego_SetViewMode(ViewMode viewMode, LegoObject* liveObj, ui
 		const real32 smoothFOV = ((fpCameraFrame==0) ? 0.9f : 0.6f);
 
 		Camera_SetFPObject(legoGlobs.cameraFP, liveObj, fpCameraFrame);
-		Water_Debug_LogContainerMesh(true);
+		Water_ChangeViewMode_removed(true);
 		Map3D_SetEmissive(legoGlobs.currLevel->map, true);
 
 		legoGlobs.objectFP = liveObj;
@@ -1892,7 +1892,7 @@ void __cdecl LegoRR::Lego_SetViewMode(ViewMode viewMode, LegoObject* liveObj, ui
 		legoGlobs.cameraFP->trackObj = nullptr;
 		legoGlobs.objectFP = nullptr;
 
-		Water_Debug_LogContainerMesh(false);
+		Water_ChangeViewMode_removed(false);
 		Map3D_SetEmissive(legoGlobs.currLevel->map, false);
 		Gods98::Viewport_SetCamera(legoGlobs.viewMain, legoGlobs.cameraMain->contCam);
 		Gods98::Sound3D_MakeContainerListener(legoGlobs.cameraMain->contListener);
@@ -2067,6 +2067,9 @@ const char* __cdecl LegoRR::Level_Free(void)
 
 		Camera_Shake(legoGlobs.cameraMain, 0.0f, 0.0f);
 		Camera_SetZoom(legoGlobs.cameraMain, 200.0f);
+
+		/// CUSTOM: Handle water cleanup so that it doesn't persist between levels.
+		Water_RemoveAll();
 
 		Smoke_RemoveAll();
 		Lego_ClearSomeFlags3_FUN_00435950();

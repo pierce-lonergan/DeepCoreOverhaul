@@ -1670,9 +1670,10 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	if (Lego_IsAllowDebugKeys()) {
 		const uint32 DEBUGOVERLAY_LISTSETS = 1;
 		const uint32 DEBUGOVERLAY_NERPS    = 2;
-		const uint32 DEBUGOVERLAY_MAXTYPES = 3;
-		const sint32 dbgX = 100;
-		const sint32 dbgY = 100 - 12;
+		const uint32 DEBUGOVERLAY_WATER    = 3;
+		const uint32 DEBUGOVERLAY_MAXTYPES = 4;
+		sint32 dbgX = 100;
+		sint32 dbgY = 100 - 12;
 		const uint32 r = 12;
 
 		if (Shortcut_IsPressed(ShortcutID::Debug_SwitchDebugOverlay)) {
@@ -1711,6 +1712,43 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 					Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Timer%i %0.3fs", i, seconds);
 				}
 				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Flags %04x", (uint32)NERPs_GetTutorialFlags());
+			}
+			break;
+		case DEBUGOVERLAY_WATER:
+			{
+				static constexpr const auto DIRCHARS = array_of<char>('U', 'R', 'D', 'L');
+				static constexpr const Point2F DIRS[4] = {
+					{  0.0f, -1.0f },
+					{  1.0f,  0.0f },
+					{  0.0f,  1.0f },
+					{ -1.0f,  0.0f },
+				};
+				dbgX = 10;
+				dbgY = 206;
+
+				uint32 row = 0;
+				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "[Water]");
+				if (waterGlobs.poolCount == 0) {
+					Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "No pools of water in this level");
+				}
+				else {
+					// Only show the first pool of water, any more and we'd run out of screen.
+					auto pool = &waterGlobs.poolList[0];
+					Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Water Level %0.1f/%0.1f", (double)pool->currWaterLevel, (double)pool->highWaterLevel);
+					row++;
+					for (uint32 j = 0; j < pool->drainCount; j++) {
+						auto drain = &pool->drainList[j];
+						const sint32 drainX = static_cast<sint32>(pool->blocks[drain->blockIndex].x + DIRS[drain->direction].x);
+						const sint32 drainY = static_cast<sint32>(pool->blocks[drain->blockIndex].y + DIRS[drain->direction].y);
+						Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Drain (%i,%i) Level %0.1f  [%0.1f, %0.1f]  '%c'%s",
+											drainX, drainY,
+											(double)drain->drainWaterLevel,
+											(double)drain->elapsedUp_c,
+											(double)drain->elapsedDown_10,
+											DIRCHARS[drain->direction],
+											(drain->active ? " (Active)" : ""));
+					}
+				}
 			}
 			break;
 		}

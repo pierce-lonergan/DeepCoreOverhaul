@@ -60,6 +60,7 @@
 #include "game/world/Detail.h"
 #include "game/world/ElectricFence.h"
 #include "game/world/Roof.h"
+#include "game/world/Water.h"
 #include "game/Game.h"
 
 
@@ -2737,6 +2738,40 @@ bool interop_hook_LegoRR_Stats(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Water(void)
+{
+	bool result = true;
+
+	// used by: Lego_LoadMapSet
+	result &= hook_write_jmpret(0x0046de50, LegoRR::Water_Initialise);
+	// used by: Water_Initialise
+	result &= hook_write_jmpret(0x0046dfd0, LegoRR::Water_InitPoolDrains);
+	// used by: Water_Initialise
+	result &= hook_write_jmpret(0x0046e140, LegoRR::Water_InitVertices);
+	// used by: Lego_SetViewMode
+	result &= hook_write_jmpret(0x0046e480, LegoRR::Water_ChangeViewMode_removed);
+	// used by: Level_DestroyWall
+	result &= hook_write_jmpret(0x0046e4e0, LegoRR::Water_DestroyWallComplete);
+	// used by: Level_Debug_WKey_NeedsBlockFlags1_8_FUN_004303a0
+	result &= hook_write_jmpret(0x0046e5f0, LegoRR::Water_DamBlock);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0046e650, LegoRR::Water_Update);
+	// used by: Water_Update
+	result &= hook_write_jmpret(0x0046e8d0, LegoRR::Water_UpdateNotHotBlocks);
+	// used by: Level_Debug_WKey_NeedsBlockFlags1_8_FUN_004303a0, Water_DestroyWallComplete, Water_DamBlock
+	result &= hook_write_jmpret(0x0046eb60, LegoRR::Water_FindPoolDrain);
+	// used by: Water_Initialise
+	result &= hook_write_jmpret(0x0046ec60, LegoRR::Water_QsortComparePools);
+	// used by: Water_Initialise
+	result &= hook_write_jmpret(0x0046ec90, LegoRR::Water_FindPoolAndMergeRows);
+	// used by: Water_Initialise, Water_AddPool
+	result &= hook_write_jmpret(0x0046ed90, LegoRR::Water_AddPoolRowBlocks);
+	// used by: Water_Initialise
+	result &= hook_write_jmpret(0x0046edf0, LegoRR::Water_AddPool);
+	
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Weapons(void)
 {
 	bool result = true;
@@ -2877,11 +2912,13 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_NERPsFile();
 	result &= interop_hook_LegoRR_NERPsFunctions();
 	result &= interop_hook_LegoRR_Object();
+	//result &= interop_hook_LegoRR_Objective();
 	result &= interop_hook_LegoRR_PTL();
 	result &= interop_hook_LegoRR_SFX();
 	result &= interop_hook_LegoRR_Smoke();
 	result &= interop_hook_LegoRR_Stats();
 	result &= interop_hook_LegoRR_Weapons();
+	result &= interop_hook_LegoRR_Water();
 
 	// Only a few functions from each of these have been
 	// defined in order to fix certain original bugs.

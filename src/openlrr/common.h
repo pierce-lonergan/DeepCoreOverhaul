@@ -32,6 +32,8 @@
 #include <string>
 #include <array>
 #include <vector>
+#include <queue>
+#include <stack>
 #include <map>
 #include <functional>
 #include <type_traits>
