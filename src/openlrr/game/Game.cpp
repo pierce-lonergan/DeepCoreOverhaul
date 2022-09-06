@@ -2048,8 +2048,9 @@ const char* __cdecl LegoRR::Level_Free(void)
 		Gods98::Mem_Free(level->FullName);
 
 		legoGlobs.flags1 &= ~(GAME1_CAMERAGOTO|GAME1_LEVELENDING);
-		objectGlobs.flags &= ~LegoObject_GlobFlags::OBJECT_GLOB_FLAG_CYCLEUNITS;
 		legoGlobs.flags2 &= ~(GAME2_LEVELEXITING|GAME2_NOMULTISELECT);
+
+		objectGlobs.flags &= ~LegoObject_GlobFlags::OBJECT_GLOB_FLAG_CYCLEUNITS;
 
 		legoGlobs.gotoSmooth = false;
 		legoGlobs.objTeleportQueue_COUNT = 0;
@@ -2067,6 +2068,9 @@ const char* __cdecl LegoRR::Level_Free(void)
 
 		Camera_Shake(legoGlobs.cameraMain, 0.0f, 0.0f);
 		Camera_SetZoom(legoGlobs.cameraMain, 200.0f);
+
+		/// CUSTOM: Remove all created disposable ObjectStats.
+		Stats_RemoveAllModified();
 
 		/// CUSTOM: Handle water cleanup so that it doesn't persist between levels.
 		Water_RemoveAll();

@@ -2,6 +2,7 @@
 //
 
 #include "../../engine/core/Errors.h"
+#include "../../engine/core/ListSet.hpp"
 #include "../../engine/core/Memory.h"
 #include "../../engine/core/Utils.h"
 
@@ -11,6 +12,24 @@
 #include "Object.h"
 #include "Stats.h"
 
+
+/**********************************************************************************
+ ******** Structures
+ **********************************************************************************/
+
+#pragma region Structs
+
+struct ObjectStats_Modified : public LegoRR::ObjectStats
+{
+	sint32 refCount;
+	LegoRR::ObjectStats* origStats;
+	ObjectStats_Modified* nextFree;
+};
+
+
+using ObjectStats_ModifiedListSet = ListSet::Collection<ObjectStats_Modified, 32>;
+
+#pragma endregion
 
 /**********************************************************************************
  ******** Globals
@@ -36,6 +55,8 @@ LegoRR::ObjectStats & LegoRR::c_ObjectStats_Barrier = *(LegoRR::ObjectStats*)0x0
 // <LegoRR.exe @004aab90>
 LegoRR::ObjectStats & LegoRR::c_ObjectStats_Other = *(LegoRR::ObjectStats*)0x004aab90;
 
+static ObjectStats_ModifiedListSet _modifiedStatsListSet = ObjectStats_ModifiedListSet();
+
 #pragma endregion
 
 /**********************************************************************************
@@ -44,6 +65,55 @@ LegoRR::ObjectStats & LegoRR::c_ObjectStats_Other = *(LegoRR::ObjectStats*)0x004
 
 #pragma region Functions
 
+void LegoRR::Stats_RemoveAllModified()
+{
+	_modifiedStatsListSet.Shutdown();
+}
+
+bool LegoRR::StatsObject_IsModified(LegoObject* liveObj)
+{
+	auto modified = static_cast<const ObjectStats_Modified*>(liveObj->stats);
+	return _modifiedStatsListSet.Contains(modified);
+}
+
+// Returns the original stats of this object, if StatsObject_MakeModified has not been called, then liveObj stats is returned.
+LegoRR::ObjectStats* LegoRR::StatsObject_GetOriginal(LegoObject* liveObj)
+{
+	if (StatsObject_IsModified(liveObj)) {
+		auto modified = static_cast<ObjectStats_Modified*>(liveObj->stats);
+		return modified->origStats;
+	}
+	return liveObj->stats;
+}
+
+LegoRR::ObjectStats* LegoRR::StatsObject_MakeModified(LegoObject* liveObj)
+{
+	if (!StatsObject_IsModified(liveObj)) {
+		auto modified = _modifiedStatsListSet.Add();
+		ListSet::MemZero(modified);
+		// Don't use ListSet::MemCopy here, since ObjectStats is a smaller structure size.
+		std::memcpy(modified, liveObj->stats, sizeof(ObjectStats));
+		modified->origStats = liveObj->stats;
+
+		liveObj->stats = modified;
+	}
+	return liveObj->stats;
+}
+
+bool LegoRR::StatsObject_RestoreModified(LegoObject* liveObj)
+{
+	if (StatsObject_IsModified(liveObj)) {
+		auto modified = static_cast<ObjectStats_Modified*>(liveObj->stats);
+		auto original = modified->origStats;
+		_modifiedStatsListSet.Remove(modified);
+		liveObj->stats = original;
+		return true;
+	}
+	return false;
+}
+
+
+
 using namespace Gods98;
 
 #define Stats_ID(name) Config_ID(gameName, "Stats", Gods98::Config_GetItemName(prop), name)
@@ -51,6 +121,8 @@ using namespace Gods98;
 // <LegoRR.exe @00466aa0>
 bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char* gameName)
 {
+	_modifiedStatsListSet.Initialise();
+
     const Gods98::Config* prop;
     const char* arrayID = Config_ID(gameName, "Stats");
     const char* tempStr;
@@ -836,6 +908,10 @@ bool32 __cdecl LegoRR::StatsObject_SetObjectLevel(LegoRR::LegoObject* liveObj, u
 			objectGlobs.objectTotalLevels[liveObj->type][liveObj->id][newLevel]++;
 		}
 		liveObj->objLevel = newLevel;
+
+		/// CUSTOM: Cleanup modified stats before overwriting.
+		StatsObject_RestoreModified(liveObj);
+
 		liveObj->stats = &statsGlobs.objectStats[liveObj->type][liveObj->id][newLevel];
 		return true;
 	}
@@ -1069,7 +1145,7 @@ sint32 __cdecl LegoRR::Stats_GetUpgradeCostStuds(LegoRR::LegoObject_Type objType
 // <LegoRR.exe @0046a3e0>
 bool32 __cdecl LegoRR::Stats_FindToolFromTaskType(LegoRR::AITask_Type taskType, OUT LegoRR::LegoObject_ToolType* toolType)
 {
-	for (uint32 i = 0; i < (uint32)LegoObject_ToolType_Count; i++) {
+	for (uint32 i = 0; i < LegoObject_ToolType_Count; i++) {
 		const ToolStats* toolStats = &statsGlobs.toolStats[i];
 		for (uint32 j = 0; j < toolStats->taskCount; j++) {
 			if (taskType == toolStats->taskTypes[j]) {
@@ -1169,6 +1245,8 @@ real32 __cdecl LegoRR::StatsObject_GetObjectFreezerTime(LegoRR::LegoObject* live
 void __cdecl LegoRR::StatsObject_Debug_ToggleSelfPowered(LegoRR::LegoObject* liveObj)
 {
 	/// WARNING: This actually modifies the stats for all objects of this type:index:level!
+	/// FIX APPLY: Don't modify the stats for every object!!!
+	StatsObject_MakeModified(liveObj); // Convert stats into a disposable type.
 	if (!(liveObj->stats->flags2 & STATS2_SELFPOWERED))
 		liveObj->stats->flags2 |= STATS2_SELFPOWERED;
 	else

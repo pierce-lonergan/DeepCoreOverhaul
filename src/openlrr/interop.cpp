@@ -2064,13 +2064,16 @@ bool interop_hook_LegoRR_NERPsFile(void)
 	// used by: NERPsRuntime_Execute
 	result &= hook_write_jmpret(0x00454060, LegoRR::NERPsRuntime_EndExecute);
 
-	// used by: 
-	//result &= hook_write_jmpret(0x, LegoRR::);
+	// used by: NERPFunc__GetRockMonsterRunningAway, NERPFunc__SetRockMonsterPainThreshold,
+	//          NERPFunc__SetRockMonsterHealth
+	result &= hook_write_jmpret(0x00454c70, LegoRR::NERPs_LiveObject_Callback_SetRockMonsterHealthType);
 
 
 	// used by: Text_SetNERPsMessage, Text_Update
 	result &= hook_write_jmpret(0x00456af0, LegoRR::NERPs_Level_NERPMessage_Parse);
 
+	// used by: NERPsFunctions, NERPsRuntime_SetTutorialPointer, c_NERPsRuntime_TutorialActionCallback
+	result &= hook_write_jmpret(0x00456fc0, LegoRR::NERPsRuntime_TutorialActionCallback);
 
 
 	return_interop(result);

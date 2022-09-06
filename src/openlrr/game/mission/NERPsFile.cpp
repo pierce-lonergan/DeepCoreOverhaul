@@ -876,6 +876,43 @@ bool32 __cdecl LegoRR::NERPs_LegoObject_Callback_SetMonsterAttack(LegoObject* li
 }
 
 
+// DATA: SearchNERPsSetObjectHealthPain* search
+// <LegoRR.exe @00454c70>
+bool32 __cdecl LegoRR::NERPs_LiveObject_Callback_SetRockMonsterHealthType(LegoObject* liveObj, void* pSearch)
+{
+	SearchNERPsSetObjectHealthPain* search = (SearchNERPsSetObjectHealthPain*)pSearch;
+	using Type = SearchNERPsSetObjectHealthPain::Type;
+
+	// Only applicable to monster types.
+	if (liveObj->type == LegoObject_RockMonster) {
+
+		switch (search->type) {
+		case SearchNERPsSetObjectHealthPain::Type::GetRunningAway:
+			{
+				/// TODO: What are these magic numbers for PainThreshold???
+				const real32 threshold = (liveObj->stats->PainThreshold - liveObj->stats->PainThreshold * 0.01f * 20.0f);
+				if (liveObj->health > 0.0f && liveObj->health < threshold) {
+					LegoObject_Route_End(liveObj, false);
+					search->runningAwayCount++;
+				}
+			}
+			break;
+
+		case SearchNERPsSetObjectHealthPain::Type::SetPainThreshold:
+			liveObj->health = search->painHealthValue;
+			break;
+
+		case SearchNERPsSetObjectHealthPain::Type::SetHealth:
+			/// FIX APPLY: Don't modify the stats for every monster!!!
+			StatsObject_MakeModified(liveObj); // Convert stats into a disposable type.
+			liveObj->stats->PainThreshold = 60.0f;
+			break;
+		}
+	}
+	return false;
+}
+
+
 // <LegoRR.exe @00456af0>
 void __cdecl LegoRR::NERPs_Level_NERPMessage_Parse(const char* text, OPTIONAL OUT char* buffer, bool32 updateTimer)
 {
@@ -1010,5 +1047,138 @@ void __cdecl LegoRR::NERPs_Level_NERPMessage_Parse(const char* text, OPTIONAL OU
 		nerpsruntimeGlobs.messageTimer = newTimerValue;
 	}
 }
+
+
+// DATA: SearchNERPsTutorialAction* search
+// <LegoRR.exe @00456fc0>
+bool32 __cdecl LegoRR::NERPsRuntime_TutorialActionCallback(BlockPointer* unused, uint32 bx, uint32 by, void* pSearch)
+{
+	SearchNERPsTutorialAction* search = (SearchNERPsTutorialAction*)pSearch;
+
+	const Point2I blockPos = Point2I {
+		static_cast<sint32>(bx),
+		static_cast<sint32>(by),
+	};
+
+	switch (search->action) {
+	case NERPS_TUTORIAL_GETBLOCKISGROUND:
+		/// FIXME: Search result adds 0x8 for reach floor instead of 1!!!
+		search->result += ((blockValue(Lego_GetLevel(), bx, by).flags1 & BLOCK1_FLOOR) ? 0x8 : 0);
+		break;
+
+	case NERPS_TUTORIAL_SETBLOCKISGROUND:
+		Level_DestroyWall(Lego_GetLevel(), bx, by, false);
+		break;
+
+	case NERPS_TUTORIAL_GETBLOCKISPATH:
+		/// FIXME: Search result adds 0x20000000 for each path instead of 1!!!
+		search->result += (Level_Block_IsPath(&blockPos) ? 0x20000000 : 0);
+		break;
+
+	case NERPS_TUTORIAL_SETBLOCKISPATH:
+		// Clear rubble before placing path.
+		blockValue(Lego_GetLevel(), bx, by).flags1 &= ~BLOCK1_RUBBLE_FULL;
+		Level_Block_ClearRubbleLayer(&blockPos);
+
+		Level_Block_SetPath(&blockPos);
+		break;
+
+	case NERPS_TUTORIAL_SETCAMERAGOTOTUTORIAL:
+		Lego_Goto(nullptr, &blockPos, true);
+		break;
+
+	case NERPS_TUTORIAL_GETCAMERAATTUTORIAL:
+		{
+			Vector3F camWorldPos;
+			Point2I camBlockPos = { 0 }; // dummy init
+			Gods98::Container_GetPosition(legoGlobs.cameraMain->cont3, nullptr, &camWorldPos);
+			Map3D_WorldToBlockPos_NoZ(Lego_GetMap(), camWorldPos.x, camWorldPos.y, &camBlockPos.x, &camBlockPos.y);
+			if (blockPos.x == camBlockPos.x && blockPos.y == camBlockPos.y) {
+				search->result = true;
+				return true;
+			}
+		}
+		break;
+
+	case NERPS_TUTORIAL_SETROCKMONSTERATTUTORIAL:
+		{
+			/// CHANGE: Handle invalid object ID (is this used for emerge?)
+			LegoObject_ID objID = Lego_GetEmergeCreatureID();
+			if (objID != LegoObject_ID_Invalid) {
+				LegoObject* monsterObj = LegoObject_TryGenerateRMonster(&legoGlobs.rockMonsterData[objID], LegoObject_RockMonster, objID, bx, by);
+				if (monsterObj != nullptr) {
+					/// FIX APPLY: Don't modify the stats for every monster!!!
+					StatsObject_MakeModified(monsterObj); // Convert stats into a disposable type.
+					monsterObj->stats->PainThreshold = 60.0f;
+					return true;
+				}
+			}
+		}
+		break;
+
+	case NERPS_TUTORIAL_SETCONGREGATIONATTUTORIAL_START:
+		AITask_DoGoto_Congregate(&blockPos);
+		break;
+
+	case NERPS_TUTORIAL_SETCONGREGATIONATTUTORIAL_STOP:
+		AITask_StopGoto_Congregate(&blockPos);
+		break;
+
+	case NERPS_TUTORIAL_GETUNITATBLOCK:
+		{
+			SearchNERPsTutorialAction search2 = { (NERPsTutorialAction)0 };
+			search2.blockPos = blockPos;
+
+			LegoObject_RunThroughListsSkipUpgradeParts(NERPs_LiveObject_CallbackCheck_FUN_00457320, &search2);
+			search->result += search2.result;
+		}
+		break;
+
+	case NERPS_TUTORIAL_SETTUTORIALPOINTER_UNK:
+		{
+			SearchNERPsTutorialAction search2 = { (NERPsTutorialAction)0 };
+			search2.blockPos = blockPos;
+			search2.fieldBool_1c = true;
+
+			LegoObject_RunThroughListsSkipUpgradeParts(NERPs_LiveObject_Callback_SetBool3f8IfAtBlockPos_FUN_00457390, &search2);
+		}
+		break;
+
+	case NERPS_TUTORIAL_MAKESOMEONEPICKUP:
+		{
+			SearchNERPsTutorialAction search2 = { (NERPsTutorialAction)0 };
+			search2.blockPos = blockPos;
+			search2.fieldBool_20 = true;
+			search2.int_28 = LegoObject_MiniFigure;
+
+			LegoObject_RunThroughListsSkipUpgradeParts(NERPs_LiveObject_CallbackCheck_FUN_00457320, &search2);
+			LegoObject* foundObj = search2.object_24;
+			if (search2.result) {
+				/// FIX APPLY: Set search2.result back to false before reusing the search2 structure!!!
+				search2.result = false;
+				search2.int_28 = LegoObject_PowerCrystal;
+
+				LegoObject_RunThroughListsSkipUpgradeParts(NERPs_LiveObject_CallbackCheck_FUN_00457320, &search2);
+				if (search2.result) {
+					LegoObject_TryCollectObject(foundObj, search2.object_24);
+					return true;
+				}
+			}
+		}
+		break;
+
+	case NERPS_TUTORIAL_GETMONSTERATTUTORIAL:
+		{
+			SearchNERPsTutorialAction search2 = { (NERPsTutorialAction)0 };
+			search2.blockPos = blockPos;
+
+			LegoObject_RunThroughListsSkipUpgradeParts(NERPs_LiveObject_CallbackCheck_FUN_00457320, &search2);
+			search->result += search2.result;
+		}
+		break;
+	}
+	return true;
+}
+
 
 #pragma endregion

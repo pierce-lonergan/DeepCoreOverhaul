@@ -274,6 +274,22 @@ extern ObjectStats & c_ObjectStats_Other;
 
 #pragma region Functions
 
+// Removes all allocated ObjectStats_Modified's.
+void Stats_RemoveAllModified();
+
+// Returns true if liveObj stats are a disposable type that can be safely modified.
+bool StatsObject_IsModified(LegoObject* liveObj);
+
+// Returns the original stats of this object, if StatsObject_MakeModified has not been called, then liveObj stats is returned.
+ObjectStats* StatsObject_GetOriginal(LegoObject* liveObj);
+
+// Converts liveObj stats to a disposable type that can be safely modified (does nothing if already modified stats).
+ObjectStats* StatsObject_MakeModified(LegoObject* liveObj);
+
+// Restores the liveObj's modified stats to their default values.
+bool StatsObject_RestoreModified(LegoObject* liveObj);
+
+
 // <LegoRR.exe @00466aa0>
 bool32 __cdecl Stats_Initialise(const Gods98::Config* config, const char* gameName);
 

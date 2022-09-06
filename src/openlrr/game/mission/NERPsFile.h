@@ -531,7 +531,8 @@ bool32 __cdecl NERPs_LegoObject_Callback_SetMonsterAttack(LegoObject* liveObj, v
 
 // DATA: SearchNERPsSetObjectHealthPain* search
 // <LegoRR.exe @00454c70>
-#define NERPs_LiveObject_Callback_SetRockMonsterHealthType ((bool32 (__cdecl* )(LegoObject* liveObj, void* search))0x00454c70)
+//#define NERPs_LiveObject_Callback_SetRockMonsterHealthType ((bool32 (__cdecl* )(LegoObject* liveObj, void* pSearch))0x00454c70)
+bool32 __cdecl NERPs_LiveObject_Callback_SetRockMonsterHealthType(LegoObject* liveObj, void* pSearch);
 
 
 // [NERPFuncs...]
@@ -653,14 +654,16 @@ void __cdecl NERPs_Level_NERPMessage_Parse(const char* text, OPTIONAL OUT char* 
 
 // DATA: SearchNERPsTutorialAction* search
 // <LegoRR.exe @00456fc0>
-#define NERPsRuntime_TutorialActionCallback ((bool32 (__cdecl* )(BlockPointer* unused, uint32 bx, uint32 by, SearchNERPsTutorialAction* search))0x00456fc0)
+//#define NERPsRuntime_TutorialActionCallback ((bool32 (__cdecl* )(BlockPointer* unused, uint32 bx, uint32 by, void* pSearch))0x00456fc0)
+bool32 __cdecl NERPsRuntime_TutorialActionCallback(BlockPointer* unused, uint32 bx, uint32 by, void* pSearch);
 
 // DATA: SearchNERPsTutorialAction* search
 // <LegoRR.exe @00457320>
 #define NERPs_LiveObject_CallbackCheck_FUN_00457320 ((bool32 (__cdecl* )(LegoObject* liveObj, void* pSearch))0x00457320)
 
+// DATA: SearchNERPsTutorialAction* search
 // <LegoRR.exe @00457390>
-#define NERPs_LiveObject_Callback_SetBool3f8IfAtBlockPos_FUN_00457390 ((bool32 (__cdecl* )(LegoObject* liveObj, SearchNERPsTutorialAction* search))0x00457390)
+#define NERPs_LiveObject_Callback_SetBool3f8IfAtBlockPos_FUN_00457390 ((bool32 (__cdecl* )(LegoObject* liveObj, void* pSearch))0x00457390)
 
 
 // [NERPFuncs...]

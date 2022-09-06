@@ -594,7 +594,7 @@ public:
 	 * @param item The item to find the list of in the listSet.
 	 * @return The list index containing this item in the listSet, or npos if not found.
 	 */
-	size_t ListIndexOf(const value_type* item)
+	size_t ListIndexOf(const value_type* item) const
 	{
 		for (size_t i = 0; i < m_cont.listCount; i++) {
 			const value_type* list = m_cont.listSet[i];
@@ -610,7 +610,7 @@ public:
 	 * @param item The item to find in the listSet.
 	 * @return The index of the item in its list + the capacity of all previous lists in the listSet, or npos if not found.
 	 */
-	size_t IndexOf(const value_type* item)
+	size_t IndexOf(const value_type* item) const
 	{
 		const size_t listIndex = this->ListIndexOf(item);
 		if (listIndex != npos) {
@@ -618,6 +618,16 @@ public:
 			return ListSet::IndexOfInListSet(listIndex, itemIndex);
 		}
 		return npos;
+	}
+
+	/**
+	 * @brief Returns if the address of item is within one of the listSet lists.
+	 * @param item The item to find in the listSet.
+	 * @return True if the item's is found within one of the listSet lists.
+	 */
+	bool Contains(const value_type* item) const
+	{
+		return this->ListIndexOf(item) != npos;
 	}
 
 
@@ -647,7 +657,7 @@ public:
 	/**
 	 * @brief Returns the number of items that are currently alive in the listSet.
 	 */
-	size_t CountAlive() { return m_aliveCount; /*EnumerateAlive().Count();*/ }
+	size_t CountAlive() const { return m_aliveCount; /*EnumerateAlive().Count();*/ }
 
 
 	/**
@@ -798,7 +808,7 @@ protected:
 	 * @param listIndex The index of the list in a listSet.
 	 * @return True if the list is non-null and contains at least one item that is alive.
 	 */
-	bool IsListAlive(size_t listIndex)
+	bool IsListAlive(size_t listIndex) const
 	{
 		if (listIndex >= 0 && listIndex < m_cont.listCount) {
 			const value_type* list = m_cont.listSet[listIndex];
@@ -835,6 +845,45 @@ public:
 
 protected:
 	size_t m_aliveCount; // Fast tracking for number of items loaned out, without having to recount.
+};
+
+/**
+ * @brief Basic listSet container type used for ListSet::Collection, needed because the
+ *        standard listSet implementation is designed as a wrapper around existing memory.
+ * @param TItem The item type of the listSet.
+ * @param N The max number of lists in the listSet.
+ */
+template <typename TItem, const size_t N>
+struct BasicContainer
+{
+	TItem* listSet[N];
+	TItem* freeList;
+	uint32 listCount;
+
+	BasicContainer()
+		: freeList(nullptr), listCount(0)
+	{
+		std::memset(listSet, 0, sizeof(listSet));
+	}
+};
+
+/**
+ * @brief Template class for managing a standalone listSet collection.
+ * @param TItem The item type of the listSet.
+ * @param N The max number of lists in the listSet.
+ */
+template <typename TItem, const size_t N>
+class Collection : public WrapperCollection<BasicContainer<TItem, N>>
+{
+private:
+	BasicContainer<TItem, N> m_basicCont;
+
+public:
+	// Until we change how listSets are managed, we need to implement a standlone listSet around the wrapper.
+	Collection()
+		: m_basicCont(), WrapperCollection<BasicContainer<TItem, N>>(m_basicCont)
+	{
+	}
 };
 
 #pragma endregion

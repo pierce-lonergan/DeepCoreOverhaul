@@ -405,6 +405,10 @@ bool32 __cdecl LegoRR::LegoObject_Callback_RemoveRouteToReference(LegoObject* li
 // <LegoRR.exe @00437800>
 bool32 __cdecl LegoRR::LegoObject_Remove(LegoObject* deadObj)
 {
+	/// CUSTOM: Cleanup disposable stats (if it is overridden).
+	StatsObject_RestoreModified(deadObj);
+
+
 	// Increment number of this object type/id/levels that were removed from the level.
 	objectGlobs.objectPrevLevels[deadObj->type][deadObj->id][deadObj->objLevel]++;
 
