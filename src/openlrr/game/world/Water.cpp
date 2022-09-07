@@ -30,7 +30,8 @@ static std::vector<bool> _filledPoolBlocks;
 
 #define WATER_USENEWFLOODFILL	true
 
-#define poolIndex(pool)			((uint32)((pool) - waterGlobs.poolList) / sizeof(Water_Pool))
+/// POINTER MATH: Cast to ptrdiff_t before subtraction to avoid C++ pointer math conversion.
+#define poolIndex(pool)			((uint32)((ptrdiff_t)(pool) - (ptrdiff_t)waterGlobs.poolList) / sizeof(Water_Pool))
 
 #define blockCanFill(bx, by)	(blockValue(level,(bx),(by)).terrain==Lego_SurfaceType_Water && \
 								 !_filledPoolBlocks[blockIndex(level,(bx),(by))])

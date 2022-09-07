@@ -88,7 +88,8 @@ constexpr const size_t CountOfList(size_t listIndex)
 template <typename TItem>
 constexpr const size_t IndexOfInList(const TItem* list, const TItem* item)
 {
-	return (static_cast<size_t>(item - list) / sizeof(TItem));
+	/// POINTER MATH: Cast to ptrdiff_t before subtraction to avoid C++ pointer math conversion.
+	return (static_cast<size_t>((ptrdiff_t)item - (ptrdiff_t)list) / sizeof(TItem));
 }
 
 /**
