@@ -139,6 +139,11 @@ LegoRR::Lego_Globs & LegoRR::legoGlobs = *(LegoRR::Lego_Globs*)0x005570c0;
 
 LegoRR::Lego_Globs2 LegoRR::legoGlobs2 = { 0 };
 
+static bool _cheatNoBuildCosts = false;
+static bool _cheatNoConstructionBarriers = false;
+static bool _cheatNoPowerConsumption = false;
+static bool _cheatNoOxygenConsumption = false;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -146,6 +151,80 @@ LegoRR::Lego_Globs2 LegoRR::legoGlobs2 = { 0 };
  **********************************************************************************/
 
 #pragma region Functions
+
+bool LegoRR::Cheat_IsNoBuildCosts()
+{
+	return _cheatNoBuildCosts;
+}
+
+void LegoRR::Cheat_SetNoBuildCosts(bool on)
+{
+	_cheatNoBuildCosts = on;
+}
+
+
+bool LegoRR::Cheat_IsNoConstructionBarriers()
+{
+	return _cheatNoConstructionBarriers;
+}
+
+void LegoRR::Cheat_SetNoConstructionBarriers(bool on)
+{
+	_cheatNoConstructionBarriers = on;
+}
+
+
+bool LegoRR::Cheat_IsNoPowerConsumption()
+{
+	return _cheatNoPowerConsumption;
+}
+
+void LegoRR::Cheat_SetNoPowerConsumption(bool on)
+{
+	if (_cheatNoPowerConsumption != on) {
+		_cheatNoPowerConsumption = on;
+		// Allow toggling the cheat when outside of a level.
+		if (Lego_IsInLevel()) {
+			LegoObject_RequestPowerGridUpdate();
+		}
+	}
+}
+
+
+bool LegoRR::Cheat_IsNoOxygenConsumption()
+{
+	return _cheatNoOxygenConsumption;
+}
+
+void LegoRR::Cheat_SetNoOxygenConsumption(bool on)
+{
+	_cheatNoOxygenConsumption = on;
+}
+
+
+void LegoRR::Cheat_SurveyLevel()
+{
+	for (uint32 y = 0; y < Lego_GetLevel()->height; y++) {
+		for (uint32 x = 0; x < Lego_GetLevel()->width; x++) {
+			blockValue(Lego_GetLevel(), x, y).flags1 |= BLOCK1_SURVEYED;
+		}
+	}
+}
+
+bool LegoRR::Lego_IsLevelSurveyed()
+{
+	if (!Lego_IsInLevel())
+		return false; // Default to false when not in level.
+
+	for (uint32 y = 0; y < Lego_GetLevel()->height; y++) {
+		for (uint32 x = 0; x < Lego_GetLevel()->width; x++) {
+			// Check if a block isn't surveyed.
+			if (!(blockValue(Lego_GetLevel(), x, y).flags1 & BLOCK1_SURVEYED))
+				return false;
+		}
+	}
+	return true;
+}
 
 
 /// CUSTOM: cfg: Main::ShowDebugToolTips
@@ -685,8 +764,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareObjectToolTip(LegoObject* liveObj)
 {
 	/// FIX APPLY: Increase horribly small buffer sizes
 	char buffVal[TOOLTIP_BUFFERSIZE]; //[128];
-	char buffText[TOOLTIP_BUFFERSIZE * 4]; //[256]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetText
-	buffText[0] = '\0'; // Sanity init
+	char buffText[TOOLTIP_BUFFERSIZE * 4] = { '\0' }; //[256]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetText
 
 
 	const bool debugToolTips = (legoGlobs.flags2 & GAME2_SHOWDEBUGTOOLTIPS);
@@ -938,8 +1016,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareConstructionToolTip(const Point2I* bloc
 {
 	/// FIX APPLY: Increase horribly small buffer sizes
 	char buffVal[TOOLTIP_BUFFERSIZE]; //[128];
-	char buffText[TOOLTIP_BUFFERSIZE * 4]; //[128]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetText
-	buffText[0] = '\0'; // Sanity init
+	char buffText[TOOLTIP_BUFFERSIZE * 4] = { '\0' }; //[128]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetText
 
 
 	const bool debugToolTips = (legoGlobs.flags2 & GAME2_SHOWDEBUGTOOLTIPS);
@@ -955,41 +1032,34 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareConstructionToolTip(const Point2I* bloc
 
 	// Resource progress:
 	if (showConstruction) {
+		/// CHANGE: Use Construction_Zone functions to get resource costs,
+		///          which is important now that we have the 'No Build Costs' cheat.
 
-		const uint32 crystals = Construction_Zone_CountOfResourcePlaced(construct, LegoObject_PowerCrystal, (LegoObject_ID)0);
-		const uint32 crystalsCost = Stats_GetCostCrystal(LegoObject_Building, construct->objID, 0);
-
-		const uint32 ore   = Construction_Zone_CountOfResourcePlaced(construct, LegoObject_Ore, LegoObject_ID_Ore);
-		const uint32 studs = Construction_Zone_CountOfResourcePlaced(construct, LegoObject_Ore, LegoObject_ID_ProcessedOre);
-		const uint32 oreCost   = Stats_GetCostOre(LegoObject_Building, construct->objID, 0);
-		const uint32 studsCost = Stats_GetCostRefinedOre(LegoObject_Building, construct->objID, 0);
+		bool useStuds;
+		uint32 crystals, oreType;
+		const uint32 crystalsCost = Construction_Zone_GetCostCrystal(construct, &crystals);
+		const uint32 oreTypeCost = Construction_Zone_GetCostOreType(construct, &oreType, &useStuds);
 
 		// Crystals progress:
-		if (crystalsCost != 0) {
+		if (crystalsCost > 0) {
 			std::sprintf(buffVal, "\n%s: %i/%i", legoGlobs.langCrystals_toolTip, crystals, crystalsCost);
 			std::strcat(buffText, buffVal);
 		}
 
-		const bool useStuds = (construct->flags & CONSTRUCTION_FLAG_USESTUDS);
-
 		const char* oreTypeToolTip = (useStuds ? legoGlobs.langStuds_toolTip : legoGlobs.langOre_toolTip);
-		const uint32 oreType       = (useStuds ? studs     : ore);
-		const uint32 oreTypeCost   = (useStuds ? studsCost : oreCost);
-
-		// Ore progress:
-		if (oreTypeCost != 0) {
+		
+		// Ore / Studs progress:
+		if (oreTypeCost > 0) {
 			std::sprintf(buffVal, "\n%s: %i/%i", oreTypeToolTip, oreType, oreTypeCost);
 			std::strcat(buffText, buffVal);
 		}
 
 		// (Debug only) Barriers progress:
 		if (debugToolTips) {
-			Construction_Zone_CountOfResourcePlaced(construct, LegoObject_Barrier, (LegoObject_ID)0);
-			// Currently number of barriers requested is not counted,
-			//  we can hack it thanks to the assumption that all non-cryore costs are barriers.
-			const sint32 barriers = (sint32)construct->placedCount - (sint32)(crystals + oreType);
-			const sint32 barriersCost = (sint32)construct->requestCount - (sint32)(crystalsCost + oreTypeCost);
-			if (barriers >= 0 && barriersCost > 0) {
+			uint32 barriers;
+			const uint32 barriersCost = Construction_Zone_GetCostBarriers(construct, &barriers);
+
+			if (barriersCost > 0) {
 				const char* barrierName = Object_GetLangName(LegoObject_Barrier, (LegoObject_ID)0);
 				if (barrierName == nullptr || barrierName[0] == '\0') {
 					barrierName = Debug_GetObjectIDName(LegoObject_Barrier, (LegoObject_ID)0);
@@ -1027,8 +1097,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareMapBlockToolTip(const Point2I* blockPos
 	/// FIX APPLY: Increase horribly small buffer sizes
 	// Originally these buffers were only used for Construction.
 	char buffVal[TOOLTIP_BUFFERSIZE]; //[128];
-	char buffText[TOOLTIP_BUFFERSIZE * 4]; //[128]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetText
-	buffText[0] = '\0'; // Sanity init
+	char buffText[TOOLTIP_BUFFERSIZE * 4] = { '\0' }; //[128]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetText
 
 
 	const bool debugToolTips = (legoGlobs.flags2 & GAME2_SHOWDEBUGTOOLTIPS);

@@ -731,7 +731,7 @@ struct Lego_Globs2
 	bool loseFocusAndPause; // (cfg: Main::LoseFocusAndPause)
 
 	// Level properties:
-	bool seeThroughWalls; // (cfg: cfg: Level::SeeThroughWalls)
+	bool seeThroughWalls; // (cfg: Level::SeeThroughWalls)
 };
 
 #pragma endregion
@@ -802,6 +802,29 @@ inline bool Lego_IsInit() { return legoGlobs2.legoInit; }
 
 /// CUSTOM: Check if we're currently in a level that has already started, and is not ending.
 inline bool Lego_IsInLevel() { return Lego_IsInit() && legoGlobs.currLevel != nullptr && !(legoGlobs.flags1 & (GAME1_LEVELSTART|GAME1_LEVELENDING)); }
+
+
+// Disables building and vehicle costs. Does not change upgrade costs.
+bool Cheat_IsNoBuildCosts();
+void Cheat_SetNoBuildCosts(bool on);
+
+// Buildings won't request construction barriers when building.
+bool Cheat_IsNoConstructionBarriers();
+void Cheat_SetNoConstructionBarriers(bool on);
+
+// Buildings will not consume power (however a power source is still needed to provide power).
+bool Cheat_IsNoPowerConsumption();
+void Cheat_SetNoPowerConsumption(bool on);
+
+// Units with negative OxygenCoefs will not deplete Oxygen level.
+bool Cheat_IsNoOxygenConsumption();
+void Cheat_SetNoOxygenConsumption(bool on);
+
+// Marks all blocks in the level as scanned, so that they'll show up on the radar.
+void Cheat_SurveyLevel();
+
+// Returns true if all blocks in the level have been scanned. Only really useful with Cheat_SurveyLevel.
+bool Lego_IsLevelSurveyed();
 
 
 /// <inline>

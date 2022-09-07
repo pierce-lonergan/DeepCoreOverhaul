@@ -1389,8 +1389,12 @@ void __cdecl LegoObject_HideAllCertainObjects(void);
 // <LegoRR.exe @0044aa90>
 #define LegoObject_LoadMeshLOD ((MeshLOD* (__cdecl* )(const Gods98::Config* act, const char* gameName, const char* dirname, LOD_PolyLevel polyLOD, uint32 numCameraFrames))0x0044aa90)
 
+// mouseWorldPos is only optional if execute is false.
 // <LegoRR.exe @0044abd0>
-#define LegoObject_UnkBuildingPlaceDirection ((bool32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, bool32 param_3, bool32 param_4, const Point2F* mouseWorldPos, uint32 mouseBlockX, uint32 mouseBlockY, bool32 param_8, SelectPlace* selectPlace))0x0044abd0)
+//#define LegoObject_UpdateBuildingPlacement ((bool32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, bool32 leftReleased, bool32 rightReleased, OPTIONAL const Point2F* mouseWorldPos, uint32 mouseBlockX, uint32 mouseBlockY, bool32 execute, SelectPlace* selectPlace))0x0044abd0)
+bool32 __cdecl LegoObject_UpdateBuildingPlacement(LegoObject_Type objType, LegoObject_ID objID, bool32 leftReleased, bool32 rightReleased,
+													OPTIONAL const Point2F* mouseWorldPos, uint32 mouseBlockX, uint32 mouseBlockY,
+													bool32 execute, SelectPlace* selectPlace);
 
 // <LegoRR.exe @0044af80>
 #define LegoObject_LoadObjTtsSFX ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x0044af80)

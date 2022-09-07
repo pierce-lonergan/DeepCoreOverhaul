@@ -125,7 +125,7 @@ static constexpr const auto Menu_LegoInitIDs = array_of<uint32>(
 );
 
 static constexpr const auto Menu_InLevelIDs = array_of<uint32>(
-	IDM_BUILDANYROUGHNESS, IDM_NOOXYGEN, IDM_PEACEFUL, IDM_ALLOWRENAME, IDM_DISABLEENDTELEPORT,
+	IDM_BUILDANYROUGHNESS, IDM_PEACEFUL, IDM_SURVEYLEVEL, IDM_ALLOWRENAME, IDM_DISABLEENDTELEPORT,
 	IDM_GENERATESPIDERS, IDM_NOAUTOEAT, IDM_NOFALLINS, IDM_NOMULTISELECT, IDM_SAFECAVERNS, IDM_SEETHROUGHWALLS,
 	IDM_ADDCRYSTALS, IDM_SUBCRYSTALS, IDM_ADDORE, IDM_SUBORE, IDM_ADDOXYGEN, IDM_SUBOXYGEN,
 
@@ -137,6 +137,10 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 {
     // Disable menu items that are waiting for initialisation.
     Menu_EnableButtonsArray(Menu_InitCommandLineIDs, Gods98::Main_IsCommandLineParsed());
+
+	Menu_EnableButtonsArray(Menu_LegoInitIDs, LegoRR::Lego_IsInit());
+
+	Menu_EnableButtonsArray(Menu_InLevelIDs, LegoRR::Lego_IsInLevel());
 
 
     ////// &File //////
@@ -227,11 +231,18 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_NONERPS,		(LegoRR::Lego_IsInit() && LegoRR::Lego_IsNoNERPs()));
 	Menu_CheckButton(IDM_UNLOCKCAMERA,	(LegoRR::Lego_IsInit() && LegoRR::Camera_IsFreeMovement(LegoRR::legoGlobs.cameraMain)));
 	Menu_CheckButton(IDM_UNLOCKBUILD,	(LegoRR::Lego_IsInit() && !LegoRR::Dependencies_IsEnabled()));
+	Menu_CheckButton(IDM_NOBUILDCOSTS,			(LegoRR::Lego_IsInit() && LegoRR::Cheat_IsNoBuildCosts()));
+	Menu_CheckButton(IDM_NOCONSTRUCTIONBARRIERS,(LegoRR::Lego_IsInit() && LegoRR::Cheat_IsNoConstructionBarriers()));
 	//Menu_CheckButton(IDM_BUILDWITHOUTPATHS,	(LegoRR::Lego_IsInit() && !LegoRR::Lego_IsOnlyBuildOnPaths()));
 	Menu_CheckButton(IDM_FPNOCLIP,		(LegoRR::Lego_IsInit() && LegoRR::Lego_IsNoclipOn()));
 	Menu_CheckButton(IDM_FPCONTROLS,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsTopdownFPControlsOn()));
-	Menu_CheckButton(IDM_NOROCKFALL,	(LegoRR::Lego_IsInit() && !LegoRR::Lego_IsAlwaysRockFall()));
 
+	Menu_CheckButton(IDM_NOPOWERCONSUMPTION,	(LegoRR::Lego_IsInit() && LegoRR::Cheat_IsNoPowerConsumption()));
+	Menu_CheckButton(IDM_NOOXYGENCONSUMPTION,	(LegoRR::Lego_IsInit() && LegoRR::Cheat_IsNoOxygenConsumption()));
+
+	Menu_EnableButton(IDM_SURVEYLEVEL,		(LegoRR::Lego_IsInLevel() && !LegoRR::Lego_IsLevelSurveyed()));
+
+	Menu_CheckButton(IDM_NOROCKFALL,		(LegoRR::Lego_IsInit() && !LegoRR::Lego_IsAlwaysRockFall()));
 	Menu_CheckButton(IDM_ALLOWRENAME,		(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsAllowRename()));
 	Menu_CheckButton(IDM_GENERATESPIDERS,	(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsGenerateSpiders()));
 	Menu_CheckButton(IDM_NOAUTOEAT,			(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsNoAutoEat()));
@@ -620,10 +631,16 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 		Dependencies_SetEnabled(!LegoRR::Dependencies_IsEnabled());
 		break;
 
-	/*case IDM_ONLYBUILDONPATHS:
-		std::printf("IDM_ONLYBUILDONPATHS\n");
-		LegoRR::Lego_SetOnlyBuildOnPaths(!LegoRR::Lego_IsOnlyBuildOnPaths());
-		break;*/
+	case IDM_NOBUILDCOSTS:
+		//std::printf("IDM_NOBUILDCOSTS\n");
+		LegoRR::Cheat_SetNoBuildCosts(!LegoRR::Cheat_IsNoBuildCosts());
+		break;
+
+	case IDM_NOCONSTRUCTIONBARRIERS:
+		//std::printf("IDM_NOCONSTRUCTIONBARRIERS\n");
+		LegoRR::Cheat_SetNoConstructionBarriers(!LegoRR::Cheat_IsNoConstructionBarriers());
+		break;
+
 	case IDM_BUILDWITHOUTPATHS:
 		//std::printf("IDM_BUILDWITHOUTPATHS\n");
 		LegoRR::Lego_SetOnlyBuildOnPaths(!LegoRR::Lego_IsOnlyBuildOnPaths());
@@ -655,10 +672,23 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 		break;
 
 
-	/*case IDM_ALWAYSROCKFALL:
-		std::printf("IDM_ALWAYSROCKFALL\n");
-		LegoRR::Lego_SetAlwaysRockFall(!LegoRR::Lego_IsAlwaysRockFall());
-		break;*/
+	case IDM_NOPOWERCONSUMPTION:
+		//std::printf("IDM_NOPOWERCONSUMPTION\n");
+		LegoRR::Cheat_SetNoPowerConsumption(!LegoRR::Cheat_IsNoPowerConsumption());
+		break;
+
+	case IDM_NOOXYGENCONSUMPTION:
+		//std::printf("IDM_NOOXYGENCONSUMPTION\n");
+		LegoRR::Cheat_SetNoOxygenConsumption(!LegoRR::Cheat_IsNoOxygenConsumption());
+		break;
+
+
+	case IDM_SURVEYLEVEL:
+		//std::printf("IDM_SURVEYLEVEL\n");
+		LegoRR::Cheat_SurveyLevel();
+		break;
+
+
 	case IDM_NOROCKFALL:
 		//std::printf("IDM_NOROCKFALL\n");
 		LegoRR::Lego_SetAlwaysRockFall(!LegoRR::Lego_IsAlwaysRockFall());

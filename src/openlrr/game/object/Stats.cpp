@@ -857,24 +857,57 @@ void __cdecl LegoRR::Stats_AddToolTaskType(LegoRR::LegoObject_ToolType toolType,
 // <LegoRR.exe @00469d80>
 sint32 __cdecl LegoRR::Stats_GetCostOre(LegoRR::LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel)
 {
-	return statsGlobs.objectStats[objType][objID][objLevel].CostOre;
+	if (Cheat_IsNoBuildCosts())
+		return 0;
+	return Stats_GetRealCostOre(objType, objID, objLevel);
 }
 
 // <LegoRR.exe @00469db0>
 sint32 __cdecl LegoRR::Stats_GetCostCrystal(LegoRR::LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel)
 {
-	return statsGlobs.objectStats[objType][objID][objLevel].CostCrystal;
+	if (Cheat_IsNoBuildCosts())
+		return 0;
+	return Stats_GetRealCostCrystal(objType, objID, objLevel);
 }
 
 // <LegoRR.exe @00469de0>
 sint32 __cdecl LegoRR::Stats_GetCostRefinedOre(LegoRR::LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel)
 {
+	if (Cheat_IsNoBuildCosts())
+		return 0;
+	return Stats_GetRealCostRefinedOre(objType, objID, objLevel);
+}
+
+/// CUSTOM: Functions to get real resource costs without the Cheat override.
+sint32 LegoRR::Stats_GetRealCostOre(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel)
+{
+	return statsGlobs.objectStats[objType][objID][objLevel].CostOre;
+}
+
+sint32 LegoRR::Stats_GetRealCostCrystal(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel)
+{
+	return statsGlobs.objectStats[objType][objID][objLevel].CostCrystal;
+}
+
+sint32 LegoRR::Stats_GetRealCostRefinedOre(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel)
+{
 	return statsGlobs.objectStats[objType][objID][objLevel].CostRefinedOre;
+}
+
+/// CUSTOM:
+bool LegoRR::Stats_GetRequiresConstructionBarriers(LegoObject_Type objType, LegoObject_ID objID)
+{
+	if (Cheat_IsNoConstructionBarriers())
+		return false;
+	// ToolStore-like construction with no barriers is determined by the STOREOBJECTS flag.
+	return !(Stats_GetStatsFlags1(objType, objID) & STATS1_STOREOBJECTS);
 }
 
 // <LegoRR.exe @00469e10>
 sint32 __cdecl LegoRR::StatsObject_GetCrystalDrain(LegoRR::LegoObject* liveObj)
 {
+	if (Cheat_IsNoPowerConsumption())
+		return 0;
 	return statsGlobs.objectStats[liveObj->type][liveObj->id][liveObj->objLevel].CrystalDrain;
 }
 
@@ -1005,13 +1038,19 @@ real32 __cdecl LegoRR::StatsObject_GetEnergyDecayRate(LegoRR::LegoObject* liveOb
 // <LegoRR.exe @0046a0c0>
 real32 __cdecl LegoRR::Stats_GetOxygenCoef(LegoRR::LegoObject_Type objType, LegoObject_ID objID)
 {
-	return statsGlobs.objectStats[objType][objID]->OxygenCoef;
+	const real32 oxygenCoef = statsGlobs.objectStats[objType][objID]->OxygenCoef;
+	if (Cheat_IsNoOxygenConsumption())
+		return std::max(0.0f, oxygenCoef); // Still allow objects to produce Oxygen.
+	return oxygenCoef;
 }
 
 // <LegoRR.exe @0046a0e0>
 real32 __cdecl LegoRR::StatsObject_GetOxygenCoef(LegoRR::LegoObject* liveObj)
 {
-	return liveObj->stats->OxygenCoef;
+	const real32 oxygenCoef = liveObj->stats->OxygenCoef;
+	if (Cheat_IsNoOxygenConsumption())
+		return std::max(0.0f, oxygenCoef); // Still allow objects to produce Oxygen.
+	return oxygenCoef;
 }
 
 // <LegoRR.exe @0046a100>
@@ -1131,6 +1170,11 @@ real32 __cdecl LegoRR::StatsObject_GetFunctionCoef(LegoRR::LegoObject* liveObj)
 // <LegoRR.exe @0046a380>
 sint32 __cdecl LegoRR::Stats_GetUpgradeCostOre(LegoRR::LegoObject_Type objType, LegoObject_ID objID, LegoObject_UpgradeType upgradeType)
 {
+	/// TODO: There could be side-effects if toggling-off the cheat while a vehicle is going to upgrade.
+	///       Research potential issues before enabling.
+	//if (Cheat_IsNoBuildCosts())
+	//	return 0;
+
 	// One of the only two leveled fields that have no relation to the object's actual level.
 	return statsGlobs.objectStats[objType][objID][upgradeType].UpgradeCostOre;
 }
@@ -1138,6 +1182,11 @@ sint32 __cdecl LegoRR::Stats_GetUpgradeCostOre(LegoRR::LegoObject_Type objType, 
 // <LegoRR.exe @0046a3b0>
 sint32 __cdecl LegoRR::Stats_GetUpgradeCostStuds(LegoRR::LegoObject_Type objType, LegoObject_ID objID, LegoObject_UpgradeType upgradeType)
 {
+	/// TODO: There could be side-effects if toggling-off the cheat while a vehicle is going to upgrade.
+	///       Research potential issues before enabling.
+	//if (Cheat_IsNoBuildCosts())
+	//	return 0;
+
 	// One of the only two leveled fields that have no relation to the object's actual level.
 	return statsGlobs.objectStats[objType][objID][upgradeType].UpgradeCostStuds;
 }
@@ -1236,7 +1285,7 @@ real32 __cdecl LegoRR::StatsObject_GetFreezerDamage(LegoRR::LegoObject* liveObj)
 }
 
 // <LegoRR.exe @0046a5d0>
-real32 __cdecl LegoRR::StatsObject_GetObjectFreezerTime(LegoRR::LegoObject* liveObj)
+real32 __cdecl LegoRR::StatsObject_GetFreezerTime(LegoRR::LegoObject* liveObj)
 {
 	return liveObj->stats->FreezerTime;
 }

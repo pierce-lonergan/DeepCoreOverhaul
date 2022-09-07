@@ -438,7 +438,7 @@ void __cdecl LegoRR::Weapon_GunHitObject(LegoObject* liveObj, const Vector3F* di
 	case Weapon_KnownType_Freezer:
 
 		if (StatsObject_GetStatsFlags2(liveObj) & STATS2_CANFREEZE) {
-			real32 freezerTime = StatsObject_GetObjectFreezerTime(liveObj);
+			real32 freezerTime = StatsObject_GetFreezerTime(liveObj);
 			if (freezerTime <= 0.0f) freezerTime = 10.0f; // Default freezer time
 
 			const real32 damage = StatsObject_GetFreezerDamage(liveObj);

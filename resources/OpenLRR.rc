@@ -199,6 +199,8 @@ BEGIN
         MENUITEM "No &NERPs",                   IDM_NONERPS
         MENUITEM "Free &Camera Movement",       IDM_UNLOCKCAMERA
         MENUITEM "No Build &Dependencies",      IDM_UNLOCKBUILD
+        MENUITEM "No Build Costs",              IDM_NOBUILDCOSTS
+        MENUITEM "No Construction Barriers",    IDM_NOCONSTRUCTIONBARRIERS
 #if 0  // not ready yet
         //MENUITEM "OnlyBuildOnPaths (todo)",     IDM_ONLYBUILDONPATHS,CHECKED,GRAYED
         MENUITEM "Build Without &Paths",        IDM_BUILDWITHOUTPATHS
@@ -208,15 +210,18 @@ BEGIN
         MENUITEM "FP &Controls",                IDM_FPCONTROLS
         MENUITEM SEPARATOR
         //MENUITEM "Always Rock Fall",            IDM_ALWAYSROCKFALL
-        MENUITEM "No Rock Fall",                IDM_NOROCKFALL
+        MENUITEM "No Power Consumption",        IDM_NOPOWERCONSUMPTION
+        MENUITEM "No Oxygen Consumption",       IDM_NOOXYGENCONSUMPTION
 #if 0  // not ready yet
-        MENUITEM "No Oxygen",                   IDM_NOOXYGEN
         MENUITEM "Quick Reinforce",             IDM_QUICKREINFORCE
         MENUITEM "Peaceful",                    IDM_PEACEFUL
 #endif
         MENUITEM SEPARATOR
+        MENUITEM "Survey Level",                IDM_SURVEYLEVEL
+        MENUITEM SEPARATOR
         POPUP "Config"
         BEGIN
+            MENUITEM "No Rock Fall",            IDM_NOROCKFALL
             MENUITEM "Allow Rename",            IDM_ALLOWRENAME
 #if 0  // not ready yet
             MENUITEM "Disable End Teleport",    IDM_DISABLEENDTELEPORT

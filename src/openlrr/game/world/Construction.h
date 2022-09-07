@@ -41,6 +41,9 @@ enum Construction_ZoneFlags : uint32
 	CONSTRUCTION_FLAG_LAYPATH   = 0x2, // Constucting path tile, not building.
 	CONSTRUCTION_FLAG_REQUESTED = 0x4, // Resources have been requested.
 	CONSTRUCTION_FLAG_USESTUDS  = 0x8, // Use studs instead of ore (set, but unreferenced).
+
+	/// CUSTOM: OpenLRR-exclusive flags.
+	CONSTRUCTION_CUSTOM_FLAG_NOBUILDCOST = 0x80000000, // The construction zone was created while the 'No Build Costs' cheat was on.
 };
 flags_end(Construction_ZoneFlags, 0x4);
 
@@ -111,30 +114,64 @@ extern Construction_Globs & constructionGlobs;
 
 #pragma region Functions
 
+/// CUSTOM: Returns if a construction zone was created while the 'No Build Costs' cheat was on.
+bool Construction_Zone_IsNoBuildCost(uint32 constructHandle);
+
+/// CUSTOM: Sets if a construction zone was created while the 'No Build Costs' cheat was on.
+///         This is needed to manage AITask requests in Construction_Zone_NeedsMoreOfResource.
+void Construction_Zone_SetNoBuildCost(uint32 constructHandle, bool noBuildCosts);
+
+
+/// CUSTOM:
+bool Construction_Zone_UsesStuds(const Construction_Zone* construct);
+
+/// CUSTOM:
+uint32 Construction_Zone_GetCostCrystal(Construction_Zone* construct, OPTIONAL uint32* placedCrystals);
+
+/// CUSTOM:
+uint32 Construction_Zone_GetCostOre(Construction_Zone* construct, OPTIONAL uint32* placedOre);
+
+/// CUSTOM:
+uint32 Construction_Zone_GetCostRefinedOre(Construction_Zone* construct, OPTIONAL uint32* placedStuds);
+
+/// CUSTOM:
+uint32 Construction_Zone_GetCostOreType(Construction_Zone* construct, OPTIONAL uint32* placedOreType, OPTIONAL bool* usesStuds);
+
+/// CUSTOM:
+uint32 Construction_Zone_GetCostBarriers(Construction_Zone* construct, OPTIONAL uint32* placedBarriers);
+
+
 // <inlined>
-__inline LegoObject_Type Construction_GetObjectType(const Construction_Zone* construct)
+inline LegoObject_Type Construction_Zone_GetObjectType(const Construction_Zone* construct)
 {
 	return ((construct->flags & CONSTRUCTION_FLAG_LAYPATH) ? LegoObject_Path : LegoObject_Building);
 }
 
 // <inlined, unused>
-__inline bool32 Construction_IsCryOreDropDisabled(void) { return constructionGlobs.disableCryOreDrop; }
+inline bool32 Construction_IsCryOreDropDisabled(void) { return constructionGlobs.disableCryOreDrop; }
 
 
+/// BETA: RockFall
+// <LegoStripped.exe @0040b920>
+void __cdecl Construction_LoadBuildingBases(const Gods98::Config* config, Gods98::Container* rootCont);
+
+// <inlined>
+inline uint32 Construction_GetBuildingBaseCount() { return constructionGlobs.buildingBaseCount; }
 
 // Would have looked up the baseName in a list of up to 5 names, and returned the index (or buildingBaseCount on failure).
 // No building bases are ever defined, so the function will always return 0 (aka buildingBaseCount).
 // <LegoRR.exe @00408bb0>
-#define Construction_GetBuildingBase ((uint32 (__cdecl* )(const char* baseName))0x00408bb0)
-//uint32 __cdecl Construction_GetBuildingBase(const char* baseName);
+//#define Construction_GetBuildingBase ((uint32 (__cdecl* )(const char* baseName))0x00408bb0)
+uint32 __cdecl Construction_GetBuildingBase(const char* baseName);
 
+// Calling with a null placedObj will still allow the construction zone to evaluate if all resources are placed.
 // <LegoRR.exe @00408c10>
-#define Construction_Zone_PlaceResource ((void (__cdecl* )(uint32 constructHandle, LegoObject* placedObj))0x00408c10)
-//void __cdecl Construction_Zone_PlaceResource(uint32 constructHandle, LegoObject* placedObj);
+#define Construction_Zone_PlaceResource ((void (__cdecl* )(uint32 constructHandle, OPTIONAL LegoObject* placedObj))0x00408c10)
+//void __cdecl Construction_Zone_PlaceResource(uint32 constructHandle, OPTIONAL LegoObject* placedObj);
 
 // <LegoRR.exe @00408ca0>
-#define Construction_Zone_NeedsMoreOfResource ((bool32 (__cdecl* )(uint32 constructHandle, LegoObject_Type objType, LegoObject_ID objID))0x00408ca0)
-//bool32 __cdecl Construction_Zone_NeedsMoreOfResource(uint32 constructHandle, LegoObject_Type objType, LegoObject_ID objID);
+//#define Construction_Zone_NeedsMoreOfResource ((bool32 (__cdecl* )(uint32 constructHandle, LegoObject_Type objType, LegoObject_ID objID))0x00408ca0)
+bool32 __cdecl Construction_Zone_NeedsMoreOfResource(uint32 constructHandle, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @00408d40>
 #define Construction_Zone_CountOfResourcePlaced ((uint32 (__cdecl* )(Construction_Zone* construct, LegoObject_Type objType, LegoObject_ID objID))0x00408d40)
@@ -167,8 +204,8 @@ __inline bool32 Construction_IsCryOreDropDisabled(void) { return constructionGlo
 //void __cdecl Construction_Zone_CancelPath(const Point2I* originBlockPos);
 
 // <LegoRR.exe @00409110>
-#define Construction_UpdateAll ((void (__cdecl* )(real32 elapsedGame))0x00409110)
-//void __cdecl Construction_UpdateAll(real32 elapsedGame);
+//#define Construction_UpdateAll ((void (__cdecl* )(real32 elapsedGame))0x00409110)
+void __cdecl Construction_UpdateAll(real32 elapsedGame);
 
 // This check is used to prevent buildings from completing while unrelated units are inside the construction zone.
 // <LegoRR.exe @004091a0>
@@ -204,8 +241,8 @@ __inline bool32 Construction_IsCryOreDropDisabled(void) { return constructionGlo
 
 // Internally used for Paths during `Construction_UpdateAll`. Does NOT use objID field.
 // <LegoRR.exe @00409480>
-#define Construction_Zone_RequestPathResources ((void (__cdecl* )(Construction_Zone* construct))0x00409480)
-//void __cdecl Construction_Zone_RequestPathResources(Construction_Zone* construct);
+//#define Construction_Zone_RequestPathResources ((void (__cdecl* )(Construction_Zone* construct))0x00409480)
+void __cdecl Construction_Zone_RequestPathResources(Construction_Zone* construct);
 
 // <LegoRR.exe @00409530>
 #define Construction_Zone_CancelBuilding ((void (__cdecl* )(const Point2I* originBlockPos))0x00409530)

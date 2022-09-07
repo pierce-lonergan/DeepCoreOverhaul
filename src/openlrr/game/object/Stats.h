@@ -305,6 +305,16 @@ sint32 __cdecl Stats_GetCostCrystal(LegoObject_Type objType, LegoObject_ID objID
 // <LegoRR.exe @00469de0>
 sint32 __cdecl Stats_GetCostRefinedOre(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel);
 
+/// CUSTOM: Functions to get real resource costs without the Cheat override.
+sint32 Stats_GetRealCostOre(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel);
+
+sint32 Stats_GetRealCostCrystal(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel);
+
+sint32 Stats_GetRealCostRefinedOre(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel);
+
+/// CUSTOM:
+bool Stats_GetRequiresConstructionBarriers(LegoObject_Type objType, LegoObject_ID objID);
+
 // <LegoRR.exe @00469e10>
 sint32 __cdecl StatsObject_GetCrystalDrain(LegoObject* liveObj);
 
@@ -474,7 +484,7 @@ real32 __cdecl StatsObject_GetLaserDamage(LegoObject* liveObj);
 real32 __cdecl StatsObject_GetFreezerDamage(LegoObject* liveObj);
 
 // <LegoRR.exe @0046a5d0>
-real32 __cdecl StatsObject_GetObjectFreezerTime(LegoObject* liveObj);
+real32 __cdecl StatsObject_GetFreezerTime(LegoObject* liveObj);
 
 // <LegoRR.exe @0046a5f0>
 void __cdecl StatsObject_Debug_ToggleSelfPowered(LegoObject* liveObj);

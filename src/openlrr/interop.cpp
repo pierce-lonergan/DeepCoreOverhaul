@@ -1690,6 +1690,25 @@ bool interop_hook_LegoRR_AITask(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Construction(void)
+{
+	bool result = true;
+
+	// used by: Stats_Initialise
+	result &= hook_write_jmpret(0x00408bb0, LegoRR::Construction_GetBuildingBase);
+
+	// used by: AITask_LiveObject_SetAITaskUnk
+	result &= hook_write_jmpret(0x00408ca0, LegoRR::Construction_Zone_NeedsMoreOfResource);
+
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x00409110, LegoRR::Construction_UpdateAll);
+
+	// used by: Construction_UpdateAll
+	result &= hook_write_jmpret(0x00409480, LegoRR::Construction_Zone_RequestPathResources);
+
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Credits(void)
 {
 	bool result = true;
@@ -2552,6 +2571,9 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00449ec0, LegoRR::LegoObject_HideAllCertainObjects);
 
+	// used by: Lego_HandleWorld
+	result &= hook_write_jmpret(0x0044abd0, LegoRR::LegoObject_UpdateBuildingPlacement);
+
 	// used by: Lego_QuitLevel, Lego_LoadLevel, Objective_SetStatus
 	result &= hook_write_jmpret(0x0044b080, LegoRR::LegoObject_SetLevelEnding);
 
@@ -2598,7 +2620,7 @@ bool interop_hook_LegoRR_Pointers(void)
 	// used by: Info_SetText_internal
 	result &= hook_write_jmpret(0x0045ced0, LegoRR::Pointer_GetImage);
 	// used by: Front_Menu_Update, Lego_Initialise, Lego_MainLoop, Lego_HandleRadarInput,
-	//          Lego_HandleWorld, Level_SetPointer_FromSurfaceType, LegoObject_UnkBuildingPlaceDirection,
+	//          Lego_HandleWorld, Level_SetPointer_FromSurfaceType, LegoObject_UpdateBuildingPlacement,
 	//          Reward_LoopUpdate
 	result &= hook_write_jmpret(0x0045cee0, LegoRR::Pointer_SetCurrent_IfTimerFinished);
 	// used by: Lego_SetPointerSFX
@@ -2764,7 +2786,7 @@ bool interop_hook_LegoRR_Stats(void)
 	result &= hook_write_jmpret(0x0046a570, LegoRR::StatsObject_GetPusherDamage);
 	result &= hook_write_jmpret(0x0046a590, LegoRR::StatsObject_GetLaserDamage);
 	result &= hook_write_jmpret(0x0046a5b0, LegoRR::StatsObject_GetFreezerDamage);
-	result &= hook_write_jmpret(0x0046a5d0, LegoRR::StatsObject_GetObjectFreezerTime);
+	result &= hook_write_jmpret(0x0046a5d0, LegoRR::StatsObject_GetFreezerTime);
 	result &= hook_write_jmpret(0x0046a5f0, LegoRR::StatsObject_Debug_ToggleSelfPowered);
 	
 	return_interop(result);
@@ -2934,6 +2956,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Advisor();
 	result &= interop_hook_LegoRR_AITask();
 	result &= interop_hook_LegoRR_BezierCurve();
+	result &= interop_hook_LegoRR_Construction();
 	result &= interop_hook_LegoRR_Credits();
 	result &= interop_hook_LegoRR_ElectricFence();
 	result &= interop_hook_LegoRR_Game();

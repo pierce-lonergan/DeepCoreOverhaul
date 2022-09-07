@@ -11,6 +11,9 @@
 #include "../interface/Encyclopedia.h"
 #include "../interface/HelpWindow.h"
 #include "../interface/InfoMessages.h"
+#include "../interface/Interface.h"
+#include "../interface/Pointers.h"
+#include "../interface/TextMessages.h"
 #include "../mission/Messages.h"
 #include "../mission/NERPsFile.h"
 #include "../world/Construction.h"
@@ -1439,6 +1442,143 @@ void __cdecl LegoRR::LegoObject_HideAllCertainObjects(void)
 	//LegoObject_RunThroughLists(LegoObject_Callback_HideCertainObjects, nullptr, false);
 }
 
+
+// <LegoRR.exe @0044abd0>
+bool32 __cdecl LegoRR::LegoObject_UpdateBuildingPlacement(LegoObject_Type objType, LegoObject_ID objID, bool32 leftReleased, bool32 rightReleased,
+															OPTIONAL const Point2F* mouseWorldPos, uint32 mouseBlockX, uint32 mouseBlockY,
+															bool32 execute, SelectPlace* selectPlace)
+{
+	const Point2I mouseBlockPos = {
+		static_cast<sint32>(mouseBlockX),
+		static_cast<sint32>(mouseBlockY),
+	};
+
+	if (objType != LegoObject_Building)
+		return true; // Default return value.
+
+	if (!execute) {
+		SelectPlace_Hide(selectPlace, true);
+		return true; // Default return value.
+	}
+
+	if (!Level_Block_IsGround(mouseBlockX, mouseBlockY)) {
+		if (!rightReleased) {
+			Pointer_SetCurrent_IfTimerFinished(Pointer_CannotBuild);
+		}
+		if (!rightReleased && leftReleased) {
+			Lego_SetPointerSFX(PointerSFX_NotOkay);
+		}
+
+		SelectPlace_Hide(selectPlace, true);
+	}
+	else {
+		uint32 shapeCount = 0; // dummy init
+		const Point2I* shapePoints = Building_GetShapePoints(&legoGlobs.buildingData[objID], &shapeCount);
+		const uint32 waterEntrances = Stats_GetWaterEntrances(LegoObject_Building, objID, 0);
+		SelectPlace_Hide(selectPlace, false);
+
+		Point2F wPos = { 0.0f }; // dummy init
+		Map3D_BlockToWorldPos(Lego_GetMap(), mouseBlockX, mouseBlockY, &wPos.x, &wPos.y);
+
+		Point2F wOff; // Offset from where the mouse is to the center of the block.
+		Gods98::Maths_Vector2DSubtract(&wOff, mouseWorldPos, &wPos);
+
+		// Try to snap to a new default valid rotation, note that this may be replaced during the direction loop below this.
+		if (wOff.x > 0.0f && wOff.x > std::abs(wOff.y)) {
+			legoGlobs.placeObjDirection = DIRECTION_RIGHT;
+		}
+		else if (wOff.x < 0.0f && std::abs(wOff.x) > std::abs(wOff.y)) {
+			legoGlobs.placeObjDirection = DIRECTION_LEFT;
+		}
+		else if (wOff.y > 0.0f && wOff.y > std::abs(wOff.x)) {
+			// Wouldn't this actually be down? If we're following conventions for left/right...
+			legoGlobs.placeObjDirection = DIRECTION_UP;
+		}
+		else if (wOff.y < 0.0f && std::abs(wOff.y) > std::abs(wOff.x)) {
+			legoGlobs.placeObjDirection = DIRECTION_DOWN;
+		}
+		else {
+			/// FIXME: No handling for this scenario???
+			//legoGlobs.placeObjDirection = ???;
+		}
+
+		// FIVE!!???
+		for (uint32 d = 0; d < 5; d++) {
+			const Direction direction = DirectionWrap(legoGlobs.placeObjDirection + d);
+
+			const Point2I* shapeBlocks = SelectPlace_CheckAndUpdate(selectPlace, &mouseBlockPos, shapePoints, shapeCount,
+																	direction, Lego_GetMap(), waterEntrances);
+			// I think this may return null if the shape is outside the world bounds, or doesn't meet OSHA regulations.
+			if (shapeBlocks == nullptr)
+				continue;
+
+			if (!rightReleased) {
+				Pointer_SetCurrent_IfTimerFinished(Pointer_CanBuild);
+			}
+			if (!rightReleased && leftReleased) {
+				const uint32 constructHandle = Construction_Zone_StartBuilding(objID, &mouseBlockPos, direction,
+																			   shapeBlocks, shapeCount);
+				// Request Barriers:
+				//const StatsFlags1 sflags1 = Stats_GetStatsFlags1(LegoObject_Building, objID);
+				//if (!(sflags1 & STATS1_STOREOBJECTS)) {
+				if (Stats_GetRequiresConstructionBarriers(LegoObject_Building, objID)) {
+					// Only non-ToolStore objects require barriers.
+					Construction_Zone_RequestBarriers(&mouseBlockPos, shapeBlocks, shapeCount);
+				}
+
+				// Request Crystals:
+				const uint32 crystalsCost = Stats_GetCostCrystal(LegoObject_Building, objID, 0);
+				Construction_Zone_RequestResource(&mouseBlockPos, LegoObject_PowerCrystal, (LegoObject_ID)0, 0, crystalsCost);
+
+				// Request Ore / Studs:
+				// Studs will only be used if a processing building is available, and if the studs cost is non-zero.
+				const LegoObject* oreProcessingObj = LegoObject_FindResourceProcessingBuilding(nullptr, &mouseBlockPos, LegoObject_Ore, 0);
+				const uint32 oreCost = Stats_GetCostOre(LegoObject_Building, objID, 0);
+				const uint32 studsCost = Stats_GetCostRefinedOre(LegoObject_Building, objID, 0);
+
+				LegoObject_ID oreObjID;
+				uint32 oreTypeCost;
+				if (oreProcessingObj != nullptr && studsCost > 0) {
+					// An ore processing building exists, request studs instead of ore.
+					oreObjID    = LegoObject_ID_ProcessedOre;
+					oreTypeCost = studsCost;
+				}
+				else { // Otherwise, fallback to regular ore.
+					oreObjID    = LegoObject_ID_Ore;
+					oreTypeCost = oreCost;
+				}
+				Construction_Zone_RequestResource(&mouseBlockPos, LegoObject_Ore, oreObjID, 0, oreTypeCost);
+
+				// Track this info to properly handle Construction_Zone_NeedsMoreOfResource.
+				Construction_Zone_SetNoBuildCost(constructHandle, Cheat_IsNoBuildCosts());
+
+				// Dummy call to check condition of having all resources (needed for buildings like toolstore).
+				Construction_Zone_PlaceResource(constructHandle, nullptr);
+
+				SelectPlace_Hide(selectPlace, true);
+				Interface_BackToMain();
+				Lego_SetPointerSFX(PointerSFX_Okay);
+				return false; // End selectPlace mode??
+			}
+			else {
+				// Found a valid direction, but didn't place.
+				// Store this direction as the last valid direction.
+				legoGlobs.placeObjDirection = direction;
+				//break;
+				return true;
+			}
+		}
+
+		if (!rightReleased) {
+			Pointer_SetCurrent_IfTimerFinished(Pointer_CannotBuild);
+		}
+		if (!rightReleased && leftReleased) {
+			Lego_SetPointerSFX(PointerSFX_NotOkay);
+		}
+	}
+	Text_DisplayMessage(Text_CannotPlaceBuilding, false, false);
+	return true;
+}
 
 
 // <LegoRR.exe @0044b080>
