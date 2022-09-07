@@ -481,6 +481,13 @@ __inline bool32 Main_IsCLFlag(MainCLFlags clFlag) { return (mainGlobs.clFlags & 
 void Main_SetCLFlag(MainCLFlags clFlag, bool32 on);
 
 
+/// CUSTOM: Gets the elapsed time for the current update tick.
+real32 Main_GetDeltaTime();
+
+/// CUSTOM: Calculates the elapsed time for the current update tick.
+void Main_UpdateDeltaTime();
+
+
 /// CUSTOM: Gets if the game is set to close gracefully at the end of the next update loop.
 __inline bool32 Main_IsClosing(void) { return mainGlobs.exit; }
 
@@ -539,7 +546,7 @@ sint32 __stdcall Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrev
 
 
 // <missing>
-void __cdecl Main_Exit(void);
+__declspec(noreturn) void __cdecl Main_Exit(void);
 
 
 /// CUSTOM:

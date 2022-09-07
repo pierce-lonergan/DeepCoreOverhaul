@@ -1095,7 +1095,7 @@ void __cdecl Lego_Shutdown_Full(void);
 // (LRR_Exit)
 // <LegoRR.exe @00424fd0>
 //#define Lego_Exit ((void (__cdecl* )(void))0x00424fd0)
-void __cdecl Lego_Exit(void);
+__declspec(noreturn) void __cdecl Lego_Exit(void);
 
 // Returning FALSE will naturally exit the program (as handled by Lego_MainLoop).
 // 

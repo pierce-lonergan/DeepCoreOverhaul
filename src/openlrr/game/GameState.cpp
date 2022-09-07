@@ -1882,7 +1882,7 @@ void __cdecl LegoRR::Lego_Shutdown_Full(void)
 // Simply halts music playback, then calls std::exit(0);
 // (LRR_Exit)
 // <LegoRR.exe @00424fd0>
-void __cdecl LegoRR::Lego_Exit(void)
+__declspec(noreturn) void __cdecl LegoRR::Lego_Exit(void)
 {
 	Lego_ChangeMusicPlaying(false); // End music.
 	Gods98::Main_Exit();

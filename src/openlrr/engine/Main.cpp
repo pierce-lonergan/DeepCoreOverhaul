@@ -82,6 +82,10 @@ Gods98::Main_CommandLineOptions Gods98::mainOptions = Gods98::Main_CommandLineOp
 static HANDLE visualStyles_hActCtx = INVALID_HANDLE_VALUE;
 static ULONG_PTR visualStyles_cookie = 0;
 
+// Store these here to move them out of WinMain loop, allowing to handle update times in other functions.
+static real32 _mainDeltaTime = 1.0f;
+static uint32 _mainLastTime = 0;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -333,6 +337,57 @@ void Gods98::Main_SetCLFlag(MainCLFlags clFlag, bool32 on)
 }
 
 
+/// CUSTOM: Gets the elapsed time for the current update tick.
+real32 Gods98::Main_GetDeltaTime()
+{
+	return _mainDeltaTime;
+}
+
+/// CUSTOM: Calculates the elapsed time for the current update tick.
+void Gods98::Main_UpdateDeltaTime()
+{
+	/// CHANGE: Always update last time, in-case the user switches modes.
+	const uint32 lastTime = _mainLastTime;
+	const uint32 currTime = Main_GetTime();
+
+	real32 delta;
+
+	if (mainGlobs.flags & MainFlags::MAIN_FLAG_DUMPMODE) {
+		// In LegoRR, this state is never reachable.
+		delta = STANDARD_FRAMERATE / 30.0f;
+
+	}
+	else if (mainGlobs.flags & MainFlags::MAIN_FLAG_PAUSED) {
+		// In LegoRR, this state is never reachable because Main_SetPaused is never used.
+		if (mainGlobs2.advanceFrames > 0) {
+			mainGlobs2.advanceFrames--;
+			// We could bulk-execute this, but it'll likely break the engine.
+			delta = 1.0f; // ((mainGlobs.fixedFrameTiming == 0.0f) ? 1.0f : mainGlobs.fixedFrameTiming);
+		}
+		else {
+			delta = 0.0f;
+		}
+	}
+	else if (mainGlobs.fixedFrameTiming == 0.0f) { // no fps defined
+		// Measure the time taken over the last frame (to be passed next loop)
+		delta = (currTime - lastTime) / (1000.0f / STANDARD_FRAMERATE); // milliseconds to standard units
+
+#ifndef _UNLIMITEDUPDATETIME
+		// LegoRR compiles with this preprocessor undefined (this check still happens).
+		if (delta > 3.0f) {
+			delta = 3.0f;
+		}
+#endif // _UNLIMITEDUPDATETIME
+
+	}
+	else {
+		// Always update with the same time, regardless of actual time passed.
+		delta = mainGlobs.fixedFrameTiming;
+	}
+
+	_mainDeltaTime = delta;
+	_mainLastTime = currTime;
+}
 
 
 // <LegoRR.exe @00401b30>
@@ -726,10 +781,9 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 					
 					// Use the MultiMedia timer to give a 'realtime passed' value
 					// per frame to the main loop (in 25th's of a second)
-					real32 time = 1.0f;
-					//uint32 currTime;
+					_mainDeltaTime = 1.0f;
 
-					uint32 lastTime = Main_GetTime();
+					_mainLastTime = Main_GetTime();
 
 					while (!mainGlobs.exit) {
 						
@@ -748,7 +802,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 						Input_ReadMouse2();
 
 						// Run the main loop (pass 1.0f as the initial timing value)
-						if (!mainGlobs.currState.MainLoop(time)) mainGlobs.exit = true;
+						if (!mainGlobs.currState.MainLoop(_mainDeltaTime)) mainGlobs.exit = true;
 
 						// Update the device and flip the surfaces...
 						Graphics_Finalise3D();
@@ -756,38 +810,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 						// Set as not-updated again while the game loop is running.
 						mainGlobs.flags &= ~MainFlags::MAIN_FLAG_UPDATED;
 
-						if (mainGlobs.flags & MainFlags::MAIN_FLAG_DUMPMODE) {
-							// In LegoRR, this state is never reachable.
-							time = STANDARD_FRAMERATE / 30.0f;
-
-						} else if (mainGlobs.flags & MainFlags::MAIN_FLAG_PAUSED) {
-							// In LegoRR, this state is never reachable because Main_SetPaused is never used.
-							if (mainGlobs2.advanceFrames > 0) {
-								mainGlobs2.advanceFrames--;
-								// We could bulk-execute this, but it'll likely break the engine.
-								time = 1.0f; // ((mainGlobs.fixedFrameTiming == 0.0f) ? 1.0f : mainGlobs.fixedFrameTiming);
-							}
-							else {
-								time = 0.0f;
-							}
-							lastTime = Main_GetTime();
-						} else if (mainGlobs.fixedFrameTiming == 0.0f) { // no fps defined
-							// Measure the time taken over the last frame (to be passed next loop)
-							uint32 currTime = Main_GetTime();
-							time = ((real32)(currTime - lastTime)) / (1000.0f / STANDARD_FRAMERATE); // milliseconds to standard units
-							lastTime = currTime;
-#ifndef _UNLIMITEDUPDATETIME
-							// LegoRR compiles with this preprocessor undefined (this check still happens).
-							if (time > 3.0f) {
-								time = 3.0f;
-							}
-#endif // _UNLIMITEDUPDATETIME
-
-						} else {
-							// Always update with the same time, regardless of actual time passed.
-							time = mainGlobs.fixedFrameTiming;
-							lastTime = Main_GetTime();
-						}
+						Main_UpdateDeltaTime();
 					}
 				}
 
@@ -858,7 +881,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 
 
 // <missing>
-void __cdecl Gods98::Main_Exit(void)
+__declspec(noreturn) void __cdecl Gods98::Main_Exit(void)
 {
 	/// NEW GODS98: Not called in LegoRR WinMain, so it's likely this wasn't
 	///  called here either, making Main_Exit an inline alias for `std::exit(0);`
@@ -1397,6 +1420,12 @@ void __cdecl Gods98::Main_LoopUpdate2(bool clear, bool updateGraphics)
 {
 	log_firstcall();
 
+	/// FIX APPLY: Reset clicked states here too.
+	INPUT.lClicked = false;
+	INPUT.rClicked = false;
+	INPUT.lDoubleClicked = false;
+	INPUT.rDoubleClicked = false;
+
 	Main_HandleIO();
 	Input_ReadKeys();
 	Input_ReadMouse2();
@@ -1409,6 +1438,8 @@ void __cdecl Gods98::Main_LoopUpdate2(bool clear, bool updateGraphics)
 		if (clear) DirectDraw_Clear(nullptr, 0 /*black*/);
 		mainGlobs.flags &= ~MainFlags::MAIN_FLAG_UPDATED;
 	}
+
+	Main_UpdateDeltaTime();
 
 	/// FIX APPLY: Allow the window close button to function within menus and screens by
 	///            forcefully exiting the game when LRR is deep in a nested UI loop.
