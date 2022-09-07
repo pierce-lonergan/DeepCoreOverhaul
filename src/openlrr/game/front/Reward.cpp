@@ -30,6 +30,28 @@ LegoRR::Reward_Globs & LegoRR::rewardGlobs = *(LegoRR::Reward_Globs*)0x00553980;
 
 #pragma region Functions
 
+/// CUSTOM: Show tooltips to highlight what a reward counter value is describing.
+void LegoRR::Reward_HandleItemToolTip(const Area2F* box, RewardLevelItem* rewardItem)
+{
+	if (Gods98::msx() >= box->x && Gods98::msx() < box->x + box->width &&
+		Gods98::msy() >= box->y && Gods98::msy() < box->y + box->height)
+	{
+		/// POINTER MATH: Cast to ptrdiff_t before subtraction to avoid C++ pointer math conversion.
+		///               RewardLevelItems don't store their type, so grab that from the memory address.
+		const Reward_Type itemType = static_cast<Reward_Type>(((ptrdiff_t)rewardItem - (ptrdiff_t)rewardGlobs.level->itemPtr) / sizeof(RewardLevelItem));
+
+		// We don't want to display tooltips for score, since it's labeled right on the clipboard.
+		if (itemType != Reward_Score && itemType < Reward_Type_Count) {
+
+			// Hijack one of the non-predefined tooltip types that won't conflict and use that here.
+			ToolTip_SetText(ToolTip_UnitSelect, "%s", rewardItem->Text);
+			ToolTip_SetSFX(ToolTip_UnitSelect, SFX_NULL);
+			ToolTip_AddFlag4(ToolTip_UnitSelect);
+		}
+	}
+}
+
+
 // <LegoRR.exe @00461a50>
 void __cdecl LegoRR::Reward_DrawItem(RewardLevelItem* rewardItem, RewardItemFlags flags, Reward_Type rewardType)
 {
@@ -77,6 +99,15 @@ void __cdecl LegoRR::Reward_DrawItem(RewardLevelItem* rewardItem, RewardItemFlag
 				static_cast<real32>(rewardItem->BoxImagePosition.y),
 			};
 			Gods98::Image_Display(rewardItem->BoxImage, &destPos);
+
+			/// CUSTOM: Show tooltips for what reward value the mouse is hovering over.
+			const Area2F destArea = {
+				destPos.x,
+				destPos.y,
+				static_cast<real32>(Gods98::Image_GetWidth(rewardItem->BoxImage)),
+				static_cast<real32>(Gods98::Image_GetHeight(rewardItem->BoxImage)),
+			};
+			Reward_HandleItemToolTip(&destArea, rewardItem);
 		}
 	}
 
@@ -146,6 +177,9 @@ void __cdecl LegoRR::Reward_DrawItem(RewardLevelItem* rewardItem, RewardItemFlag
 								ln2.red, ln2.green, ln2.blue, halfTrans);
 
 				Gods98::Font_PrintF(rewardItem->Font, rewardItem->TextPosition.x - (width/2), rewardItem->TextPosition.y, rewardItem->valueText);
+
+				/// CUSTOM: Show tooltips for what reward value the mouse is hovering over.
+				Reward_HandleItemToolTip(&destArea, rewardItem);
 			}
 
 			if (rewardType < Reward_Type_Count) {

@@ -264,6 +264,10 @@ extern Reward_Globs & rewardGlobs;
 
 #pragma region Functions
 
+/// CUSTOM: Show tooltips to highlight what a reward counter value is describing.
+void Reward_HandleItemToolTip(const Area2F* box, RewardLevelItem* rewardItem);
+
+
 // <LegoRR.exe @0045f2f0>
 #define Reward_Initialise ((bool32 (__cdecl* )(void))0x0045f2f0)
 
