@@ -299,7 +299,7 @@ struct Main_CommandLineOptions
 	uint32				fogMethod; // Container_SetFogMode, Main_SetupDirect3D
 	real32				fixedFrameTiming; // RewardScroll_DrawLabels
 	//mainGlobs\.(?!flags)[a-zA-Z_][a-zA-Z_0-9]*
-	uint32				appWidth;		// Credits_Play, Front_Menu_Update, Front_Callback_SelectMissionItem, Interface_Initialise, Lego_DrawRenameInput, Lego_HandleKeys, Lego_UpdateTopdownCamera, Lego_LoadLevel, SaveMenu_ConfirmMessage_FUN_004354f0, Objective_HandleKeys, Reward_PrepareScroll, Input_ReadMouse2
+	uint32				appWidth;		// Credits_Play, Front_Menu_Update, Front_Callback_SelectMissionItem, Interface_Initialise, Lego_DrawRenameInput, Lego_HandleKeys, Lego_UpdateTopdownCamera, Lego_LoadLevel, Lego_SaveMenu_ConfirmMessage_FUN_004354f0, Objective_HandleKeys, Reward_PrepareScroll, Input_ReadMouse2
 	uint32				appHeight;
 
 	uint32				programmerLevel; // Main_ProgrammerMode, Front_IsIntrosEnabled, Front_IsFrontEndEnabled, Front_Levels_UpdateAvailable_Recursive, Gods_Go, Lego_MainLoop, Lego_Shutdown_Full, Objective_Update

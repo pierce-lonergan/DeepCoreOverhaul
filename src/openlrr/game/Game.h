@@ -1734,13 +1734,13 @@ __inline SFX_ID __cdecl Lego_GetSurfaceTypeSFX(Lego_SurfaceType surfaceType) { r
 #define Level_UpdateTutorialBlockFlashing ((void (__cdecl* )(Lego_Level* level, Gods98::Viewport* viewMain, real32 elapsedGame, real32 elapsedAbs))0x00435230)
 
 // <LegoRR.exe @00435480>
-#define Front_LeftButtonInputUnk_FUN_00435480 ((bool32 (__cdecl* )(void))0x00435480)
+#define Lego_UpdateGameCtrlLeftButtonLast ((bool32 (__cdecl* )(void))0x00435480)
 
 // <LegoRR.exe @004354b0>
-#define Front_DrawDialogContrastOverlay ((bool32 (__cdecl* )(void))0x004354b0)
+#define Lego_DrawDialogContrastOverlay ((bool32 (__cdecl* )(void))0x004354b0)
 
 // <LegoRR.exe @004354f0>
-#define SaveMenu_ConfirmMessage_FUN_004354f0 ((sint32 (__cdecl* )(const char* titleText, const char* message, const char* okText, const har* cancelText))0x004354f0)
+#define Lego_SaveMenu_ConfirmMessage_FUN_004354f0 ((sint32 (__cdecl* )(const char* titleText, const char* message, const char* okText, const har* cancelText))0x004354f0)
 
 // <LegoRR.exe @00435870>
 //#define Lego_EndLevel ((bool32 (__cdecl* )(void))0x00435870)

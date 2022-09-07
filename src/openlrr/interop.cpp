@@ -43,6 +43,7 @@
 #include "game/effects/Smoke.h"
 #include "game/front/Credits.h"
 #include "game/front/FrontEnd.h"
+#include "game/front/Reward.h"
 #include "game/interface/Advisor.h"
 #include "game/interface/Interface.h"
 #include "game/interface/Pointers.h"
@@ -838,7 +839,8 @@ bool interop_hook_Gods98_Flic(void)
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x00484220, Gods98::Flic_LoadHeader);
 
-	result &= hook_write_jmpret(0x00484330, Gods98::Flic_Animate);
+	// used by: Front_Menu_UpdateOverlays, Panel_FUN_0045a9f0, Pointer_DrawPointer, Reward_DrawItem
+	result &= hook_write_jmpret(0x00484330, Gods98::Flic_AnimateMainDeltaTime);
 
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x00484490, Gods98::Flic_Memory);
@@ -2648,6 +2650,19 @@ bool interop_hook_LegoRR_PTL(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Reward(void)
+{
+	bool result = true;
+	
+	// used by: Reward_Show, Reward_DrawScore, Reward_DrawAllValues
+	result &= hook_write_jmpret(0x00461a50, LegoRR::Reward_DrawItem);
+
+	// used by: Reward_Show
+	result &= hook_write_jmpret(0x004629c0, LegoRR::Reward_LoopUpdate);
+	
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_SFX(void)
 {
 	bool result = true;
@@ -2970,6 +2985,7 @@ bool interop_hook_all(void)
 	//result &= interop_hook_LegoRR_Objective();
 	result &= interop_hook_LegoRR_Pointers();
 	result &= interop_hook_LegoRR_PTL();
+	result &= interop_hook_LegoRR_Reward();
 	result &= interop_hook_LegoRR_SFX();
 	result &= interop_hook_LegoRR_Smoke();
 	result &= interop_hook_LegoRR_Stats();

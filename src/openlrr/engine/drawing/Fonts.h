@@ -234,6 +234,13 @@ __inline void Font_GetStringInfo(const Font* font, OPTIONAL OUT uint32* width,
 	va_end(args);
 }
 
+
+#define Font_PrintFCenter(font, x, y, ...)	\
+	Font_PrintF((font), (x) - (Gods98::Font_GetStringWidth((font), __VA_ARGS__) / 2), (y), __VA_ARGS__)
+
+#define Font_VPrintFCenter(font, x, y, msg, args)	\
+	Font_VPrintF((font), (x) - (Gods98::Font_GetStringWidth((font), (msg), (args)) / 2), (y), (msg), (args))
+
 #pragma endregion
 
 }

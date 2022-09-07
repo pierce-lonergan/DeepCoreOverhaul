@@ -347,7 +347,8 @@ extern Reward_Globs & rewardGlobs;
 #define Reward_Show ((bool32 (__cdecl* )(void))0x004616d0)
 
 // <LegoRR.exe @00461a50>
-#define Reward_DrawItem ((void (__cdecl* )(RewardLevelItem* rewardItem, RewardItemFlags flags, Reward_Type rewardType))0x00461a50)
+//#define Reward_DrawItem ((void (__cdecl* )(RewardLevelItem* rewardItem, RewardItemFlags flags, Reward_Type rewardType))0x00461a50)
+void __cdecl Reward_DrawItem(RewardLevelItem* rewardItem, RewardItemFlags flags, Reward_Type rewardType);
 
 // <LegoRR.exe @00461f50>
 #define Reward_DrawScore ((void (__cdecl* )(Reward_Type rewardType))0x00461f50)
@@ -374,7 +375,8 @@ extern Reward_Globs & rewardGlobs;
 #define Reward_DrawAllValues ((void (__cdecl* )(IN Reward_Type* rewardType, OUT bool32* finished))0x004628c0)
 
 // <LegoRR.exe @004629c0>
-#define Reward_LoopUpdate ((void (__cdecl* )(real32 elapsed))0x004629c0)
+//#define Reward_LoopUpdate ((void (__cdecl* )(real32 elapsedSeconds))0x004629c0)
+void __cdecl Reward_LoopUpdate(real32 elapsedSeconds);
 
 // <LegoRR.exe @00462a40>
 #define Reward_LoopBegin ((bool32 (__cdecl* )(void))0x00462a40)

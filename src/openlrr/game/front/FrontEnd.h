@@ -556,7 +556,7 @@ struct Front_Globs // [LegoRR/FrontEnd.c|struct:0x884|tags:GLOBS]
 	/*09c,4*/	sint32 cycleAutoGameSpeed;     // [cycle: On,Off]
 	/*0a0,4*/	sint32 triggerBackSave;        // [trigger: 1=leave save menu]
 	/*0a4,8*/	Point2I overlayPosition;
-	/*0ac,4*/	Gods98::Flic* overlayImageOrFlic; // Image* or Flic* type
+	/*0ac,4*/	Gods98::Image_Flic overlayImageOrFlic; // Image* or Flic* type
 	/*0b0,4*/	uint32 overlayStartTime; // starting Main_GetTime (milliseconds)
 	/*0b4,4*/	uint32 overlayCurrTime; // current Main_GetTime (milliseconds)
 	/*0b8,4*/	Gods98::Font* versionFont; // (file: fontBriefingHi)

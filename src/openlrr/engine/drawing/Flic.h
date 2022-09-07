@@ -204,6 +204,7 @@ struct FLICCHUNKSTRUCT
 assert_sizeof(FLICCHUNKSTRUCT, 0x8);
 
 
+/// NOTE: It's safe to expand the flic structure, because its guaranteed to be allocated by Flic_Setup.
 struct Flic
 {
 	/*000,4*/ FlicUserFlags userflags;
@@ -235,8 +236,11 @@ struct Flic
 	/*6e0,4*/ void* fsLoadBuffer;
 	/*6e4,4*/ bool32 is15bit;
 	/*6e8*/
+	/// EXPANSION: Extra information for playing flics in real-time in Flic_AnimateMainDeltaTime.
+	/*6e8,4*/ real32 frameTimer;
+	/*6ec*/
 };
-assert_sizeof(Flic, 0x6e8);
+//assert_sizeof(Flic, 0x6e8);
 
 //typedef struct Flic FLICSTRUCT; // old name
 
@@ -278,12 +282,20 @@ bool32 __cdecl Flic_Setup(const char* filename, OUT Flic** fsp, FlicUserFlags fl
 // <LegoRR.exe @004841c0>
 bool32 __cdecl Flic_Close(Flic* fsp);
 
+/// CUSTOM:
+uint32 Flic_GetFrameCount(const Flic* fsp);
+
+/// CUSTOM:
+uint32 Flic_GetCurrentFrame(const Flic* fsp);
+
+/// CUSTOM:
+bool Flic_IsStarted(const Flic* fsp);
 
 // <unused>
 bool32 __cdecl Flic_SetFrameRate(Flic* fsp, sint32 rate);
 
 // <unused>
-sint32 __cdecl Flic_GetFrameRate(Flic* fsp);
+sint32 __cdecl Flic_GetFrameRate(const Flic* fsp);
 
 
 // <LegoRR.exe @00484220>
@@ -297,6 +309,17 @@ void __cdecl flicTest(Flic* fsp);
 
 // <LegoRR.exe @00484330>
 bool32 __cdecl Flic_Animate(Flic* fsp, const Area2F* destArea, bool32 advance, bool32 trans);
+
+/// REPLACEMENT FOR: Flic_Animate
+// Animates the flic using the framerate from Main_GetDeltaTime()
+// <LegoRR.exe @00484330>
+bool32 __cdecl Flic_AnimateMainDeltaTime(Flic* fsp, const Area2F* destArea, bool32 advance, bool32 trans);
+
+/// CUSTOM:
+bool Flic_AnimateDeltaTime(Flic* fsp, const Area2F* destArea, bool advance, bool trans, real32 elapsed);
+
+/// CUSTOM: destArea and trans are optional (unused) when render is false.
+bool Flic_Animate2(Flic* fsp, OPTIONAL const Area2F* destArea, uint32 advanceCount, OPTIONAL bool trans, bool render);
 
 // <LegoRR.exe @00484490>
 FlicError __cdecl Flic_Memory(Flic* fsp);
@@ -434,7 +457,7 @@ __inline void FlicDeltaWordHiColorFlic(Flic* fsp) { return; }
 bool32 __cdecl Flic_DeltaWord(Flic* fsp);
 
 // <LegoRR.exe @00485380>
-uint16 __cdecl getFlicCol(uint8 n, Flic* fsp);
+uint16 __cdecl getFlicCol(uint8 n, const Flic* fsp);
 
 // This function performs the same accessor,
 // shared between 3 different structure types.
@@ -451,11 +474,11 @@ uint16 __cdecl getFlicCol(uint8 n, Flic* fsp);
 //  type:AnimClone (AnimClone_IsLws) -> Container_FormatPartName  <@00473f60>
 // <called @004120f7, 0045ab17, 0045cfc8>
 // <LegoRR.exe @00489a90>
-uint32 __cdecl Flic_GetWidth(Flic* fsp);
+uint32 __cdecl Flic_GetWidth(const Flic* fsp);
 
 
 // <LegoRR.exe @004853a0>
-uint32 __cdecl Flic_GetHeight(Flic* fsp);
+uint32 __cdecl Flic_GetHeight(const Flic* fsp);
 
 #pragma endregion
 

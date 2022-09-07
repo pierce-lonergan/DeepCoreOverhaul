@@ -18,6 +18,9 @@
 // <LegoRR.exe @00501a98>
 LegoRR::Pointer_Globs & LegoRR::pointerGlobs = *(LegoRR::Pointer_Globs*)0x00501a98;
 
+// Elapsed time stored during Pointer_Update.
+static real32 _pointerDeltaTime = 1.0f;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -245,7 +248,8 @@ void __cdecl LegoRR::Pointer_DrawPointer(uint32 mouseX, uint32 mouseY)
 
 		const bool freezeInterface = (legoGlobs.flags1 & GAME1_FREEZEINTERFACE);
 
-		Gods98::Flic_Animate(flic, &destArea, !freezeInterface, true);
+		/// FIX APPLY: Draw flics at their proper framerate.
+		Gods98::Flic_AnimateDeltaTime(flic, &destArea, !freezeInterface, true, _pointerDeltaTime);// * (30.0f / STANDARD_FRAMERATE)); // 30 fps
 	}
 }
 
@@ -256,7 +260,8 @@ void __cdecl LegoRR::Pointer_Update(real32 elapsedReal)
 		pointerGlobs.timer -= elapsedReal;
 	}
 
-	/// TOOD: Track frame rate for flic here, since it doesn't do it on its own.
+	/// FIX APPLY: Track frame rate for flic here, since it doesn't do it on its own.
+	_pointerDeltaTime = elapsedReal;
 }
 
 #pragma endregion

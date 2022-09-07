@@ -7,6 +7,7 @@
 #include "../core/Errors.h"
 #include "../core/Files.h"
 #include "../core/Memory.h"
+#include "../Main.h"
 #include "DirectDraw.h"
 
 #include "Flic.h"
@@ -145,6 +146,41 @@ bool32 __cdecl Gods98::Flic_Close(Flic* fsp)
 }
 
 
+/// CUSTOM:
+uint32 Gods98::Flic_GetFrameCount(const Flic* fsp)
+{
+	return fsp->fsHeader.frames;
+}
+
+/// CUSTOM:
+uint32 Gods98::Flic_GetCurrentFrame(const Flic* fsp)
+{
+	// Frames are 1-indexed. Zero is reserved for 'not started',
+	//  and will always force a frame advance on the first call to Flic_Animate.
+	if (!Flic_IsStarted(fsp))
+		return 0;
+	else if (fsp->currentframe == 0)
+		return Flic_GetFrameCount(fsp);
+	else
+		return std::clamp(static_cast<uint32>(fsp->currentframe), 1u, Flic_GetFrameCount(fsp) + 1u) - 1u;
+}
+
+/// CUSTOM:
+bool Gods98::Flic_IsStarted(const Flic* fsp)
+{
+	if ((fsp->userflags & FlicUserFlags::FLICRESIDE) == FlicUserFlags::FLICMEMORY) {
+		// For in-memory flics, currentframe == 0 always means we have yet to render our first frame.
+		return (fsp->currentframe > 0);
+	}
+	else {
+		// Streamed flics will reset currentFrame to 0 when looping, so we need to detect that here.
+		// ringframe is assigned to pointerposition on the first frame (which is non-zero),
+		//  so with that we can know we've rendered at least once.
+		return (fsp->currentframe > 0 || fsp->ringframe > 0);
+	}
+}
+
+
 // <unused>
 bool32 __cdecl Gods98::Flic_SetFrameRate(Flic* fsp, sint32 rate)
 {
@@ -161,7 +197,7 @@ bool32 __cdecl Gods98::Flic_SetFrameRate(Flic* fsp, sint32 rate)
 }
 
 // <unused>
-sint32 __cdecl Gods98::Flic_GetFrameRate(Flic* fsp)
+sint32 __cdecl Gods98::Flic_GetFrameRate(const Flic* fsp)
 {
 	return fsp->framerate;
 }
@@ -231,6 +267,35 @@ void __cdecl Gods98::flicTest(Flic* fsp)
 // <LegoRR.exe @00484330>
 bool32 __cdecl Gods98::Flic_Animate(Flic* fsp, const Area2F* destArea, bool32 advance, bool32 trans)
 {
+	return Flic_Animate2(fsp, destArea, (advance ? 1 : 0), trans, true);
+}
+
+/// REPLACEMENT FOR: Flic_Animate
+// Animates the flic using the frame rate from Main_GetDeltaTime()
+// <LegoRR.exe @00484330>
+bool32 __cdecl Gods98::Flic_AnimateMainDeltaTime(Flic* fsp, const Area2F* destArea, bool32 advance, bool32 trans)
+{
+	return Flic_AnimateDeltaTime(fsp, destArea, advance, trans, Main_GetDeltaTime());
+}
+
+/// CUSTOM:
+bool Gods98::Flic_AnimateDeltaTime(Flic* fsp, const Area2F* destArea, bool advance, bool trans, real32 elapsed)
+{
+	// Don't animate if advance is false, or if we haven't started.
+	uint32 advanceCount = 0;
+	if (advance && Flic_IsStarted(fsp)) {
+		fsp->frameTimer += elapsed;
+		while (fsp->frameTimer >= 1.0f) {
+			fsp->frameTimer -= 1.0f;
+			advanceCount++;
+		}
+	}
+	return Flic_Animate2(fsp, destArea, advanceCount, trans, true);
+}
+
+/// CUSTOM:
+bool Gods98::Flic_Animate2(Flic* fsp, OPTIONAL const Area2F* destArea, uint32 advanceCount, OPTIONAL bool trans, bool render)
+{
 	log_firstcall();
 
 	HRESULT hr;
@@ -240,46 +305,65 @@ bool32 __cdecl Gods98::Flic_Animate(Flic* fsp, const Area2F* destArea, bool32 ad
 	//IDirectDrawSurface4* BackBuffer = DirectDraw_bSurf();
 	//IDirectDrawSurface4* *lpBB = &BackBuffer;
 
-	/// FIXME FUTURE: This will be partly responsible for clipping an
-	///                animated pointer cursor to the screen bounds.
-	/// FIXME: Cast from float to unsigned
-	RECT destRect = { // sint32 casts to stop compiler from complaining
-		(sint32) (uint32) destArea->x,
-		(sint32) (uint32) destArea->y,
-		(sint32) ((uint32) destArea->x + (uint32) destArea->width),
-		(sint32) ((uint32) destArea->y + (uint32) destArea->height),
-	};
-	RECT *dest = &destRect;
 	FlicError flicRetVal = FlicError::FLICNOERROR;
+
+	/// NOTE: Don't try to get around rendering to the flic surface.
+	///       There's some delta filtering based on previous frames, so we can't just skip around. :(
 
 	DDSURFACEDESC2 dds;
 	//::ZeroMemory(&dds, sizeof(dds));
 	std::memset(&dds, 0, sizeof(dds));
    	dds.dwSize = sizeof(dds);
-   	hr = fsp->fsSurface->Lock(nullptr,&dds ,DDLOCK_WAIT ,nullptr);
+   	hr = fsp->fsSurface->Lock(nullptr, &dds, DDLOCK_WAIT, nullptr);
    	fsp->fsSPtr = dds.lpSurface;
 	fsp->fsPitch = dds.lPitch;
 	fsp->is15bit = (dds.ddpfPixelFormat.dwGBitMask == 0x3E0);
 
-	if (fsp->currentframe == 0) advance = true;
+	// We need to advance one more frame to our 'first' frame.
+	//if (fsp->currentframe == 0) advance = true;
+	if (fsp->currentframe == 0 && advanceCount == 0)
+		advanceCount = 1;
+	//if (fsp->currentframe == 0)
+	//	advanceCount++;
 
-	if (advance) {	
-		if((fsp->userflags & FlicUserFlags::FLICRESIDE) == FlicUserFlags::FLICMEMORY)
+	// Don't waste time looping over and over again.
+	advanceCount %= Flic_GetFrameCount(fsp);
+
+	//if (advance) {
+	for (uint32 i = 0; i < advanceCount && flicRetVal != FlicError::FLICFINISHED; i++) {
+
+		if ((fsp->userflags & FlicUserFlags::FLICRESIDE) == FlicUserFlags::FLICMEMORY)
 			flicRetVal = Flic_Memory(fsp);
 		else
 			flicRetVal = Flic_Load(fsp);
+
+		//if (fsp->currentframe == 0)
+		//	advanceCount++; // Rendering the first frame is special(?)
 	}
 		
 	hr = fsp->fsSurface->Unlock(nullptr);
 
-	DDBLTFX ddBltFx;
-	//::ZeroMemory(&ddBltFx, sizeof(DDBLTFX));
-	std::memset(&ddBltFx, 0, sizeof(DDBLTFX));
-	ddBltFx.dwSize = sizeof(DDBLTFX);
-	ddBltFx.dwFillColor = 0xff00;
+	if (render) {
+		/// FIXME FUTURE: This will be partly responsible for clipping an
+		///                animated pointer cursor to the screen bounds.
+		/// FIXME: Cast from float to unsigned
+		RECT destRect = { // sint32 casts to stop compiler from complaining
+			static_cast<sint32>(static_cast<uint32>(destArea->x)),
+			static_cast<sint32>(static_cast<uint32>(destArea->y)),
+			static_cast<sint32>(static_cast<uint32>(destArea->x) + static_cast<uint32>(destArea->width)),
+			static_cast<sint32>(static_cast<uint32>(destArea->y) + static_cast<uint32>(destArea->height)),
+		};
+		RECT* dest = &destRect;
 
-	//hr = (*lpBB)->Blt(dest, fsp->fsSurface, nullptr, /*DDBLT_COLORFILL |*/ DDBLT_WAIT|(trans?DDBLT_KEYSRC:0), &ddBltFx);
-	hr = DirectDraw_bSurf()->Blt(dest, fsp->fsSurface, nullptr, /*DDBLT_COLORFILL |*/ DDBLT_WAIT|(trans?DDBLT_KEYSRC:0), &ddBltFx);
+		DDBLTFX ddBltFx;
+		//::ZeroMemory(&ddBltFx, sizeof(DDBLTFX));
+		std::memset(&ddBltFx, 0, sizeof(DDBLTFX));
+		ddBltFx.dwSize = sizeof(DDBLTFX);
+		ddBltFx.dwFillColor = 0xff00;
+
+		//hr = (*lpBB)->Blt(dest, fsp->fsSurface, nullptr, /*DDBLT_COLORFILL |*/ DDBLT_WAIT|(trans?DDBLT_KEYSRC:0), &ddBltFx);
+		hr = DirectDraw_bSurf()->Blt(dest, fsp->fsSurface, nullptr, /*DDBLT_COLORFILL |*/ DDBLT_WAIT|(trans?DDBLT_KEYSRC:0), &ddBltFx);
+	}
 
 	return (flicRetVal == FlicError::FLICNOERROR);// ? true : false;
 }
@@ -291,7 +375,12 @@ Gods98::FlicError __cdecl Gods98::Flic_Memory(Flic* fsp)
 
 	FlicError flicRetVal = FlicError::FLICNOERROR;
 
-	Flic_FindChunk(fsp);
+	/// CHANGE: Only read if the flic hasn't ended (for non-looping).
+	if ((fsp->userflags & FlicUserFlags::FLICLOOPING) == FlicUserFlags::FLICLOOPINGON ||
+		(fsp->currentframe < (fsp->fsHeader.frames + 1)))
+	{
+		Flic_FindChunk(fsp);
+	}
 	
 	if (fsp->currentframe == 0) {
 		fsp->ringframe = fsp->pointerposition;
@@ -301,13 +390,17 @@ Gods98::FlicError __cdecl Gods98::Flic_Memory(Flic* fsp)
 	fsp->overallframe++;
 
 	if ((fsp->userflags & FlicUserFlags::FLICLOOPING) == FlicUserFlags::FLICLOOPINGON) {
-		if (fsp->currentframe == (fsp->fsHeader.frames + 1)) {
+		if (fsp->currentframe >= (fsp->fsHeader.frames + 1)) {
 			fsp->pointerposition = fsp->ringframe;
 			fsp->currentframe = 1;
 		}
 	}
 	else {
-		if (fsp->currentframe == (fsp->fsHeader.frames + 1)) {
+		if (fsp->currentframe >= (fsp->fsHeader.frames + 1)) {
+			/// CHANGE: Cap current frame at end.
+			fsp->currentframe = (fsp->fsHeader.frames + 1);
+			fsp->overallframe--; // We didn't change frames.
+
 			flicRetVal = FlicError::FLICFINISHED;
 		}
 	}
@@ -328,21 +421,33 @@ Gods98::FlicError __cdecl Gods98::Flic_Load(Flic* fsp)
 		fsp->ringframe = fsp->pointerposition;
 	}
 	
-	File_Read(source, 16, 1, fsp->filehandle);
-	Flic_FindChunk(fsp);
+	/// CHANGE: Only read if the flic hasn't ended (for non-looping).
+	if ((fsp->userflags & FlicUserFlags::FLICLOOPING) == FlicUserFlags::FLICLOOPINGON ||
+		(fsp->currentframe < (fsp->fsHeader.frames + 1)))
+	{
+		File_Read(source, 16, 1, fsp->filehandle);
+		Flic_FindChunk(fsp);
+	}
 	
 	fsp->currentframe++;
 	fsp->overallframe++;
 	
 	if ((fsp->userflags & FlicUserFlags::FLICLOOPING) == FlicUserFlags::FLICLOOPINGON) {
-		if (fsp->currentframe > fsp->fsHeader.frames) {
+		if (fsp->currentframe >= (fsp->fsHeader.frames + 1)) {
 			File_Seek(fsp->filehandle, fsp->ringframe, SeekOrigin::Set);
 			fsp->pointerposition = fsp->ringframe;
+			// Currently I don't think this has any meaningful effect other than
+			//  forcing streamed flics to advance on the first frame after looping.
+			// Maybe change to fsp->currentframe = 1;??
 			fsp->currentframe = 0;
 		}
 	}
 	else {
-		if (fsp->currentframe > fsp->fsHeader.frames) {
+		if (fsp->currentframe >= (fsp->fsHeader.frames + 1)) {
+			/// CHANGE: Cap current frame at end.
+			fsp->currentframe = (fsp->fsHeader.frames + 1);
+			fsp->overallframe--; // We didn't change frames.
+
 			flicRetVal = FlicError::FLICFINISHED;
 		}
 	}
@@ -510,15 +615,15 @@ Gods98::FlicError __cdecl Gods98::Flic_DoChunk(Flic* fsp)
 		break;
 
     case 0x000b:
-        Flic_Palette64(fsp);
+        Flic_Palette64(fsp); // Does nothing.
 		break;
 
     case 0x000c: 
-		Flic_DeltaByte(fsp);
+		Flic_DeltaByte(fsp); // Does nothing.
 		break;
 
 	case 0x000d:
-		Flic_Black(fsp);
+		Flic_Black(fsp); // Does nothing.
 		break;
 
 	case 0x000f:
@@ -526,7 +631,7 @@ Gods98::FlicError __cdecl Gods98::Flic_DoChunk(Flic* fsp)
 		break;
 
 	case 0x0010:
-		Flic_Copy(fsp);
+		Flic_Copy(fsp); // Does nothing in all subfunctions.
 		break;
 
 	case 0x0019:
@@ -542,7 +647,7 @@ Gods98::FlicError __cdecl Gods98::Flic_DoChunk(Flic* fsp)
 		break;
 
 	case 0x5555:
-		Flic_Unpack(fsp);
+		Flic_Unpack(fsp); // Does nothing.
 		break;
 
 	default:
@@ -674,15 +779,15 @@ bool32 __cdecl Gods98::Flic_Copy(Flic* fsp)
 	log_firstcall();
 
 	if (fsp->fsBitPlanes == 16) {
-		FlicCopyHiColorFlic(fsp);
+		FlicCopyHiColorFlic(fsp); // Does nothing.
 		return true;
 	}
 
 	if (fsp->fsDisplayMode == FlicMode::FLICMODE_BYTEPERPIXEL) {
-		FlicCopyBytePerPixel(fsp);
+		FlicCopyBytePerPixel(fsp); // Does nothing.
 	}
 	if (fsp->fsDisplayMode == FlicMode::FLICMODE_HICOLOR) {
-		FlicCopyHiColor(fsp);
+		FlicCopyHiColor(fsp); // Does nothing.
 	}
 	
 	return true;
@@ -825,7 +930,7 @@ bool32 __cdecl Gods98::Flic_BrunDepack(Flic* fsp)
 
 	if (fsp->fsHeader.depth == 8) {
 		if (fsp->fsDisplayMode == FlicMode::FLICMODE_BYTEPERPIXEL) {
-			FlicBRunDepackBytePerPixel(fsp);
+			FlicBRunDepackBytePerPixel(fsp); // Does nothing.
 		}
 		if (fsp->fsDisplayMode == FlicMode::FLICMODE_HICOLOR) {
 			FlicBRunDepackHiColor(fsp);
@@ -837,7 +942,7 @@ bool32 __cdecl Gods98::Flic_BrunDepack(Flic* fsp)
 			FlicBRunDepackHiColorFlic32k(fsp);
 		}
 		else {
-			FlicBRunDepackHiColorFlic(fsp);
+			FlicBRunDepackHiColorFlic(fsp); // Does nothing.
 		}
 	}
 	return true;
@@ -1147,7 +1252,7 @@ bool32 __cdecl Gods98::Flic_DeltaWord(Flic* fsp)
 
 	if (fsp->fsHeader.depth == 8) {
 		if (fsp->fsDisplayMode == FlicMode::FLICMODE_BYTEPERPIXEL) {
-		    FlicDeltaWordBytePerPixel(fsp);
+		    FlicDeltaWordBytePerPixel(fsp); // Does nothing.
 		}
 		if (fsp->fsDisplayMode == FlicMode::FLICMODE_HICOLOR) {
 		    FlicDeltaWordHiColor(fsp);
@@ -1156,13 +1261,13 @@ bool32 __cdecl Gods98::Flic_DeltaWord(Flic* fsp)
 	else {
 		if(fsp->fsHeader.depth == 16) {
 			if (fsp->fsHeader.magic == 0x1234) {
-			    FlicDeltaWordHiColorDZ(fsp);
+			    FlicDeltaWordHiColorDZ(fsp); // Does nothing.
 			}
 			else if (fsp->fsHeader.magic == 0xaf43) {
 			    FlicDeltaWordHiColorFlic32k(fsp);
 			}
 			else {
-                FlicDeltaWordHiColorFlic(fsp);
+                FlicDeltaWordHiColorFlic(fsp); // Does nothing.
 			}
 		}
 	}
@@ -1170,11 +1275,11 @@ bool32 __cdecl Gods98::Flic_DeltaWord(Flic* fsp)
 }
 
 // <LegoRR.exe @00485380>
-uint16 __cdecl Gods98::getFlicCol(uint8 n, Flic* fsp)
+uint16 __cdecl Gods98::getFlicCol(uint8 n, const Flic* fsp)
 {
 	log_firstcall();
 
-	uint16* ctab = fsp->fsPalette64k;
+	const uint16* ctab = fsp->fsPalette64k;
 
 	uint16 ret = ctab[n];
 
@@ -1192,20 +1297,20 @@ uint16 __cdecl Gods98::getFlicCol(uint8 n, Flic* fsp)
 //  type:AnimClone (AnimClone_IsLws) -> Container_FormatPartName  <@00473f60>
 // <called @004120f7, 0045ab17, 0045cfc8>
 // <LegoRR.exe @00489a90>
-uint32 __cdecl Gods98::Flic_GetWidth(Flic* fsp)
+uint32 __cdecl Gods98::Flic_GetWidth(const Flic* fsp)
 {
 	log_firstcall();
 
-	return (uint32)fsp->fsXsize;
+	return static_cast<uint32>(fsp->fsXsize);
 }
 
 
 // <LegoRR.exe @004853a0>
-uint32 __cdecl Gods98::Flic_GetHeight(Flic* fsp)
+uint32 __cdecl Gods98::Flic_GetHeight(const Flic* fsp)
 {
 	log_firstcall();
 
-	return (uint32)fsp->fsYsize;
+	return static_cast<uint32>(fsp->fsYsize);
 }
 
 #pragma endregion
