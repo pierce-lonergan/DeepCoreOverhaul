@@ -42,7 +42,7 @@ enum Objective_GlobFlags : uint32 // [LegoRR/Objective.c|flags:0x4|type:uint] ST
 	OBJECTIVE_GLOB_FLAG_STATUSREADY         = 0x8,
 	OBJECTIVE_GLOB_FLAG_SHOWBRIEFINGADVISOR = 0x10,
 	OBJECTIVE_GLOB_FLAG_SHOWACHIEVEDADVISOR = 0x20,
-	OBJECTIVE_GLOB_FLAG_HITTIMEFAIL         = 0x40,
+	OBJECTIVE_GLOB_FLAG_HITTIMEFAIL         = 0x40, // Missing flag that's assumed to be used instead of OBJECTIVE_GLOB_FLAG_SHOWACHIEVEDADVISOR.
 	OBJECTIVE_GLOB_FLAG_SHOWFAILEDADVISOR   = 0x80,
 	OBJECTIVE_GLOB_FLAG_CRYSTAL             = 0x100,
 	OBJECTIVE_GLOB_FLAG_ORE                 = 0x200,
@@ -119,25 +119,32 @@ extern Objective_Globs & objectiveGlobs;
 #define Objective_LoadLevel ((void (__cdecl* )(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, uint32 screenWidth, uint32 screenHeight))0x00458000)
 
 // <LegoRR.exe @00458840>
-#define Objective_SetCryOreObjectives ((void (__cdecl* )(Lego_Level* level, uint32 crystals, uint32 ore))0x00458840)
+//#define Objective_SetCryOreObjectives ((void (__cdecl* )(Lego_Level* level, uint32 crystals, uint32 ore))0x00458840)
+void __cdecl Objective_SetCryOreObjectives(Lego_Level* level, uint32 crystals, uint32 ore);
 
 // <LegoRR.exe @00458880>
-#define Objective_SetBlockObjective ((void (__cdecl* )(Lego_Level* level, const Point2I* blockPos))0x00458880)
+//#define Objective_SetBlockObjective ((void (__cdecl* )(Lego_Level* level, const Point2I* blockPos))0x00458880)
+void __cdecl Objective_SetBlockObjective(Lego_Level* level, const Point2I* blockPos);
 
 // <LegoRR.exe @004588b0>
-#define Objective_SetTimerObjective ((void (__cdecl* )(Lego_Level* level, real32 timer, bool32 hitTimeFail))0x004588b0)
+//#define Objective_SetTimerObjective ((void (__cdecl* )(Lego_Level* level, real32 timer, bool32 hitTimeFail))0x004588b0)
+void __cdecl Objective_SetTimerObjective(Lego_Level* level, real32 timer, bool32 hitTimeFail);
 
 // <LegoRR.exe @004588e0>
-#define Objective_SetConstructionObjective ((void (__cdecl* )(Lego_Level* level, LegoObject_Type objType, LegoObject_ID objID))0x004588e0)
+//#define Objective_SetConstructionObjective ((void (__cdecl* )(Lego_Level* level, LegoObject_Type objType, LegoObject_ID objID))0x004588e0)
+void __cdecl Objective_SetConstructionObjective(Lego_Level* level, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @00458910>
-#define Objective_IsObjectiveAchieved ((bool32 (__cdecl* )(void))0x00458910)
+//#define Objective_IsObjectiveAchieved ((bool32 (__cdecl* )(void))0x00458910)
+bool32 __cdecl Objective_IsObjectiveAchieved(void);
 
 // <LegoRR.exe @00458920>
-#define Objective_SetEndTeleportEnabled ((void (__cdecl* )(bool32 on))0x00458920)
+//#define Objective_SetEndTeleportEnabled ((void (__cdecl* )(bool32 on))0x00458920)
+void __cdecl Objective_SetEndTeleportEnabled(bool32 on);
 
 // <LegoRR.exe @00458930>
-#define Objective_SetStatus ((void (__cdecl* )(LevelStatus status))0x00458930)
+//#define Objective_SetStatus ((void (__cdecl* )(LevelStatus status))0x00458930)
+void __cdecl Objective_SetStatus(LevelStatus status);
 
 // <LegoRR.exe @00458ba0>
 //#define Objective_StopShowing ((void (__cdecl* )(void))0x00458ba0)
@@ -158,10 +165,13 @@ void __cdecl Objective_Update(Gods98::TextWindow* textWnd, Lego_Level* level, re
 
 // timerStillRunning is set to false when time has run out.
 // <LegoRR.exe @00459310>
-#define Objective_CheckCompleted ((bool32 (__cdecl* )(Lego_Level* level, OUT bool32* timerStillRunning, real32 elapsed))0x00459310)
+//#define Objective_CheckCompleted ((bool32 (__cdecl* )(Lego_Level* level, OUT bool32* timerStillRunning, real32 elapsed))0x00459310)
+bool32 __cdecl Objective_CheckCompleted(Lego_Level* level, OUT bool32* timerStillRunning, real32 elapsed);
 
+// DATA: ObjectiveData* objective
 // <LegoRR.exe @004593c0>
-#define Objective_Callback_CountObjects ((bool32 (__cdecl* )(LegoObject* liveObj, ObjectiveData* objective))0x004593c0)
+//#define Objective_Callback_CheckCompletedObject ((bool32 (__cdecl* )(LegoObject* liveObj, ObjectiveData* objective))0x004593c0)
+bool32 __cdecl Objective_Callback_CheckCompletedObject(LegoObject* liveObj, void* pObjective);
 
 #pragma endregion
 

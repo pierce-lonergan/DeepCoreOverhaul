@@ -2,14 +2,17 @@
 //
 
 #include "../../engine/audio/3DSound.h"
+#include "../../engine/core/Utils.h"
 #include "../../engine/input/Input.h"
 
 #include "../audio/SFX.h"
+#include "../front/FrontEnd.h"
 #include "../front/Reward.h"
 #include "../interface/Advisor.h"
 #include "../interface/TextMessages.h"
 #include "../interface/ToolTip.h"
 #include "../interface/hud/Bubbles.h"
+#include "../world/Construction.h"
 #include "../world/Teleporter.h"
 #include "../Game.h"
 #include "NERPsFile.h"
@@ -35,6 +38,188 @@ LegoRR::Objective_Globs & LegoRR::objectiveGlobs = *(LegoRR::Objective_Globs*)0x
 
 #pragma region Functions
 
+
+// <LegoRR.exe @00458840>
+void __cdecl LegoRR::Objective_SetCryOreObjectives(Lego_Level* level, uint32 crystals, uint32 ore)
+{
+	if (crystals > 0) {
+		objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_CRYSTAL;
+		level->objective.crystals = crystals;
+	}
+	if (ore > 0) {
+		objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_ORE;
+		level->objective.ore = ore;
+	}
+}
+
+// <LegoRR.exe @00458880>
+void __cdecl LegoRR::Objective_SetBlockObjective(Lego_Level* level, const Point2I* blockPos)
+{
+	objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_BLOCK;
+	level->objective.blockPos = *blockPos;
+}
+
+// <LegoRR.exe @004588b0>
+void __cdecl LegoRR::Objective_SetTimerObjective(Lego_Level* level, real32 timer, bool32 hitTimeFail)
+{
+	objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_TIMER;
+	level->objective.timer = timer;
+	if (hitTimeFail) {
+		/// NOTE: This has to be a bug, or a lazy workaround for bugs with the original flag.
+		//objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_SHOWACHIEVEDADVISOR;
+		/// FIX APPLY: Switch to HITTIMEFAIL flag.
+		objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_HITTIMEFAIL;
+	}
+}
+
+// <LegoRR.exe @004588e0>
+void __cdecl LegoRR::Objective_SetConstructionObjective(Lego_Level* level, LegoObject_Type objType, LegoObject_ID objID)
+{
+	objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_CONSTRUCTION;
+	level->objective.constructionType = objType;
+	level->objective.constructionID   = objID;
+}
+
+// <LegoRR.exe @00458910>
+bool32 __cdecl LegoRR::Objective_IsObjectiveAchieved(void)
+{
+	return objectiveGlobs.achieved;
+}
+
+// <LegoRR.exe @00458920>
+void __cdecl LegoRR::Objective_SetEndTeleportEnabled(bool32 on)
+{
+	objectiveGlobs.endTeleportEnabled = on;
+}
+
+// <LegoRR.exe @00458930>
+void __cdecl LegoRR::Objective_SetStatus(LevelStatus status)
+{
+	if (!NERPs_AnyTutorialFlags()) {
+		legoGlobs.flags2 |= GAME2_INMENU;
+	}
+
+	// Reset everything to the first page.
+	for (uint32 i = 0; i < _countof(objectiveGlobs.currentPages); i++) {
+		objectiveGlobs.currentPages[i] = 0;
+	}
+
+	// If already showing, then SetStatus does nothing.
+	if (Objective_IsShowing())
+		return;
+	// What's the purpose of the OBJECTIVE_GLOB_FLAG_CRYSTAL flag check??
+	if (objectiveGlobs.flags & OBJECTIVE_GLOB_FLAG_CRYSTAL)
+		return;
+
+	// Do infinite loop while waiting for user MOUSE input.
+	/// TODO: Include press any key?
+	while (Gods98::mslb() || Gods98::msrb() || Gods98::mslbheld() || Gods98::Input_LClicked()) {
+		Gods98::INPUT.lClicked = false;
+		Gods98::Main_LoopUpdate(true);
+	}
+
+
+	Lego_Level* level = Lego_GetLevel();
+	/// TYPO: "Acheived" instead of "Achieved", can't change this because of the Lego.cfg game data.
+	const char* sfxTypeName = nullptr; // "", "Acheived", "Failed", "FailedCrystals"
+	bool levelEnding      = true;
+	bool levelSpecificSFX = true; // When false, play a generic 'Stream_Objective' SFX that isn't tied to level name.
+
+	switch (status) {
+	case LEVELSTATUS_INCOMPLETE:
+		objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_BRIEFING;
+		level->status = LEVELSTATUS_INCOMPLETE;
+		sfxTypeName      = "";
+		levelEnding      = false;
+		levelSpecificSFX = true;
+		break;
+
+	case LEVELSTATUS_COMPLETE:
+		objectiveGlobs.achieved = true;
+		objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_COMPLETED;
+		level->status = LEVELSTATUS_COMPLETE;
+		sfxTypeName      = "Acheived"; // Typo
+		levelEnding      = true;
+		levelSpecificSFX = true;
+
+		// Capture the current view of the level to use as our save game thumbnail.
+		Gods98::Image_GetScreenshot(&rewardGlobs.current.saveCaptureImage,
+									frontGlobs.saveImageBigSize.width, frontGlobs.saveImageBigSize.height);
+		rewardGlobs.current.saveHasCapture = true;
+
+		// Cleans up some text-related stuff and game flags.
+		Lego_UnkObjective_CompleteSub_FUN_004262f0();
+		RewardQuota_CountUnits();
+		break;
+
+	case LEVELSTATUS_FAILED:
+		objectiveGlobs.achieved = false;
+		objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_FAILED;
+		level->status = LEVELSTATUS_FAILED;
+		sfxTypeName      = "Failed";
+		levelEnding      = true;
+		levelSpecificSFX = true;
+
+		// Cleans up some text-related stuff and game flags.
+		Lego_UnkObjective_CompleteSub_FUN_004262f0();
+		RewardQuota_CountUnits();
+		break;
+
+	case LEVELSTATUS_FAILED_CRYSTALS:
+		objectiveGlobs.achieved = false;
+		objectiveGlobs.flags |= (OBJECTIVE_GLOB_FLAG_FAILED|OBJECTIVE_GLOB_FLAG_CRYSTAL);
+		level->status = LEVELSTATUS_FAILED;
+		sfxTypeName      = "FailedCrystals";
+		levelEnding      = true;
+		levelSpecificSFX = false;
+
+		// Cleans up some text-related stuff and game flags.
+		Lego_UnkObjective_CompleteSub_FUN_004262f0();
+		RewardQuota_CountUnits();
+		break;
+	}
+
+	objectiveGlobs.flags |= OBJECTIVE_GLOB_FLAG_STATUSREADY;
+
+	if (levelEnding) {
+		const uint32 modeFlags = 0x2;
+		const uint32 teleFlags = (objectiveGlobs.endTeleportEnabled ? 0x2 : 0x4);
+		/// REFACTOR: Since we're no-longer hardcoding the use of teleported object types,
+		///            enumerate over the flags and find what types to teleport.
+		// Start at 1 to skip LegoObject_None.
+		for (uint32 i = 1; i < LegoObject_Type_Count; i++) {
+			const LegoObject_TypeFlags objTypeFlag = LegoObject_TypeToFlag(static_cast<LegoObject_Type>(i));
+			// is this flag is one of the teleported object types?
+			if (objTypeFlag & OBJECT_TYPE_FLAGS_TELEPORTED) {
+				Teleporter_Start(objTypeFlag, modeFlags, teleFlags);
+			}
+		}
+
+		Construction_DisableCryOreDrop(true); // Don't spawn resource costs when tele'ing up buildings/vehicles.
+		LegoObject_SetLevelEnding(true);
+	}
+
+	if (sfxTypeName != nullptr && (legoGlobs.flags1 & GAME1_USESFX)) {
+		char buff[256];
+		if (levelSpecificSFX) {
+			std::sprintf(buff, "Stream_Objective%s_%s", sfxTypeName, level->name);
+		}
+		else {
+			std::sprintf(buff, "Stream_Objective%s", sfxTypeName);
+		}
+
+		// Free the previous soundName if one exists.
+		if (objectiveGlobs.soundName) Gods98::Mem_Free(objectiveGlobs.soundName);
+		objectiveGlobs.soundName = Gods98::Util_StrCpy(buff);
+		objectiveGlobs.soundHandle = -1;
+		objectiveGlobs.showing = false;
+	}
+	else {
+		/// FIX APPLY: Free the previous soundName if one exists.
+		if (objectiveGlobs.soundName) Gods98::Mem_Free(objectiveGlobs.soundName);
+		objectiveGlobs.soundName = nullptr;
+	}
+}
 
 // <LegoRR.exe @00458ba0>
 void __cdecl LegoRR::Objective_StopShowing(void)
@@ -354,5 +539,74 @@ void __cdecl LegoRR::Objective_Update(Gods98::TextWindow* textWnd, Lego_Level* l
 	}
 }
 
+// timerStillRunning is set to false when time has run out.
+// <LegoRR.exe @00459310>
+bool32 __cdecl LegoRR::Objective_CheckCompleted(Lego_Level* level, OUT bool32* timerStillRunning, real32 elapsed)
+{
+	// No briefing == sandbox or something... WHAT???
+	if (objectiveGlobs.flags & OBJECTIVE_GLOB_FLAG_SHOWBRIEFINGADVISOR) {
+		return false;
+	}
+
+	// Check timer objective:
+	*timerStillRunning = true;
+	if (objectiveGlobs.flags & OBJECTIVE_GLOB_FLAG_TIMER) {
+		level->objective.timer -= elapsed;
+		if (level->objective.timer <= 0.0f) {
+			/// TODO: Note that this flag serves two purposes, whether its intentional is unclear.
+			/// FIX APPLY: Switch to HITTIMEFAIL flag.
+			//if (objectiveGlobs.flags & OBJECTIVE_GLOB_FLAG_SHOWACHIEVEDADVISOR) {
+			if (objectiveGlobs.flags & OBJECTIVE_GLOB_FLAG_HITTIMEFAIL) {
+				*timerStillRunning = false;
+			}
+			return true;
+		}
+	}
+
+	// Check crystals and ore objectives:
+	if ((objectiveGlobs.flags & OBJECTIVE_GLOB_FLAG_CRYSTAL) &&
+		static_cast<uint32>(level->crystals) < level->objective.crystals)
+	{
+		return false;
+	}
+	if ((objectiveGlobs.flags & OBJECTIVE_GLOB_FLAG_ORE) &&
+		static_cast<uint32>(level->ore) < level->objective.ore)
+	{
+		return false;
+	}
+
+	// Check construction or at-block objectives:
+	for (auto obj : objectListSet.EnumerateSkipUpgradeParts()) {
+		if (Objective_Callback_CheckCompletedObject(obj, &level->objective))
+			return true;
+	}
+	return false;
+	//return LegoObject_RunThroughListsSkipUpgradeParts(Objective_Callback_CheckCompletedObject, &level->objective);
+}
+
+// DATA: ObjectiveData* objective
+// <LegoRR.exe @004593c0>
+bool32 __cdecl LegoRR::Objective_Callback_CheckCompletedObject(LegoObject* liveObj, void* pObjective)
+{
+	const ObjectiveData* objective = static_cast<ObjectiveData*>(pObjective);
+
+	if ((objectiveGlobs.flags & OBJECTIVE_GLOB_FLAG_BLOCK) &&
+		(liveObj->type == LegoObject_MiniFigure || liveObj->type == LegoObject_Vehicle))
+	{
+		/// SANITY: Check return value for success.
+		sint32 bx, by;
+		if (LegoObject_GetBlockPos(liveObj, &bx, &by) &&
+			objective->blockPos.x == bx && objective->blockPos.y == by)
+		{
+			return true;
+		}
+	}
+	if ((objectiveGlobs.flags & OBJECTIVE_GLOB_FLAG_CONSTRUCTION) &&
+		objective->constructionType == liveObj->type && objective->constructionID == liveObj->id)
+	{
+		return true;
+	}
+	return false;
+}
 
 #pragma endregion

@@ -2599,12 +2599,34 @@ bool interop_hook_LegoRR_Objective(void)
 {
 	bool result = true;
 
+	// used by: Objective_LoadLevel
+	result &= hook_write_jmpret(0x00458840, LegoRR::Objective_SetCryOreObjectives);
+	// used by: Objective_LoadLevel
+	result &= hook_write_jmpret(0x00458880, LegoRR::Objective_SetBlockObjective);
+	// used by: Objective_LoadLevel
+	result &= hook_write_jmpret(0x004588b0, LegoRR::Objective_SetTimerObjective);
+	// used by: Objective_LoadLevel
+	result &= hook_write_jmpret(0x004588e0, LegoRR::Objective_SetConstructionObjective);
+	// used by: Reward_GotoSaveMenu
+	result &= hook_write_jmpret(0x00458910, LegoRR::Objective_IsObjectiveAchieved);
+	// used by: Lego_LoadLevel
+	result &= hook_write_jmpret(0x00458920, LegoRR::Objective_SetEndTeleportEnabled);
+	// used by: Front_Callback_TriggerReplayObjective, Lego_MainLoop, Level_ConsumeObjectOxygen,
+	//          Lego_HandleKeys, Lego_LoadLevel, NERPFunc__SetLevelCompleted, (NERPFunc__SetGameCompleted),
+	//          NERPFunc__SetLevelFail, NERPFunc__SetGameFail, Objective_Update
+	result &= hook_write_jmpret(0x00458930, LegoRR::Objective_SetStatus);
 	// used by: Objective_HandleKeys, Objective_Update
 	result &= hook_write_jmpret(0x00458ba0, LegoRR::Objective_StopShowing);
 	// used by: Front_Options_Update, Lego_MainLoop, Lego_MainLoop, NERPFunc__GetObjectiveShowing, Objective_HandleKeys
 	result &= hook_write_jmpret(0x00458c60, LegoRR::Objective_IsShowing);
+	// used by: Lego_HandleKeys
+	result &= hook_write_jmpret(0x00458c80, LegoRR::Objective_HandleKeys);
 	// used by: Lego_MainLoop, Lego_LoadLevel
 	result &= hook_write_jmpret(0x00458ea0, LegoRR::Objective_Update);
+	// used by: Objective_Update
+	result &= hook_write_jmpret(0x00459310, LegoRR::Objective_CheckCompleted);
+	// used by: Objective_CheckCompleted
+	result &= hook_write_jmpret(0x004593c0, LegoRR::Objective_Callback_CheckCompletedObject);
 
 	return_interop(result);
 }
@@ -2982,7 +3004,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_NERPsFile();
 	result &= interop_hook_LegoRR_NERPsFunctions();
 	result &= interop_hook_LegoRR_Object();
-	//result &= interop_hook_LegoRR_Objective();
+	result &= interop_hook_LegoRR_Objective();
 	result &= interop_hook_LegoRR_Pointers();
 	result &= interop_hook_LegoRR_PTL();
 	result &= interop_hook_LegoRR_Reward();

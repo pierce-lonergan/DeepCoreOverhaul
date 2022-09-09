@@ -263,17 +263,6 @@ enum TextureType : sint32 // [LegoRR/dummy.c|enum:0x4|type:int|tags:HELPER,UNUSE
 assert_sizeof(TextureType, 0x4);
 
 
-enum LevelStatus : sint32 // [LegoRR/Objective.c|enum:0x4|type:int] Not sure if Objective...
-{
-	LEVELSTATUS_INCOMPLETE      = 0,
-	LEVELSTATUS_COMPLETE        = 1,
-	LEVELSTATUS_FAILED          = 2,
-	LEVELSTATUS_FAILED_CRYSTALS = 3,
-	LEVELSTATUS_FAILED_OTHER    = 4,
-};
-assert_sizeof(LevelStatus, 0x4);
-
-
 enum PointerSFX_Type : uint32 // [LegoRR/Lego.c|enum:0x4|type:uint] Argument for Lego_SetPointerSFX (FUN_00428730)
 {
 	PointerSFX_Okay                  = 0,
