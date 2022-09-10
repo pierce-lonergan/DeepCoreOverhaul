@@ -2192,6 +2192,85 @@ const char* __cdecl LegoRR::Level_Free(void)
 }
 
 
+// <LegoRR.exe @00431a50>
+bool32 __cdecl LegoRR::Level_CanBuildOnBlock(sint32 bx, sint32 by, bool32 isPath, bool32 isWaterEntrance)
+{
+	const Point2I DIRECTIONS[DIRECTION__COUNT] = {
+		{  0, -1 },
+		{  1,  0 },
+		{  0,  1 },
+		{ -1,  0 },
+	};
+
+	const Point2I blockPos = { bx, by };
+	const Lego_Block* block = &blockValue(Lego_GetLevel(), bx, by);
+
+	/// SANITY: Bounds check.
+	if (!blockInBounds(Lego_GetLevel(), bx, by))
+		return false;
+
+
+	// TERRAIN CHECKS:
+	if (!Level_Block_IsGround(bx, by)) //if (!(block->flags1 & BLOCK1_FLOOR))
+		return false; // Must build on floor.
+
+	if (Level_Block_GetRubbleLayers(&blockPos)) //if (!(block->flags1 & BLOCK1_CLEARED))
+		return false; // Can't build over rubble.
+
+	if (block->flags2 & BLOCK2_SLUGHOLE_EXPOSED)
+		return false; // Can't build over Slimy Slug holes.
+
+	for (uint32 dir = 0; dir < DIRECTION__COUNT; dir++) {
+		const Lego_Block* adjacentBlock = &blockValue(Lego_GetLevel(), bx + DIRECTIONS[dir].x, by + DIRECTIONS[dir].y);
+		if (adjacentBlock->terrain == Lego_SurfaceType_RechargeSeam)
+			return false; // Can't build adjacent to recharge seam walls.
+	}
+
+	if (Level_Block_IsLava(&blockPos)) //if (block->terrain == Lego_SurfaceType_Lava)
+		return false; // Can't build over lava.
+
+
+	// WATER TERRAIN CHECKS:
+	// isPath is always true when isWaterEntrance is true.
+	if (isPath && isWaterEntrance && block->terrain != Lego_SurfaceType_Lake)
+		return false; // Must build over water for water entrances.
+
+	if (!isWaterEntrance && block->terrain == Lego_SurfaceType_Lake)
+		return false; // Can't build over water for non-water entrances.
+	
+
+	/// BUILDINGS CHECKS:
+	// This check serves no purpose, due to the BLOCK1_BUILDINGPATH flag check below.
+	if (isPath && Level_Block_IsPathBuilding(&blockPos)) //if (isPath && (block->flags1 & BLOCK1_BUILDINGPATH))
+		return false; // Can't overlap building paths.
+
+	if (block->flags1 & (BLOCK1_BUILDINGSOLID|BLOCK1_BUILDINGPATH|BLOCK1_FOUNDATION))
+		return false; // Can't build over existing building tiles.
+
+	if (Level_Block_IsPath(&blockPos)) //if (block->flags1 & BLOCK1_PATH)
+		return false; // Can't build over Power Paths.
+
+	if (Construction_Zone_ExistsAtBlock(&blockPos))
+		return false; // Can't build over construction zones (including layed paths).
+
+	if (ElectricFence_Block_IsFence(bx, by))
+		return false; // Can't build over Electric Fences.
+
+
+	return true;
+
+	// There's a lot of compacted logic in this decompiled if statement,
+	//  so I'm leaving the cleaned-up version here for error checking.
+
+	//if ((!isPath || !isWaterEntrance || block->terrain == Lego_SurfaceType_Lake) &&
+	//	(!isPath || !(block->flags1 & BLOCK1_BUILDINGPATH)) &&
+	//	(isWaterEntrance || block->terrain != Lego_SurfaceType_Lake) &&
+	//	block->terrain != Lego_SurfaceType_Lava &&
+	//	(block->flags1 & BLOCK1_FLOOR) && (block->flags1 & BLOCK1_CLEARED) &&
+	//	!(block->flags1 & (BLOCK1_BUILDINGSOLID|BLOCK1_BUILDINGPATH|BLOCK1_FOUNDATION)))
+}
+
+
 // <LegoRR.exe @00435870>
 bool32 __cdecl LegoRR::Lego_EndLevel(void)
 {

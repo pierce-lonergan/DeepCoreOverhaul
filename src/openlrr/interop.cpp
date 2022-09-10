@@ -62,6 +62,7 @@
 #include "game/world/Detail.h"
 #include "game/world/ElectricFence.h"
 #include "game/world/Roof.h"
+#include "game/world/SelectPlace.h"
 #include "game/world/Water.h"
 #include "game/Game.h"
 
@@ -1858,6 +1859,9 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: Front_RestartLevel, Lego_Shutdown_Full, Lego_EndLevel
 	result &= hook_write_jmpret(0x0042eff0, LegoRR::Level_Free);
 
+	// used by: SelectPlace_CheckAndUpdate
+	result &= hook_write_jmpret(0x00431a50, LegoRR::Level_CanBuildOnBlock);
+	
 	// used by: Lego_MainLoop, Lego_HandleKeys, Objective_HandleKeys
 	result &= hook_write_jmpret(0x00435870, LegoRR::Lego_EndLevel);
 
@@ -2685,6 +2689,25 @@ bool interop_hook_LegoRR_Reward(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_SelectPlace(void)
+{
+	bool result = true;
+	
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x004641c0, LegoRR::SelectPlace_Create);
+	// used by: Construction_CleanupBuildingFoundation, ElectricFence_Callback_FUN_0040d510,
+	//          Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_Callback_PickSphereSelection,
+	//          LegoObject_Callback_HideCertainObjects, SelectPlace_CheckAndUpdate
+	result &= hook_write_jmpret(0x004643d0, LegoRR::SelectPlace_TransformShapePoints);
+	// used by: LegoObject_UpdateBuildingPlacement
+	result &= hook_write_jmpret(0x00464480, LegoRR::SelectPlace_CheckAndUpdate);
+	// used by: Lego_Initialise, Lego_HandleKeys, Lego_HandleWorld, Lego_ClearSomeFlags3_FUN_00435950,
+	//          LegoObject_UpdateBuildingPlacement
+	result &= hook_write_jmpret(0x004649e0, LegoRR::SelectPlace_Hide);
+	
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_SFX(void)
 {
 	bool result = true;
@@ -3008,6 +3031,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Pointers();
 	result &= interop_hook_LegoRR_PTL();
 	result &= interop_hook_LegoRR_Reward();
+	result &= interop_hook_LegoRR_SelectPlace();
 	result &= interop_hook_LegoRR_SFX();
 	result &= interop_hook_LegoRR_Smoke();
 	result &= interop_hook_LegoRR_Stats();

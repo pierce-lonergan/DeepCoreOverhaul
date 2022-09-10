@@ -194,10 +194,10 @@ extern Point2I (& s_SurfaceMap_Points10)[10];
 #define Map3D_UpdateAllBlockNormals ((void (__cdecl* )(Map3D* map))0x0044eb40)
 
 // <LegoRR.exe @0044eb80>
-#define Map3D_CheckBuildingTolerance ((bool32 (__cdecl* )(Map3D* map, Point2I* shapePoints, uint32 shapeCount, real32 buildTolerance, real32 buildMaxVariation))0x0044eb80)
+#define Map3D_CheckBuildingTolerance ((bool32 (__cdecl* )(Map3D* map, const Point2I* shapePoints, uint32 shapeCount, real32 buildTolerance, real32 buildMaxVariation))0x0044eb80)
 
 // <LegoRR.exe @0044ed90>
-#define Map3D_FlattenShapeVertices ((void (__cdecl* )(Map3D* map, Point2I* shapePoints, uint32 shapeCount, real32 mult_4_0))0x0044ed90)
+#define Map3D_FlattenShapeVertices ((void (__cdecl* )(Map3D* map, const Point2I* shapePoints, uint32 shapeCount, real32 mult_4_0))0x0044ed90)
 
 // <LegoRR.exe @0044f0b0>
 #define Map3D_SetBlockRotated ((void (__cdecl* )(Map3D* map, uint32 bx, uint32 by, bool32 on))0x0044f0b0)

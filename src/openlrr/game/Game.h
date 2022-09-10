@@ -1476,7 +1476,8 @@ __inline Map3D* Lego_GetMap(void) { return Lego_GetLevel()->map; }
 #define Level_FindSelectedLiveObject_BlockReinforce_FUN_004319e0 ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x004319e0)
 
 // <LegoRR.exe @00431a50>
-#define Level_BlockCheck_SelectPlace_FUN_00431a50 ((bool32 (__cdecl* )(sint32 bx, sint32 by, bool32 param_3, bool32 param_4))0x00431a50)
+//#define Level_CanBuildOnBlock ((bool32 (__cdecl* )(sint32 bx, sint32 by, bool32 param_3, bool32 param_4))0x00431a50)
+bool32 __cdecl Level_CanBuildOnBlock(sint32 bx, sint32 by, bool32 param_3, bool32 param_4);
 
 // <LegoRR.exe @00431ba0>
 #define LiveObject_FUN_00431ba0 ((bool32 (__cdecl* )(LegoObject* liveObj, const Point2I* blockPos, OUT Point2I* blockOffPos, bool32 param_4))0x00431ba0)
