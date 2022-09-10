@@ -151,8 +151,14 @@ const Point2I* __cdecl LegoRR::SelectPlace_CheckAndUpdate(SelectPlace* selectPla
 
 	const Point2I* pShape = SelectPlace_TransformShapePoints(blockPos, shapePoints, shapeCount, direction);
 
-	bool okRoughness = Map3D_CheckBuildingTolerance(Lego_GetMap(), pShape, shapeCount,
-													Lego_GetLevel()->BuildingTolerance, Lego_GetLevel()->BuildingMaxVariation);
+	bool okRoughness;
+	if (Cheat_IsBuildOnAnyRoughness()) {
+		okRoughness = true;
+	}
+	else {
+		okRoughness = Map3D_CheckBuildingTolerance(Lego_GetMap(), pShape, shapeCount,
+												   Lego_GetLevel()->BuildingTolerance, Lego_GetLevel()->BuildingMaxVariation);
+	}
 
 	// Find path connections.
 	bool nonSolidConnection = false;
@@ -202,9 +208,10 @@ const Point2I* __cdecl LegoRR::SelectPlace_CheckAndUpdate(SelectPlace* selectPla
 			isWaterEntrance = (static_cast<sint32>(i) < waterEntrances + 1);
 		}
 
+		/// FIX APPLY: Honor the OnlyBuildOnPaths setting.
 		// Colour individual tiles based on their requirements, and determine if we can place.
 		ColourRGBF rgb = { 0.0f }; // dummy init
-		if (!hasPathConnection ||
+		if ((!hasPathConnection && Lego_IsOnlyBuildOnPaths()) ||
 			!Level_CanBuildOnBlock(pShape[i].x, pShape[i].y, isRepeatedPath, isWaterEntrance) ||
 			Level_BlockPointerCheck(blockPos)) // Can't or must build over tutorial-determined blocks(?)
 		{

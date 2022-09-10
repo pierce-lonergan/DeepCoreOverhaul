@@ -793,6 +793,10 @@ inline bool Lego_IsInit() { return legoGlobs2.legoInit; }
 inline bool Lego_IsInLevel() { return Lego_IsInit() && legoGlobs.currLevel != nullptr && !(legoGlobs.flags1 & (GAME1_LEVELSTART|GAME1_LEVELENDING)); }
 
 
+// Allows constructing buildings on terrain of any roughness.
+bool Cheat_IsBuildOnAnyRoughness();
+void Cheat_SetBuildOnAnyRoughness(bool on);
+
 // Disables building and vehicle costs. Does not change upgrade costs.
 bool Cheat_IsNoBuildCosts();
 void Cheat_SetNoBuildCosts(bool on);

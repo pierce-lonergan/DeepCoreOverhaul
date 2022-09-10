@@ -139,6 +139,7 @@ LegoRR::Lego_Globs & LegoRR::legoGlobs = *(LegoRR::Lego_Globs*)0x005570c0;
 
 LegoRR::Lego_Globs2 LegoRR::legoGlobs2 = { 0 };
 
+static bool _cheatBuildOnAnyRoughness = false;
 static bool _cheatNoBuildCosts = false;
 static bool _cheatNoConstructionBarriers = false;
 static bool _cheatNoPowerConsumption = false;
@@ -151,6 +152,16 @@ static bool _cheatNoOxygenConsumption = false;
  **********************************************************************************/
 
 #pragma region Functions
+
+bool LegoRR::Cheat_IsBuildOnAnyRoughness()
+{
+	return _cheatBuildOnAnyRoughness;
+}
+
+void LegoRR::Cheat_SetBuildOnAnyRoughness(bool on)
+{
+	_cheatBuildOnAnyRoughness = on;
+}
 
 bool LegoRR::Cheat_IsNoBuildCosts()
 {

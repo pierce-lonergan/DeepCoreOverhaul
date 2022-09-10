@@ -201,11 +201,8 @@ BEGIN
         MENUITEM "No Build &Dependencies",      IDM_UNLOCKBUILD
         MENUITEM "No Build Costs",              IDM_NOBUILDCOSTS
         MENUITEM "No Construction Barriers",    IDM_NOCONSTRUCTIONBARRIERS
-#if 0  // not ready yet
-        //MENUITEM "OnlyBuildOnPaths (todo)",     IDM_ONLYBUILDONPATHS,CHECKED,GRAYED
         MENUITEM "Build Without &Paths",        IDM_BUILDWITHOUTPATHS
         MENUITEM "Build On Any &Roughness",     IDM_BUILDANYROUGHNESS
-#endif
         MENUITEM "FP N&oclip",                  IDM_FPNOCLIP
         MENUITEM "FP &Controls",                IDM_FPCONTROLS
         MENUITEM SEPARATOR

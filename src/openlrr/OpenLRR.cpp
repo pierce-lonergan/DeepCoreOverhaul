@@ -233,7 +233,8 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_UNLOCKBUILD,	(LegoRR::Lego_IsInit() && !LegoRR::Dependencies_IsEnabled()));
 	Menu_CheckButton(IDM_NOBUILDCOSTS,			(LegoRR::Lego_IsInit() && LegoRR::Cheat_IsNoBuildCosts()));
 	Menu_CheckButton(IDM_NOCONSTRUCTIONBARRIERS,(LegoRR::Lego_IsInit() && LegoRR::Cheat_IsNoConstructionBarriers()));
-	//Menu_CheckButton(IDM_BUILDWITHOUTPATHS,	(LegoRR::Lego_IsInit() && !LegoRR::Lego_IsOnlyBuildOnPaths()));
+	Menu_CheckButton(IDM_BUILDWITHOUTPATHS,	(LegoRR::Lego_IsInit() && !LegoRR::Lego_IsOnlyBuildOnPaths()));
+	Menu_CheckButton(IDM_BUILDANYROUGHNESS,	(LegoRR::Lego_IsInit() && LegoRR::Cheat_IsBuildOnAnyRoughness()));
 	Menu_CheckButton(IDM_FPNOCLIP,		(LegoRR::Lego_IsInit() && LegoRR::Lego_IsNoclipOn()));
 	Menu_CheckButton(IDM_FPCONTROLS,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsTopdownFPControlsOn()));
 
@@ -644,6 +645,11 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_BUILDWITHOUTPATHS:
 		//std::printf("IDM_BUILDWITHOUTPATHS\n");
 		LegoRR::Lego_SetOnlyBuildOnPaths(!LegoRR::Lego_IsOnlyBuildOnPaths());
+		break;
+
+	case IDM_BUILDANYROUGHNESS:
+		//std::printf("IDM_BUILDANYROUGHNESS\n");
+		LegoRR::Cheat_SetBuildOnAnyRoughness(!LegoRR::Cheat_IsBuildOnAnyRoughness());
 		break;
 
 	/*case IDM_BUILDANYROUGHNESS:
