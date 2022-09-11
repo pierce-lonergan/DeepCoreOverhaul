@@ -53,6 +53,11 @@
 #define IDM_DUALMOUSE					505
 #define IDM_LOSEFOCUSANDPAUSE		    506
 // --------------
+// &Options > Building Arrow (Radio Group)
+#define IDM_SELECTPLACEARROW_NEVER		587
+#define IDM_SELECTPLACEARROW_SOLIDONLY	588
+#define IDM_SELECTPLACEARROW_ALWAYS		589
+
 #define IDM_SHOWOBJINFO					511
 #define IDM_RENDERPANELS				512
 #define IDM_TOOLTIPSOUND				513

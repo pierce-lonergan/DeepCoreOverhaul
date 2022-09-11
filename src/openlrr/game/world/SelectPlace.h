@@ -21,6 +21,21 @@ namespace LegoRR
 #pragma endregion
 
 /**********************************************************************************
+ ******** Enumerations
+ **********************************************************************************/
+
+#pragma region Enums
+
+enum class SelectPlace_ArrowVisibility
+{
+	Never,		// Never show the arrow.
+	SolidOnly,	// Show the arrow for buildings that only have solid tiles.
+	Always,		// Always show the arrow.
+};
+
+#pragma endregion
+
+/**********************************************************************************
  ******** Structures
  **********************************************************************************/
 
@@ -31,8 +46,12 @@ struct SelectPlace // [LegoRR/SelectPlace.c|struct:0x8] Building selection highl
 	/*0,4*/	Gods98::Container* contMesh;
 	/*4,4*/	real32 tileDepth; // (init: 5.0) Z height of each coloured square when drawing the building placement grid.
 	/*8*/
+	/// EXPANSION: An arrow mesh used to show the rotation over the origin tile.
+	/*8,4*/	Gods98::Container* contMeshArrow;
+	/*c,4*/	SelectPlace_ArrowVisibility arrowVisibility;
+	/*10*/
 };
-assert_sizeof(SelectPlace, 0x8);
+//assert_sizeof(SelectPlace, 0x8);
 
 #pragma endregion
 
@@ -61,9 +80,27 @@ extern Point2I (& s_TransformShapePoints)[SELECTPLACE_MAXSHAPEPOINTS];
 
 #pragma region Functions
 
+/// CUSTOM: Gets when the origin tile arrow is displayed.
+SelectPlace_ArrowVisibility SelectPlace_GetArrowVisibility(const SelectPlace* selectPlace);
+
+/// CUSTOM: Sets when the origin tile arrow is displayed.
+void SelectPlace_SetArrowVisibility(SelectPlace* selectPlace, SelectPlace_ArrowVisibility visibility);
+
+/// CUSTOM: Determines if the origin tile arrow is visible based on the visibility setting.
+bool _SelectPlace_ShouldShowArrow(const SelectPlace* selectPlace, bool shapeHasPath);
+
+/// CUSTOM: Creates the origin tile arrow mesh.
+bool _SelectPlace_CreateArrow(SelectPlace* selectPlace, Gods98::Container* contRoot);
+
+/// CUSTOM: Assigns the origin tile arrow mesh vertices relative to the SelectPlace vertex positions. Also unhides the arrow mesh.
+void _SelectPlace_UpdateArrow(SelectPlace* selectPlace, Direction direction, bool shapeHasPath, const Vector3F* selectVertPoses);
+
+/// CUSTOM: Hides the origin tile arrow mesh.
+void _SelectPlace_HideArrow(SelectPlace* selectPlace);
+
+
 // Prefer defining this in the cpp file. So that in the future, this include file can be made independent of `Containers.h`.
 // <inlined, unused>
-//__inline bool32 SelectPlace_IsHidden(const SelectPlace* selectPlace) { return Gods98::Container_IsHidden(selectPlace); }
 bool32 SelectPlace_IsHidden(const SelectPlace* selectPlace);
 
 

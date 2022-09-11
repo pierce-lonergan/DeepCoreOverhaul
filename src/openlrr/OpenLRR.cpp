@@ -108,6 +108,7 @@ bool InjectOpenLRR(HINSTANCE hInstanceDll)
 static constexpr const auto Menu_ScaleIDs = array_of<uint32>(IDM_SCALE_X1, IDM_SCALE_X2, IDM_SCALE_X3, IDM_SCALE_X4);
 static constexpr const auto Menu_IconIDs = array_of<uint32>(IDM_ICON_NONE, IDM_ICON_NATIVE, IDM_ICON_OPENLRR, IDM_ICON_GOLD, IDM_ICON_TEAL, IDM_ICON_TEALRR);
 static constexpr const auto Menu_CursorIDs = array_of<uint32>(IDM_CURSOR_NEVER, IDM_CURSOR_TITLEBAR, IDM_CURSOR_ALWAYS);
+static constexpr const auto Menu_SelectPlaceArrowIDs = array_of<uint32>(IDM_SELECTPLACEARROW_NEVER, IDM_SELECTPLACEARROW_SOLIDONLY, IDM_SELECTPLACEARROW_ALWAYS);
 static constexpr const auto Menu_QualityIDs = array_of<uint32>(IDM_QUALITY_WIREFRAME, IDM_QUALITY_UNLITFLAT, IDM_QUALITY_FLAT, IDM_QUALITY_GOURAUD, IDM_QUALITY_PHONG);
 static constexpr const auto Menu_AdvanceFrameIDs = array_of<uint32>(IDM_ADVANCE_1FRAME, IDM_ADVANCE_1SECOND);
 static constexpr const auto Menu_InitCommandLineIDs = array_of<uint32>(IDM_DUALMOUSE, IDM_PROGRAMMER, IDM_DEBUGMODE, IDM_DEBUGCOMPLETE, IDM_LEVELSOPEN, IDM_TESTERCALL, IDM_BLOCKFADE, IDM_DUMPMODE, IDM_FREEZE);
@@ -121,7 +122,8 @@ static constexpr const auto Menu_LegoInitIDs = array_of<uint32>(
 	IDM_MUSICON, IDM_SOUNDON, IDM_HELPWINDOW, IDM_AUTOGAMESPEED, IDM_LOSEFOCUSANDPAUSE,
 	IDM_SHOWOBJINFO, IDM_RENDERPANELS, IDM_TOOLTIPSOUND, IDM_LIGHTEFFECTS, IDM_DETAILON, IDM_DYNAMICPM, IDM_ALLOWDEBUGKEYS,
 	IDM_ALLOWEDITMODE, IDM_SHOWDEBUGTOOLTIPS, IDM_DDRAWCLEAR, IDM_FPSMONITOR, IDM_MEMORYMONITOR, IDM_NONERPS, IDM_UNLOCKCAMERA,
-	IDM_UNLOCKBUILD, IDM_BUILDWITHOUTPATHS, IDM_FPNOCLIP, IDM_NOROCKFALL, IDM_QUICKREINFORCE
+	IDM_UNLOCKBUILD, IDM_BUILDWITHOUTPATHS, IDM_FPNOCLIP, IDM_NOROCKFALL, IDM_QUICKREINFORCE,
+	IDM_SELECTPLACEARROW_NEVER, IDM_SELECTPLACEARROW_SOLIDONLY, IDM_SELECTPLACEARROW_ALWAYS
 );
 
 static constexpr const auto Menu_InLevelIDs = array_of<uint32>(
@@ -168,7 +170,12 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_DYNAMICPM,		(LegoRR::Lego_IsInit() && LegoRR::Lego_IsDynamicPM()));
 	Menu_CheckButton(IDM_TOPDOWNFOG,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsTopdownFogOn()));
 
-    // This can safely be out of range, beacuse of how the Buttons macros function
+    // These can safely be out of range, beacuse of how the Buttons macros function.
+	if (LegoRR::Lego_IsInit()) {
+		sint32 curArrow = static_cast<sint32>(LegoRR::SelectPlace_GetArrowVisibility(LegoRR::legoGlobs.selectPlace));
+		Menu_CheckRadioButtonsArray(Menu_SelectPlaceArrowIDs, curArrow);
+	}
+
     sint32 curCursor = static_cast<sint32>(Gods98::Main_GetCursorVisibility());
     Menu_CheckRadioButtonsArray(Menu_CursorIDs, curCursor);
 
@@ -361,6 +368,12 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_LOSEFOCUSANDPAUSE:
 		//std::printf("IDM_LOSEFOCUSANDPAUSE\n");
 		LegoRR::Lego_SetLoseFocusAndPause(!LegoRR::Lego_IsLoseFocusAndPause());
+		break;
+
+	case IDM_SELECTPLACEARROW_NEVER:
+	case IDM_SELECTPLACEARROW_SOLIDONLY:
+	case IDM_SELECTPLACEARROW_ALWAYS:
+		LegoRR::SelectPlace_SetArrowVisibility(LegoRR::legoGlobs.selectPlace, static_cast<LegoRR::SelectPlace_ArrowVisibility>(wmId - IDM_SELECTPLACEARROW_NEVER));
 		break;
 
 	case IDM_SHOWOBJINFO:

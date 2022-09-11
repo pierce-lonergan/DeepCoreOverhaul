@@ -88,12 +88,16 @@ BEGIN
 //#endif
         MENUITEM "&Dual Mouse",                 IDM_DUALMOUSE
         MENUITEM "Pause When Focus &Lost",      IDM_LOSEFOCUSANDPAUSE,CHECKED
-//#if 0  // not ready yet
         MENUITEM SEPARATOR
+        POPUP "Building Arrow"
+        BEGIN
+            MENUITEM "&Never Show",             IDM_SELECTPLACEARROW_NEVER
+            MENUITEM "Solid Buildings &Only",   IDM_SELECTPLACEARROW_SOLIDONLY
+            MENUITEM "&Always Show",            IDM_SELECTPLACEARROW_ALWAYS,CHECKED
+        END
         MENUITEM "Show &ObjInfo",               IDM_SHOWOBJINFO
         MENUITEM "Show &Panels",                IDM_RENDERPANELS,CHECKED
         MENUITEM "&Tooltip Sound",              IDM_TOOLTIPSOUND,CHECKED
-//#endif
         MENUITEM SEPARATOR
         MENUITEM "Reload &Keybinds"             IDM_RELOAD_KEYBINDS
         POPUP "Logging"

@@ -506,6 +506,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 
 
 		legoGlobs.selectPlace = SelectPlace_Create(legoGlobs.rootCont, 5.0f);
+		SelectPlace_SetArrowVisibility(legoGlobs.selectPlace, SelectPlace_ArrowVisibility::Always);
 		SelectPlace_Hide(legoGlobs.selectPlace, true);
 
 
