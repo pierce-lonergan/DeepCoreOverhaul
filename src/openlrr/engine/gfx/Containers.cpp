@@ -1876,11 +1876,11 @@ void __cdecl Gods98::Container_Mesh_SetQuality(Container* cont, uint32 groupID, 
 
 		D3DRMRENDERQUALITY d3drmqual = 0; // dummy init
 		switch (quality) {
-		case Container_Quality::Wireframe:	d3drmqual = D3DRMRENDER_WIREFRAME;
-		case Container_Quality::UnlitFlat:	d3drmqual = D3DRMRENDER_UNLITFLAT;
-		case Container_Quality::Flat:		d3drmqual = D3DRMRENDER_FLAT;
-		case Container_Quality::Gouraud:	d3drmqual = D3DRMRENDER_GOURAUD;
-		case Container_Quality::Phong:		d3drmqual = D3DRMRENDER_PHONG;
+		case Container_Quality::Wireframe:	d3drmqual = D3DRMRENDER_WIREFRAME; break;
+		case Container_Quality::UnlitFlat:	d3drmqual = D3DRMRENDER_UNLITFLAT; break;
+		case Container_Quality::Flat:		d3drmqual = D3DRMRENDER_FLAT;      break;
+		case Container_Quality::Gouraud:	d3drmqual = D3DRMRENDER_GOURAUD;   break;
+		case Container_Quality::Phong:		d3drmqual = D3DRMRENDER_PHONG;     break;
 		}
 
 		Container_DebugCheckOK(cont);
