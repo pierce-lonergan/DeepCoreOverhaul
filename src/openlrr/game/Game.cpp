@@ -2152,6 +2152,9 @@ const char* __cdecl LegoRR::Level_Free(void)
 		/// CUSTOM: Remove all created disposable ObjectStats.
 		Stats_RemoveAllModified();
 
+		/// CUSTOM: Remove all routing path lines.
+		Debug_RouteVisual_RemoveAll();
+
 		/// CUSTOM: Handle water cleanup so that it doesn't persist between levels.
 		Water_RemoveAll();
 

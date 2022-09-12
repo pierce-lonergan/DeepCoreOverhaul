@@ -73,6 +73,7 @@
 #include "world/SpiderWeb.h"
 #include "world/Teleporter.h"
 #include "world/Water.h"
+#include "Debug.h"
 #include "Shortcuts.hpp"
 #include "Game.h"
 
@@ -1124,6 +1125,10 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	// GFX LOGIC: Render main viewport.
 	// PREPARE: ambientLight is the only container shared by FP and Topdown rendering.
 	Gods98::Container_Hide(legoGlobs.ambientLight, false);
+
+	/// CUSTOM: Render routes in top-down / FP view.
+	Debug_RouteVisual_UpdateAll(elapsedWorld, elapsedInterface);
+
 	if (legoGlobs.viewMode == ViewMode_Top) {
 
 		/// CUSTOM: Render fog used in FP view when in topdown view.
@@ -1237,6 +1242,10 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 			if (legoGlobs.cameraFP != nullptr && (legoGlobs.cameraFP)->contCam != nullptr && legoGlobs.dirLightCallToArms != nullptr) {
 				Gods98::Container_Hide(legoGlobs.dirLightCallToArms, true);
 			}
+
+			/// CUSTOM: Don't render debug visuals in Radar viewport.
+			Debug_RouteVisual_HideAll(true);
+
 			Gods98::Viewport_Render(legoGlobs.viewTrack, legoGlobs.rootCont, elapsedInterface);
 			Gods98::Container_Hide(legoGlobs.spotlightTrack, true);
 			Map3D_HideVisibleBlocksList((legoGlobs.currLevel)->map);

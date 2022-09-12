@@ -5,7 +5,6 @@
 #include "../../engine/core/Utils.h"
 #include "../../engine/input/Input.h"
 
-#include "../Game.h"
 #include "../audio/SFX.h"
 #include "../interface/hud/Bubbles.h"
 #include "../interface/Encyclopedia.h"
@@ -18,6 +17,8 @@
 #include "../mission/NERPsFile.h"
 #include "../world/Construction.h"
 #include "../world/ElectricFence.h"
+#include "../Debug.h"
+#include "../Game.h"
 #include "AITask.h"
 #include "Stats.h"
 #include "Object.h"
@@ -408,6 +409,9 @@ bool32 __cdecl LegoRR::LegoObject_Callback_RemoveRouteToReference(LegoObject* li
 // <LegoRR.exe @00437800>
 bool32 __cdecl LegoRR::LegoObject_Remove(LegoObject* deadObj)
 {
+	/// CUSTOM: Cleanup routing path lines.
+	Debug_RouteVisual_Remove(deadObj);
+
 	/// CUSTOM: Cleanup disposable stats (if it is overridden).
 	StatsObject_RestoreModified(deadObj);
 

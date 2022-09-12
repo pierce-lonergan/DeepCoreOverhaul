@@ -323,7 +323,7 @@ assert_sizeof(SearchObjectBlockXY_c, 0xc);
 struct RoutingBlock // [LegoRR/Routing.c|struct:0x14]
 {
 	/*00,8*/	Point2I	blockPos;
-	/*08,8*/	Point2F	worldPos;
+	/*08,8*/	Point2F	blockOffset; // In range of [0.0,1.0], where 0.5 is the center of the block.
 	/*10,1*/	RouteFlags flagsByte;
 	/*11,1*/	RouteAction actionByte;
 	/*12,2*/	undefined field_0x12_0x13[2];
@@ -363,7 +363,9 @@ struct LegoObject // [LegoRR/LegoObject.c|struct:0x40c|tags:LISTSET]
 	/*028,4*/       uint32 routeBlocksTotal; // total blocks to travel for current route
 	/*02c,4*/       uint32 routeBlocksCurrent; // number of blocks traveled (up to routingBlocksTotal)
 	/*030,25c*/		BezierCurve routingCurve; // BezierCurve/Catmull-rom spline data
-	/*28c,c*/       Vector3F vector_28c;
+	/*28c,4*/		real32 routeCurveTotalDist;
+	/*290,4*/		real32 routeCurveCurrDist;
+	/*294,4*/		real32 routeCurveInitialDist; // Used as spill-over when distance traveled is beyond routeCurveTotalDist.
 	/*298,8*/       Point2F point_298;
 	/*2a0,c*/       Vector3F vector_2a0;
 	/*2ac,c*/       Vector3F faceDirection; // 1.0 to -1.0 directions that determine rotation with atan2

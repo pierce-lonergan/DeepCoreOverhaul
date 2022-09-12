@@ -11,6 +11,7 @@
 
 #include "engine/Graphics.h"
 #include "engine/Main.h"
+#include "game/Debug.h"
 #include "game/Game.h"
 #include "game/Shortcuts.hpp"
 #include "game/effects/LightEffects.h"
@@ -111,6 +112,7 @@ static constexpr const auto Menu_CursorIDs = array_of<uint32>(IDM_CURSOR_NEVER, 
 static constexpr const auto Menu_SelectPlaceArrowIDs = array_of<uint32>(IDM_SELECTPLACEARROW_NEVER, IDM_SELECTPLACEARROW_SOLIDONLY, IDM_SELECTPLACEARROW_ALWAYS);
 static constexpr const auto Menu_QualityIDs = array_of<uint32>(IDM_QUALITY_WIREFRAME, IDM_QUALITY_UNLITFLAT, IDM_QUALITY_FLAT, IDM_QUALITY_GOURAUD, IDM_QUALITY_PHONG);
 static constexpr const auto Menu_AdvanceFrameIDs = array_of<uint32>(IDM_ADVANCE_1FRAME, IDM_ADVANCE_1SECOND);
+static constexpr const auto Menu_RoutingAutoIDs = array_of<uint32>(IDM_ROUTING_AUTO_NONE, IDM_ROUTING_AUTO_TRACKED, IDM_ROUTING_AUTO_ALLFRIENDLY, IDM_ROUTING_AUTO_ALL);
 static constexpr const auto Menu_InitCommandLineIDs = array_of<uint32>(IDM_DUALMOUSE, IDM_PROGRAMMER, IDM_DEBUGMODE, IDM_DEBUGCOMPLETE, IDM_LEVELSOPEN, IDM_TESTERCALL, IDM_BLOCKFADE, IDM_DUMPMODE, IDM_FREEZE);
 
 //static_assert(Menu_ScaleIDs.size() == 4, "Mismatched Menu_ScaleIDs array size");
@@ -131,7 +133,9 @@ static constexpr const auto Menu_InLevelIDs = array_of<uint32>(
 	IDM_GENERATESPIDERS, IDM_NOAUTOEAT, IDM_NOFALLINS, IDM_NOMULTISELECT, IDM_SAFECAVERNS, IDM_SEETHROUGHWALLS,
 	IDM_ADDCRYSTALS, IDM_SUBCRYSTALS, IDM_ADDORE, IDM_SUBORE, IDM_ADDOXYGEN, IDM_SUBOXYGEN,
 
-	IDM_SELECTEDLEVELUP, IDM_SELECTEDHEAL, IDM_SELECTEDTRAIN
+	IDM_SELECTEDLEVELUP, IDM_SELECTEDHEAL, IDM_SELECTEDTRAIN,
+
+	IDM_ROUTING_ADDSELECTED, IDM_ROUTING_ADDALLFRIENDLY, IDM_ROUTING_ADDALL, IDM_ROUTING_REMOVESELECTED, IDM_ROUTING_REMOVEALL
 );
 
 // Update menu item enabled/checked states.
@@ -179,6 +183,9 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
     sint32 curCursor = static_cast<sint32>(Gods98::Main_GetCursorVisibility());
     Menu_CheckRadioButtonsArray(Menu_CursorIDs, curCursor);
 
+    sint32 curRouteAuto = static_cast<sint32>(LegoRR::Debug_RouteVisual_GetAutoMode());
+    Menu_CheckRadioButtonsArray(Menu_RoutingAutoIDs, curRouteAuto);
+
 	Menu_CheckRadioButtonsArray(Menu_QualityIDs,   static_cast<sint32>(Gods98::Graphics_GetRenderQuality()));
 	Menu_CheckButton(IDM_GRAPHICS_BLEND,           Gods98::Graphics_IsBlendTransparency());
 	Menu_CheckButton(IDM_GRAPHICS_DITHER,          Gods98::Graphics_IsDither());
@@ -208,6 +215,10 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 		Menu_EnableButton((IDM_SCALE_X1 + i), Gods98::Main_IsScaleSupported(i + 1)); // scale is "1-indexed"
 	}
 	Menu_CheckRadioButtonsArray(Menu_ScaleIDs, (Gods98::Main_Scale() - 1)); // scale is "1-indexed"
+
+	Menu_CheckButton(IDM_ROUTING_ENABLED,			(LegoRR::Debug_RouteVisual_IsEnabled()));
+	Menu_CheckButton(IDM_ROUTING_COMPLETEDPATHS,	(LegoRR::Debug_RouteVisual_IsCompletedPathsEnabled()));
+	Menu_CheckButton(IDM_ROUTING_CURVEPATHS,		(LegoRR::Debug_RouteVisual_IsCurvePathsEnabled()));
 
 
     ////// &Debug //////
@@ -574,6 +585,49 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_SHOWDEBUGTOOLTIPS:
 		//std::printf("IDM_SHOWDEBUGTOOLTIPS\n");
 		LegoRR::Lego_SetShowDebugToolTips(!LegoRR::Lego_IsShowDebugToolTips());
+		break;
+
+	case IDM_ROUTING_ENABLED:
+		LegoRR::Debug_RouteVisual_SetEnabled(!LegoRR::Debug_RouteVisual_IsEnabled());
+		break;
+
+	case IDM_ROUTING_COMPLETEDPATHS:
+		LegoRR::Debug_RouteVisual_SetCompletedPathsEnabled(!LegoRR::Debug_RouteVisual_IsCompletedPathsEnabled());
+		break;
+
+	case IDM_ROUTING_CURVEPATHS:
+		LegoRR::Debug_RouteVisual_SetCurvePathsEnabled(!LegoRR::Debug_RouteVisual_IsCurvePathsEnabled());
+		break;
+
+	case IDM_ROUTING_AUTO_NONE:
+	case IDM_ROUTING_AUTO_TRACKED:
+	case IDM_ROUTING_AUTO_ALLFRIENDLY:
+	case IDM_ROUTING_AUTO_ALL:
+		LegoRR::Debug_RouteVisual_SetAutoMode(static_cast<LegoRR::Debug_RouteVisualAuto>(wmId - IDM_ROUTING_AUTO_NONE));
+		LegoRR::Debug_RouteVisual_SetEnabled(true); // Automatically enable for QoL.
+		break;
+
+	case IDM_ROUTING_ADDSELECTED:
+		LegoRR::Debug_RouteVisual_AddSelected();
+		LegoRR::Debug_RouteVisual_SetEnabled(true); // Automatically enable for QoL.
+		break;
+
+	case IDM_ROUTING_ADDALLFRIENDLY:
+		LegoRR::Debug_RouteVisual_AddAll(true);
+		LegoRR::Debug_RouteVisual_SetEnabled(true); // Automatically enable for QoL.
+		break;
+
+	case IDM_ROUTING_ADDALL:
+		LegoRR::Debug_RouteVisual_AddAll(false);
+		LegoRR::Debug_RouteVisual_SetEnabled(true); // Automatically enable for QoL.
+		break;
+
+	case IDM_ROUTING_REMOVESELECTED:
+		LegoRR::Debug_RouteVisual_RemoveSelected();
+		break;
+
+	case IDM_ROUTING_REMOVEALL:
+		LegoRR::Debug_RouteVisual_RemoveAll();
 		break;
 
     case IDM_BLOCKFADE:

@@ -120,6 +120,22 @@
 #define IDM_ALLOWEDITMODE				312
 #define IDM_SHOWDEBUGTOOLTIPS			313
 // --------------
+// &Debug > Routing Paths
+#define IDM_ROUTING_ENABLED				350
+#define IDM_ROUTING_COMPLETEDPATHS		351
+#define IDM_ROUTING_CURVEPATHS		    352
+// &Debug > Routing Paths > Auto Add (Radio Group)
+#define IDM_ROUTING_AUTO_NONE			353
+#define IDM_ROUTING_AUTO_TRACKED		354
+#define IDM_ROUTING_AUTO_ALLFRIENDLY	355
+#define IDM_ROUTING_AUTO_ALL			356
+
+#define IDM_ROUTING_ADDSELECTED			357
+#define IDM_ROUTING_ADDALLFRIENDLY		358
+#define IDM_ROUTING_ADDALL				359
+#define IDM_ROUTING_REMOVESELECTED		360
+#define IDM_ROUTING_REMOVEALL			361
+// --------------
 // &Debug > Experimental
 #define IDM_BLOCKFADE					321
 #define IDM_DDRAWCLEAR					322

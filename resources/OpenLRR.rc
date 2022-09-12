@@ -176,6 +176,25 @@ BEGIN
         MENUITEM "ShowDebugToolTips",           IDM_SHOWDEBUGTOOLTIPS
 //#endif
         MENUITEM SEPARATOR
+        POPUP "Routing Paths"
+        BEGIN
+            MENUITEM "Enabled",                 IDM_ROUTING_ENABLED
+            MENUITEM "Show Completed Paths",    IDM_ROUTING_COMPLETEDPATHS
+            MENUITEM "Show Curve Paths",        IDM_ROUTING_CURVEPATHS
+            POPUP "Auto Add"
+            BEGIN
+                MENUITEM "None",                IDM_ROUTING_AUTO_NONE,CHECKED
+                MENUITEM "Tracked in Radar",    IDM_ROUTING_AUTO_TRACKED
+                MENUITEM "All Friendly",        IDM_ROUTING_AUTO_ALLFRIENDLY
+                MENUITEM "All",                 IDM_ROUTING_AUTO_ALL
+            END
+            MENUITEM SEPARATOR
+            MENUITEM "Add Selected",            IDM_ROUTING_ADDSELECTED
+            MENUITEM "Add All Friendly",        IDM_ROUTING_ADDALLFRIENDLY
+            MENUITEM "Add All",                 IDM_ROUTING_ADDALL
+            MENUITEM "Remove Selected",         IDM_ROUTING_REMOVESELECTED
+            MENUITEM "Remove All",              IDM_ROUTING_REMOVEALL
+        END
         POPUP "&Experimental"
         BEGIN
             MENUITEM "Block Fade",              IDM_BLOCKFADE
