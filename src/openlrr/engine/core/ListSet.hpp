@@ -738,7 +738,7 @@ public:
 	 */
 	void AddList()
 	{
-		Error_Fatal(m_cont.listCount + 1 >= this->MaxLists(), "Run out of lists in ListSet::AddList");
+		Error_Fatal(m_cont.listCount >= this->MaxLists(), "Run out of lists in ListSet::AddList");
 
 		const size_t count = ListSet::CountOfList(m_cont.listCount);
 
