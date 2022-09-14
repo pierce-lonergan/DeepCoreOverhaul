@@ -859,8 +859,8 @@ bool32 __cdecl Front_Menu_AddMenuItem(Menu* menu, MenuItem* menuItem);
 //uint32 __cdecl Front_Menu_GetOverlayCount(Menu* menu);
 
 // <LegoRR.exe @004120c0>
-#define Front_Menu_ShouldRandomPlay ((bool32 (__cdecl* )(void))0x004120c0)
-//bool32 __cdecl Front_Menu_ShouldRandomPlay(void);
+//#define Front_Menu_ShouldRandomPlay ((bool32 (__cdecl* )(void))0x004120c0)
+bool32 __cdecl Front_Menu_ShouldRandomPlay(void);
 
 // <LegoRR.exe @004120e0>
 #define Front_Menu_UpdateOverlays ((void (__cdecl* )(Menu* menu))0x004120e0)

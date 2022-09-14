@@ -6,6 +6,7 @@
 #include "../../engine/audio/3DSound.h"
 #include "../../engine/core/Config.h"
 #include "../../engine/core/Files.h"
+#include "../../engine/core/Maths.h"
 #include "../../engine/core/Memory.h"
 #include "../../engine/core/Utils.h"
 #include "../../engine/drawing/Images.h"
@@ -856,7 +857,27 @@ bool32 __cdecl LegoRR::Front_Menu_AddMenuItem(Menu* menu, MenuItem* menuItem)
 //uint32 __cdecl LegoRR::Front_Menu_GetOverlayCount(Menu* menu);
 
 // <LegoRR.exe @004120c0>
-//bool32 __cdecl LegoRR::Front_Menu_ShouldRandomPlay(void);
+bool32 __cdecl LegoRR::Front_Menu_ShouldRandomPlay(void)
+{
+	/// FIX APPLY: Only check for 1-in-400 once every frame.
+	///            Making the average overlay appearance once every 16 seconds.
+	static real32 frameTimer = 0.0f;
+	frameTimer += Gods98::Main_GetDeltaTime();
+
+	while (frameTimer >= 1.0f) {
+		frameTimer -= 1.0f;
+		if ((Gods98::Maths_Rand() % 400) == 0) {
+			// This function is only called while an overlay isn't playing,
+			//  so we should reset the timer because any accumulated overtime becomes meaningless.
+			frameTimer = 0.0f;
+			return true;
+		}
+	}
+	return false;
+
+	/// OLD CODE:
+	//return (Gods98::Maths_Rand() % 400) == 0;
+}
 
 // <LegoRR.exe @004120e0>
 //void __cdecl LegoRR::Front_Menu_UpdateOverlays(Menu* menu);

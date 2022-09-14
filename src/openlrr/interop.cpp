@@ -827,6 +827,12 @@ bool interop_hook_calls_Gods98_Flic(void)
 	result &= hook_write_call(0x0045ab17, Gods98::Flic_GetWidth);
 	result &= hook_write_call(0x0045cfc8, Gods98::Flic_GetWidth);
 
+
+	// This is the only scenario where the game properly handles framerate for flics,
+	// So trying to apply Flic_AnimateMainDeltaTime would cause main menu animations to play incredibly slow.
+	// used in: Front_Menu_UpdateOverlays
+	result &= hook_write_call(0x004121d1, Gods98::Flic_Animate);
+
 	return_interop(result);
 }
 
@@ -1751,6 +1757,10 @@ bool interop_hook_LegoRR_FrontEnd(void)
 	result &= hook_write_jmpret(0x004156f0, LegoRR::Front_PlayIntroSplash);
 	result &= hook_write_jmpret(0x00415840, LegoRR::Front_PlayIntroMovie);
 	result &= hook_write_jmpret(0x004158c0, LegoRR::Front_PlayLevelMovie);
+
+	// used by: Front_Menu_UpdateOverlays
+	// Fix to stop menu overlays from playing incredibly often at faster framerates.
+	result &= hook_write_jmpret(0x004120c0, LegoRR::Front_Menu_ShouldRandomPlay);
 
 	return_interop(result);
 }
