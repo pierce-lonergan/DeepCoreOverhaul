@@ -21,6 +21,7 @@
 #include "../engine/input/Input.h"
 #include "../engine/input/Keys.h"
 #include "../engine/input/MouseButtons.h"
+#include "../engine/video/Movie.h"
 #include "../engine/Graphics.h"
 #include "../engine/Main.h"
 #include "../engine/geometry.h"
@@ -278,7 +279,19 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		}
 	}
 
-	if (Front_IsFrontEndEnabled() && Front_IsIntrosEnabled()) {
+	// When a movie is loaded, it changes something about how audio memory is handled (possibly DMA, Direct Memory Access).
+	// When this change is made, audio in LRR/OpenLRR loads lightning fast, and load times overall are increased by ~200%!!
+	// Normally it's the biggest load time, but now it's not even on the radar.
+	const bool abuseMovieLoad = true;
+
+	// This doesn't need to be called if we're already successfully loading other movie files.
+	// But the Movie module won't detect if it succesfully opened a movie file that wasn't valid media.
+	// So always place this in at the top. In-case the user removes the AVI's or if the files just aren't there.
+	if (abuseMovieLoad) {
+		Gods98::Movie_ImproveAudioLoadSpeed();
+	}
+
+	if (Front_IsFrontEndEnabled() && Front_IsIntrosEnabled() && Gods98::Main_IsIntrosEnabled()) {
 		Front_PlayIntroMovie("LegoAvi", (Gods98::Main_ProgrammerMode() != 0));
 		Front_PlayIntroSplash("DDILogo", true, "DDILogoTime");
 		Front_PlayIntroMovie("DDIAvi", true);

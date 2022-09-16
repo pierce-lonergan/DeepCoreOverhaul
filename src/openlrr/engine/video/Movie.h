@@ -35,6 +35,12 @@ typedef void Movie_t;
 
 #pragma region Functions
 
+/// CUSTOM: Temporarily sets up a media stream to speed up audio load times.
+///         This does not need to be called if Movie_Load is called successfully.
+///         This function is placed here, because it uses the same API as Movie, and
+///          only needs to be called when not calling Movie_Load.
+bool Movie_ImproveAudioLoadSpeed();
+
 // <LegoRR.exe @00472820>
 Movie_t* __cdecl Movie_Load(const char* fName);
 

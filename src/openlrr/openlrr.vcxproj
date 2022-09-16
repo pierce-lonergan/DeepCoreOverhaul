@@ -115,8 +115,9 @@
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>xcopy /y /d "$(SolutionDir)data\Settings\Shortcuts.cfg" "$(OutDir)Settings\"</Command>
-      <Message>Copying OpenLRR data files</Message>
+      <Command>xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
       <Outputs>$(OutDir)always_run_this_build_step.txt</Outputs>
+      <Message>Copying OpenLRR data files</Message>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -143,6 +144,7 @@
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>xcopy /y /d "$(SolutionDir)data\Settings\Shortcuts.cfg" "$(OutDir)Settings\"</Command>
+      <Command>xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
       <Outputs>$(OutDir)always_run_this_build_step.txt</Outputs>
       <Message>Copying OpenLRR data files</Message>
     </CustomBuildStep>

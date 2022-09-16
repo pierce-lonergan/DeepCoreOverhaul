@@ -34,7 +34,9 @@ bool Gods98::G98CMovie::InitSample(IAMMultiMediaStream* lpAMMMStream)
 					this->m_err = this->m_baseSurf->QueryInterface(IID_IDirectDrawSurface3, (void**)&this->m_surf);
 					if (this->m_err >= 0) {
 
-						this->m_err = lpAMMMStream->SetState(STREAMSTATE_RUN /*0x1*/);
+						/// NOTE: THIS LINE RIGHT HERE!!
+						///       Calling it even once will somehow speed up game data loading time by 300-400%!!!
+						this->m_err = lpAMMMStream->SetState(STREAMSTATE_RUN);
 						if (this->m_err >= 0)
 							return true;
 
@@ -194,6 +196,50 @@ sint64 Gods98::G98CMovie::GetDuration()
  **********************************************************************************/
 
 #pragma region C Functions
+
+/// CUSTOM: Temporarily sets up a media stream to speed up audio load times.
+///         Requires actually opening a valid media file.
+///         This does not need to be called if Movie_Load is called successfully.
+bool Gods98::Movie_ImproveAudioLoadSpeed()
+{
+	// Differentiate success state from initialised state.
+	// If we failed to initialise, then trying again won't do anything.
+	static bool initialised = false;
+	static bool success = false;
+
+	if (!initialised) {
+		initialised = true;
+
+		// This is an AVI file created with ffmpeg using the following command/
+		// It contains only an audio stream, which is required to improve audio load speeds.
+		// 
+		// > ffmpeg -t 0.01 -f lavfi -i anullsrc -c:a aac -map 0 -shortest EmptyAudio.avi
+		// 
+		const char* fName = File_VerifyFilename("OpenLRR\\EmptyAudio.avi");
+
+		IAMMultiMediaStream* amMMStream = nullptr;
+		HRESULT r = ::CoCreateInstance(CLSID_AMMultiMediaStream, nullptr, CLSCTX_INPROC_SERVER, //CLSCTX_INPROC_HANDLER /*0x1*/,
+									   IID_IAMMultiMediaStream, (void**)&amMMStream);
+		if (r >= 0) {
+			// No need to initialize or add a video stream, we only need an audio stream.
+			r = amMMStream->AddMediaStream(nullptr, &MSPID_PrimaryAudio, AMMSF_ADDDEFAULTRENDERER, nullptr);
+			if (r >= 0) {
+				// The OpenFile function only supports unicode, so convert fName to wide chars.
+				wchar_t wFileName[FILE_MAXPATH];
+				::MultiByteToWideChar(CP_ACP, 0, fName, -1, wFileName, sizeof(wFileName) / sizeof(wchar_t));
+
+				r = amMMStream->OpenFile(wFileName, 0);
+				if (r >= 0) {
+					amMMStream->SetState(STREAMSTATE_RUN);
+
+					success = true;
+				}
+			}
+			amMMStream->Release();
+		}
+	}
+	return success;
+}
 
 // <LegoRR.exe @00472820>
 Gods98::Movie_t* __cdecl Gods98::Movie_Load(const char* fName)
