@@ -20,6 +20,27 @@
 // <LegoRR.exe @005417e8>
 Gods98::Draw_Globs & Gods98::drawGlobs = *(Gods98::Draw_Globs*)0x005417e8; // = { nullptr };
 
+/// CUSTOM: Basic handling for alpha (but not support for drawing with alpha other than 255).
+static uint32 _drawAlphaBits  = 0;
+static uint32 _drawAlphaMask  = 0;
+static uint32 _drawRedShift   = 0;
+static uint32 _drawGreenShift = 0;
+static uint32 _drawBlueShift  = 0;
+static uint32 _drawAlphaShift = 0;
+
+#pragma endregion
+
+/**********************************************************************************
+ ******** Macros
+ **********************************************************************************/
+
+#pragma region Macros
+
+#define Draw_Pixel8Address(x, y)	static_cast<uint8*> (DirectDraw_PixelAddress(drawGlobs.buffer, drawGlobs.pitch,  8, x, y))
+#define Draw_Pixel16Address(x, y)	static_cast<uint16*>(DirectDraw_PixelAddress(drawGlobs.buffer, drawGlobs.pitch, 16, x, y))
+#define Draw_Pixel24Address(x, y)	static_cast<uint8*> (DirectDraw_PixelAddress(drawGlobs.buffer, drawGlobs.pitch, 24, x, y))
+#define Draw_Pixel32Address(x, y)	static_cast<uint32*>(DirectDraw_PixelAddress(drawGlobs.buffer, drawGlobs.pitch, 32, x, y))
+
 #pragma endregion
 
 /**********************************************************************************
@@ -41,27 +62,29 @@ void __cdecl Gods98::Draw_SetClipWindow(const Area2F* window)
 	log_firstcall();
 
 	IDirectDrawSurface4* surf = DirectDraw_bSurf();
-	DDSURFACEDESC2 desc;
 
 	Error_Fatal(!(drawGlobs.flags & Draw_GlobFlags::DRAW_GLOB_FLAG_INITIALISED), "Draw not initialised");
 
-	drawGlobs.clipStart.x = 0;
-	drawGlobs.clipStart.y = 0;
-
+	drawGlobs.clipStart.x = 0.0f;
+	drawGlobs.clipStart.y = 0.0f;
 	if (window) {
-		if (window->x > 0) drawGlobs.clipStart.x = window->x;
-		if (window->y > 0) drawGlobs.clipStart.y = window->y;
+		drawGlobs.clipStart.x = std::max(drawGlobs.clipStart.x, window->x);
+		drawGlobs.clipStart.y = std::max(drawGlobs.clipStart.y, window->y);
 	}
 
+	DDSURFACEDESC2 desc;
 	std::memset(&desc, 0, sizeof(DDSURFACEDESC2));
 	desc.dwSize = sizeof(DDSURFACEDESC2);
 	if (surf->GetSurfaceDesc(&desc) == DD_OK) {
-		drawGlobs.clipEnd.x = (real32) desc.dwWidth;
-		drawGlobs.clipEnd.y = (real32) desc.dwHeight;
+		drawGlobs.clipEnd.x = static_cast<real32>(desc.dwWidth);
+		drawGlobs.clipEnd.y = static_cast<real32>(desc.dwHeight);
 		if (window) {
-			if (window->x + window->width < desc.dwWidth) drawGlobs.clipEnd.x = window->x + window->width;
-			if (window->y + window->height < desc.dwHeight) drawGlobs.clipEnd.y = window->y + window->height;
+			drawGlobs.clipEnd.x = std::min(drawGlobs.clipEnd.x, (window->x + window->width));
+			drawGlobs.clipEnd.y = std::min(drawGlobs.clipEnd.y, (window->y + window->height));
 		}
+	}
+	else {
+		Error_Warn(true, "Draw_SetClipWindow: Failed to GetSurfaceDesc for DirectDraw_bSurf");
 	}
 
 //	drawGlobs.lockRect.left = (uint32) drawGlobs.clipStart.x;
@@ -77,7 +100,7 @@ void __cdecl Gods98::Draw_GetClipWindow(OUT Area2F* window)
 
 	window->x = drawGlobs.clipStart.x;
 	window->y = drawGlobs.clipStart.y;
-	window->width = drawGlobs.clipEnd.x - drawGlobs.clipStart.x;
+	window->width  = drawGlobs.clipEnd.x - drawGlobs.clipStart.x;
 	window->height = drawGlobs.clipEnd.y - drawGlobs.clipStart.y;
 }
 
@@ -240,19 +263,19 @@ uint32 __cdecl Gods98::Draw_GetColour(real32 r, real32 g, real32 b)
 {
 	log_firstcall();
 
-	uint32 colour = 0;
-
 	Error_Fatal(drawGlobs.buffer==nullptr, "Must be called after Draw_LockSurface()");
 	
 	if (drawGlobs.bpp == 8) {
 		/// FIXME: not implemented by GODS98 or LegoRR
-	} else {
-		colour |= (uint32) (r * 255.0) >> (8 - drawGlobs.redBits) << (drawGlobs.greenBits + drawGlobs.blueBits);
-		colour |= (uint32) (g * 255.0) >> (8 - drawGlobs.greenBits) << drawGlobs.blueBits;
-		colour |= (uint32) (b * 255.0) >> (8 - drawGlobs.blueBits);
+		return 0;
 	}
-
-	return colour;
+	else {
+		return
+			DirectDraw_ShiftChannelByte(static_cast<uint8>(r * 255.0f), drawGlobs.redBits,   _drawRedShift)   |
+			DirectDraw_ShiftChannelByte(static_cast<uint8>(g * 255.0f), drawGlobs.greenBits, _drawGreenShift) |
+			DirectDraw_ShiftChannelByte(static_cast<uint8>(b * 255.0f), drawGlobs.blueBits,  _drawBlueShift)  |
+			_drawAlphaMask;
+	}
 }
 
 // <LegoRR.exe @00486810>
@@ -268,20 +291,24 @@ bool32 __cdecl Gods98::Draw_LockSurface(IDirectDrawSurface4* surf, DrawEffect ef
 //	if ((r = surf->Lock(reinterpret_cast<RECT*>(&drawGlobs.lockRect), &desc, DDLOCK_WAIT, nullptr)) == DD_OK) {
 	if ((r = surf->Lock(nullptr, &desc, DDLOCK_WAIT, nullptr)) == DD_OK) {
 
-
-		drawGlobs.buffer = desc.lpSurface;
-		drawGlobs.pitch = desc.lPitch;
-		drawGlobs.redMask = desc.ddpfPixelFormat.dwRBitMask;
+		drawGlobs.buffer    = desc.lpSurface;
+		drawGlobs.pitch     = desc.lPitch;
+		drawGlobs.redMask   = desc.ddpfPixelFormat.dwRBitMask;
 		drawGlobs.greenMask = desc.ddpfPixelFormat.dwGBitMask;
-		drawGlobs.blueMask = desc.ddpfPixelFormat.dwBBitMask;
-		drawGlobs.bpp = desc.ddpfPixelFormat.dwRGBBitCount;
+		drawGlobs.blueMask  = desc.ddpfPixelFormat.dwBBitMask;
+		_drawAlphaMask      = desc.ddpfPixelFormat.dwRGBAlphaBitMask;
+		drawGlobs.bpp       = desc.ddpfPixelFormat.dwRGBBitCount;
 
-		drawGlobs.redBits = drawGlobs.greenBits = drawGlobs.blueBits = 0;
-		for (uint32 loop=0 ; loop<drawGlobs.bpp ; loop++) {
-			if (drawGlobs.redMask & (1 << loop)) drawGlobs.redBits++;
-			if (drawGlobs.greenMask & (1 << loop)) drawGlobs.greenBits++;
-			if (drawGlobs.blueMask & (1 << loop)) drawGlobs.blueBits++;
-		}
+		drawGlobs.redBits   = DirectDraw_CountMaskBits(drawGlobs.redMask);
+		drawGlobs.greenBits = DirectDraw_CountMaskBits(drawGlobs.greenMask);
+		drawGlobs.blueBits  = DirectDraw_CountMaskBits(drawGlobs.blueMask);
+		_drawAlphaBits      = DirectDraw_CountMaskBits(_drawAlphaMask);
+
+		_drawRedShift       = DirectDraw_CountMaskBitShift(drawGlobs.redMask);
+		_drawGreenShift     = DirectDraw_CountMaskBitShift(drawGlobs.greenMask);
+		_drawBlueShift      = DirectDraw_CountMaskBitShift(drawGlobs.blueMask);
+		_drawAlphaShift     = DirectDraw_CountMaskBitShift(_drawAlphaMask);
+
 
 		if (Draw_SetDrawPixelFunc(effect)) {
 			return true;
@@ -299,13 +326,14 @@ void __cdecl Gods98::Draw_UnlockSurface(IDirectDrawSurface4* surf)
 
 //	surf->Unlock(reinterpret_cast<RECT*>(&drawGlobs.lockRect));
 	surf->Unlock(nullptr);
-	drawGlobs.buffer = nullptr;
-	drawGlobs.pitch = 0;
-	drawGlobs.redMask = 0;
+	drawGlobs.buffer    = nullptr;
+	drawGlobs.pitch     = 0;
+	drawGlobs.redMask   = 0;
 	drawGlobs.greenMask = 0;
-	drawGlobs.blueMask = 0;
+	drawGlobs.blueMask  = 0;
+	_drawAlphaMask      = 0;
+	drawGlobs.bpp       = 0;
 	drawGlobs.drawPixelFunc = nullptr;
-	drawGlobs.bpp = 0;
 }
 
 // <LegoRR.exe @00486950>
@@ -316,46 +344,39 @@ bool32 __cdecl Gods98::Draw_SetDrawPixelFunc(DrawEffect effect)
 	switch (drawGlobs.bpp) {
 	case 8:
 		drawGlobs.drawPixelFunc = Draw_Pixel8;
-		break;
+		return true;
+
 	case 16:
-		if (effect == DrawEffect::XOR) drawGlobs.drawPixelFunc = Draw_Pixel16XOR;
-		else if (effect == DrawEffect::HalfTrans) drawGlobs.drawPixelFunc = Draw_Pixel16HalfTrans;
-		else drawGlobs.drawPixelFunc = Draw_Pixel16;
-		break;
+		switch (effect) {
+		case DrawEffect::None:		drawGlobs.drawPixelFunc = Draw_Pixel16; break;
+		case DrawEffect::XOR:		drawGlobs.drawPixelFunc = Draw_Pixel16XOR; break;
+		case DrawEffect::HalfTrans:	drawGlobs.drawPixelFunc = Draw_Pixel16HalfTrans; break;
+		default:					return false;
+		}
+		return true;
+
 	case 24:
-		drawGlobs.drawPixelFunc = Draw_Pixel24;
-		break;
+		switch (effect) {
+		case DrawEffect::None:		drawGlobs.drawPixelFunc = Draw_Pixel24; break;
+		case DrawEffect::XOR:		drawGlobs.drawPixelFunc = Draw_Pixel24XOR; break;
+		case DrawEffect::HalfTrans:	drawGlobs.drawPixelFunc = Draw_Pixel24HalfTrans; break;
+		default:					return false;
+		}
+		return true;
+
 	case 32:
-		drawGlobs.drawPixelFunc = Draw_Pixel32;
-		break;
+		switch (effect) {
+		case DrawEffect::None:		drawGlobs.drawPixelFunc = Draw_Pixel32; break;
+		case DrawEffect::XOR:		drawGlobs.drawPixelFunc = Draw_Pixel32XOR; break;
+		case DrawEffect::HalfTrans:	drawGlobs.drawPixelFunc = Draw_Pixel32HalfTrans; break;
+		default:					return false;
+		}
+		return true;
 
 	default:
 		drawGlobs.drawPixelFunc = nullptr;
 		return false;
 	}
-
-	return true;
-
-	/*if (drawGlobs.bpp == 8) {
-		drawGlobs.drawPixelFunc = Draw_Pixel8;
-	}
-	else if (drawGlobs.bpp == 16) {
-		if (DrawEffect_XOR == effect) drawGlobs.drawPixelFunc = Draw_Pixel16XOR;
-		else if (DrawEffect_HalfTrans == effect) drawGlobs.drawPixelFunc = Draw_Pixel16HalfTrans;
-		else drawGlobs.drawPixelFunc = Draw_Pixel16;
-	}
-	else if (drawGlobs.bpp == 24) {
-		drawGlobs.drawPixelFunc = Draw_Pixel24;
-	}
-	else if (drawGlobs.bpp == 32) {
-		drawGlobs.drawPixelFunc = Draw_Pixel32;
-	}
-	else {
-		drawGlobs.drawPixelFunc = nullptr;
-		return false;
-	}
-
-	return true;*/
 }
 
 // Bresenham's algorithm (line drawing)
@@ -427,66 +448,115 @@ void __cdecl Gods98::Draw_LineActual(sint32 x1, sint32 y1, sint32 x2, sint32 y2,
 	}
 }
 
+/// CUSTOM:
+uint32 Gods98::_Draw_ConvertHalfTrans(uint32 pixel, uint32 value)
+{
+	const uint32 pix_r = ((pixel & drawGlobs.redMask)   >> _drawRedShift);
+	const uint32 pix_g = ((pixel & drawGlobs.greenMask) >> _drawGreenShift);
+	const uint32 pix_b = ((pixel & drawGlobs.blueMask)  >> _drawBlueShift);
+
+	const uint32 val_r = ((value & drawGlobs.redMask)   >> _drawRedShift);
+	const uint32 val_g = ((value & drawGlobs.greenMask) >> _drawGreenShift);
+	const uint32 val_b = ((value & drawGlobs.blueMask)  >> _drawBlueShift);
+
+	const uint32 r = (((pix_r + val_r) / 2) << _drawRedShift)   & drawGlobs.redMask;
+	const uint32 g = (((pix_g + val_g) / 2) << _drawGreenShift) & drawGlobs.greenMask;
+	const uint32 b = (((pix_b + val_b) / 2) << _drawBlueShift)  & drawGlobs.blueMask;
+
+	return (r|g|b);
+}
+
 // <LegoRR.exe @00486b40>
 void __cdecl Gods98::Draw_Pixel8(sint32 x, sint32 y, uint32 value)
 {
-	log_firstcall();
-
-	uint8* addr = &((uint8*)drawGlobs.buffer)[(y*drawGlobs.pitch)+x];
-	*addr = (uint8) value;
+	uint8* addr = Draw_Pixel8Address(x, y);
+	*addr = static_cast<uint8>(value);
 }
 
 // <LegoRR.exe @00486b60>
 void __cdecl Gods98::Draw_Pixel16(sint32 x, sint32 y, uint32 value)
 {
-	log_firstcall();
-
-	uint16* addr = (uint16*) &((uint8*)drawGlobs.buffer)[(y*drawGlobs.pitch)+(x*2)];
-	*addr = (uint16) value;
+	uint16* addr = Draw_Pixel16Address(x, y);
+	*addr = static_cast<uint16>(value);
 }
 
 // <LegoRR.exe @00486b90>
 void __cdecl Gods98::Draw_Pixel16XOR(sint32 x, sint32 y, uint32 value)
 {
-	log_firstcall();
-
-	uint16* addr = (uint16*) &((uint8*)drawGlobs.buffer)[(y*drawGlobs.pitch)+(x*2)];
-	*addr = *addr ^((uint16) value);
+	uint16* addr = Draw_Pixel16Address(x, y);
+	*addr ^= static_cast<uint16>(value);
 }
 
 // <LegoRR.exe @00486bc0>
 void __cdecl Gods98::Draw_Pixel16HalfTrans(sint32 x, sint32 y, uint32 value)
 {
-	log_firstcall();
+	uint16* addr = Draw_Pixel16Address(x, y);
 
-	uint16* addr = (uint16*) &((uint8*)drawGlobs.buffer)[(y*drawGlobs.pitch)+(x*2)];
-	uint16 r, g, b;
+	value = _Draw_ConvertHalfTrans(*addr, static_cast<uint16>(value));
+	*addr = static_cast<uint16>(value);
 
-	r = (((*addr >> 12) + ((uint16) value >> 12)) << 11) & (uint16) drawGlobs.redMask;
-	g = ((((*addr & (uint16) drawGlobs.greenMask) >> 6) + (((uint16) value & (uint16) drawGlobs.greenMask) >> 6)) << 5) & (uint16) drawGlobs.greenMask;
-	b = (((*addr & (uint16) drawGlobs.blueMask) >> 1) + (((uint16) value & (uint16) drawGlobs.blueMask) >> 1)) & (uint16) drawGlobs.blueMask;
+	//uint16 r = (((*addr >> 12) + ((uint16) value >> 12)) << 11) & (uint16) drawGlobs.redMask;
+	//uint16 g = ((((*addr & (uint16) drawGlobs.greenMask) >> 6) + (((uint16) value & (uint16) drawGlobs.greenMask) >> 6)) << 5) & (uint16) drawGlobs.greenMask;
+	//uint16 b = (((*addr & (uint16) drawGlobs.blueMask) >> 1) + (((uint16) value & (uint16) drawGlobs.blueMask) >> 1)) & (uint16) drawGlobs.blueMask;
 
-	*addr = (r|g|b);
+	//*addr = (r|g|b);
 }
 
 // <LegoRR.exe @00486c60>
 void __cdecl Gods98::Draw_Pixel24(sint32 x, sint32 y, uint32 value)
 {
-	log_firstcall();
+	uint8* addr = Draw_Pixel24Address(x, y);
+	addr[0] = static_cast<uint8>(value      );
+	addr[1] = static_cast<uint8>(value >>  8);
+	addr[2] = static_cast<uint8>(value >> 16);
+}
 
-	uint32* addr = (uint32*) & ((uint8*)drawGlobs.buffer)[(y * drawGlobs.pitch) + (x * 3)];
+/// CUSTOM:
+void __cdecl Gods98::Draw_Pixel24XOR(sint32 x, sint32 y, uint32 value)
+{
+	uint8* addr = Draw_Pixel24Address(x, y);
+	addr[0] ^= static_cast<uint8>(value      );
+	addr[1] ^= static_cast<uint8>(value >>  8);
+	addr[2] ^= static_cast<uint8>(value >> 16);
+}
 
-	*addr &= 0x000000ff;
-	*addr |= value << 8;
+/// CUSTOM:
+void __cdecl Gods98::Draw_Pixel24HalfTrans(sint32 x, sint32 y, uint32 value)
+{
+	uint8* addr = Draw_Pixel24Address(x, y);
+
+	const uint32 pixel = (addr[0] | (addr[1] << 8) | (addr[2] << 16));
+	value = _Draw_ConvertHalfTrans(pixel, value);
+	addr[0] = static_cast<uint8>(value      );
+	addr[1] = static_cast<uint8>(value >>  8);
+	addr[2] = static_cast<uint8>(value >> 16);
 }
 
 // <LegoRR.exe @00486c90>
 void __cdecl Gods98::Draw_Pixel32(sint32 x, sint32 y, uint32 value)
 {
-	log_firstcall();
-
-	uint32* addr = (uint32*) &((uint8*)drawGlobs.buffer)[(y*drawGlobs.pitch)+(x*4)];
-	*addr = (uint32) value;
+	uint32* addr = Draw_Pixel32Address(x, y);
+	// Ignore alpha, Draw isn't designed to work with it.
+	*addr = (value | (*addr & _drawAlphaMask));
 }
+
+/// CUSTOM:
+void __cdecl Gods98::Draw_Pixel32XOR(sint32 x, sint32 y, uint32 value)
+{
+	uint32* addr = Draw_Pixel32Address(x, y);
+	// Ignore alpha, Draw isn't designed to work with it.
+	*addr ^= (value & ~_drawAlphaMask);
+}
+
+/// CUSTOM:
+void __cdecl Gods98::Draw_Pixel32HalfTrans(sint32 x, sint32 y, uint32 value)
+{
+	uint32* addr = Draw_Pixel32Address(x, y);
+
+	// Ignore alpha, Draw isn't designed to work with it.
+	value = _Draw_ConvertHalfTrans(*addr & ~_drawAlphaMask, value & ~_drawAlphaMask);
+	*addr = (value | (*addr & _drawAlphaMask));
+}
+
 
 #pragma endregion

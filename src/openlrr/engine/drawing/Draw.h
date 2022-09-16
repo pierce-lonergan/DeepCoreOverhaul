@@ -202,6 +202,9 @@ bool32 __cdecl Draw_SetDrawPixelFunc(DrawEffect effect);
 // <LegoRR.exe @004869e0>
 void __cdecl Draw_LineActual(sint32 x1, sint32 y1, sint32 x2, sint32 y2, uint32 colour);
 
+/// CUSTOM:
+uint32 _Draw_ConvertHalfTrans(uint32 pixel, uint32 value);
+
 // <LegoRR.exe @00486b40>
 void __cdecl Draw_Pixel8(sint32 x, sint32 y, uint32 value);
 
@@ -217,8 +220,20 @@ void __cdecl Draw_Pixel16HalfTrans(sint32 x, sint32 y, uint32 value);
 // <LegoRR.exe @00486c60>
 void __cdecl Draw_Pixel24(sint32 x, sint32 y, uint32 value);
 
+/// CUSTOM:
+void __cdecl Draw_Pixel24XOR(sint32 x, sint32 y, uint32 value);
+
+/// CUSTOM:
+void __cdecl Draw_Pixel24HalfTrans(sint32 x, sint32 y, uint32 value);
+
 // <LegoRR.exe @00486c90>
 void __cdecl Draw_Pixel32(sint32 x, sint32 y, uint32 value);
+
+/// CUSTOM:
+void __cdecl Draw_Pixel32XOR(sint32 x, sint32 y, uint32 value);
+
+/// CUSTOM:
+void __cdecl Draw_Pixel32HalfTrans(sint32 x, sint32 y, uint32 value);
 
 #pragma endregion
 

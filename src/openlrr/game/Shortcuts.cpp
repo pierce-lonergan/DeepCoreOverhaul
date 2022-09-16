@@ -1,6 +1,8 @@
 // Shortcuts.cpp : 
 //
 
+#include "../engine/core/Files.h"
+
 #include "Game.h"
 #include "Shortcuts.hpp"
 

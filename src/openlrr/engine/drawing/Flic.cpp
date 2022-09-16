@@ -9,6 +9,7 @@
 #include "../core/Memory.h"
 #include "../Main.h"
 #include "DirectDraw.h"
+#include "Images.h"
 
 #include "Flic.h"
 
@@ -36,7 +37,7 @@
 #pragma region Functions
 
 // <LegoRR.exe @00483f40>
-bool32 __cdecl Gods98::Flic_Setup(const char* filename, OUT Flic** fsp, FlicUserFlags flags)
+bool32 __cdecl Gods98::Flic_Setup(const char* filename, OUT Flic** pFsp, FlicUserFlags flags)
 {
 	log_firstcall();
 
@@ -46,80 +47,78 @@ bool32 __cdecl Gods98::Flic_Setup(const char* filename, OUT Flic** fsp, FlicUser
 	//IDirectDraw4** lpDD = &dDraw;
 
 	// Alocate flic structure memory
-	*fsp = (Flic*)Mem_Alloc(sizeof(Flic));
-	std::memset((*fsp), 0, sizeof(Flic));
+	Flic* fsp = *pFsp = (Flic*)Mem_Alloc(sizeof(Flic));
+	std::memset(fsp, 0, sizeof(Flic));
 
-	(*fsp)->fsDisplayMode = FlicMode::FLICMODE_HICOLOR;
+	fsp->fsDisplayMode = FlicMode::FLICMODE_HICOLOR;
 
 	char drive[_MAX_DRIVE];
 	char dir[_MAX_DIR];
 	char fname[_MAX_FNAME];
 	char ext[_MAX_EXT];
 	::_splitpath(filename, drive, dir, fname, ext);
-	if (!Flic_LoadHeader(filename, fsp))
+	if (!Flic_LoadHeader(filename, pFsp))
 		return false;
 
-	sint32 xsize = (*fsp)->fsHeader.width;
-	sint32 ysize = (*fsp)->fsHeader.height;
+	sint32 xsize = fsp->fsHeader.width;
+	sint32 ysize = fsp->fsHeader.height;
 
 	// create a DirectDrawSurface for this bitmap
 	DDSURFACEDESC2 ddsd;
 	std::memset(&ddsd, 0, sizeof(ddsd));
 	ddsd.dwSize = sizeof(ddsd);
-	ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT |DDSD_WIDTH;
+	ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
 	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
 
 	ddsd.dwWidth = xsize;
 	ddsd.dwHeight = ysize;
-	(*fsp)->fsXsize = xsize;
-	(*fsp)->fsYsize = ysize;
+	fsp->fsXsize = xsize;
+	fsp->fsYsize = ysize;
 
-	HRESULT hr = 0;
-	//if ((hr = (*lpDD)->CreateSurface(&ddsd, &(*fsp)->fsSurface, nullptr)) != DD_OK) {
-	if (DirectDraw()->CreateSurface(&ddsd, &(*fsp)->fsSurface, nullptr) != DD_OK) {
+	if (DirectDraw()->CreateSurface(&ddsd, &fsp->fsSurface, nullptr) != DD_OK) {
 		Error_Fatal(true, "Failed to create surface for flic");
 	}
 
-	DDCOLORKEY ColourKey = { 0, 0 }; // Low, High
-	(*fsp)->fsSurface->SetColorKey(DDCKEY_SRCBLT, &ColourKey);
+	uint32 low = 0, high = 0;
+	DDCOLORKEY colourKey = { low, high };
+	fsp->fsSurface->SetColorKey(DDCKEY_SRCBLT, &colourKey);
 
-	sint32 count = 0;
-	(*fsp)->userflags = flags;
-	std::strcpy((*fsp)->filename, filename);
+	fsp->userflags = flags;
+	std::strcpy(fsp->filename, filename);
 
-	(*fsp)->fsXc = 0;
-	(*fsp)->fsYc = 0;
-	(*fsp)->currentframe = 0;
-	(*fsp)->overallframe = 0;
-	(*fsp)->framerate = (25 << 16);
-	if (((*fsp)->userflags & FlicUserFlags::FLICRESIDE) == FlicUserFlags::FLICMEMORY) {
-		(*fsp)->pointerposition = 0;
+	fsp->fsXc = 0;
+	fsp->fsYc = 0;
+	fsp->currentframe = 0;
+	fsp->overallframe = 0;
+	fsp->framerate = (static_cast<sint32>(STANDARD_FRAMERATE) << 16); // Fixed number with HIWORD being whole and LOWORD being fraction?
+	if ((fsp->userflags & FlicUserFlags::FLICRESIDE) == FlicUserFlags::FLICMEMORY) {
+		fsp->pointerposition = 0;
 
-		(*fsp)->rambufferhandle = (sint8*)Mem_Alloc((*fsp)->fsHeader.size);
-		if (!(*fsp)->rambufferhandle) {
+		fsp->rambufferhandle = (sint8*)Mem_Alloc(fsp->fsHeader.size);
+		if (!fsp->rambufferhandle) {
 			Error_Warn(true, "No flic buffer handle");
 		}
 
-		if (((*fsp)->filehandle = File_Open(filename, "rb")) == nullptr) {
+		if ((fsp->filehandle = File_Open(filename, "rb")) == nullptr) {
 			Error_Fatal(true, "Could not open the flic");
 		}
-		File_Seek((*fsp)->filehandle, 128, SeekOrigin::Set);
-		File_Read((*fsp)->rambufferhandle, (*fsp)->fsHeader.size, 1, (*fsp)->filehandle);
-		File_Close((*fsp)->filehandle);
+		File_Seek(fsp->filehandle, 128, SeekOrigin::Set);
+		File_Read(fsp->rambufferhandle, fsp->fsHeader.size, 1, fsp->filehandle);
+		File_Close(fsp->filehandle);
 	}
 	else {
-		(*fsp)->pointerposition = 128;
+		fsp->pointerposition = 128;
 
-		if (((*fsp)->filehandle = File_Open(filename, "rb")) == nullptr) {
+		if ((fsp->filehandle = File_Open(filename, "rb")) == nullptr) {
 			char buff[128];
 			std::sprintf(buff, "Not Enough Memory > %s", filename);
 			Error_Warn(true, buff);
 			return false;
 		}
-		File_Seek((*fsp)->filehandle, 128, SeekOrigin::Set);
+		File_Seek(fsp->filehandle, 128, SeekOrigin::Set);
 	}
 
-	(*fsp)->fsLoadBuffer = Mem_Alloc(20000);
+	fsp->fsLoadBuffer = Mem_Alloc(20000);
 	return true;
 }
 
@@ -204,11 +203,13 @@ sint32 __cdecl Gods98::Flic_GetFrameRate(const Flic* fsp)
 
 
 // <LegoRR.exe @00484220>
-bool32 __cdecl Gods98::Flic_LoadHeader(const char* filename, Flic** fsp)
+bool32 __cdecl Gods98::Flic_LoadHeader(const char* filename, Flic** pFsp)
 {
 	log_firstcall();
 
 	char buff[128];
+
+	Flic* fsp = *pFsp;
 
 	File* headerhandle;
 	if ((headerhandle = File_Open(filename, "rb")) == nullptr) {
@@ -218,8 +219,8 @@ bool32 __cdecl Gods98::Flic_LoadHeader(const char* filename, Flic** fsp)
 	}
 
 	File_Seek(headerhandle, 0, SeekOrigin::Set);
-	File_Read(&(*fsp)->fsHeader, sizeof(FLICHEADERSTRUCT), 1, headerhandle);
-	if((*fsp)->fsHeader.size != File_Length(headerhandle)) {
+	File_Read(&fsp->fsHeader, sizeof(FLICHEADERSTRUCT), 1, headerhandle);
+	if (fsp->fsHeader.size != File_Length(headerhandle)) {
 		File_Close(headerhandle);
 		/// FIX APPLY: Missing "%s" format specifier for filename
 		std::sprintf(buff, "Flic File Invalid %s",filename);
@@ -227,18 +228,20 @@ bool32 __cdecl Gods98::Flic_LoadHeader(const char* filename, Flic** fsp)
 		return false;
 	}
 
-	switch((*fsp)->fsHeader.magic) {
-		case 0xaf11: break;
-		case 0xaf12: break;
-		case 0x9119: break;
-		case 0xaf43: break;
-		case 0x1234: break;
-		default: {
-				File_Close(headerhandle);
-				std::sprintf(buff,"Flic File Invalid %s",filename);
-				Error_Warn(true, buff);
-				return false;
-			}
+	switch (fsp->fsHeader.magic) {
+	case 0xaf11: break;
+	case 0xaf12: break;
+	case 0x9119: break;
+	case 0xaf43: break;
+	case 0x1234: break;
+	default:
+		{
+			File_Close(headerhandle);
+			std::sprintf(buff,"Flic File Invalid %s",filename);
+			Error_Warn(true, buff);
+			return false;
+		}
+		break;
 	}
 	File_Close(headerhandle);
 
@@ -318,6 +321,19 @@ bool Gods98::Flic_Animate2(Flic* fsp, OPTIONAL const Area2F* destArea, uint32 ad
    	fsp->fsSPtr = dds.lpSurface;
 	fsp->fsPitch = dds.lPitch;
 	fsp->is15bit = (dds.ddpfPixelFormat.dwGBitMask == 0x3E0);
+	fsp->bitDepth = dds.ddpfPixelFormat.dwRGBBitCount;
+
+	fsp->rBits  = DirectDraw_CountMaskBits(dds.ddpfPixelFormat.dwRBitMask);
+	fsp->gBits  = DirectDraw_CountMaskBits(dds.ddpfPixelFormat.dwGBitMask);
+	fsp->bBits  = DirectDraw_CountMaskBits(dds.ddpfPixelFormat.dwBBitMask);
+	fsp->aBits  = DirectDraw_CountMaskBits(dds.ddpfPixelFormat.dwRGBAlphaBitMask);
+
+	fsp->rShift = DirectDraw_CountMaskBitShift(dds.ddpfPixelFormat.dwRBitMask);
+	fsp->gShift = DirectDraw_CountMaskBitShift(dds.ddpfPixelFormat.dwGBitMask);
+	fsp->bShift = DirectDraw_CountMaskBitShift(dds.ddpfPixelFormat.dwBBitMask);
+	fsp->aShift = DirectDraw_CountMaskBitShift(dds.ddpfPixelFormat.dwRGBAlphaBitMask);
+
+	fsp->aValue = DirectDraw_ShiftChannelByte(0xff, fsp->aBits, fsp->aShift);
 
 	// We need to advance one more frame to our 'first' frame.
 	//if (fsp->currentframe == 0) advance = true;
@@ -824,7 +840,8 @@ bool32 __cdecl Gods98::FlicBRunDepackHiColor(Flic* fsp)
 	src++;
 	while (line < height) {
 		uint16 width = fsp->fsXsize;
-		uint16* dst = (uint16*)fsp->fsSPtr + ((fsp->fsPitch / 2) * line);
+		uint8* dst = (uint8*)fsp->fsSPtr + (fsp->fsPitch * line);
+		//uint16* dst = (uint16*)fsp->fsSPtr + ((fsp->fsPitch / 2) * line);
 
 		while (width > 0) {
 			uint16 cnt = *src++;
@@ -833,7 +850,9 @@ bool32 __cdecl Gods98::FlicBRunDepackHiColor(Flic* fsp)
 				width -= cnt;
 				uint8 wrd = *src++;
 				while (cnt) {
-					*dst++ = FHCOL(wrd);
+					dst = _Flic_WritePixel8(fsp, dst, wrd);
+					//dst = _Flic_WritePixel16(fsp, dst, FHCOL(wrd));
+					//*dst++ = FHCOL(wrd);
 					cnt--;
 				}
 			}
@@ -842,7 +861,9 @@ bool32 __cdecl Gods98::FlicBRunDepackHiColor(Flic* fsp)
 				width -= cnt;
 				while (cnt) {
 					uint8 wrd = *src++;
-					*dst++ = FHCOL(wrd);
+					dst = _Flic_WritePixel8(fsp, dst, wrd);
+					//dst = _Flic_WritePixel16(fsp, dst, FHCOL(wrd));
+					//*dst++ = FHCOL(wrd);
 					cnt--;
 				}
 			}
@@ -859,7 +880,8 @@ bool32 __cdecl Gods98::FlicBRunDepackHiColorFlic32k(Flic* fsp)
 {
 	log_firstcall();
 
-	uint16* dst = (uint16*)fsp->fsSPtr;
+	uint8* dst = (uint8*)fsp->fsSPtr;
+	//uint16* dst = (uint16*)fsp->fsSPtr;
 	uint8* src = (uint8*)fsp->fsSource;
 	src += 6;
 	src++;
@@ -868,7 +890,8 @@ bool32 __cdecl Gods98::FlicBRunDepackHiColorFlic32k(Flic* fsp)
 	uint16 height = fsp->fsYsize;
 	while (line < height) {
 		uint16 width = fsp->fsXsize;
-		dst = (uint16*)fsp->fsSPtr + ((fsp->fsPitch / 2) * line);
+		dst = (uint8*)fsp->fsSPtr + (fsp->fsPitch * line);
+		//dst = (uint16*)fsp->fsSPtr + ((fsp->fsPitch / 2) * line);
 		
 		while (width > 0) {
 			uint16 cnt = *src++;
@@ -883,7 +906,8 @@ bool32 __cdecl Gods98::FlicBRunDepackHiColorFlic32k(Flic* fsp)
 				tmp |= (wrd & 0x1f);
 				wrd = tmp;*/
 				while (cnt) {
-					*dst++ = DoScreenConversion(fsp, wrd);
+					dst = _Flic_WritePixel16(fsp, dst, wrd);
+					//*dst++ = DoScreenConversion(fsp, wrd);
 					cnt--;
 				}
 				
@@ -899,7 +923,8 @@ bool32 __cdecl Gods98::FlicBRunDepackHiColorFlic32k(Flic* fsp)
 					src += 2;
 					uint16 wrd = ((tmp & 0xffe0) << 1);
 					wrd |= (tmp & 0x1f);*/
-					*dst++ = DoScreenConversion(fsp, wrd);
+					dst = _Flic_WritePixel16(fsp, dst, wrd);
+					//*dst++ = DoScreenConversion(fsp, wrd);
 					
 					cnt--;
 				}
@@ -972,28 +997,36 @@ void __cdecl Gods98::FlicCreateHiColorTable(Flic* fsp)
 {
 	log_firstcall();
 
-	uint8* src = (uint8*)&fsp->fsPalette256;
-	uint16* dst = (uint16*)&fsp->fsPalette64k;
+	//uint8* src = (uint8*)&fsp->fsPalette256;
+	uint16* dst = fsp->fsPalette64k;
 
-	for(sint32 i = 0; i < 256; i++) {
-		uint16 col = src[0];
-		col >>= 1;
-		col <<= 11;
+	for (sint32 i = 0; i < 256; i++) {
+		uint16 col;
+		uint16 wrd = fsp->fsPalette256[i].red; // src[0];
+		/// CHANGE: Palette colour channels were originally stored as 6-bit, change that and unlock the whole 8 bits.
+		wrd >>= 3;
+		//col >>= 1;
+		wrd <<= 11;
 
-		uint16 wrd = src[1];
+		col = wrd;
+
+		wrd = fsp->fsPalette256[i].green; // src[1];
+		/// CHANGE: Palette colour channels were originally stored as 6-bit, change that and unlock the whole 8 bits.
+		wrd >>= 2;
 		wrd <<= 5;
 
 		col |= wrd;
 
-		wrd = src[2];
-		wrd >>= 1;
+		wrd = fsp->fsPalette256[i].blue; // src[2];
+		/// CHANGE: Palette colour channels were originally stored as 6-bit, change that and unlock the whole 8 bits.
+		wrd >>= 3;
+		//wrd >>= 1;
 
 		col |= wrd;
 
 		*dst++ = col;
 
-		src += 3;
-
+		//src += 3;
 	}
 	fsp->fsPalette64k[0] = 0x00;
 }
@@ -1009,24 +1042,31 @@ bool32 __cdecl Gods98::Flic_Palette256(Flic* fsp)
 	uint16 cnt = *(uint16*)src;
 	src += 2;
 
-	uint8* dst = (uint8*)&fsp->fsPalette256;
+	//uint8* dst = (uint8*)&fsp->fsPalette256;
+	ColourRGBPacked* dst = fsp->fsPalette256;
 
 	while (cnt) {
 		uint16 indx = *src++;
-		dst += (indx * 3);
+		//dst += (indx * 3);
+		dst += indx;
 		uint16 ccnt = *src++;
 
 		if (!ccnt) {
 			cnt = 1;
 			ccnt = 256;
-			dst = (uint8*)&fsp->fsPalette256;
+			//dst = (uint8*)&fsp->fsPalette256;
+			dst = fsp->fsPalette256;
 		}
-		ccnt *= 3;
+		//ccnt *= 3;
 		while (ccnt) {
-			uint8 col = *src++;
-			col >>= 2;
-
-			*dst++ = col;
+			//uint8 col = *src++;
+			/// CHANGE: Palette colour channels were originally stored as 6-bit, change that and unlock the whole 8 bits.
+			//col >>= 2;
+			dst->red   = *src++;
+			dst->green = *src++;
+			dst->blue  = *src++;
+			dst++;
+			//*dst++ = col;
 			ccnt--;
 		}
 		cnt--;
@@ -1072,6 +1112,8 @@ void __cdecl Gods98::FlicDeltaWordHiColor(Flic* fsp)
 {
 	log_firstcall();
 
+	const uint32 byteDepth = DirectDraw_BitToByteDepth(fsp->bitDepth);
+
 	uint8* dst = (uint8*)fsp->fsSPtr;
 	uint16 height = fsp->fsYsize;
 
@@ -1109,17 +1151,21 @@ void __cdecl Gods98::FlicDeltaWordHiColor(Flic* fsp)
 			src += 2;
 			while (mcnt) {
 				uint16 offs = *src++;
-				dst += (offs * 2);
+				dst += (offs * byteDepth);
 				uint16 cpy = *src++;
 				if (cpy & 0x80) {
 					cpy = (256 - cpy);
 					uint8 w1 = *src++;
 					uint8 w2 = *src++;
 					while (cpy) {
-						*(uint16*)dst = FHCOL(w1);
-						dst += 2;
-						*(uint16*)dst = FHCOL(w2);
-						dst += 2;
+						//*(uint16*)dst = FHCOL(w1);
+						//dst += 2;
+						//*(uint16*)dst = FHCOL(w2);
+						//dst += 2;
+						//dst = _Flic_WritePixel16(fsp, dst, FHCOL(w1));
+						//dst = _Flic_WritePixel16(fsp, dst, FHCOL(w2));
+						dst = _Flic_WritePixel8(fsp, dst, w1);
+						dst = _Flic_WritePixel8(fsp, dst, w2);
 						cpy--;
 					}
 				}
@@ -1127,19 +1173,26 @@ void __cdecl Gods98::FlicDeltaWordHiColor(Flic* fsp)
 					while (cpy) {
 						uint8 w1 = *src++;
 						uint8 w2 = *src++;
-						*(uint16*)dst = FHCOL(w1);
-						dst += 2;
-						*(uint16*)dst = FHCOL(w2);
-						dst += 2;
-						
+						//*(uint16*)dst = FHCOL(w1);
+						//dst += 2;
+						//*(uint16*)dst = FHCOL(w2);
+						//dst += 2;
+						//dst = _Flic_WritePixel16(fsp, dst, FHCOL(w1));
+						//dst = _Flic_WritePixel16(fsp, dst, FHCOL(w2));
+						dst = _Flic_WritePixel8(fsp, dst, w1);
+						dst = _Flic_WritePixel8(fsp, dst, w2);
 						cpy--;
 					}
 					
 				}
 				mcnt--;
 			}
-			if (mflag)
-				*(uint16*)dst = FHCOL(mfval);
+			if (mflag) {
+				/// TODO: Is not dst++ intentional here??
+				_Flic_WritePixel8(fsp, dst, mfval);
+				//_Flic_WritePixel16(fsp, dst, FHCOL(mfval));
+				//*(uint16*)dst = FHCOL(mfval);
+			}
 
 			cnt--;
 			line++;
@@ -1157,6 +1210,8 @@ __inline void Gods98::FlicDeltaWordHiColorDZ(Flic* fsp) { return; }
 void __cdecl Gods98::FlicDeltaWordHiColorFlic32k(Flic* fsp)
 {
 	log_firstcall();
+
+	const uint32 byteDepth = DirectDraw_BitToByteDepth(fsp->bitDepth);
 
 	uint8* dst = (uint8*)fsp->fsSPtr;
 	uint16 height = fsp->fsYsize;
@@ -1188,14 +1243,15 @@ void __cdecl Gods98::FlicDeltaWordHiColorFlic32k(Flic* fsp)
 			bool16 mflag = false;
 			uint16 mfval;
 			if (ctrl == 0x8) {
-				mfval = DoScreenConversion(fsp, *(uint16*)src);
+				//mfval = DoScreenConversion(fsp, *(uint16*)src);
+				mfval = *(uint16*)src;
 				src += 2;
 				mflag = true;
 			}
 			uint16 mcnt = *(uint16*)src;
 			src += 2;
 			while (mcnt) {
-				dst += ((*src++) * 2);
+				dst += ((*src++) * byteDepth);
 				uint16 cpy = *src++;
 				if (cpy & 0x80) {
 					uint16 tmp = *(uint16*)src;
@@ -1207,8 +1263,9 @@ void __cdecl Gods98::FlicDeltaWordHiColorFlic32k(Flic* fsp)
 					wrd |= (tmp & 0x1f);*/
 					cpy = (256 - cpy);
 					while(cpy) {
-						*(uint16*)dst = DoScreenConversion(fsp, wrd);
-						dst += 2;
+						//*(uint16*)dst = DoScreenConversion(fsp, wrd);
+						//dst += 2;
+						dst = _Flic_WritePixel16(fsp, dst, wrd);
 						cpy--;
 					}
 				}
@@ -1221,8 +1278,9 @@ void __cdecl Gods98::FlicDeltaWordHiColorFlic32k(Flic* fsp)
 						src += 2;
 						uint16 wrd = ((tmp & 0xffe0) << 1);
 						wrd |= (tmp & 0x1f);*/
-						*(uint16*)dst = DoScreenConversion(fsp, wrd);
-						dst += 2;
+						//*(uint16*)dst = DoScreenConversion(fsp, wrd);
+						//dst += 2;
+						dst = _Flic_WritePixel16(fsp, dst, wrd);
 						
 						cpy--;
 					}
@@ -1230,8 +1288,12 @@ void __cdecl Gods98::FlicDeltaWordHiColorFlic32k(Flic* fsp)
 				}
 				mcnt--;
 			}
-			if (mflag)
-				*dst = (sint8)mfval;
+			if (mflag) {
+				/// FIX APPLY: WHY ARE WE TRUNCATING TO 1 BYTE!??
+				_Flic_WritePixel16(fsp, dst, /*(sint8)*/mfval);
+				//*dst = /*(sint8)*/mfval;
+				//*dst = (sint8)mfval;
+			}
 
 			line++;
 			cnt--;
@@ -1258,17 +1320,15 @@ bool32 __cdecl Gods98::Flic_DeltaWord(Flic* fsp)
 		    FlicDeltaWordHiColor(fsp);
 		}
 	}
-	else {
-		if(fsp->fsHeader.depth == 16) {
-			if (fsp->fsHeader.magic == 0x1234) {
-			    FlicDeltaWordHiColorDZ(fsp); // Does nothing.
-			}
-			else if (fsp->fsHeader.magic == 0xaf43) {
-			    FlicDeltaWordHiColorFlic32k(fsp);
-			}
-			else {
-                FlicDeltaWordHiColorFlic(fsp); // Does nothing.
-			}
+	else if (fsp->fsHeader.depth == 16) {
+		if (fsp->fsHeader.magic == 0x1234) {
+			FlicDeltaWordHiColorDZ(fsp); // Does nothing.
+		}
+		else if (fsp->fsHeader.magic == 0xaf43) {
+			FlicDeltaWordHiColorFlic32k(fsp);
+		}
+		else {
+            FlicDeltaWordHiColorFlic(fsp); // Does nothing.
 		}
 	}
 	return true;
@@ -1284,6 +1344,58 @@ uint16 __cdecl Gods98::getFlicCol(uint8 n, const Flic* fsp)
 	uint16 ret = ctab[n];
 
 	return ret;
+}
+
+
+/// CUSTOM: Writes a paletted pixel to the target surface (of 16-bit, 24-bit, or 32-bit).
+///         Returns the pointer to the next pixel in the target surface.
+uint8* Gods98::_Flic_WritePixel8(const Flic* fsp, uint8* dst, uint8 index)
+{
+	const uint8 r = fsp->fsPalette256[index].red;
+	const uint8 g = fsp->fsPalette256[index].green;
+	const uint8 b = fsp->fsPalette256[index].blue;
+
+	return _Flic_WritePixelRGB(fsp, dst, r, g, b);
+}
+
+/// CUSTOM: Writes a 16-bit pixel to the target surface (of 16-bit, 24-bit, or 32-bit).
+///         Returns the pointer to the next pixel in the target surface.
+uint8* Gods98::_Flic_WritePixel16(const Flic* fsp, uint8* dst, uint16 value)
+{
+	// Flic never stores 16-bit colour as 15-bit.
+	const uint8 r = DirectDraw_UnshiftChannelByte(value, 5, 11);
+	const uint8 g = DirectDraw_UnshiftChannelByte(value, 6, 5);
+	const uint8 b = DirectDraw_UnshiftChannelByte(value, 5, 0);
+
+	return _Flic_WritePixelRGB(fsp, dst, r, g, b);
+}
+
+/// CUSTOM: Writes RGB values to the target surface (of 16-bit, 24-bit, or 32-bit).
+///         Returns the pointer to the next pixel in the target surface.
+uint8* Gods98::_Flic_WritePixelRGB(const Flic* fsp, uint8* dst, uint8 r, uint8 g, uint8 b)
+{
+	const uint32 surfaceValue =
+		DirectDraw_ShiftChannelByte(r, fsp->rBits, fsp->rShift) |
+		DirectDraw_ShiftChannelByte(g, fsp->gBits, fsp->gShift) |
+		DirectDraw_ShiftChannelByte(b, fsp->bBits, fsp->bShift) |
+		fsp->aValue;
+
+	switch (fsp->bitDepth) {
+	case 16:
+		*(uint16*)dst = static_cast<uint16>(surfaceValue);
+		dst += 2;
+		break;
+	case 24:
+		*dst++ = (surfaceValue      ) & 0xff;
+		*dst++ = (surfaceValue >>  8) & 0xff;
+		*dst++ = (surfaceValue >> 16) & 0xff;
+		break;
+	case 32:
+		*(uint32*)dst = surfaceValue;
+		dst += 4;
+		break;
+	}
+	return dst;
 }
 
 

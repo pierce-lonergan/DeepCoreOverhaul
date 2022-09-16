@@ -174,7 +174,7 @@ uint32 __cdecl Gods98::Font_VPrintF2(const Font* font, sint32 x, sint32 y, bool3
 {
 	log_firstcall();
 
-	char line[FONT_MAXSTRINGLEN], fmtLine[FONT_MAXSTRINGLEN];
+	char line[FONT_MAXSTRINGLEN], fmtLine[FONT_MAXSTRINGLEN] = { '\0' }; // dummy init
 	const char* s;
 	char* t;
 
@@ -216,11 +216,12 @@ uint32 __cdecl Gods98::Font_VPrintF2(const Font* font, sint32 x, sint32 y, bool3
 				addr |= ((uchar8)line[i+4+j] - (std::isdigit((uchar8)line[i+4+j]) ? '0' : ('a'-10))) << (28 - (j * 4));
 			}
 			
-			Point2F pos;
 			Image* image;
 			if (image = (Image*)addr) {
-				pos.x = (real32)(x + xPos);
-				pos.y = (real32)y;
+				const Point2F pos = {
+					(real32)(x + xPos),
+					(real32)y,
+				};
 
 				if ((uchar8)line[i] != 203) xPos += image->width;
 

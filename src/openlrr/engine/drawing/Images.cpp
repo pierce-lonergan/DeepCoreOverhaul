@@ -69,7 +69,7 @@ void __cdecl Gods98::Image_Remove(Image* dead)
 }
 
 // <LegoRR.exe @0047d750>
-bool32 __cdecl Gods98::Image_CopyToDataToSurface(IDirectDrawSurface4* surface, BMP_Image* image)
+bool32 __cdecl Gods98::Image_CopyToDataToSurface(IDirectDrawSurface4* surface, const BMP_Image* image)
 {
 	log_firstcall();
 
@@ -77,24 +77,9 @@ bool32 __cdecl Gods98::Image_CopyToDataToSurface(IDirectDrawSurface4* surface, B
 	desc.dwSize = sizeof(desc);
 
 	if (surface->Lock(nullptr, &desc, DDLOCK_WAIT | DDLOCK_WRITEONLY, nullptr) == DD_OK) {
-		switch (image->depth) {
-		case 8:
-			Image_8BitSourceCopy(&desc, image);
-			break;
-		case 16:
-			Error_Warn(true, "Image_CopyToDataToSurface: 16-bit source image not supported, expected 8-bit or 16-bit");
-			break;
-		case 24:
-			Image_24BitSourceCopy(&desc, image);
-			break;
-		case 32:
-			Error_Warn(true, "Image_CopyToDataToSurface: 32-bit source image not supported, expected 8-bit or 16-bit");
-			break;
-		default:
-			Error_Warn(true, "Image_CopyToDataToSurface: Invalid source image bit depth");
-			break;
-		}
-		
+
+		DirectDraw_CopySurface(&desc, image, true);
+
 		surface->Unlock(nullptr);
 
 		return true;
@@ -105,215 +90,64 @@ bool32 __cdecl Gods98::Image_CopyToDataToSurface(IDirectDrawSurface4* surface, B
 }
 
 // <LegoRR.exe @0047d7e0>
-bool32 __cdecl Gods98::Image_8BitSourceCopy(const DDSURFACEDESC2* desc, BMP_Image* image)
+bool32 __cdecl Gods98::Image_8BitSourceCopy(const DDSURFACEDESC2* desc, const BMP_Image* image)
 {
-	log_firstcall();
-
-	switch (desc->ddpfPixelFormat.dwRGBBitCount) {
-	case 8:
-		Error_Warn(true, "Image_8BitSourceCopy: 8-bit destination surface not supported, expected 16-bit");
-		return false;
-
-	case 16:
-		{
-			/// HARDCODED 16-BIT IMAGE HANDLING
-			uint32 bmpLineLength = image->bytes_per_line;
-			uint32 surfaceLineLength = ((uint32)desc->lPitch) / 2;
-			const BMP_PaletteEntry* pal = image->palette; // D3DRMPALETTEENTRY
-
-			const uint8* bmpPtr = (uint8*)image->buffer1;
-			uint16* surfPtr = (uint16*)desc->lpSurface;
-
-			uint32 rMask = desc->ddpfPixelFormat.dwRBitMask;
-			uint32 gMask = desc->ddpfPixelFormat.dwGBitMask;
-			uint32 bMask = desc->ddpfPixelFormat.dwBBitMask;
-
-			uint32 rBitCount = Image_CountMaskBits(rMask);
-			uint32 gBitCount = Image_CountMaskBits(gMask);
-			uint32 bBitCount = Image_CountMaskBits(bMask);
-
-			uint32 rBitShift = Image_CountMaskBitShift(rMask);
-			uint32 gBitShift = Image_CountMaskBitShift(gMask);
-			uint32 bBitShift = Image_CountMaskBitShift(bMask);
-
-			for (sint32 h = 0; h < image->height; h++) {
-				for (sint32 w = 0; w < image->width; w++) {
-					uint8 r = pal[*bmpPtr].red;
-					uint8 g = pal[*bmpPtr].green;
-					uint8 b = pal[*bmpPtr].blue;
-					bmpPtr++;
-
-					// Mix the colours
-					uint16 surfaceValue =
-						((r >> (8 - rBitCount)) << rBitShift) |
-						((g >> (8 - gBitCount)) << gBitShift) |
-						((b >> (8 - bBitCount)) << bBitShift);
-					*(surfPtr++) = surfaceValue;
-				}
-				// Do the pitch thing
-				bmpPtr += bmpLineLength - image->width;
-				surfPtr += surfaceLineLength - image->width;
-			}
-			Image_FlipSurface(desc);
-		}
-		return true;
-
-	case 24:
-		Error_Warn(true, "Image_8BitSourceCopy: 24-bit destination surface not supported, expected 16-bit");
-		return false;
-	case 32:
-		Error_Warn(true, "Image_8BitSourceCopy: 32-bit destination surface not supported, expected 16-bit");
-		return false;
-	default:
-		/// FIX SANITY: Return false on invalid/unexpected bitCount
-		Error_Warn(true, "Image_8BitSourceCopy: Invalid destination surface bit depth");
-		return false;
-	}
+	return DirectDraw_CopySurface(desc, image, true);
 }
 
 // <LegoRR.exe @0047d9c0>
 uint32 __cdecl Gods98::Image_CountMaskBits(uint32 mask)
 {
-	log_firstcall();
-
-	uint32 count = 0;
-
-	for (uint32 i = 0; i < (sizeof(mask) * 8); i++) {
-		if (mask & (1 << i)) count++;
-	}
-	return count;
+	return DirectDraw_CountMaskBits(mask);
 }
 
 // <LegoRR.exe @0047d9e0>
 uint32 __cdecl Gods98::Image_CountMaskBitShift(uint32 mask)
 {
-	log_firstcall();
-
-	for (uint32 i = 0; i < (sizeof(mask) * 8); i++) {
-		if (mask & (1 << i)) return i;
-	}
-	return 0xffffffffU;
+	return DirectDraw_CountMaskBitShift(mask);
 }
 
 // <LegoRR.exe @0047da00>
 void __cdecl Gods98::Image_FlipSurface(const DDSURFACEDESC2* desc)
 {
-	log_firstcall();
-
-	/// HARDCODED 16-BIT IMAGE HANDLING
-	uint32 pixelsPerLine = desc->lPitch / 2;
-	uint32 height = desc->dwHeight;
-	uint16* start = (uint16*)desc->lpSurface;
-	uint16* end = (uint16*)desc->lpSurface + ((height - 1) * pixelsPerLine);
-	uint16* temp = (uint16*)Mem_Alloc(sizeof(uint16) * pixelsPerLine);
-
-	for (uint32 h = 0; h < desc->dwHeight / 2; h++) {
-
-		std::memcpy(temp, start, sizeof(uint16) * pixelsPerLine);
-		std::memcpy(start, end, sizeof(uint16) * pixelsPerLine);
-		std::memcpy(end, temp, sizeof(uint16) * pixelsPerLine);
-		start += pixelsPerLine;
-		end -= pixelsPerLine;
-	}
-	Mem_Free(temp);
+	DirectDraw_FlipSurface(desc);
 }
 
 // <LegoRR.exe @0047dac0>
-bool32 __cdecl Gods98::Image_24BitSourceCopy(const DDSURFACEDESC2* desc, BMP_Image* image)
+bool32 __cdecl Gods98::Image_24BitSourceCopy(const DDSURFACEDESC2* desc, const BMP_Image* image)
 {
-	log_firstcall();
-
-	switch (desc->ddpfPixelFormat.dwRGBBitCount) {
-	case 8:
-		Error_Warn(true, "Image_24BitSourceCopy: 8-bit destination surface not supported, expected 16-bit");
-		return false;
-
-	case 16:
-		{
-			/// HARDCODED 16-BIT IMAGE HANDLING
-			// Not convinced that this is correct as it does 
-			// not round up properly unless we have even sizes.
-			uint32 bmpLineLength = image->bytes_per_line;
-			uint32 surfaceLineLength = ((uint32)desc->lPitch) / 2;
-
-			const uint8* bmpPtr =  (uint8*)image->buffer1;
-			uint16* surfPtr = (uint16*)desc->lpSurface;
-
-			uint32 rMask = desc->ddpfPixelFormat.dwRBitMask;
-			uint32 gMask = desc->ddpfPixelFormat.dwGBitMask;
-			uint32 bMask = desc->ddpfPixelFormat.dwBBitMask;
-
-			uint32 rBitCount = Image_CountMaskBits(rMask);
-			uint32 gBitCount = Image_CountMaskBits(gMask);
-			uint32 bBitCount = Image_CountMaskBits(bMask);
-
-			uint32 rBitShift = Image_CountMaskBitShift(rMask);
-			uint32 gBitShift = Image_CountMaskBitShift(gMask);
-			uint32 bBitShift = Image_CountMaskBitShift(bMask);
-
-			for (sint32 h = 0; h < image->height; h++) {
-				for (sint32 w = 0; w < image->width; w++) {
-					uint8 b = *bmpPtr++;
-					uint8 g = *bmpPtr++;
-					uint8 r = *bmpPtr++;
-
-					// Mix the colours
-					uint16 surfaceValue =
-						((r >> (8 - rBitCount)) << rBitShift) |
-						((g >> (8 - gBitCount)) << gBitShift) |
-						((b >> (8 - bBitCount)) << bBitShift);
-					*(surfPtr++) = surfaceValue;
-				}
-				// Do the pitch thing
-				bmpPtr += bmpLineLength - (image->width*3);
-				surfPtr += surfaceLineLength - image->width;
-			}
-			Image_FlipSurface(desc);
-		}
-		return true;
-
-	case 24:
-		Error_Warn(true, "Image_24BitSourceCopy: 24-bit destination surface not supported, expected 16-bit");
-		return false;
-	case 32:
-		Error_Warn(true, "Image_24BitSourceCopy: 32-bit destination surface not supported, expected 16-bit");
-		return false;
-	default:
-		/// FIX SANITY: Return false on invalid/unexpected bitCount
-		Error_Warn(true, "Image_24BitSourceCopy: Invalid destination surface bit depth");
-		return false;
-	}
+	return DirectDraw_CopySurface(desc, image, true);
 }
 
 // <LegoRR.exe @0047dc90>
 Gods98::Image* __cdecl Gods98::Image_LoadBMPScaled(const char* fileName, uint32 width, uint32 height)
 {
+	return Image_LoadBMPScaled2(fileName, width, height, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Support for FileFlags.
+Gods98::Image* Gods98::Image_LoadBMPScaled2(const char* fileName, uint32 width, uint32 height, FileFlags fileFlags)
+{
 	log_firstcall();
 
-	BMP_Image image = { 0 };  // D3DRMIMAGE
-	char name[1024];
+	uint32 fileSize;
+	void* buffer = File_LoadBinary2(fileName, &fileSize, fileFlags);
+	if (buffer == nullptr || fileSize == 0)
+		return nullptr; // Failed to load file, or file is invalid.
+
 
 	COLORREF penZero, pen255;
-	penZero = pen255 = Image_RGB2CR(0, 0, 0);
+	penZero = pen255 = Image_RGBA2CR(0, 0, 0, Image_GetAlphaChannel());
 
-	uint32 size;
-	void* buffer;
-	if (buffer = File_LoadBinary(fileName, &size)) {
-
-		BMP_Parse(buffer, size, &image);
-		if (!image.rgb) {
-			penZero = Image_RGB2CR(image.palette[0].red, image.palette[0].green, image.palette[0].blue);
-			pen255 = Image_RGB2CR(image.palette[255].red, image.palette[255].green, image.palette[255].blue);
-		}
-
+	BMP_Image image = { 0 };  // D3DRMIMAGE
+	BMP_Parse(buffer, fileSize, &image);
+	if (!image.rgb) {
+		penZero = Image_RGBA2CR(image.palette[0].red, image.palette[0].green, image.palette[0].blue, Image_GetAlphaChannel());
+		pen255 = Image_RGBA2CR(image.palette[255].red, image.palette[255].green, image.palette[255].blue, Image_GetAlphaChannel());
 	}
-	else return nullptr;
-
-	std::sprintf(name, "Data\\%s", fileName);
+	BMP_SetupChannelMasks(&image, true); // BMP images treat 16-bit as 15-bit.
 
 	DDSURFACEDESC2 ddsd = { 0 };
-	std::memset(&ddsd, 0, sizeof(ddsd));
-
 	ddsd.dwSize = sizeof(ddsd);
 	ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
 	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
@@ -327,6 +161,7 @@ Gods98::Image* __cdecl Gods98::Image_LoadBMPScaled(const char* fileName, uint32 
 
 			Image* newImage;
 			if (newImage = Image_Create(surface, image.width, image.height, penZero, pen255)) {
+				if (!image.rgb) newImage->flags |= ImageFlags::IMAGE_FLAG_FROMPALETTE;
 				BMP_Cleanup(&image);
 
 				if (buffer) Mem_Free(buffer);
@@ -349,15 +184,126 @@ Gods98::Image* __cdecl Gods98::Image_LoadBMPScaled(const char* fileName, uint32 
 // <LegoRR.exe @0047de50>
 COLORREF __cdecl Gods98::Image_RGB2CR(uint8 r, uint8 g, uint8 b)
 {
+	return Image_RGBA2CR(r, g, b, 0);
+}
+
+/// CUSTOM:
+COLORREF __cdecl Gods98::Image_RGBA2CR(uint8 r, uint8 g, uint8 b, uint8 a)
+{
 	log_firstcall();
 
-	COLORREF cr;
+	COLORREF cr = 0; // dummy init
 	uint8* ptr = (uint8*)&cr;
 	ptr[0] = r;
 	ptr[1] = g;
 	ptr[2] = b;
-	ptr[3] = 0;
+	ptr[3] = a;
 	return cr;
+}
+
+void Gods98::_Image_SetupTrans(Gods98::Image* image, uint32 low, uint32 high)
+{
+	log_firstcall();
+
+	Error_Fatal(!image, "_Image_SetupTrans: NULL passed as image");
+
+	//Error_Warn(low != high, "_Image_SetupTrans: Differing low and high transparency colours not supported");
+	//high = low; // Since this is only a warning, we at least want to follow through with the low range.
+
+	//static uint32 transCount = 0;
+	//static uint32 transMutateCount = 0;
+	//static uint32 transApproxCount = 0;
+	//transCount++;
+
+	bool approxTrans = false;
+
+	if ((low != high) || (DirectDraw_BitDepth() == 24 || DirectDraw_BitDepth() == 32)) {
+
+		DDSURFACEDESC2 desc = { 0 };
+		desc.dwSize = sizeof(DDSURFACEDESC2);
+		if (image->surface->Lock(nullptr, &desc, DDLOCK_WAIT, nullptr) == DD_OK) {
+
+			//transMutateCount++;
+
+			const uint32 rMask = desc.ddpfPixelFormat.dwRBitMask;
+			const uint32 gMask = desc.ddpfPixelFormat.dwGBitMask;
+			const uint32 bMask = desc.ddpfPixelFormat.dwBBitMask;
+			const uint32 aMask = desc.ddpfPixelFormat.dwRGBAlphaBitMask;
+
+			const uint32 rBitCount = DirectDraw_CountMaskBits(rMask);
+			const uint32 gBitCount = DirectDraw_CountMaskBits(gMask);
+			const uint32 bBitCount = DirectDraw_CountMaskBits(bMask);
+			const uint32 aBitCount = DirectDraw_CountMaskBits(aMask);
+
+			const uint32 rBitShift = DirectDraw_CountMaskBitShift(rMask);
+			const uint32 gBitShift = DirectDraw_CountMaskBitShift(gMask);
+			const uint32 bBitShift = DirectDraw_CountMaskBitShift(bMask);
+			const uint32 aBitShift = DirectDraw_CountMaskBitShift(aMask);
+
+			const uint32 pitch = desc.lPitch;
+
+			const uint32 bitDepth = desc.ddpfPixelFormat.dwRGBBitCount;
+			const uint32 byteDepth = DirectDraw_BitToByteDepth(bitDepth);
+
+			uint8* data = static_cast<uint8*>(desc.lpSurface);
+
+
+			uint32 low2 = low, high2 = high;
+			if (DirectDraw_BitDepth() == 24 || DirectDraw_BitDepth() == 32) {
+				DirectDraw_ColourKeyTo16BitRange(&low2, &high2);
+			}
+
+			uint8 exactr, exactg, exactb;
+			Image_CR2RGBA(low, &exactr, &exactg, &exactb, nullptr);
+
+			uint8 lowr, lowg, lowb, highr, highg, highb;
+			Image_CR2RGBA(low2, &lowr, &lowg, &lowb, nullptr);
+			Image_CR2RGBA(high2, &highr, &highg, &highb, nullptr);
+
+
+			for (uint32 y = 0; y < image->height; y++) {
+				for (uint32 x = 0; x < image->width; x++) {
+					uint32 srcValue = 0;
+					for (uint32 k = 0; k < bitDepth; k += 8) {
+						srcValue |= (data[(k/8)] << k);
+					}
+
+					const uint8 r = DirectDraw_UnshiftChannelByte(srcValue, rBitCount, rBitShift);
+					const uint8 g = DirectDraw_UnshiftChannelByte(srcValue, gBitCount, gBitShift);
+					const uint8 b = DirectDraw_UnshiftChannelByte(srcValue, bBitCount, bBitShift);
+					const uint32 aValue = srcValue & aMask;
+
+					if (r >= lowr && r <= highr && g >= lowg && g <= highg && b >= lowb && b <= highb) {
+							
+						if (r != exactr || g != exactg || b != exactb) {
+							approxTrans = true;
+							const uint32 dstValue =
+								DirectDraw_ShiftChannelByte(exactr, rBitCount, rBitShift) |
+								DirectDraw_ShiftChannelByte(exactg, gBitCount, gBitShift) |
+								DirectDraw_ShiftChannelByte(exactb, bBitCount, bBitShift) |
+								aValue;
+							for (uint32 k = 0; k < bitDepth; k += 8) {
+								data[(k/8)] = static_cast<uint8>(dstValue >> k);
+							}
+						}
+					}
+					data += byteDepth;
+				}
+				data += pitch - (image->width * byteDepth);
+			}
+
+			image->surface->Unlock(nullptr);
+		}
+	}
+
+	//if (approxTrans)
+	//	transApproxCount++;
+
+	//Error_InfoF("_Image_SetupTrans: %i (checked=%i, approx=%i)", transCount, transMutateCount, transApproxCount);
+	
+	DDCOLORKEY colourKey = { low, high };
+	image->surface->SetColorKey(DDCKEY_SRCBLT, &colourKey);
+	image->flags |= ImageFlags::IMAGE_FLAG_TRANS;
 }
 
 // <LegoRR.exe @0047de80>
@@ -365,14 +311,7 @@ void __cdecl Gods98::Image_SetPenZeroTrans(Image* image)
 {
 	log_firstcall();
 
-	Error_Fatal(!image, "NULL passed as image to Image_SetupTrans()");
-
-	DDCOLORKEY ColourKey;
-	ColourKey.dwColorSpaceLowValue = image->penZero;
-	ColourKey.dwColorSpaceHighValue = image->penZero;
-	
-	image->surface->SetColorKey(DDCKEY_SRCBLT, &ColourKey);
-	image->flags |= ImageFlags::IMAGE_FLAG_TRANS;
+	_Image_SetupTrans(image, image->penZero, image->penZero);
 }
 
 // <LegoRR.exe @0047deb0>
@@ -380,17 +319,10 @@ void __cdecl Gods98::Image_SetupTrans(Image* image, real32 lowr, real32 lowg, re
 {
 	log_firstcall();
 
-	Error_Fatal(!image, "NULL passed as image to Image_SetupTrans()");
+	COLORREF low  = Image_RGBA2CR((uint8)(lowr *255), (uint8)(lowg *255), (uint8)(lowb *255), Image_GetAlphaChannel());
+	COLORREF high = Image_RGBA2CR((uint8)(highr*255), (uint8)(highg*255), (uint8)(highb*255), Image_GetAlphaChannel());
 
-	COLORREF low = Image_RGB2CR((uint8)(lowr*255), (uint8)(lowg*255), (uint8)(lowb*255));
-	COLORREF high = Image_RGB2CR((uint8)(highr*255), (uint8)(highg*255), (uint8)(highb*255));
-
-	DDCOLORKEY ColourKey;
-	ColourKey.dwColorSpaceLowValue = Image_DDColorMatch(image->surface, low);
-	ColourKey.dwColorSpaceHighValue = Image_DDColorMatch(image->surface, high);
-	
-	image->surface->SetColorKey(DDCKEY_SRCBLT, &ColourKey);
-	image->flags |= ImageFlags::IMAGE_FLAG_TRANS;
+	_Image_SetupTrans(image, low, high);
 }
 
 // <LegoRR.exe @0047df70>
@@ -402,7 +334,7 @@ void __cdecl Gods98::Image_DisplayScaled(Image* image, const Area2F* src, const 
 
 	Error_Fatal(!image, "NULL passed as image to Image_DisplayScaled()");
 
-	RECT r_src, r_dst;
+	RECT r_src = { 0 }, r_dst = { 0 }; // dummy inits
 
 	if (src) {
 		r_src.left = (sint32)src->x;
@@ -471,15 +403,15 @@ colour32 __cdecl Gods98::Image_GetPen255(Image* image)
 	log_firstcall();
 
 	DDPIXELFORMAT pf;
-	uint32 pen = 0;
-
 	std::memset(&pf, 0, sizeof(DDPIXELFORMAT));
 	pf.dwSize = sizeof(DDPIXELFORMAT);
 
 	if (image->surface->GetPixelFormat(&pf) == DD_OK) {
+		uint32 pen = 0;
+
 //		if (pf.dwRGBBitCount == 8) return 0xff000000;
 		uint8* s = (uint8*)&pen;
-		uint8* t = (uint8*)&image->pen255;
+		const uint8* t = (uint8*)&image->pen255;
 		s[0] = t[3];
 		s[1] = t[2];
 		s[2] = t[1];
@@ -524,9 +456,100 @@ bool32 __cdecl Gods98::Image_GetPixel(Image* image, uint32 x, uint32 y, OUT colo
 
 	if (x < image->width && y < image->height) {
 		if (image->surface->Lock(nullptr, &desc, DDLOCK_WAIT|DDLOCK_READONLY, nullptr) == DD_OK) {
-			uint32 bpp = desc.ddpfPixelFormat.dwRGBBitCount;
-			uint32 col = *((uint32*)&((uint8*)desc.lpSurface)[(y * desc.lPitch) + (x * (bpp / 8))]);
- 			*colour = col >> (32 - bpp);
+			const uint32 bpp = desc.ddpfPixelFormat.dwRGBBitCount;
+
+			const uint8* src = static_cast<uint8*>(DirectDraw_PixelAddress(desc.lpSurface, desc.lPitch, bpp, x, y));
+			switch (bpp) {
+			case 8:
+				*colour = *src;
+				break;
+			case 16:
+				*colour = *reinterpret_cast<const uint16*>(src);
+				break;
+			case 24:
+				*colour = (src[0] | (src[1] << 8) | (src[2] << 16));
+				break;
+			case 32:
+				*colour = *reinterpret_cast<const uint32*>(src);
+				break;
+			default:
+				*colour = 0;
+				break;
+			}
+			
+			image->surface->Unlock(nullptr);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// REPLACEMENT FOR: Image_GetPixel, because the functions that use GetPixel are checking specifically for black (0).
+// <LegoRR.exe @0047e260>
+bool32 __cdecl Gods98::Image_GetPixelTruncate(Image* image, uint32 x, uint32 y, OUT colour32* colour)
+{
+	DDSURFACEDESC2 desc;
+	std::memset(&desc, 0, sizeof(DDSURFACEDESC2));
+	desc.dwSize = sizeof(DDSURFACEDESC2);
+
+	if (x < image->width && y < image->height) {
+		if (image->surface->Lock(nullptr, &desc, DDLOCK_WAIT|DDLOCK_READONLY, nullptr) == DD_OK) {
+			const uint32 bpp = desc.ddpfPixelFormat.dwRGBBitCount;
+
+			const uint8* src = static_cast<uint8*>(DirectDraw_PixelAddress(desc.lpSurface, desc.lPitch, bpp, x, y));
+			switch (bpp) {
+			case 8:
+				*colour = *src;
+				break;
+			case 16:
+				*colour = *reinterpret_cast<const uint16*>(src);
+				break;
+			case 24:
+			case 32:
+				{
+					const uint32 rMask = desc.ddpfPixelFormat.dwRBitMask;
+					const uint32 gMask = desc.ddpfPixelFormat.dwGBitMask;
+					const uint32 bMask = desc.ddpfPixelFormat.dwBBitMask;
+					const uint32 aMask = desc.ddpfPixelFormat.dwRGBAlphaBitMask;
+
+					const uint32 rBitCount = DirectDraw_CountMaskBits(rMask);
+					const uint32 gBitCount = DirectDraw_CountMaskBits(gMask);
+					const uint32 bBitCount = DirectDraw_CountMaskBits(bMask);
+					const uint32 aBitCount = DirectDraw_CountMaskBits(aMask);
+
+					const uint32 rBitShift = DirectDraw_CountMaskBitShift(rMask);
+					const uint32 gBitShift = DirectDraw_CountMaskBitShift(gMask);
+					const uint32 bBitShift = DirectDraw_CountMaskBitShift(bMask);
+					const uint32 aBitShift = DirectDraw_CountMaskBitShift(aMask);
+
+					uint32 value;
+					if (bpp == 24)
+						value = (src[0] | (src[1] << 8) | (src[2] << 16));
+					else
+						value = *reinterpret_cast<const uint32*>(src) & ~desc.ddpfPixelFormat.dwRGBAlphaBitMask;
+
+					/// 16-BIT: Truncate colours so that anything that *would* be black in 16-bit mode *is* black.
+					const uint8 r = DirectDraw_UnshiftChannelByte(value, rBitCount, rBitShift) & 0xf8; // 5-bit red
+					const uint8 g = DirectDraw_UnshiftChannelByte(value, gBitCount, gBitShift) & 0xfc; // 6-bit green
+					const uint8 b = DirectDraw_UnshiftChannelByte(value, bBitCount, bBitShift) & 0xf8; // 5-bit blue
+
+					// Don't return alpha value
+					*colour =
+						DirectDraw_ShiftChannelByte(r, rBitCount, rBitShift) |
+						DirectDraw_ShiftChannelByte(g, gBitCount, gBitShift) |
+						DirectDraw_ShiftChannelByte(b, bBitCount, bBitShift);
+				}
+				//*colour = ((src[0] & 0xf8) | ((src[1] & 0xfc) << 8) | ((src[2] & 0xf8) << 16));
+				break;
+			//case 32:
+			//	//*colour = *reinterpret_cast<uint32*>(src) & ~desc.ddpfPixelFormat.dwRGBAlphaBitMask;
+			//	break;
+			default:
+				*colour = 0;
+				break;
+			}
+
 			image->surface->Unlock(nullptr);
 			return true;
 		}
@@ -573,47 +596,59 @@ void __cdecl Gods98::Image_RemoveAll(void)
 }
 
 // <LegoRR.exe @0047e450>
-uint32 __cdecl Gods98::Image_DDColorMatch(IDirectDrawSurface4* pdds, uint32 rgb)
+uint32 __cdecl Gods98::Image_DDColorMatch(IDirectDrawSurface4* surface, uint32 rgb)
 {
 	log_firstcall();
 
-	uint32 dw = 0;
+	DDPIXELFORMAT pf = { 0 };
+	pf.dwSize = sizeof(DDPIXELFORMAT);
+	//DDSURFACEDESC2 ddsd = { 0 };
+	//ddsd.dwSize = sizeof(ddsd);
 
-	DDSURFACEDESC2 ddsd = { 0 };
-	ddsd.dwSize = sizeof(ddsd);
+	if (surface->GetPixelFormat(&pf) == DD_OK) {
+	//if (surface->Lock(nullptr, &ddsd, DDLOCK_WAIT, nullptr) == DD_OK) {
+		uint8 r, g, b, a;
+		Image_CR2RGBA(rgb, &r, &g, &b, &a);
 
-	uint8 r, g, b;
-	Image_CR2RGB(rgb, &r, &g, &b);
+		const uint32 rMask = pf.dwRBitMask;
+		const uint32 gMask = pf.dwGBitMask;
+		const uint32 bMask = pf.dwBBitMask;
+		const uint32 aMask = pf.dwRGBAlphaBitMask;
 
-	if (pdds->Lock(nullptr, &ddsd, DDLOCK_WAIT, nullptr) == DD_OK) {
-		uint32 rMask = ddsd.ddpfPixelFormat.dwRBitMask;
-		uint32 gMask = ddsd.ddpfPixelFormat.dwGBitMask;
-		uint32 bMask = ddsd.ddpfPixelFormat.dwBBitMask;
+		const uint32 rBitCount = DirectDraw_CountMaskBits(rMask);
+		const uint32 gBitCount = DirectDraw_CountMaskBits(gMask);
+		const uint32 bBitCount = DirectDraw_CountMaskBits(bMask);
+		const uint32 aBitCount = DirectDraw_CountMaskBits(aMask);
 
-		uint32 rBitCount = Image_CountMaskBits(rMask);
-		uint32 gBitCount = Image_CountMaskBits(gMask);
-		uint32 bBitCount = Image_CountMaskBits(bMask);
+		const uint32 rBitShift = DirectDraw_CountMaskBitShift(rMask);
+		const uint32 gBitShift = DirectDraw_CountMaskBitShift(gMask);
+		const uint32 bBitShift = DirectDraw_CountMaskBitShift(bMask);
+		const uint32 aBitShift = DirectDraw_CountMaskBitShift(aMask);
 
-		uint32 rBitShift = Image_CountMaskBitShift(rMask);
-		uint32 gBitShift = Image_CountMaskBitShift(gMask);
-		uint32 bBitShift = Image_CountMaskBitShift(bMask);
+		uint32 dw =
+			DirectDraw_ShiftChannelByte(r, rBitCount, rBitShift) |
+			DirectDraw_ShiftChannelByte(g, gBitCount, gBitShift) |
+			DirectDraw_ShiftChannelByte(b, bBitCount, bBitShift) |
+			DirectDraw_ShiftChannelByte(a, aBitCount, aBitShift);
 
-		dw = ((r >> (8 - rBitCount)) << rBitShift) |
-			 ((g >> (8 - gBitCount)) << gBitShift) |
-			 ((b >> (8 - bBitCount)) << bBitShift);
-
-		if (ddsd.ddpfPixelFormat.dwRGBBitCount < 32) {
-			dw &= (1 << ddsd.ddpfPixelFormat.dwRGBBitCount) - 1;
+		if (pf.dwRGBBitCount < 32) {
+			dw &= (1 << pf.dwRGBBitCount) - 1; // Mask to bit count.
 		}
 
-		pdds->Unlock(nullptr);
+		//surface->Unlock(nullptr);
+		return dw;
 	}
-
-	return dw;
+	return 0;
 }
 
 // <LegoRR.exe @0047e590>
 void __cdecl Gods98::Image_CR2RGB(COLORREF cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b)
+{
+	return Image_CR2RGBA(cr, r, g, b, nullptr);
+}
+
+/// CUSTOM:
+void __cdecl Gods98::Image_CR2RGBA(COLORREF cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b, OPTIONAL OUT uint8* a)
 {
 	log_firstcall();
 
@@ -621,7 +656,9 @@ void __cdecl Gods98::Image_CR2RGB(COLORREF cr, OPTIONAL OUT uint8* r, OPTIONAL O
 	if (r) *r = ptr[0];
 	if (g) *g = ptr[1];
 	if (b) *b = ptr[2];
+	if (a) *a = ptr[3];
 }
+
 
 // <LegoRR.exe @0047e5c0>
 void __cdecl Gods98::Image_GetScreenshot(OUT Image* image, uint32 xsize, uint32 ysize)
@@ -685,11 +722,16 @@ void __cdecl Gods98::Image_InitFromSurface(Image* newImage, IDirectDrawSurface4*
 // <LegoRR.exe @0047e700>
 bool32 __cdecl Gods98::Image_SaveBMP(Image* image, const char* fname)
 {
-	log_firstcall();
-
-	return DirectDraw_SaveBMP(image->surface, fname);
+	return Image_SaveBMP2(image, fname, FileFlags::FILE_FLAGS_DEFAULT);
 }
 
+/// CUSTOM: Support for FileFlags.
+bool Gods98::Image_SaveBMP2(Image* image, const char* fname, FileFlags fileFlags)
+{
+	log_firstcall();
+
+	return DirectDraw_SaveBMP2(image->surface, fname, fileFlags);
+}
 
 // <missing>
 void __cdecl Gods98::Image_GetPenZero(const Image* image, OPTIONAL OUT real32* r, OPTIONAL OUT real32* g, OPTIONAL OUT real32* b)
@@ -700,4 +742,9 @@ void __cdecl Gods98::Image_GetPenZero(const Image* image, OPTIONAL OUT real32* r
 	if (r) *r = (real32)((image->penZeroRGB >> 16) & 0xff) / 255.0f;
 	if (g) *g = (real32)((image->penZeroRGB >>  8) & 0xff) / 255.0f;
 	if (b) *b = (real32)((image->penZeroRGB)       & 0xff) / 255.0f;
+}
+
+uint8 Gods98::Image_GetAlphaChannel()
+{
+	return (DirectDraw_BitDepth() == 32 ? 0xff : 0);
 }

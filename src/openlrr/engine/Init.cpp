@@ -72,6 +72,8 @@ bool32 __cdecl Gods98::Init_Initialise(bool32 setup, bool32 debug, bool32 best, 
 
 	// Ensure the user-specified res/bpp is always first.
 	auto bitDepths = array_of<uint32>(cmdBitDepth,
+									  32,
+									  24,
 									  16
 									  //24,
 									  //32,

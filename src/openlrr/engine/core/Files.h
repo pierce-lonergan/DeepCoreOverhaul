@@ -349,9 +349,15 @@ char* __cdecl File_GetLine(OUT char* buffer, uint32 size, File* file);
 // <LegoRR.exe @00480360>
 void* __cdecl File_LoadBinary(const char* filename, OPTIONAL OUT uint32* sizeptr);
 
+/// CUSTOM: Support for FileFlags.
+void* File_LoadBinary2(const char* filename, OPTIONAL OUT uint32* sizeptr, FileFlags fileFlags);
+
 // WARNING: Does not null-terminate data!
 // <missing>
 void* __cdecl File_LoadASCII(const char* filename, OPTIONAL OUT uint32* sizeptr);
+
+/// CUSTOM: Support for FileFlags.
+void* File_LoadASCII2(const char* filename, OPTIONAL OUT uint32* sizeptr, FileFlags fileFlags);
 
 // <LegoRR.exe @00480380>
 void* __cdecl File_Load(const char* filename, OPTIONAL OUT uint32* sizeptr, bool32 binary);
@@ -374,6 +380,9 @@ void* File_Load2(const char* filename, OPTIONAL OUT uint32* sizeptr, bool32 bina
 
 // <LegoRR.exe @00480430>
 uint32 __cdecl File_LoadBinaryHandle(const char* filename, OPTIONAL OUT uint32* sizeptr);
+
+/// CUSTOM: Support for FileFlags.
+uint32 File_LoadBinaryHandle2(const char* filename, OPTIONAL OUT uint32* sizeptr, FileFlags fileFlags);
 
 
 /// CUSTOM: Extension of File_LoadBinaryHandle to allow ASCII and terminating the end of the buffer with extra bytes.

@@ -38,6 +38,12 @@ inline ENUMTYPE &operator ^= (ENUMTYPE &a, ENUMTYPE b) throw() { return (ENUMTYP
 	namespace _ns_ ##name { \
 	enum name
 
+#define enum_scoped_forward(name) \
+	enum_scoped(name)
+
+#define enum_scoped_forward_end(name) \
+	} using name = _ns_ ##name## :: ##name
+
 #define flags_scoped(name) enum_scoped(name)
 
 

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "../../common.h"
+#include "../colour.h"
 #include "../geometry.h"
 
 
@@ -17,6 +18,8 @@
 #pragma region Forward Declarations
 
 struct IDirectDrawSurface4;
+struct _DDSURFACEDESC2;
+typedef struct _DDSURFACEDESC2			DDSURFACEDESC2, FAR* LPDDSURFACEDESC2;
 
 #pragma endregion
 
@@ -215,7 +218,7 @@ struct Flic
 	/*014,4*/ sint8* rambufferhandle;
 	/*018,4*/ sint8* destportalhandle;
 	/*01c,100*/ char filename[256];
-	/*11c,300*/ uint8 fsPalette256[(256*3)];
+	/*11c,300*/ ColourRGBPacked fsPalette256[256];
 	/*41c,200*/ uint16 fsPalette64k[256];
 	/*61c,4*/ sint32 framerate;
 	/*620,4*/ sint32 lastticks;
@@ -237,8 +240,19 @@ struct Flic
 	/*6e4,4*/ bool32 is15bit;
 	/*6e8*/
 	/// EXPANSION: Extra information for playing flics in real-time in Flic_AnimateMainDeltaTime.
-	/*6e8,4*/ real32 frameTimer;
-	/*6ec*/
+	real32 frameTimer;
+	/// EXPANSION: Extra info for writing pixels, used while the surface is locked during Flic_Animate.
+	uint32 bitDepth;
+	uint32 byteDepth;
+	uint32 rBits;
+	uint32 gBits;
+	uint32 bBits;
+	uint32 aBits;
+	uint32 rShift;
+	uint32 gShift;
+	uint32 bShift;
+	uint32 aShift;
+	uint32 aValue; // Pre-shifted alpha, since we use the same value for all pixels.
 };
 //assert_sizeof(Flic, 0x6e8);
 
@@ -458,6 +472,18 @@ bool32 __cdecl Flic_DeltaWord(Flic* fsp);
 
 // <LegoRR.exe @00485380>
 uint16 __cdecl getFlicCol(uint8 n, const Flic* fsp);
+
+/// CUSTOM: Writes a paletted pixel to the target surface (of 16-bit, 24-bit, or 32-bit).
+///         Returns the pointer to the next pixel in the target surface.
+uint8* _Flic_WritePixel8(const Flic* fsp, uint8* dst, uint8 index);
+
+/// CUSTOM: Writes a 16-bit pixel to the target surface (of 16-bit, 24-bit, or 32-bit).
+///         Returns the pointer to the next pixel in the target surface.
+uint8* _Flic_WritePixel16(const Flic* fsp, uint8* dst, uint16 value);
+
+/// CUSTOM: Writes RGB values to the target surface (of 16-bit, 24-bit, or 32-bit).
+///         Returns the pointer to the next pixel in the target surface.
+uint8* _Flic_WritePixelRGB(const Flic* fsp, uint8* dst, uint8 r, uint8 g, uint8 b);
 
 // This function performs the same accessor,
 // shared between 3 different structure types.

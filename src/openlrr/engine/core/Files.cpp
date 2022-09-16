@@ -1023,13 +1023,27 @@ void* __cdecl Gods98::File_LoadBinary(const char* filename, OPTIONAL OUT uint32*
 {
 	log_firstcall();
 
-	return File_Load(filename, sizeptr, true);
+	return File_LoadBinary2(filename, sizeptr, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Support for FileFlags.
+void* __cdecl Gods98::File_LoadBinary2(const char* filename, OPTIONAL OUT uint32* sizeptr, FileFlags fileFlags)
+{
+	log_firstcall();
+
+	return File_Load2(filename, sizeptr, true, 0, fileFlags);
 }
 
 // <missing>
 void* __cdecl Gods98::File_LoadASCII(const char* filename, OPTIONAL OUT uint32* sizeptr)
 {
-	return File_Load(filename, sizeptr, false);
+	return File_LoadASCII2(filename, sizeptr, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Support for FileFlags.
+void* Gods98::File_LoadASCII2(const char* filename, OPTIONAL OUT uint32* sizeptr, FileFlags fileFlags)
+{
+	return File_Load2(filename, sizeptr, false, 0, fileFlags);
 }
 
 // <LegoRR.exe @00480380>
@@ -1096,9 +1110,15 @@ void* Gods98::File_Load2(const char* filename, OPTIONAL OUT uint32* sizeptr, boo
 // <LegoRR.exe @00480430>
 uint32 __cdecl Gods98::File_LoadBinaryHandle(const char* filename, OPTIONAL OUT uint32* sizeptr)
 {
+	return File_LoadBinaryHandle2(filename, sizeptr, FileFlags::FILE_FLAGS_DEFAULT);
+}
+
+/// CUSTOM: Support for FileFlags.
+uint32 Gods98::File_LoadBinaryHandle2(const char* filename, OPTIONAL OUT uint32* sizeptr, FileFlags fileFlags)
+{
 	log_firstcall();
 
-	return File_LoadHandle2(filename, sizeptr, true, 0, FileFlags::FILE_FLAGS_DEFAULT);
+	return File_LoadHandle2(filename, sizeptr, true, 0, fileFlags);
 }
 
 

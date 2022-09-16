@@ -13,7 +13,6 @@
 #include "../geometry.h"
 
 //#include "../input/Keys.h"
-#include "Files.h"
 #include "ListSet.hpp"
 
 
@@ -27,6 +26,9 @@ namespace Gods98
 #pragma region Forward Declarations
 
 enum Keys : uint8; // from `engine/input/Keys.h`
+
+enum_scoped_forward(FileFlags) : uint32;
+enum_scoped_forward_end(FileFlags);
 
 #pragma endregion
 

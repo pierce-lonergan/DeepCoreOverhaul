@@ -42,7 +42,11 @@ namespace Gods98
 
 #pragma region Forward Declarations
 
+struct BMP_Image;        // from `engine/drawing/Bmp.h`
 struct BMP_PaletteEntry; // from `engine/drawing/Bmp.h`
+
+enum_scoped_forward(FileFlags) : uint32;
+enum_scoped_forward_end(FileFlags);
 
 #pragma endregion
 
@@ -241,6 +245,9 @@ void __cdecl DirectDraw_Flip(void);
 // <LegoRR.exe @0047cbb0>
 bool32 __cdecl DirectDraw_SaveBMP(IDirectDrawSurface4* surface, const char* fname);
 
+/// CUSTOM: Support for FileFlags.
+bool DirectDraw_SaveBMP2(IDirectDrawSurface4* surface, const char* fname, FileFlags fileFlags);
+
 // <LegoRR.exe @0047cee0>
 void __cdecl DirectDraw_ReturnFrontBuffer(void);
 
@@ -263,21 +270,81 @@ void __cdecl DirectDraw_Clear(const Area2F* window, uint32 colour);
 // <LegoRR.exe @0047d1a0>
 bool32 __cdecl DirectDraw_CreateClipper(bool32 fullscreen, uint32 width, uint32 height);
 
+/// LEGACY: Use DirectDraw_CopySurface.
+// Original Name: DirectDraw_Blt8To16
 // <LegoRR.exe @0047d2c0>
-void __cdecl DirectDraw_Blt8To16(IDirectDrawSurface4* target, IDirectDrawSurface4* source, BMP_PaletteEntry* palette);
+void __cdecl DirectDraw_Blt8ToSurface(IDirectDrawSurface4* target, IDirectDrawSurface4* source, const BMP_PaletteEntry* palette);
+
+/// CUSTOM:
+void DirectDraw_FlipSurface(void* buffer, uint32 height, uint32 pitch);
+
+/// CUSTOM:
+void DirectDraw_FlipSurface(const BMP_Image* image);
+
+/// CUSTOM:
+void DirectDraw_FlipSurface(const DDSURFACEDESC2* desc);
+
+/// CUSTOM:
+bool DirectDraw_CopySurface(const BMP_Image* dstImage, const BMP_Image* srcImage, bool flip);
+
+/// CUSTOM:
+bool DirectDraw_CopySurface(const BMP_Image* dstImage, const DDSURFACEDESC2* srcDesc, bool flip, OPTIONAL const BMP_PaletteEntry* srcPalette = nullptr);
+
+/// CUSTOM:
+bool DirectDraw_CopySurface(const DDSURFACEDESC2* dstDesc, const BMP_Image* srcImage, bool flip);
+
+/// CUSTOM:
+bool DirectDraw_CopySurface(const DDSURFACEDESC2* dstDesc, const DDSURFACEDESC2* srcDesc, bool flip, OPTIONAL const BMP_PaletteEntry* srcPalette = nullptr);
+
+/// CUSTOM:
+bool DirectDraw_CopySurface(IDirectDrawSurface4* dstSurf, IDirectDrawSurface4* srcSurf, bool flip, OPTIONAL const BMP_PaletteEntry* srcPalette = nullptr);
+
+/// CUSTOM:
+void DirectDraw_GetSurfaceInfo(const DDSURFACEDESC2* desc, OUT BMP_Image* image, OPTIONAL const BMP_PaletteEntry* palette = nullptr);
 
 // <LegoRR.exe @0047d590>
 uint32 __cdecl DirectDraw_GetColour(IDirectDrawSurface4* surf, uint32 colour);
 
 // <LegoRR.exe @0047d6b0>
-uint32 __cdecl DirectDraw_GetNumberOfBits(uint32 mask);
+uint32 __cdecl DirectDraw_CountMaskBits(uint32 mask);
 
+/// CUSTOM: Replacement for Image_CountMaskBitShift.
+uint32 __cdecl DirectDraw_CountMaskBitShift(uint32 mask);
+
+/// CUSTOM: Shorthand to get number of bytes in a bit depth.
+constexpr uint32 DirectDraw_BitToByteDepth(uint32 bitDepth) { return (bitDepth + 7) / 8; }
+
+/// CUSTOM:
+constexpr uint32 DirectDraw_ShiftChannelByte(uint8 value, uint32 bitCount, uint32 bitShift)
+{
+	return ((value >> (8 - bitCount)) << bitShift);
+}
+
+/// CUSTOM:
+constexpr uint8 DirectDraw_UnshiftChannelByte(uint32 value, uint32 bitCount, uint32 bitShift)
+{
+	return (((value >> bitShift) & ((1 << bitCount) - 1)) << (8 - bitCount));
+}
+
+/// CUSTOM:
+constexpr void* DirectDraw_PixelAddress(void* buffer, uint32 pitch, uint32 bitDepth, uint32 x, uint32 y)
+{
+	return (static_cast<uint8*>(buffer) + (y * pitch) + (x * DirectDraw_BitToByteDepth(bitDepth)));
+}
 
 // <inlined>
 __inline bool32 DirectDraw_SetupFullScreen(const Graphics_Driver* driver, const Graphics_Device* device, const Graphics_Mode* mode) { return DirectDraw_Setup(true, driver, device, mode, 0, 0, 320, 200); }
 
 // <inlined>
 __inline bool32 DirectDraw_SetupWindowed(const Graphics_Device* device, uint32 xPos, uint32 yPos, uint32 width, uint32 height) { return DirectDraw_Setup(false, nullptr, device, nullptr, xPos, yPos, width, height); }
+
+
+/// CUSTOM: Gets the bit depth selected during DirectDraw_Setup.
+uint32 DirectDraw_BitDepth();
+
+/// NOTE: This expects low,high to be in COLORREF format (from lowest to highest bit order: RGBA).
+/// CUSTOM: Expand a colour key to a 16-bit range, to include colours that normally don't match when in 24-bit or 32-bit mode.
+void DirectDraw_ColourKeyTo16BitRange(IN OUT uint32* low, IN OUT uint32* high);
 
 #pragma endregion
 

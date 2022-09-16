@@ -1330,7 +1330,7 @@ IDirectDrawSurface4* __cdecl Gods98::Container_LoadTextureSurface(const char* fn
 	if (fileData = (uint8*)File_LoadBinary(fname, &size)) {
 		BMP_Parse(fileData, size, &image);
 
-		if (image.rgb == false && image.depth == 8) {
+		if (!image.rgb && image.depth == 8) {
 
 			std::memset(&desc, 0, sizeof(desc));
 			desc.dwSize = sizeof(DDSURFACEDESC2);
@@ -1352,13 +1352,15 @@ IDirectDrawSurface4* __cdecl Gods98::Container_LoadTextureSurface(const char* fn
 			}
 //#endif //_GODS98_VIDEOMEMTEXTURES
 
+			const bool testForceCopy = false;
+
 			// Find the prefered 8 bit palettized format...
 			desc.ddpfPixelFormat.dwSize = sizeof(DDPIXELFORMAT);
-			if (lpDevice()->FindPreferredTextureFormat(DDBD_8, D3DRMFPTF_PALETTIZED, &desc.ddpfPixelFormat) != D3DRM_OK) {
+			if (lpDevice()->FindPreferredTextureFormat(DDBD_8, D3DRMFPTF_PALETTIZED, &desc.ddpfPixelFormat) != D3DRM_OK || testForceCopy) {
 
 				std::memcpy(&descBak, &desc, sizeof(descBak));
 
-				// If the card doesn't like this the create a standard 8 bit surface and then blit it to one it does like...
+				// If the card doesn't like this then create a standard 8 bit surface and then blit it to one it does like...
 				std::memset(&desc.ddpfPixelFormat, 0, sizeof(desc.ddpfPixelFormat));
 
 				desc.ddpfPixelFormat.dwSize = sizeof(DDPIXELFORMAT);
@@ -1381,13 +1383,13 @@ IDirectDrawSurface4* __cdecl Gods98::Container_LoadTextureSurface(const char* fn
 				desc.dwSize = sizeof(desc);
 
 				if ((result = surface->Lock(nullptr, &desc, DDLOCK_WAIT, nullptr)) == DD_OK) {
-					//sint32 y;
-					uint8* surfaceMem = (uint8*)desc.lpSurface;
-					uint8* imageMem = (uint8*)image.buffer1;
-					for (sint32 y = 0; y < image.height; y++) {
+
+					uint8* surfaceMem = static_cast<uint8*>(desc.lpSurface);
+					const uint8* imageMem = static_cast<uint8*>(image.buffer1);
+					for (uint32 y = 0; y < image.height; y++) {
 						std::memcpy(surfaceMem, imageMem, image.bytes_per_line);
-						surfaceMem += desc.lPitch;
 						imageMem += image.bytes_per_line;
+						surfaceMem += desc.lPitch;
 					}
 					surface->Unlock(nullptr);
 
@@ -1403,26 +1405,35 @@ IDirectDrawSurface4* __cdecl Gods98::Container_LoadTextureSurface(const char* fn
 
 								std::memset(&descBak.ddpfPixelFormat, 0, sizeof(descBak.ddpfPixelFormat));
 								descBak.ddpfPixelFormat.dwSize = sizeof(DDPIXELFORMAT);
-								if (lpDevice()->FindPreferredTextureFormat(DDBD_16, 0, &descBak.ddpfPixelFormat) == D3DRM_OK) {
+
+								uint32 dwBitDepths;
+								switch (DirectDraw_BitDepth()) {
+								default:
+								case 16: dwBitDepths = DDBD_16; break;
+								case 24: dwBitDepths = DDBD_24; break;
+								case 32: dwBitDepths = DDBD_32; break;
+								}
+								if (lpDevice()->FindPreferredTextureFormat(dwBitDepths, 0, &descBak.ddpfPixelFormat) == D3DRM_OK) {
 
 									// Replace 'surface' with one of a format that the card will accept...
 
 									IDirectDrawSurface4* oldSurface = surface;
 									if (DirectDraw()->CreateSurface(&descBak, &surface, nullptr) == D3DRM_OK) {
 
-										if (descBak.ddpfPixelFormat.dwRGBBitCount == 16) DirectDraw_Blt8To16(surface, oldSurface, image.palette);
+										DirectDraw_CopySurface(surface, oldSurface, false, image.palette);
+										//if (descBak.ddpfPixelFormat.dwRGBBitCount == 16) DirectDraw_Blt8ToSurface(surface, oldSurface, image.palette);
 
 										oldSurface->Release();
 
 									}
 									else Error_Fatal(true, "Error creating new texture surface");
 								}
+								else Error_Fatal(true, "Failed to find preferred texture format for new texture surface");
 							}
 
 							if (trans)
 							{
 								if (Container_GetDecalColour(fname, &decalColour)) {
-									DDCOLORKEY ddck;
 
 //									if(desc.ddpfPixelFormat.dwRGBBitCount > 8)
 									if (copy) {
@@ -1431,9 +1442,10 @@ IDirectDrawSurface4* __cdecl Gods98::Container_LoadTextureSurface(const char* fn
 										b = image.palette[decalColour].blue;
 										decalColour = DirectDraw_GetColour(surface, RGB_MAKE(r, g, b));
 									}
+									uint32 low = decalColour, high = decalColour;
 
-									ddck.dwColorSpaceLowValue = ddck.dwColorSpaceHighValue = decalColour;
-									surface->SetColorKey(DDCKEY_SRCBLT, &ddck);
+									DDCOLORKEY colourKey = { low, high };
+									surface->SetColorKey(DDCKEY_SRCBLT, &colourKey);
 
 									*trans = true;
 

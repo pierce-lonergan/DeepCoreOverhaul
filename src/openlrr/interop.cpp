@@ -668,11 +668,11 @@ bool interop_hook_Gods98_DirectDraw(void)
 	//result &= hook_write_jmpret(0x0047d1a0, Gods98::DirectDraw_CreateClipper);
 
 	// used by: Container_LoadTextureSurface
-	result &= hook_write_jmpret(0x0047d2c0, Gods98::DirectDraw_Blt8To16);
+	result &= hook_write_jmpret(0x0047d2c0, Gods98::DirectDraw_Blt8ToSurface);
 	result &= hook_write_jmpret(0x0047d590, Gods98::DirectDraw_GetColour);
 
 	// internal, no need to hook these
-	//result &= hook_write_jmpret(0x0047d6b0, Gods98::DirectDraw_GetNumberOfBits);
+	//result &= hook_write_jmpret(0x0047d6b0, Gods98::DirectDraw_CountMaskBits);
 
 	return_interop(result);
 }
@@ -953,7 +953,8 @@ bool interop_hook_Gods98_Images(void)
 	//result &= hook_write_jmpret(0x0047e1b0, Gods98::Image_GetPen255);
 	//result &= hook_write_jmpret(0x0047e210, Gods98::Image_GetPixelMask);
 
-	result &= hook_write_jmpret(0x0047e260, Gods98::Image_GetPixel);
+	// REPLACEMENT FOR: Image_GetPixel, because the functions that use GetPixel are checking specifically for black (0).
+	result &= hook_write_jmpret(0x0047e260, Gods98::Image_GetPixelTruncate);
 
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x0047e310, Gods98::Image_Create);

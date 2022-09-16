@@ -46,6 +46,9 @@ namespace Gods98
 struct BMP_PaletteEntry; // from `engine/drawing/Bmp.h`
 struct BMP_Image;        // from `engine/drawing/Bmp.h`
 
+enum_scoped_forward(FileFlags) : uint32;
+enum_scoped_forward_end(FileFlags);
+
 #pragma endregion
 
 /**********************************************************************************
@@ -83,6 +86,9 @@ flags_scoped(ImageFlags) : uint32
 
 	IMAGE_FLAG_TRANS   = 0x2,
 	IMAGE_FLAG_TEXTURE = 0x4,
+
+	/// CUSTOM:
+	IMAGE_FLAG_FROMPALETTE = 0x80000000,
 };
 flags_scoped_end(ImageFlags, 0x4);
 
@@ -184,28 +190,42 @@ void __cdecl Image_Shutdown(void);
 void __cdecl Image_Remove(Image* dead);
 
 // <LegoRR.exe @0047d750>
-bool32 __cdecl Image_CopyToDataToSurface(IDirectDrawSurface4* surface, BMP_Image* image);
+bool32 __cdecl Image_CopyToDataToSurface(IDirectDrawSurface4* surface, const BMP_Image* image);
 
+/// LEGACY: Use DirectDraw_CopySurface.
 // <LegoRR.exe @0047d7e0>
-bool32 __cdecl Image_8BitSourceCopy(const DDSURFACEDESC2* desc, BMP_Image* image);
+bool32 __cdecl Image_8BitSourceCopy(const DDSURFACEDESC2* desc, const BMP_Image* image);
 
+/// LEGACY: Use DirectDraw_CountMaskBits.
 // <LegoRR.exe @0047d9c0>
 uint32 __cdecl Image_CountMaskBits(uint32 mask);
 
+/// LEGACY: Use DirectDraw_CountMaskBitShift.
 // <LegoRR.exe @0047d9e0>
 uint32 __cdecl Image_CountMaskBitShift(uint32 mask);
 
+/// LEGACY: Use DirectDraw_FlipSurface.
 // <LegoRR.exe @0047da00>
 void __cdecl Image_FlipSurface(const DDSURFACEDESC2* desc);
 
+/// LEGACY: Use DirectDraw_CopySurface.
 // <LegoRR.exe @0047dac0>
-bool32 __cdecl Image_24BitSourceCopy(const DDSURFACEDESC2* desc, BMP_Image* image);
+bool32 __cdecl Image_24BitSourceCopy(const DDSURFACEDESC2* desc, const BMP_Image* image);
 
 // <LegoRR.exe @0047dc90>
 Image* __cdecl Image_LoadBMPScaled(const char* fileName, uint32 width, uint32 height);
 
+/// CUSTOM: Support for FileFlags.
+Image* Image_LoadBMPScaled2(const char* fileName, uint32 width, uint32 height, FileFlags fileFlags);
+
 // <LegoRR.exe @0047de50>
 COLORREF __cdecl Image_RGB2CR(uint8 r, uint8 g, uint8 b);
+
+/// CUSTOM:
+COLORREF __cdecl Image_RGBA2CR(uint8 r, uint8 g, uint8 b, uint8 a);
+
+/// CUSTOM: Core functionality that Image_SetPenZeroTrans and Image_SetupTrans wraps around.
+void _Image_SetupTrans(Image* image, uint32 low, uint32 high);
 
 // <LegoRR.exe @0047de80>
 void __cdecl Image_SetPenZeroTrans(Image* image);
@@ -231,9 +251,14 @@ uint32 __cdecl Image_GetPixelMask(Image* image);
 // <LegoRR.exe @0047e260>
 bool32 __cdecl Image_GetPixel(Image* image, uint32 x, uint32 y, OUT colour32* colour);
 
+// REPLACEMENT FOR: Image_GetPixel, because the functions that use GetPixel are checking specifically for black (0).
+// <LegoRR.exe @0047e260>
+bool32 __cdecl Image_GetPixelTruncate(Image* image, uint32 x, uint32 y, OUT colour32* colour);
+
 // <LegoRR.exe @0047e310>
 Image* __cdecl Image_Create(IDirectDrawSurface4* surface, uint32 width, uint32 height, COLORREF penZero, COLORREF pen255);
 
+/// LEGACY:
 // <LegoRR.exe @0047e380>
 void __cdecl Image_AddList(void);
 
@@ -241,10 +266,13 @@ void __cdecl Image_AddList(void);
 void __cdecl Image_RemoveAll(void);
 
 // <LegoRR.exe @0047e450>
-uint32 __cdecl Image_DDColorMatch(IDirectDrawSurface4* pdds, uint32 rgb);
+uint32 __cdecl Image_DDColorMatch(IDirectDrawSurface4* surface, uint32 rgb);
 
 // <LegoRR.exe @0047e590>
 void __cdecl Image_CR2RGB(COLORREF cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b);
+
+/// CUSTOM:
+void __cdecl Image_CR2RGBA(COLORREF cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b, OPTIONAL OUT uint8* a);
 
 // <LegoRR.exe @0047e5c0>
 void __cdecl Image_GetScreenshot(OUT Image* image, uint32 xsize, uint32 ysize);
@@ -257,9 +285,14 @@ void __cdecl Image_InitFromSurface(Image* newImage, IDirectDrawSurface4* surface
 // <LegoRR.exe @0047e700>
 bool32 __cdecl Image_SaveBMP(Image* image, const char* fname);
 
+/// CUSTOM: Support for FileFlags.
+bool Image_SaveBMP2(Image* image, const char* fname, FileFlags fileFlags);
+
 
 // <missing>
 void __cdecl Image_GetPenZero(const Image* image, OPTIONAL OUT real32* r, OPTIONAL OUT real32* g, OPTIONAL OUT real32* b);
+
+uint8 Image_GetAlphaChannel();
 
 /*Image* __cdecl Image_LoadBMPTexture(const char* filename);
 void __cdecl Image_SetMainViewport(Viewport* vp);
@@ -268,7 +301,7 @@ void __cdecl Image_DisplayScaled2(Image* image, const Area2F* src, const Point2F
 void __cdecl Image_DisplayScaled(Image* image, const Area2F* src, const Point2F* destPos, const Point2F* destSize);
 void* __cdecl Image_LockSurface(Image* image, uint32* pitch, uint32* bpp);
 void __cdecl Image_UnlockSurface(Image* image);
-int __cdecl Image_CopyBMP(IDirectDrawSurface4* pdds, void* hbm, uint32 x, uint32 y, uint32 dx, uint32 dy);
+int __cdecl Image_CopyBMP(IDirectDrawSurface4* surface, void* hbm, uint32 x, uint32 y, uint32 dx, uint32 dy);
 
 uint32 __cdecl Image_RGB2CR(unsigned char r, unsigned char g, unsigned char b);
 void __cdecl Image_MyBlt(IDirectDrawSurface* dest, IDirectDrawSurface* src, uint32 sx, uint32 sy);

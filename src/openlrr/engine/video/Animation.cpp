@@ -4,6 +4,7 @@
 #include "../../platform/timeapi.h"
 #include "../../platform/vfw.h"
 
+#include "../drawing/Bmp.h"
 #include "../drawing/DirectDraw.h"
 #include "../core/Files.h"
 #include "../Main.h"
@@ -93,10 +94,13 @@ bool Gods98::G98CSurface::Init(sint32 width, sint32 height, sint32 bpp, bool vra
 	if (!width && !height) {
 		// We want the whole front buffer if no size specced.
 		this->m_desc.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
-	} else {
+	}
+	else {
 		this->m_desc.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
-		if (vram) this->m_desc.ddsCaps.dwCaps |= DDSCAPS_VIDEOMEMORY;
-		else this->m_desc.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY;
+		if (vram)
+			this->m_desc.ddsCaps.dwCaps |= DDSCAPS_VIDEOMEMORY;
+		else
+			this->m_desc.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY;
 	}
 
 	if (bpp != 0) {
@@ -108,17 +112,20 @@ bool Gods98::G98CSurface::Init(sint32 width, sint32 height, sint32 bpp, bool vra
 			this->m_desc.ddpfPixelFormat.dwGBitMask = 0x00ff00;
 			this->m_desc.ddpfPixelFormat.dwBBitMask = 0x0000ff;
 			this->m_desc.ddpfPixelFormat.dwFlags = DDPF_RGB;
-		} else if (bpp == 16) { // 16-bpp (proper)
+		}
+		else if (bpp == 16) { // 16-bpp (proper)
 			this->m_desc.ddpfPixelFormat.dwRBitMask = 0xf800; // 0b1111100000000000
 			this->m_desc.ddpfPixelFormat.dwGBitMask = 0x07e0; // 0b0000011111100000
 			this->m_desc.ddpfPixelFormat.dwBBitMask = 0x001f; // 0b0000000000011111
 			this->m_desc.ddpfPixelFormat.dwFlags = DDPF_RGB;
-		} else if (bpp == 15) { // 15-bpp (treated as 16-bpp)
+		}
+		else if (bpp == 15) { // 15-bpp (treated as 16-bpp)
 			this->m_desc.ddpfPixelFormat.dwRBitMask = 0x7c00; // 0b0111110000000000
 			this->m_desc.ddpfPixelFormat.dwGBitMask = 0x03e0; // 0b0000001111100000
 			this->m_desc.ddpfPixelFormat.dwBBitMask = 0x001f; // 0b0000000000011111
 			this->m_desc.ddpfPixelFormat.dwFlags = DDPF_RGB;
-		} else if (bpp == 8) { // 8-bpp (indexed)
+		}
+		else if (bpp == 8) { // 8-bpp (indexed)
 			this->m_desc.ddpfPixelFormat.dwRBitMask = 0xff0000;		// I Doubt that the masks are valid 
 			this->m_desc.ddpfPixelFormat.dwGBitMask = 0x00ff00;		// but wont seem to work otherwise - DDI
 			this->m_desc.ddpfPixelFormat.dwBBitMask = 0x0000ff;
@@ -127,19 +134,19 @@ bool Gods98::G98CSurface::Init(sint32 width, sint32 height, sint32 bpp, bool vra
 	}
 
 	if (animationGlobs.ddraw->CreateSurface(&m_desc, &m_surf, nullptr) == DD_OK) {
-		// Last thing is to lock the surface and get it info.
+		// Last thing is to lock the surface and get its info.
 		this->Lock();
 		this->Unlock();
 
 		if (this->m_desc.ddpfPixelFormat.dwRGBBitCount == 8) {
-			PALETTEENTRY pal[256];
-			for (sint32 i=0; i<256; i++) {
-				pal[i].peRed   = 0;
-				pal[i].peGreen = 0;
-				pal[i].peBlue  = 0;
-				pal[i].peFlags = 0;
+			PALETTEENTRY palette[256] = { 0 }; // dummy init
+			for (uint32 i = 0; i < 256; i++) {
+				palette[i].peRed   = 0;
+				palette[i].peGreen = 0;
+				palette[i].peBlue  = 0;
+				palette[i].peFlags = 0;
 			}
-			if (animationGlobs.ddraw->CreatePalette(DDPCAPS_8BIT, pal, &this->m_palette, nullptr) != DD_OK) {
+			if (animationGlobs.ddraw->CreatePalette(DDPCAPS_8BIT, palette, &this->m_palette, nullptr) != DD_OK) {
 				return false;
 			}
 			if (this->m_surf->SetPalette(this->m_palette) != DD_OK) {
@@ -149,13 +156,16 @@ bool Gods98::G98CSurface::Init(sint32 width, sint32 height, sint32 bpp, bool vra
 		else if (this->m_desc.ddpfPixelFormat.dwRGBBitCount == 16) {
 			// Count number of bits to check if we're actually using 15-bpp handling.
 			//  (when surface considers it as 16-bpp)
-			sint32 maskCount;
-			if ((maskCount = this->CountMaskBits(this->m_desc.ddpfPixelFormat.dwRBitMask) +
-				this->CountMaskBits(this->m_desc.ddpfPixelFormat.dwGBitMask) +
-				 this->CountMaskBits(this->m_desc.ddpfPixelFormat.dwBBitMask)) == 15) this->m_15bit = true;
+			const uint32 maskCount =
+				DirectDraw_CountMaskBits(this->m_desc.ddpfPixelFormat.dwRBitMask) +
+				DirectDraw_CountMaskBits(this->m_desc.ddpfPixelFormat.dwGBitMask) +
+				DirectDraw_CountMaskBits(this->m_desc.ddpfPixelFormat.dwBBitMask);
+
+			if (maskCount == 15) this->m_15bit = true;
 		}
 		return true;
-	} else {
+	}
+	else {
 		return false;
 	}
 }
@@ -208,7 +218,7 @@ bool Gods98::G98CSurface::Lock()
 		if (this->m_surf->Lock(nullptr, &m_desc, DDLOCK_WAIT|DDLOCK_NOSYSLOCK, nullptr) == DD_OK) {
 			this->m_surfaceLocked = true;
 			return true;
-		} else return false;
+		}
 	} 
 	return false;
 }
@@ -220,7 +230,7 @@ bool Gods98::G98CSurface::Unlock()
 		if (this->m_surf->Unlock(nullptr) == DD_OK) {
 			this->m_surfaceLocked = false;
 			return true;
-		} return false;
+		}
 	}
 	return false;
 }
@@ -228,13 +238,7 @@ bool Gods98::G98CSurface::Unlock()
 // <LegoRR.exe @0047eaa0>
 sint32 Gods98::G98CSurface::CountMaskBits(uint32 mask) const
 {
-	uint32 count = 0;
-
-	for (uint32 i = 0; i < (sizeof(mask) * 8); i++) {
-		if (0 != (mask & (1 << i))) count++;
-	}
-
-	return count;
+	return DirectDraw_CountMaskBits(mask);
 }
 
 #pragma endregion
@@ -301,8 +305,26 @@ Gods98::G98CAnimation::G98CAnimation(const char* fName)
 	if (!animationGlobs.g98NoAvis) {
 		if (legacy::AVIStreamOpenFromFileA(&m_aviStream, name, streamtypeVIDEO, 0, OF_READ, nullptr) == S_OK) {
 			// Load the video stream
-			if (this->m_decompressFn = legacy::AVIStreamGetFrameOpen(m_aviStream,
-				(LPBITMAPINFOHEADER)AVIGETFRAMEF_BESTDISPLAYFMT)) {
+
+			/// CHANGE: Manually define our format so that we can copy 24-bit images when possible.
+			BITMAPINFOHEADER bmi = { 0 };
+			bmi.biSize = sizeof(BITMAPINFOHEADER);
+			bmi.biPlanes = 1;
+			bmi.biCompression = BI_RGB;
+			bmi.biClrUsed = bmi.biClrImportant = 0;
+			switch (DirectDraw_BitDepth()) {
+			case 16:
+				bmi.biBitCount = 16;
+				break;
+			case 24:
+			case 32:
+				bmi.biBitCount = 24; // Using 32-bit will fail, so fallback to 24-bit.
+				break;
+			}
+			BITMAPINFOHEADER* wantedFormat = &bmi;
+			//BITMAPINFOHEADER* wantedFormat = (BITMAPINFOHEADER*)AVIGETFRAMEF_BESTDISPLAYFMT;
+
+			if (this->m_decompressFn = legacy::AVIStreamGetFrameOpen(m_aviStream, wantedFormat)) {
 				if (legacy::AVIStreamInfoA(m_aviStream, &m_aviStreamInfo, sizeof(AVISTREAMINFOA)) == S_OK) {
 					// Get info - length, rectangle etc
 					this->m_startTime = ((real32)Main_GetTime()) / 1000.0f; // milliseconds (uint) -> seconds (float)
@@ -315,7 +337,7 @@ Gods98::G98CAnimation::G98CAnimation(const char* fName)
 					this->m_movieRect.right  = this->m_aviStreamInfo.rcFrame.right;
 					this->m_movieSurf = new G98CSurface(this->m_movieRect.right - this->m_movieRect.left,
 														this->m_movieRect.bottom - this->m_movieRect.top,
-														0 /*bpp*/);
+														0); // Use default bitDepth.
 				}
 			}
 		}
@@ -388,44 +410,53 @@ void Gods98::G98CAnimation::BMICopy(const BITMAPINFO* bmi)
 	//return result;
 
 	G98CSurfaceLock lock(this->m_movieSurf);
-	uint16* pSrc = (uint16*)(((uint8*)bmi) + bmi->bmiHeader.biSize);
-	uint16* pDest = (uint16*)lock.Data();
-	sint32 width, height;
+	//uint8* pSrc  = ((uint8*)bmi + bmi->bmiHeader.biSize);
+	//uint8* pDest = (uint8*)lock.Data();
 
 	// Width and height of the bitmap (and indeed the destination surface)
-	width = this->m_movieRect.right - this->m_movieRect.left;
-	height = this->m_movieRect.bottom - this->m_movieRect.top;
+	//const sint32 width  = this->m_movieRect.right - this->m_movieRect.left;
+	//const sint32 height = this->m_movieRect.bottom - this->m_movieRect.top;
 
 	// Caluclate the dest surface skip
 //	sint32 skipSrc  = ((m_movieSurf->Pitch() + 3) & ~3) / 2;
-	sint32 skipSrc = this->m_movieSurf->Pitch() / 2;
-	sint32 skipDest = this->m_movieSurf->Pitch() / 2;
+	//const sint32 skipSrc  = this->m_movieSurf->Pitch();
+	//const sint32 skipDest = this->m_movieSurf->Pitch();
+	//const uint32 byteDepth = DirectDraw_BitToByteDepth(this->m_movieSurf->Bpp());
 
-	// Animations are ONLY gonna be done in 16/15 bit - note m_movieSurf is created in the primary display format (since no BPP was given).
-	if (this->m_movieSurf->Bpp() == 15) {
+	/// FIX APPLY: Properly handle 16-bit BMPs that are actually 15-bit.
+	///            Fixes starfield credits animation being an array of RGB colours instead of white.
 
-		// Set the source to the last line
-		pSrc += (height - 1) * skipSrc;
+	/*// 16-bit BMP images use 15-bit colour.
+	const uint32 bmiBpp = (bmi->bmiHeader.biBitCount == 16 ? 15 : bmi->bmiHeader.biBitCount);
 
-		for (sint32 i = 0; i < height; i++) {
-			std::memcpy(pDest, pSrc, sizeof(uint16) * width);		// NEED LINE CONVERSION HERE I FEAR (BUT AM NOT SURE!)
-			pSrc -= skipSrc;
-			pDest += skipDest;
+	if (bmiBpp != this->m_movieSurf->Bpp() || true) {*/
+		BMP_Image image = { 0 };
+		BMP_ParseInfoHeader(&bmi->bmiHeader, &image);
+		BMP_SetupChannelMasks(&image, true); // BMP images treat 16-bit as 15-bit.
+
+		DirectDraw_CopySurface(&this->m_movieSurf->m_desc, &image, false);
+
+		BMP_Cleanup(&image);
+	/*}
+	else {
+		// Animations are ONLY gonna be done in 16/15 bit - note m_movieSurf is created in the primary display format (since no BPP was given).
+		switch (this->m_movieSurf->Bpp()) {
+		// 16-bit (proper) can't occur in this block because 16-bit BMP images use 15-bit colour.
+		//case 16:
+		case 15:
+		case 24:
+		case 32:
+			// Set the source to the last line, since BMP images are stored flipped.
+			pSrc += (height - 1) * skipSrc;
+
+			for (sint32 i = 0; i < height; i++) {
+				std::memcpy(pDest, pSrc, width * byteDepth);
+				pSrc  -= skipSrc;
+				pDest += skipDest;
+			}
+			break;
 		}
-
-	}
-	else if (this->m_movieSurf->Bpp() == 16) {
-
-		// Set the source to the last line
-		pSrc += (height - 1) * skipSrc;
-
-		for (sint32 i = 0; i < height; i++) {
-			std::memcpy(pDest, pSrc, sizeof(uint16) * width);
-			pSrc -= skipSrc;
-			pDest += skipDest;
-		}
-
-	}
+	}*/
 }
 
 // <LegoRR.exe @0047ede0>

@@ -62,6 +62,7 @@ public:
 	bool Lock();
 	// <LegoRR.exe @0047ea70>
 	bool Unlock();
+	/// LEGACY: Use DirectDraw_CountMaskBits.
 	// <LegoRR.exe @0047eaa0>
 	sint32 CountMaskBits(uint32 mask) const;
 
