@@ -196,17 +196,29 @@ void __cdecl Camera_SetZoom(LegoCamera* cam, real32 zoom);
 // <LegoRR.exe @00436cc7>
 void __cdecl Camera_AddZoom(LegoCamera* cam, real32 zoomAmount);
 
+/// CUSTOM:
+real32 _Camera_ClampAngle(real32 radians);
+
+/// CUSTOM:
+real32 Camera_GetTilt(const LegoCamera* cam);
+
+/// CUSTOM:
+real32 Camera_GetRotation(const LegoCamera* cam);
+
+/// CUSTOM:
+real32 Camera_GetZoom(const LegoCamera* cam);
+
 // <LegoRR.exe @00436ceb>
 void __cdecl Camera_AddTranslation2D(LegoCamera* cam, real32 translateX, real32 translateY);
 
 // <LegoRR.exe @00436d0b>
-void __cdecl Camera_GetTopdownPosition(LegoCamera* cam, Vector3F* out_position);
+void __cdecl Camera_GetTopdownPosition(LegoCamera* cam, OUT Vector3F* position);
 
 // <LegoRR.exe @00436d2d>
 void __cdecl Camera_SetTopdownPosition(LegoCamera* cam, real32 xPos, real32 yPos);
 
 // <LegoRR.exe @00436d55>
-bool32 __cdecl Camera_GetTopdownWorldPos(LegoCamera* cam, Map3D* map, Vector3F* out_worldPos);
+bool32 __cdecl Camera_GetTopdownWorldPos(LegoCamera* cam, Map3D* map, OUT Vector3F* worldPos);
 
 // <LegoRR.exe @00436d9b>
 real32 __cdecl Camera_GetRotation(LegoCamera* cam);

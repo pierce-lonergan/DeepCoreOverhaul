@@ -107,6 +107,13 @@ void __cdecl LegoRR::Camera_EnableFreeMovement(LegoCamera* cam, bool32 on)
 {
 	if (on) cam->flags |= CameraFlags::CAMERA_FLAG_FREEMOVEMENT;
 	else    cam->flags &= ~CameraFlags::CAMERA_FLAG_FREEMOVEMENT;
+
+	/// CHANGE: Automatically clamp our camera position back in bounds after disabling.
+	if (!on) {
+		Camera_SetTilt(cam, Camera_GetTilt(cam));
+		Camera_SetZoom(cam, Camera_GetZoom(cam));
+		Camera_SetRotation(cam, Camera_GetRotation(cam));
+	}
 }
 
 // <LegoRR.exe @00435cf8>
@@ -496,10 +503,24 @@ void __cdecl LegoRR::Camera_SetTiltRange(LegoCamera* cam, real32 minTilt, real32
 // <LegoRR.exe @00436a82>
 void __cdecl LegoRR::Camera_SetTilt(LegoCamera* cam, real32 tilt)
 {
-	if (!(cam->flags & CameraFlags::CAMERA_FLAG_TILTRANGE) ||
-		(cam->flags & CameraFlags::CAMERA_FLAG_FREEMOVEMENT) ||
-		(tilt >= cam->tiltRange.min && tilt <= cam->tiltRange.max))
-	{
+	/// ALT FIX APPLY: Clamp angle so that doing loop-de-loops won't place the camera out of range.
+	//tilt = _Camera_ClampAngle(tilt);
+
+	/// FIX APPLY: Allow camera movement back into the allowed range.
+	bool inRange = Camera_IsFreeMovement(cam) || !(cam->flags & CameraFlags::CAMERA_FLAG_TILTRANGE) ||
+					(tilt >= cam->tiltRange.min && tilt <= cam->tiltRange.max);
+					//(tilt >= std::min(cam->tilt, cam->tiltRange.min) &&
+					// tilt <= std::max(cam->tilt, cam->tiltRange.max));
+
+	if (!inRange) {
+		// Clamp our tilt to the nearest boundary using our current tilt.
+		// Instead of clamping the angle, we can just force ourselves in-range.
+		// That way modders can freely change the ranges to something outside the normal [0,360].
+		tilt = std::clamp(cam->tilt, cam->tiltRange.min, cam->tiltRange.max);
+		inRange = true;
+	}
+
+	if (inRange) {
 		cam->tilt = tilt;
 		Gods98::Container_SetOrientation(cam->cont4, cam->cont2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
 		Gods98::Container_AddRotation(cam->cont4, Gods98::Container_Combine::Before, 1.0f, 0.0f, 0.0f, -tilt);
@@ -523,10 +544,22 @@ void __cdecl LegoRR::Camera_SetRotationRange(LegoCamera* cam, real32 minRotation
 // <LegoRR.exe @00436b75>
 void __cdecl LegoRR::Camera_SetRotation(LegoCamera* cam, real32 rotation)
 {
-	if (!(cam->flags & CameraFlags::CAMERA_FLAG_ROTATIONRANGE) ||
-		(cam->flags & CameraFlags::CAMERA_FLAG_FREEMOVEMENT) ||
-		(rotation >= cam->rotationRange.min && rotation <= cam->rotationRange.max))
-	{
+	// Don't clamp to allow ranges outside of [0,360]
+	//rotation = _Camera_ClampAngle(rotation);
+
+	/// FIX APPLY: Allow camera movement back into the allowed range.
+	bool inRange = Camera_IsFreeMovement(cam) || !(cam->flags & CameraFlags::CAMERA_FLAG_ROTATIONRANGE) ||
+					(rotation >= cam->rotationRange.min && rotation <= cam->rotationRange.max);
+					//(rotation >= std::min(cam->rotation, cam->rotationRange.min) &&
+					// rotation <= std::max(cam->rotation, cam->rotationRange.max));
+
+	if (!inRange) {
+		// Clamp our rotation to the nearest boundary using our current rotation.
+		rotation = std::clamp(cam->rotation, cam->rotationRange.min, cam->rotationRange.max);
+		inRange = true;
+	}
+
+	if (inRange) {
 		cam->rotation = rotation;
 		Gods98::Container_SetOrientation(cam->cont2, nullptr, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
 		Gods98::Container_AddRotation(cam->cont2, Gods98::Container_Combine::Before, 0.0f, 0.0f, 1.0f, -rotation);
@@ -550,12 +583,20 @@ void __cdecl LegoRR::Camera_SetZoomRange(LegoCamera* cam, real32 minZoom, real32
 // <LegoRR.exe @00436c6c>
 void __cdecl LegoRR::Camera_SetZoom(LegoCamera* cam, real32 zoom)
 {
-	if (!(cam->flags & CameraFlags::CAMERA_FLAG_ZOOMRANGE) ||
-		(cam->flags & CameraFlags::CAMERA_FLAG_FREEMOVEMENT) ||
-		(zoom >= cam->zoomRange.min && zoom <= cam->zoomRange.max))
-	{
-		cam->zoom = zoom;
-		// no Container transform like the other angles
+	/// FIX APPLY: Allow camera movement back into the allowed range.
+	bool inRange = Camera_IsFreeMovement(cam) || !(cam->flags & CameraFlags::CAMERA_FLAG_ZOOMRANGE) ||
+					(zoom >= cam->zoomRange.min && zoom <= cam->zoomRange.max);
+					//(zoom >= std::min(cam->zoom, cam->zoomRange.min) &&
+					// zoom <= std::max(cam->zoom, cam->zoomRange.max));
+
+	if (!inRange) {
+		// Clamp our zoom to the nearest boundary using our current zoom.
+		zoom = std::clamp(cam->zoom, cam->zoomRange.min, cam->zoomRange.max);
+		inRange = true;
+	}
+
+	if (inRange) {
+		cam->zoom = zoom; // No Container transform like the other angles.
 	}
 }
 
@@ -565,6 +606,36 @@ void __cdecl LegoRR::Camera_AddZoom(LegoCamera* cam, real32 zoomAmount)
 	Camera_SetZoom(cam, cam->zoom + zoomAmount);
 }
 
+/// CUSTOM:
+real32 LegoRR::_Camera_ClampAngle(real32 radians)
+{
+	const real32 range = M_PI * 2.0f;
+	if (radians >= range)
+		return std::fmod(radians, range);
+	else if (radians < 0)
+		return (std::fmod(radians, range) + range);
+	else
+		return radians;
+}
+
+/// CUSTOM:
+real32 LegoRR::Camera_GetTilt(const LegoCamera* cam)
+{
+	return cam->tilt;
+}
+
+/// CUSTOM:
+real32 LegoRR::Camera_GetRotation(const LegoCamera* cam)
+{
+	return cam->rotation;
+}
+
+/// CUSTOM:
+real32 LegoRR::Camera_GetZoom(const LegoCamera* cam)
+{
+	return cam->zoom;
+}
+
 // <LegoRR.exe @00436ceb>
 void __cdecl LegoRR::Camera_AddTranslation2D(LegoCamera* cam, real32 translateX, real32 translateY)
 {
@@ -572,10 +643,10 @@ void __cdecl LegoRR::Camera_AddTranslation2D(LegoCamera* cam, real32 translateX,
 }
 
 // <LegoRR.exe @00436d0b>
-void __cdecl LegoRR::Camera_GetTopdownPosition(LegoCamera* cam, Vector3F* out_position)
+void __cdecl LegoRR::Camera_GetTopdownPosition(LegoCamera* cam, OUT Vector3F* position)
 {
 	if (cam->type == LegoCamera_Type::LegoCamera_Top) {
-		Gods98::Container_GetPosition(cam->cont2, nullptr, out_position);
+		Gods98::Container_GetPosition(cam->cont2, nullptr, position);
 	}
 }
 
@@ -588,12 +659,12 @@ void __cdecl LegoRR::Camera_SetTopdownPosition(LegoCamera* cam, real32 xPos, rea
 }
 
 // <LegoRR.exe @00436d55>
-bool32 __cdecl LegoRR::Camera_GetTopdownWorldPos(LegoCamera* cam, Map3D* map, Vector3F* out_worldPos)
+bool32 __cdecl LegoRR::Camera_GetTopdownWorldPos(LegoCamera* cam, Map3D* map, OUT Vector3F* worldPos)
 {
 	if (cam->type == LegoCamera_Type::LegoCamera_Top) {
-		Gods98::Container_GetPosition(cam->cont2, nullptr, out_worldPos);
+		Gods98::Container_GetPosition(cam->cont2, nullptr, worldPos);
 
-		out_worldPos->z = Map3D_GetWorldZ(map, out_worldPos->x, out_worldPos->y);
+		worldPos->z = Map3D_GetWorldZ(map, worldPos->x, worldPos->y);
 	}
 	return true;
 }
