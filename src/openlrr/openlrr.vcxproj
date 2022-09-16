@@ -114,8 +114,8 @@
       <Message>Copying OpenLRR debug executable</Message>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>xcopy /y /d "$(SolutionDir)data\Settings\Shortcuts.cfg" "$(OutDir)Settings\"</Command>
-      <Command>xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
+      <Command>xcopy /y /d "$(SolutionDir)data\Settings\Shortcuts.cfg" "$(OutDir)Settings\"
+xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
       <Outputs>$(OutDir)always_run_this_build_step.txt</Outputs>
       <Message>Copying OpenLRR data files</Message>
     </CustomBuildStep>
@@ -143,8 +143,8 @@
       <Message>Copying OpenLRR release executable</Message>
     </PostBuildEvent>
     <CustomBuildStep>
-      <Command>xcopy /y /d "$(SolutionDir)data\Settings\Shortcuts.cfg" "$(OutDir)Settings\"</Command>
-      <Command>xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
+      <Command>xcopy /y /d "$(SolutionDir)data\Settings\Shortcuts.cfg" "$(OutDir)Settings\"
+xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
       <Outputs>$(OutDir)always_run_this_build_step.txt</Outputs>
       <Message>Copying OpenLRR data files</Message>
     </CustomBuildStep>
