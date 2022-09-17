@@ -111,7 +111,7 @@ enum GameFlags1 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 	GAME1_RENDERPANELS          = 0x800,
 	GAME1_RADAR_MAPVIEW         = 0x1000,
 	GAME1_RADAR_TRACKOBJECTVIEW = 0x2000,
-	GAME1_RADAR_UNK_4000        = 0x4000, // Signal lost flag? (radar feature only found in beta)
+	GAME1_RADAR_TRACKOBJECTLOST = 0x4000, // Radar feature only found in beta.
 	GAME1_FOGCOLOURRGB          = 0x8000,
 	GAME1_HIGHFOGCOLOURRGB      = 0x10000,
 	GAME1_RADAR_NOTRACKOBJECT   = 0x20000,
@@ -568,8 +568,8 @@ struct Lego_Globs // [LegoRR/Lego.c|struct:0xf00|tags:GLOBS]
 	/*2f8,28*/      LegoObject* recordObjs[OBJECT_MAXRECORDOBJECTS];
 	/*320,4*/       uint32 recordObjsCount;
 	/*324,10*/      Area2F radarScreenRect;
-	/*334,4*/       real32 tvTiltOrZoom_334;
-	/*338,8*/       Point2F tvFaceDirection_338;
+	/*334,4*/       real32 radarZoom;
+	/*338,8*/       Point2F radarCenter;
 	/*340,4*/       real32 MedPolyRange; // (cfg: Main::MedPolyRange)
 	/*344,4*/       real32 HighPolyRange; // (cfg: Main::HighPolyRange)
 	/*348,4*/       sint32 HPBlocks; // (cfg: Main::HPBlocks)
@@ -1141,7 +1141,8 @@ __inline bool32 __cdecl Lego_IsFirstPersonView(bool32 locked) { return (legoGlob
 __inline void __cdecl Lego_GetMouseWorldPosition(OUT Vector3F* vector) { *vector = legoGlobs.mouseWorldPos; }
 
 // <LegoRR.exe @00426180>
-#define Lego_UnkCameraTrack_InRadar_FUN_00426180 ((void (__cdecl* )(void))0x00426180)
+//#define Lego_DrawRadarMap ((void (__cdecl* )(void))0x00426180)
+void __cdecl Lego_DrawRadarMap(void);
 
 // <LegoRR.exe @00426210>
 #define Lego_SetMenuNextPosition ((void (__cdecl* )(OPTIONAL const Point2F* position))0x00426210)

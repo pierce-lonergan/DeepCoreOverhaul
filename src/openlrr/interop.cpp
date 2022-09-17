@@ -47,6 +47,7 @@
 #include "game/interface/Advisor.h"
 #include "game/interface/Interface.h"
 #include "game/interface/Pointers.h"
+#include "game/interface/RadarMap.h"
 #include "game/mission/Messages.h"
 #include "game/mission/NERPsFile.h"
 #include "game/mission/NERPsFunctions.h"
@@ -661,7 +662,7 @@ bool interop_hook_Gods98_DirectDraw(void)
 	result &= hook_write_jmpret(0x0047d010, Gods98::DirectDraw_AdjustTextureUsage);
 	result &= hook_write_jmpret(0x0047d090, Gods98::DirectDraw_GetAvailTextureMem);
 
-	// used by: Main_LoopUpdate, Lego_Shutdown_Full, RadarMap_Draw_FUN_0045de80
+	// used by: Main_LoopUpdate, Lego_Shutdown_Full, RadarMap_Draw
 	result &= hook_write_jmpret(0x0047d0e0, Gods98::DirectDraw_Clear);
 
 	// internal, no need to hook these
@@ -691,9 +692,9 @@ bool interop_hook_Gods98_Draw(void)
 	// used by: ObjInfo_DrawHealthBar, ToolTip_DrawBox
 	result &= hook_write_jmpret(0x00486350, Gods98::Draw_RectListEx);
 
-	// used by: RadarMap_Draw_FUN_0045de80
+	// used by: RadarMap_Draw
 	result &= hook_write_jmpret(0x004864d0, Gods98::Draw_RectList2Ex);
-	// used by: RadarMap_DrawDotCircle_FUN_0045ddc0
+	// used by: RadarMap_DrawSurveyDotCircle
 	result &= hook_write_jmpret(0x00486650, Gods98::Draw_DotCircle);
 
 	// internal, no need to hook these
@@ -1099,7 +1100,7 @@ bool interop_hook_Gods98_Main(void)
 	result &= hook_write_jmpret(0x00401b40, Gods98::noinline(Main_GetStartLevel));
 	
 	// used by: Lego_Initialise, LiveObject_DrawSelectedBox,
-	//           RadarMap_Initialise, RadarMap_Draw_FUN_0045de80
+	//           RadarMap_Initialise, RadarMap_Draw
 	result &= hook_write_jmpret(0x00401b70, Gods98::noinline(appWidth));
 	result &= hook_write_jmpret(0x00401b80, Gods98::noinline(appHeight));
 
@@ -1845,6 +1846,9 @@ bool interop_hook_LegoRR_Game(void)
 
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00424ff0, LegoRR::Lego_HandleKeys);
+
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x00426180, LegoRR::Lego_DrawRadarMap);
 
 	// Restore debug tooltip support.
 	// used by: Lego_HandleWorld
@@ -2687,6 +2691,45 @@ bool interop_hook_LegoRR_PTL(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_RadarMap(void)
+{
+	bool result = true;
+	
+	// used by: Lego_DrawRadarMap
+	result &= hook_write_jmpret(0x0045db60, LegoRR::RadarMap_SetZoom);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x0045db70, LegoRR::RadarMap_Initialise);
+	// used by: Lego_LoadMapSet
+	result &= hook_write_jmpret(0x0045dd50, LegoRR::RadarMap_Create);
+	
+	/// THIS IS A MERGED FUNCTION! DON'T HOOK!
+	// used by: Level_Free
+	//result &= hook_write_jmpret(0x0045ddb0, LegoRR::RadarMap_Free);
+	
+	// used by: LegoObject_Callback_UpdateRadarSurvey
+	result &= hook_write_jmpret(0x0045ddc0, LegoRR::RadarMap_DrawSurveyDotCircle);
+	// used by: Lego_DrawRadarMap
+	result &= hook_write_jmpret(0x0045de80, LegoRR::RadarMap_Draw);
+	// used by: RadarMap_Callback_AddObjectDrawRect
+	result &= hook_write_jmpret(0x0045e6c0, LegoRR::RadarMap_CanShowObject);
+	// used by: RadarMap_Draw
+	result &= hook_write_jmpret(0x0045e720, LegoRR::RadarMap_Callback_AddObjectDrawRect);
+	// used by: Lego_HandleRadarInput, Lego_HandleWorld
+	result &= hook_write_jmpret(0x0045e920, LegoRR::RadarMap_InsideRadarScreen);
+	// used by: Lego_HandleRadarInput, RadarMap_TrySelectObject
+	result &= hook_write_jmpret(0x0045e990, LegoRR::RadarMap_ScreenToWorldBlockPos);
+	// used by: Lego_HandleRadarInput
+	result &= hook_write_jmpret(0x0045eae0, LegoRR::RadarMap_TrySelectObject);
+	// used by: RadarMap_TrySelectObject
+	result &= hook_write_jmpret(0x0045eba0, LegoRR::RadarMap_Callback_FindObjectInClickArea);
+	// used by: RadarMap_DrawSurveyDotCircle, RadarMap_Draw, RadarMap_Callback_AddObjectDrawRect
+	result &= hook_write_jmpret(0x0045ec00, LegoRR::RadarMap_TransformRect);
+	// used by: RadarMap_Draw
+	result &= hook_write_jmpret(0x0045eca0, LegoRR::RadarMap_GetBlockColour);
+	
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Reward(void)
 {
 	bool result = true;
@@ -3041,6 +3084,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Objective();
 	result &= interop_hook_LegoRR_Pointers();
 	result &= interop_hook_LegoRR_PTL();
+	result &= interop_hook_LegoRR_RadarMap();
 	result &= interop_hook_LegoRR_Reward();
 	result &= interop_hook_LegoRR_SelectPlace();
 	result &= interop_hook_LegoRR_SFX();

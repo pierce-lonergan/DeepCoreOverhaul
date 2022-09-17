@@ -208,6 +208,9 @@ real32 Camera_GetRotation(const LegoCamera* cam);
 /// CUSTOM:
 real32 Camera_GetZoom(const LegoCamera* cam);
 
+/// CUSTOM:
+LegoObject* Camera_GetTrackObject(const LegoCamera* cam);
+
 // <LegoRR.exe @00436ceb>
 void __cdecl Camera_AddTranslation2D(LegoCamera* cam, real32 translateX, real32 translateY);
 

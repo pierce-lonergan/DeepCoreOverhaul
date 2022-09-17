@@ -397,9 +397,9 @@ void __cdecl LegoRR::Message_RemoveObjectReference(LegoObject* deadObj)
 		legoGlobs.cameraTrack->trackObj = nullptr;
 
 		// Is this setting a last-known/final position?
-		LegoObject_GetPosition(deadObj, &legoGlobs.tvFaceDirection_338.x, &legoGlobs.tvFaceDirection_338.y);
+		LegoObject_GetPosition(deadObj, &legoGlobs.radarCenter.x, &legoGlobs.radarCenter.y);
 		
-		legoGlobs.flags1 |= GAME1_RADAR_UNK_4000; // Signal lost flag? (radar feature only found in beta)
+		legoGlobs.flags1 |= GAME1_RADAR_TRACKOBJECTLOST; // Signal lost flag? (radar feature only found in beta)
 	}
 }
 

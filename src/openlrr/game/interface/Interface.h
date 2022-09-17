@@ -254,6 +254,7 @@ extern Interface_Globs & interfaceGlobs;
 // <LegoRR.exe @0041b860>
 #define Interface_FUN_0041b860 ((void (__cdecl* )(real32 elapsedAbs))0x0041b860)
 
+// This interface boolean is toggled on/off every 15-frames. Probably used for flashing.
 // <LegoRR.exe @0041b8e0>
 #define Interface_GetBool_004ded1c ((bool32 (__cdecl* )(void))0x0041b8e0)
 

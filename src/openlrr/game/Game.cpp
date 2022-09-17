@@ -771,6 +771,27 @@ void __cdecl LegoRR::Lego_UpdateSceneFog(bool32 fogEnabled, real32 elapsed)
 	}
 }
 
+
+// <LegoRR.exe @00426180>
+void __cdecl LegoRR::Lego_DrawRadarMap(void)
+{
+	if (Camera_GetTrackObject(legoGlobs.cameraTrack) == nullptr) {
+		legoGlobs.flags1 |= GAME1_RADAR_TRACKOBJECTLOST;
+	}
+
+	Point2F radarCenterPos = { 0.0f }; // dummy init
+	if (!(legoGlobs.flags1 & GAME1_RADAR_TRACKOBJECTLOST)) {
+		LegoObject_GetPosition(Camera_GetTrackObject(legoGlobs.cameraTrack), &radarCenterPos.x, &radarCenterPos.y);
+	}
+	else {
+		radarCenterPos = legoGlobs.radarCenter;
+	}
+	
+	RadarMap_SetZoom(Lego_GetRadarMap(), legoGlobs.radarZoom);
+	RadarMap_Draw(Lego_GetRadarMap(), &radarCenterPos);
+}
+
+
 LegoRR::ToolTip_Type LegoRR::Lego_PrepareObjectToolTip(LegoObject* liveObj)
 {
 	/// FIX APPLY: Increase horribly small buffer sizes
@@ -2180,7 +2201,7 @@ const char* __cdecl LegoRR::Level_Free(void)
 		Camera_SetFPObject(legoGlobs.cameraFP, nullptr, 0);
 		Message_CleanupSelectedUnitsCount();
 		NERPsFile_Free();
-		RadarMap_Free_UnwindMultiUse(level->radarMap);
+		RadarMap_Free(level->radarMap);
 		Map3D_Remove(level->map);
 		Lego_FreeDetailMeshes(level);
 		Detail_FreeTextureSet(level->textureSet);

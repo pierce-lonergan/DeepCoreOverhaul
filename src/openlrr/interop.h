@@ -72,6 +72,7 @@ bool interop_hook_LegoRR_Object(void);
 bool interop_hook_LegoRR_Objective(void);
 bool interop_hook_LegoRR_Pointers(void);
 bool interop_hook_LegoRR_PTL(void);
+bool interop_hook_LegoRR_RadarMap(void);
 bool interop_hook_LegoRR_Reward(void);
 bool interop_hook_LegoRR_SelectPlace(void);
 bool interop_hook_LegoRR_SFX(void);

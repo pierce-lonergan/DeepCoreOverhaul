@@ -766,7 +766,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 
 		//util::logf_removed((char*)legoGlobs.rootCont, "animtex\\dirt");
 
-		legoGlobs.tvTiltOrZoom_334 = 15.0f;
+		legoGlobs.radarZoom = 15.0f;
 		legoGlobs.radarScreenRect = Area2F { 16.0f, 13.0f, 151.0f, 151.0f };
 
 		Effect_Load_RockFallStylesAll(legoConfig, legoGlobs.gameName, legoGlobs.rootCont);
@@ -1282,7 +1282,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	const bool32 inRadarMapView = ((legoGlobs.flags1 & GAME1_RADARON) && (legoGlobs.flags1 & GAME1_RADAR_MAPVIEW));
 
 	if (inRadarMapView) {
-		Lego_UnkCameraTrack_InRadar_FUN_00426180();
+		Lego_DrawRadarMap();
 	}
 	LegoObject_UpdateAllRadarSurvey(elapsedWorld, inRadarMapView);
 

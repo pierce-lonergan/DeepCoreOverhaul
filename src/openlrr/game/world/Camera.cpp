@@ -636,6 +636,12 @@ real32 LegoRR::Camera_GetZoom(const LegoCamera* cam)
 	return cam->zoom;
 }
 
+/// CUSTOM:
+LegoRR::LegoObject* LegoRR::Camera_GetTrackObject(const LegoCamera* cam)
+{
+	return cam->trackObj;
+}
+
 // <LegoRR.exe @00436ceb>
 void __cdecl LegoRR::Camera_AddTranslation2D(LegoCamera* cam, real32 translateX, real32 translateY)
 {
