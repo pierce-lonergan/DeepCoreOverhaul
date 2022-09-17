@@ -1058,17 +1058,22 @@ bool32 __cdecl Lego_MainLoop(real32 elapsed);
 //#define Lego_UpdateSceneFog ((void (__cdecl* )(bool32 fogEnabled, real32 elapsed))0x00424660)
 void __cdecl Lego_UpdateSceneFog(bool32 fogEnabled, real32 elapsed);
 
+// DATA: Gods98::Viewport* viewMain
 // <LegoRR.exe @00424700>
-#define Lego_DrawObjectLaserTrackerBox ((bool32 (__cdecl* )(LegoObject* liveObj, Gods98::Viewport* viewMain))0x00424700)
+//#define Lego_Callback_DrawObjectLaserTrackerBox ((bool32 (__cdecl* )(LegoObject* liveObj, void* pViewMain))0x00424700)
+bool32 __cdecl Lego_Callback_DrawObjectLaserTrackerBox(LegoObject* liveObj, void* pViewMain);
 
 // <LegoRR.exe @00424740>
-#define Lego_DrawAllLaserTrackerBoxes ((void (__cdecl* )(Gods98::Viewport* viewMain))0x00424740)
+//#define Lego_DrawAllLaserTrackerBoxes ((void (__cdecl* )(Gods98::Viewport* viewMain))0x00424740)
+void __cdecl Lego_DrawAllLaserTrackerBoxes(Gods98::Viewport* viewMain);
 
 // <LegoRR.exe @00424760>
-#define Lego_DrawAllSelectedUnitBoxes ((void (__cdecl* )(Gods98::Viewport* viewMain))0x00424760)
+//#define Lego_DrawAllSelectedUnitBoxes ((void (__cdecl* )(Gods98::Viewport* viewMain))0x00424760)
+void __cdecl Lego_DrawAllSelectedUnitBoxes(Gods98::Viewport* viewMain);
 
 // <LegoRR.exe @004247e0>
-#define Lego_DrawObjectSelectionBox ((void (__cdecl* )(LegoObject* liveObj, Gods98::Viewport* view, real32 r, real32 g, real32 b))0x004247e0)
+//#define Lego_DrawObjectSelectionBox ((void (__cdecl* )(LegoObject* liveObj, Gods98::Viewport* view, real32 r, real32 g, real32 b))0x004247e0)
+void __cdecl Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Viewport* view, real32 r, real32 g, real32 b);
 
 // Main_State.Shutdown function
 // Simply halts music playback, then calls std::exit(0); (by calling Lego_Exit();)
@@ -1219,7 +1224,8 @@ void __cdecl Lego_HandleWorldDebugKeys(sint32 bx, sint32 by, LegoObject* mouseOv
 //void __cdecl Lego_UnkUpdateMapsWorldUnk_FUN_004290d0(real32 elapsedAbs, bool32 pass2);
 
 // <LegoRR.exe @004292e0>
-#define Lego_DrawDragSelectionBox ((void (__cdecl* )(Lego_Level* level))0x004292e0)
+//#define Lego_DrawDragSelectionBox ((void (__cdecl* )(Lego_Level* level))0x004292e0)
+void __cdecl Lego_DrawDragSelectionBox(Lego_Level* level);
 
 // <LegoRR.exe @004293a0>
 #define Lego_MainView_MouseTransform ((void (__cdecl* )(uint32 mouseX, uint32 mouseY, OUT real32* xPos, OUT real32* yPos))0x004293a0)

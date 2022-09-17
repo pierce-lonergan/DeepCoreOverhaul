@@ -771,6 +771,162 @@ void __cdecl LegoRR::Lego_UpdateSceneFog(bool32 fogEnabled, real32 elapsed)
 	}
 }
 
+// DATA: Gods98::Viewport* viewMain
+// <LegoRR.exe @00424700>
+bool32 __cdecl LegoRR::Lego_Callback_DrawObjectLaserTrackerBox(LegoObject* liveObj, void* pViewMain)
+{
+	Gods98::Viewport* viewMain = static_cast<Gods98::Viewport*>(pViewMain);
+
+	if (liveObj->flags4 & LIVEOBJ4_LASERTRACKERMODE) {
+		Lego_DrawObjectSelectionBox(liveObj, viewMain, 1.0f, 0.0f, 0.0f); // red
+	}
+	return false;
+}
+
+// <LegoRR.exe @00424740>
+void __cdecl LegoRR::Lego_DrawAllLaserTrackerBoxes(Gods98::Viewport* viewMain)
+{
+	for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
+		Lego_Callback_DrawObjectLaserTrackerBox(obj, viewMain);
+	}
+	//LegoObject_RunThroughListsSkipUpgradeParts(Lego_Callback_DrawObjectLaserTrackerBox, viewMain);
+}
+
+// <LegoRR.exe @00424760>
+void __cdecl LegoRR::Lego_DrawAllSelectedUnitBoxes(Gods98::Viewport* viewMain)
+{
+	// Primary selected unit has a green box.
+	// All remaining selected units have a yellow box.
+	const ColourRGBF PRIMARY   = { 0.0f, 1.0f, 0.0f }; // green
+	const ColourRGBF SECONDARY = { 1.0f, 1.0f, 0.0f }; // yellow
+
+	const uint32 unitCount = Message_GetNumSelectedUnits();
+	LegoObject** units = Message_GetSelectedUnits();
+	for (uint32 i = 0; i < unitCount; i++) {
+		const ColourRGBF colour = (i == 0 ? PRIMARY : SECONDARY);
+		
+		Lego_DrawObjectSelectionBox(units[i], viewMain, colour.red, colour.green, colour.blue);
+	}
+}
+
+// <LegoRR.exe @004247e0>
+void __cdecl LegoRR::Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Viewport* view, real32 r, real32 g, real32 b)
+{
+	if (LegoObject_IsHidden(liveObj))
+		return; // Don't show for hidden objects.
+
+	// Darken lines when interface is frozen.
+	if (legoGlobs.flags1 & GAME1_FREEZEINTERFACE) {
+		r *= 0.3f;
+		g *= 0.3f;
+		b *= 0.3f;
+	}
+
+	Vector3F wPos = { 0.0f }; // dummy init
+	LegoObject_GetPosition(liveObj, &wPos.x, &wPos.y);
+	wPos.z = Map3D_GetWorldZ(Lego_GetMap(), wPos.x, wPos.y);
+	wPos.z -= StatsObject_GetCollHeight(liveObj) / 2.0f; // Raise z to center of collision box.
+
+	Point2F screenPt = { 0.0f }; // dummy init
+	Gods98::Viewport_WorldToScreen(view, &screenPt, &wPos);
+	if (screenPt.x >= 0.0f && screenPt.x <= Gods98::appWidth() &&
+		screenPt.y >= 0.0f && screenPt.y <= Gods98::appHeight())
+	{
+		const Vector4F transform4d = { screenPt.x, screenPt.y, 0.0f, 1.0f };
+		Vector3F wFromScreenPos;
+		Gods98::Viewport_InverseTransform(view, &wFromScreenPos, &transform4d);
+
+		Vector3F wDiff;
+		Gods98::Maths_Vector3DSubtract(&wDiff, &wPos, &wFromScreenPos);
+		Gods98::Maths_Vector3DNormalize(&wDiff);
+		const Vector3F crossProdRhs = { 0.0f, 1.0f, 0.0f };
+		Vector3F crossProd;
+		Gods98::Maths_Vector3DCrossProduct(&crossProd, &wDiff, &crossProdRhs);
+		Gods98::Maths_Vector3DNormalize(&crossProd);
+
+		Vector3F wPos2;
+		Gods98::Maths_RayEndPoint(&wPos2, &wPos, &crossProd, StatsObject_GetPickSphere(liveObj));
+		//Gods98::Maths_Vector3DScale(&crossProd, &crossProd, StatsObject_GetPickSphere(liveObj));
+		//Gods98::Maths_Vector3DAdd(&wPos2, &wPos, &crossProd);
+
+		//Vector3F local_4c;
+		//Point2F local_40[2];
+		Point2F screenPt2; // local_40
+		Gods98::Viewport_WorldToScreen(view, &screenPt2, &wPos2);
+		const real32 dist = Gods98::Maths_Vector2DDistance(&screenPt, &screenPt2);
+		const real32 radius = (dist / 2.5f);
+		// Minimum side length of 3 pixels, plus extra length scaled by distance.
+		const real32 sideLength = 3.0f + (radius / 5.0f);
+
+		// 1 __1b  2__ 3
+		//  |         |
+		// 0           3b
+		//       .     
+		// 7b  scrPt   4
+		//  |__     __|
+		// 7   6   5b  5
+
+		Point2F linePts1[8] = { 0.0f }; // dummy inits
+		Point2F linePts2[8] = { 0.0f };
+
+		const Point2F start = {
+			(screenPt.x - radius),
+			(screenPt.y - radius),
+		};
+		const Point2F end = {
+			(screenPt.x + radius),
+			(screenPt.y + radius),
+		};
+		const Point2F startSide = {
+			(start.x + sideLength),
+			(start.y + sideLength),
+		};
+		const Point2F endSide = {
+			(end.x - sideLength),
+			(end.y - sideLength),
+		};
+
+		// Top-left corner.
+		linePts1[0] = Point2F { start.x, startSide.y };
+		linePts2[0] = Point2F { start.x,     start.y };
+		linePts1[1] = Point2F { start.x+1,   start.y }; // +1 to skip overlapping pixel.
+		linePts2[1] = Point2F { startSide.x, start.y };
+
+		// Top-right corner.
+		linePts1[2] = Point2F { endSide.x,   start.y };
+		linePts2[2] = Point2F { end.x,       start.y };
+		linePts1[3] = Point2F { end.x,     start.y+1 }; // +1 to skip overlapping pixel.
+		linePts2[3] = Point2F { end.x,   startSide.y };
+
+		// Bottom-right corner.
+		linePts1[4] = Point2F { end.x,     endSide.y };
+		linePts2[4] = Point2F { end.x,         end.y };
+		linePts1[5] = Point2F { end.x-1,       end.y }; // -1 to skip overlapping pixel.
+		linePts2[5] = Point2F { endSide.x,     end.y };
+
+		// Bottom-left corner.
+		linePts1[6] = Point2F { startSide.x,   end.y };
+		linePts2[6] = Point2F { start.x,       end.y };
+		linePts1[7] = Point2F { start.x,     end.y-1 }; // -1 to skip overlapping pixel.
+		linePts2[7] = Point2F { start.x,   endSide.y };
+
+		Gods98::Draw_LineListEx(linePts1, linePts2, 8, r, g, b, Gods98::DrawEffect::None);
+
+
+		// Draw custom name if the unit has one.
+		if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE) &&
+			liveObj->customName != nullptr && liveObj->customName[0] != '\0')
+		{
+			Gods98::Font* font = legoGlobs.fontToolTip;
+			const sint32 x = static_cast<sint32>(screenPt.x - radius);
+			const sint32 y = static_cast<sint32>(screenPt.y - radius) - Gods98::Font_GetHeight(font);
+
+			/// FIX APPLY: Printf safety (use %s).
+			Gods98::Font_PrintF(font, x, y, "%s", liveObj->customName);
+		}
+	}
+}
+
 
 // <LegoRR.exe @00426180>
 void __cdecl LegoRR::Lego_DrawRadarMap(void)
@@ -1941,6 +2097,35 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 	}
 }
 
+
+// <LegoRR.exe @004292e0>
+void __cdecl LegoRR::Lego_DrawDragSelectionBox(Lego_Level* level)
+{
+	if (legoGlobs.flags1 & GAME1_MULTISELECT) {
+		const Point2F end = {
+			static_cast<real32>(Gods98::msx()),
+			static_cast<real32>(Gods98::msy()),
+		};
+		Point2F start;
+		Gods98::Viewport_WorldToScreen(legoGlobs.viewMain, &start, &legoGlobs.vectorDragStartUnk_a4);
+
+		// 0 ____ 1
+		//  |    |
+		//  |____|
+		// 3      2
+
+		Point2F lineList[5] = { 0.0f }; // dummy init
+		lineList[0] = Point2F { start.x, start.y };
+		lineList[1] = Point2F {   end.x, start.y };
+		lineList[2] = Point2F {   end.x,   end.y };
+		lineList[3] = Point2F { start.x,   end.y };
+		lineList[4] = lineList[0];
+
+		Gods98::Draw_LineListEx(lineList, lineList + 1, 4, legoGlobs.DragBoxRGB.red,
+								legoGlobs.DragBoxRGB.green, legoGlobs.DragBoxRGB.blue,
+								Gods98::DrawEffect::HalfTrans);
+	}
+}
 
 
 // Returns TRUE if liveObj (or its drivenObj) is the first-person unit.

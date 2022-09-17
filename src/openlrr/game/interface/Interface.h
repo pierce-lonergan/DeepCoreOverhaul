@@ -330,7 +330,8 @@ bool32 __cdecl Interface_CallbackDoMenuIconKeyAction(Interface_MenuItemType menu
 #define Interface_FUN_0041cc10 ((void (__cdecl* )(const Point2F* point, uint32 unkWidth, uint32 unkHeight))0x0041cc10)
 
 // <LegoRR.exe @0041cc60>
-#define Interface_Front_DrawLineListUnk_FUN_0041cc60 ((void (__cdecl* )(const Area2F* rect))0x0041cc60)
+//#define Interface_DrawHoverOutline ((void (__cdecl* )(const Area2F* area))0x0041cc60)
+void __cdecl Interface_DrawHoverOutline(const Area2F* area);
 
 // <LegoRR.exe @0041cdd0>
 #define Interface_ChangeMenu_IfVehicleMounted_IsLiveObject ((void (__cdecl* )(LegoObject* liveObj))0x0041cdd0)

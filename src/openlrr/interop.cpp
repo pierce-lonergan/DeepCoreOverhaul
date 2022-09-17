@@ -48,6 +48,7 @@
 #include "game/interface/Interface.h"
 #include "game/interface/Pointers.h"
 #include "game/interface/RadarMap.h"
+#include "game/interface/ToolTip.h"
 #include "game/mission/Messages.h"
 #include "game/mission/NERPsFile.h"
 #include "game/mission/NERPsFunctions.h"
@@ -1843,6 +1844,14 @@ bool interop_hook_LegoRR_Game(void)
 
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00424660, LegoRR::Lego_UpdateSceneFog);
+	// used by: Lego_DrawAllLaserTrackerBoxes
+	result &= hook_write_jmpret(0x00424700, LegoRR::Lego_Callback_DrawObjectLaserTrackerBox);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x00424740, LegoRR::Lego_DrawAllLaserTrackerBoxes);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x00424760, LegoRR::Lego_DrawAllSelectedUnitBoxes);
+	// used by: Encyclopedia_DrawSelectBox, Lego_Callback_DrawObjectLaserTrackerBox, Lego_DrawAllSelectedUnitBoxes
+	result &= hook_write_jmpret(0x004247e0, LegoRR::Lego_DrawObjectSelectionBox);
 
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00424ff0, LegoRR::Lego_HandleKeys);
@@ -1858,6 +1867,9 @@ bool interop_hook_LegoRR_Game(void)
 
 	// used by: Lego_HandleWorld
 	result &= hook_write_jmpret(0x00428810, LegoRR::Lego_HandleWorldDebugKeys);
+
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x004292e0, LegoRR::Lego_DrawDragSelectionBox);
 
 	// used by: AITask_Callback_UpdateObject, LegoObject_TryRunAway
 	result &= hook_write_jmpret(0x004294f0, LegoRR::Lego_IsFPObject);
@@ -1891,6 +1903,9 @@ bool interop_hook_LegoRR_Interface(void)
 	result &= hook_write_jmpret(0x0041c370, LegoRR::Interface_DoF2InterfaceKeyAction);
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x0041c3a0, LegoRR::Interface_CallbackDoMenuIconKeyAction);
+
+	// used by: Interface_FUN_0041b3c0, Priorities_Draw
+	result &= hook_write_jmpret(0x0041cc60, LegoRR::Interface_DrawHoverOutline);
 
 	return_interop(result);
 }
@@ -2906,6 +2921,16 @@ bool interop_hook_LegoRR_Stats(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_ToolTip(void)
+{
+	bool result = true;
+
+	// used by: Reward_DrawItem, ToolTip_Draw
+	result &= hook_write_jmpret(0x0046bb70, LegoRR::ToolTip_DrawBox);
+	
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Water(void)
 {
 	bool result = true;
@@ -3090,8 +3115,9 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_SFX();
 	result &= interop_hook_LegoRR_Smoke();
 	result &= interop_hook_LegoRR_Stats();
-	result &= interop_hook_LegoRR_Weapons();
+	result &= interop_hook_LegoRR_ToolTip();
 	result &= interop_hook_LegoRR_Water();
+	result &= interop_hook_LegoRR_Weapons();
 
 	// Only a few functions from each of these have been
 	// defined in order to fix certain original bugs.

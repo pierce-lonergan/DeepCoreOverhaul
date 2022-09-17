@@ -152,6 +152,7 @@ struct Vector4F {
 			/*0c,4*/ real32 w;
 			/*10*/
 		};
+		/*00,8*/	Point2F vec2;
 		/*00,c*/	Vector3F vec3;
 		/*00,10*/	std::array<real32, 4> values;
 		/*10*/

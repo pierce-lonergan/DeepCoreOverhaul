@@ -1,9 +1,11 @@
 // Interface.cpp : 
 //
 
+#include "../../engine/drawing/Draw.h"
 #include "../../engine/input/Input.h"
 #include "../../engine/input/Keys.h"
 
+#include "../Game.h"
 #include "../Shortcuts.hpp"
 
 #include "Interface.h"
@@ -74,6 +76,78 @@ bool32 __cdecl LegoRR::Interface_CallbackDoMenuIconKeyAction(Interface_MenuItemT
 		Shortcut_Activate(ShortcutID::InterfaceActionModifier, true);
 	}
 	return false;
+}
+
+
+// <LegoRR.exe @0041cc60>
+void __cdecl LegoRR::Interface_DrawHoverOutline(const Area2F* area)
+{
+	if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE)) {
+		Point2F start = {
+			area->x,
+			area->y,
+		};
+		Point2F end = {
+			(area->x + area->width),
+			(area->y + area->height),
+		};
+
+		// Draw for rect expanded by 1 pixel.
+		// Then draw for rect expanded by 2 pixels, for a 2-pixel-width rectangle outline.
+
+#if true
+		/// REFACTOR: Draw all sets of lines in one Draw call instead of two.
+
+		Point2F rectLinesFrom[8] = { 0.0f }; // dummy inits
+		Point2F rectLinesTo[8] = { 0.0f };
+		
+		for (uint32 i = 0; i < 2; i++) {
+			start.x -= 1.0f;
+			start.y -= 1.0f;
+			end.x   += 1.0f;
+			end.y   += 1.0f;
+
+			// 0 ____ 1
+			//  |    |
+			//  |____|
+			// 3      2
+
+			rectLinesFrom[(i*4) + 0] = Point2F { start.x, start.y };
+			rectLinesFrom[(i*4) + 1] = Point2F {   end.x, start.y };
+			rectLinesFrom[(i*4) + 2] = Point2F {   end.x,   end.y };
+			rectLinesFrom[(i*4) + 3] = Point2F { start.x,   end.y };
+			for (uint32 j = 0; j < 4; j++) {
+				rectLinesTo[(i*4) + j] = rectLinesFrom[(i*4) + ((j+1)%4)];
+			}
+		}
+		Gods98::Draw_LineListEx(rectLinesFrom, rectLinesTo, 8, 0.0f, 1.0f, 0.0f, Gods98::DrawEffect::None);
+
+#else
+		Point2F rectLines[5] = { 0.0f }; // dummy init
+
+		for (uint32 i = 0; i < 2; i++) {
+			start.x -= 1.0f;
+			start.y -= 1.0f;
+			end.x   += 2.0f;
+			end.y   += 2.0f;
+
+			// 0 ____ 1
+			//  |    |
+			//  |____|
+			// 3      2
+
+			rectLines[0] = Point2F { start.x, start.y };
+			rectLines[1] = Point2F {   end.x, start.y };
+			rectLines[2] = Point2F {   end.x,   end.y };
+			rectLines[3] = Point2F { start.x,   end.y };
+			rectLines[4] = rectLines[0];
+
+			Gods98::Draw_LineListEx(rectLines, rectLines + 1, 4, 0.0f, 1.0f, 0.0f, Gods98::DrawEffect::None);
+		}
+#endif
+
+	}
+	return;
 }
 
 #pragma endregion

@@ -161,8 +161,8 @@ extern ToolTip_Globs & toolTipGlobs;
 // For some weird reason, Area2F is passed BY VALUE here.
 // The only reason this was even determined was due to the weird compiler behavior when calling this function.
 // <LegoRR.exe @0046bb70>
-#define ToolTip_DrawBox ((void (__cdecl* )(Area2F valueRect, real32 rcRed, real32 rcGreen, real32 rcBlue, real32 ln1Red, real32 ln1Green, real32 ln1Blue, real32 ln2Red, real32 ln2Green, real32 ln2Blue, bool32 halfTrans))0x0046bb70)
-//void __cdecl ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGreen, real32 rcBlue, real32 ln1Red, real32 ln1Green, real32 ln1Blue, real32 ln2Red, real32 ln2Green, real32 ln2Blue, bool32 halfTrans);
+//#define ToolTip_DrawBox ((void (__cdecl* )(Area2F valueRect, real32 rcRed, real32 rcGreen, real32 rcBlue, real32 ln1Red, real32 ln1Green, real32 ln1Blue, real32 ln2Red, real32 ln2Green, real32 ln2Blue, bool32 halfTrans))0x0046bb70)
+void __cdecl ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGreen, real32 rcBlue, real32 ln1Red, real32 ln1Green, real32 ln1Blue, real32 ln2Red, real32 ln2Green, real32 ln2Blue, bool32 halfTrans);
 
 // <LegoRR.exe @0046bef0>
 #define ToolTip_Draw ((void (__cdecl* )(ToolTipData* toolTip, uint32 x, uint32 y))0x0046bef0)
