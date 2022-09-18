@@ -1241,7 +1241,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	Lego_DrawDragSelectionBox(legoGlobs.currLevel);
 
 	if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE)) {
-		Bubble_Unk_DrawObjectUIs_FUN_004074d0(elapsedInterface);
+		Bubble_DrawAllObjInfos(elapsedInterface);
 	}
 
 	// GFX LOGIC: Render radar tracker viewport.
@@ -1941,8 +1941,7 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 			Vector3F renameWorldPos;
 			Gods98::Container* cont = LegoObject_GetActivityContainer(renameObj);
 			Gods98::Container_GetPosition(cont, nullptr, &renameWorldPos);
-			const real32 collHeight = StatsObject_GetCollHeight(renameObj);
-			renameWorldPos.z = (renameWorldPos.z - collHeight * 0.5f);
+			renameWorldPos.z -= StatsObject_GetCollHeight(renameObj) / 2.0f; // Raise Z to center of collision box.
 
 			// Don't try to rename units that are off-screen.
 			Point2F renameScreenPos;

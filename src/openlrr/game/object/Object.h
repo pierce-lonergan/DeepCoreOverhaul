@@ -128,7 +128,7 @@ enum LiveFlags1 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ1_UNUSED_10000000   = 0x10000000, // Likely unused, but included to fill in the gaps.
 	LIVEOBJ1_RESTING           = 0x20000000,
 	LIVEOBJ1_EATING            = 0x40000000,
-	LIVEOBJ1_UNK_80000000      = 0x80000000, // Activity_FloatOn
+	LIVEOBJ1_CANTDO            = 0x80000000, // Activity_FloatOn
 };
 flags_end(LiveFlags1, 0x4);
 
@@ -227,7 +227,7 @@ enum LiveFlags4 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ4_UNK_4         = 0x4,
 	LIVEOBJ4_UNK_8         = 0x8,
 	LIVEOBJ4_UNK_10        = 0x10,
-	LIVEOBJ4_CALLTOARMS_20 = 0x20, 
+	LIVEOBJ4_CALLTOARMS    = 0x20, 
 	LIVEOBJ4_DOCKOCCUPIED       = 0x40, // Used when a building water entrance is occupied (for both vehicle and building). Linked by routeToObject.
 	LIVEOBJ4_ENTRANCEOCCUPIED   = 0x80, // Used when a building land entrance is occupied (for both vehicle and building). Linked by routeToObject.
 	LIVEOBJ4_USEDBYCONSTRUCTION = 0x100, // Used when resource is placed in construction zone (reserved, and not for use?).

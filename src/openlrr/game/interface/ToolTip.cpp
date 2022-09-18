@@ -38,6 +38,7 @@ void __cdecl LegoRR::ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGr
 	Point2F ln2ListFrom[10] = { 0.0f };
 	Point2F ln2ListTo[10]   = { 0.0f };
 
+	// This uses the same border drawing method as: ObjInfo_DrawHealthBar
 	// int2_8 is probably outline thickness.
 	for (uint32 i = 0; i < toolTipGlobs.int2_8; i++) {
 		const Point2F start = {

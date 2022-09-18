@@ -23,6 +23,8 @@ namespace LegoRR
 
 #pragma region Constants
 
+#define OBJINFO_HUNGERIMAGECOUNT	5
+
 #pragma endregion
 
 /**********************************************************************************
@@ -61,7 +63,7 @@ struct ObjInfo_Globs // [LegoRR/ObjInfo.c|struct:0x78|tags:GLOBS]
 	/*3c,c*/	ColourRGBF HealthBarRGB;
 	/*48,c*/	ColourRGBF HealthBarBackgroundRGB;
 	/*54,8*/	Point2F HungerPosition;
-	/*5c,14*/	Gods98::Image* HungerImages[5];
+	/*5c,14*/	Gods98::Image* HungerImages[OBJINFO_HUNGERIMAGECOUNT];
 	/*70,8*/	Point2F BubblePosition;
 	/*78*/
 };
@@ -110,13 +112,16 @@ extern ObjInfo_Globs & objinfoGlobs;
 #define ObjInfo_LoadBubble ((bool32 (__cdecl* )(const Gods98::Config* config, const char* gameName))0x00459d10)
 
 // <LegoRR.exe @00459dc0>
-#define ObjInfo_DrawHealthBar ((void (__cdecl* )(LegoObject* liveObj, sint32 screenX, sint32 screenY))0x00459dc0)
+//#define ObjInfo_DrawHealthBar ((void (__cdecl* )(LegoObject* liveObj, sint32 screenX, sint32 screenY))0x00459dc0)
+void __cdecl ObjInfo_DrawHealthBar(LegoObject* liveObj, sint32 screenX, sint32 screenY);
 
 // <LegoRR.exe @0045a210>
-#define ObjInfo_DrawHungerImage ((void (__cdecl* )(LegoObject* liveObj, sint32 screenX, sint32 screenY))0x0045a210)
+//#define ObjInfo_DrawHungerImage ((void (__cdecl* )(LegoObject* liveObj, sint32 screenX, sint32 screenY))0x0045a210)
+void __cdecl ObjInfo_DrawHungerImage(LegoObject* liveObj, sint32 screenX, sint32 screenY);
 
 // <LegoRR.exe @0045a290>
-#define ObjInfo_DrawBubbleImage ((void (__cdecl* )(Gods98::Image* image, sint32 screenX, sint32 screenY))0x0045a290)
+//#define ObjInfo_DrawBubbleImage ((void (__cdecl* )(Gods98::Image* image, sint32 screenX, sint32 screenY))0x0045a290)
+void __cdecl ObjInfo_DrawBubbleImage(Gods98::Image* image, sint32 screenX, sint32 screenY);
 
 #pragma endregion
 

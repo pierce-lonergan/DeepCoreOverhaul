@@ -1132,7 +1132,7 @@ __inline void __cdecl Lego_LockGameSpeed(bool32 locked) { gamectrlGlobs.isGameSp
 
 // <LegoRR.exe @00425cb0>
 //#define Lego_IsFirstPersonView ((bool32 (__cdecl* )(void))0x00425cb0)
-__inline bool32 __cdecl Lego_IsFirstPersonView(bool32 locked) { return (legoGlobs.viewMode == ViewMode_FP); }
+__inline bool32 __cdecl Lego_IsFirstPersonView() { return (legoGlobs.viewMode == ViewMode_FP); }
 
 // <LegoRR.exe @00425cc0>
 #define Lego_HandleRadarInput ((void (__cdecl* )(void))0x00425cc0)

@@ -1248,7 +1248,7 @@ bool32 __cdecl LegoRR::Weapon_LegoObject_GetCollCenterPosition(LegoObject* liveO
 	Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
 	Gods98::Container_GetPosition(cont, nullptr, vector);
 
-	vector->z -= StatsObject_GetCollHeight(liveObj) * 0.5f;
+	vector->z -= StatsObject_GetCollHeight(liveObj) / 2.0f; // Raise Z to center of collision box.
 	return true;
 }
 

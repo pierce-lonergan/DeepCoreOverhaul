@@ -44,6 +44,8 @@
 #include "game/front/Credits.h"
 #include "game/front/FrontEnd.h"
 #include "game/front/Reward.h"
+#include "game/interface/hud/Bubbles.h"
+#include "game/interface/hud/ObjInfo.h"
 #include "game/interface/Advisor.h"
 #include "game/interface/Interface.h"
 #include "game/interface/Pointers.h"
@@ -1702,6 +1704,46 @@ bool interop_hook_LegoRR_AITask(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Bubbles(void)
+{
+	bool result = true;
+
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x00406fe0, LegoRR::Bubble_Initialise);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x00407170, LegoRR::Bubble_LoadBubbles);
+	// used by: Bubble_LoadBubbles
+	result &= hook_write_jmpret(0x00407230, LegoRR::Bubble_GetBubbleType);
+	// used by: Lego_HandleKeys, Objective_HandleKeys
+	result &= hook_write_jmpret(0x00407270, LegoRR::Bubble_ToggleObjectUIsAlwaysVisible);
+	// used by: Objective_HandleKeys
+	result &= hook_write_jmpret(0x00407290, LegoRR::Bubble_GetObjectUIsAlwaysVisible);
+	// used by: AITask_Callback_UpdateObject
+	result &= hook_write_jmpret(0x004072a0, LegoRR::Bubble_ResetObjectBubbleImage);
+	// used by: LegoObject_Remove
+	result &= hook_write_jmpret(0x004072d0, LegoRR::Bubble_RemoveObjectReferences);
+	// used by: LegoObject_UpdatePowerConsumption
+	result &= hook_write_jmpret(0x00407340, LegoRR::Bubble_ShowPowerOff);
+	// used by: AITask_Game_PTL_GotoOrRMGoto, AITask_FUN_00406290, LegoObject_TryRunAway
+	result &= hook_write_jmpret(0x00407380, LegoRR::Bubble_ShowBubble);
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x004073e0, LegoRR::Bubble_ShowCallToArms);
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00407440, LegoRR::Bubble_SetCallToArmsTimer);
+	// used by: LegoObject_AddDamage2
+	result &= hook_write_jmpret(0x00407470, LegoRR::Bubble_ShowHealthBar);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x004074d0, LegoRR::Bubble_DrawAllObjInfos);
+	// used by: Bubble_DrawAllObjInfos, Bubble_Callback_DrawObjInfo
+	result &= hook_write_jmpret(0x004077f0, LegoRR::Bubble_UpdateAndGetBubbleImage);
+	// used by: Bubble_DrawAllObjInfos
+	result &= hook_write_jmpret(0x00407890, LegoRR::Bubble_Callback_DrawObjInfo);
+	// used by: Bubble_ResetObjectBubbleImage, Bubble_UpdateAndGetBubbleImage
+	result &= hook_write_jmpret(0x00407940, LegoRR::Bubble_EvaluateObjectBubbleImage);
+	
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Construction(void)
 {
 	bool result = true;
@@ -2665,6 +2707,20 @@ bool interop_hook_LegoRR_Objective(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_ObjInfo(void)
+{
+	bool result = true;
+	
+	// used by: Bubble_DrawAllObjInfos, Bubble_Callback_DrawObjInfo
+	result &= hook_write_jmpret(0x00459dc0, LegoRR::ObjInfo_DrawHealthBar);
+	// used by: Bubble_Callback_DrawObjInfo
+	result &= hook_write_jmpret(0x0045a210, LegoRR::ObjInfo_DrawHungerImage);
+	// used by: Bubble_DrawAllObjInfos, Bubble_Callback_DrawObjInfo
+	result &= hook_write_jmpret(0x0045a290, LegoRR::ObjInfo_DrawBubbleImage);
+	
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Pointers(void)
 {
 	bool result = true;
@@ -3095,6 +3151,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Advisor();
 	result &= interop_hook_LegoRR_AITask();
 	result &= interop_hook_LegoRR_BezierCurve();
+	result &= interop_hook_LegoRR_Bubbles();
 	result &= interop_hook_LegoRR_Construction();
 	result &= interop_hook_LegoRR_Credits();
 	result &= interop_hook_LegoRR_ElectricFence();
@@ -3107,6 +3164,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_NERPsFunctions();
 	result &= interop_hook_LegoRR_Object();
 	result &= interop_hook_LegoRR_Objective();
+	result &= interop_hook_LegoRR_ObjInfo();
 	result &= interop_hook_LegoRR_Pointers();
 	result &= interop_hook_LegoRR_PTL();
 	result &= interop_hook_LegoRR_RadarMap();

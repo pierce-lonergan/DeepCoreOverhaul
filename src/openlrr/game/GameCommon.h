@@ -386,9 +386,9 @@ enum Bubble_Type : sint32
 	Bubble_Goto              = 22,
 	Bubble_Dynamite          = 23,
 	Bubble_Reinforce         = 24,
-	Bubble_Drill             = 25,
+	Bubble_Drill             = 25, // Not to be confused with Dig (clearing with shovel).
 	Bubble_Repair            = 26,
-	Bubble_Dig               = 27,
+	Bubble_Dig               = 27, // Clearing with shovel, not to be confused with Drill. Naming convention varies for this.
 	Bubble_Flee              = 28,
 	Bubble_PowerOff          = 29,
 	Bubble_CallToArms        = 30,

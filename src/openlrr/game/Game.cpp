@@ -825,7 +825,7 @@ void __cdecl LegoRR::Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Vi
 	Vector3F wPos = { 0.0f }; // dummy init
 	LegoObject_GetPosition(liveObj, &wPos.x, &wPos.y);
 	wPos.z = Map3D_GetWorldZ(Lego_GetMap(), wPos.x, wPos.y);
-	wPos.z -= StatsObject_GetCollHeight(liveObj) / 2.0f; // Raise z to center of collision box.
+	wPos.z -= StatsObject_GetCollHeight(liveObj) / 2.0f; // Raise Z to center of collision box.
 
 	Point2F screenPt = { 0.0f }; // dummy init
 	Gods98::Viewport_WorldToScreen(view, &screenPt, &wPos);
@@ -1802,7 +1802,7 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 						unit->flags2 |= (LIVEOBJ2_DAMAGE_UNK_1000|LIVEOBJ2_SHOWDAMAGENUMBERS);
 					unit->damageNumbers += healAmount; // += will show a negative number, but that's because positive numbers are blocked.
 				}
-				Bubble_LiveObject_FUN_00407470(unit); // Show the healthbar as feedback that the unit was healed.
+				Bubble_ShowHealthBar(unit); // Show the healthbar as feedback that the unit was healed.
 			}
 			const real32 origEnergy = unit->energy;
 			if (origEnergy >= 0.0f && origEnergy < 100.0f) {
