@@ -2647,6 +2647,11 @@ bool interop_hook_LegoRR_Object(void)
 	//result &= hook_write_jmpret(0x0043b610, LegoRR::LegoObject_Callback_Remove);
 
 	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0043c570, LegoRR::LegoObject_UpdateAllRadarSurvey);
+	// used by: LegoObject_UpdateAllRadarSurvey
+	result &= hook_write_jmpret(0x0043c5b0, LegoRR::LegoObject_Callback_UpdateRadarSurvey);
+
+	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00449ec0, LegoRR::LegoObject_HideAllCertainObjects);
 
 	// used by: Lego_HandleWorld

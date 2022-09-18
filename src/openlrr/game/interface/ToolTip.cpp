@@ -72,7 +72,9 @@ void __cdecl LegoRR::ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGr
 	}
 
 	const Gods98::DrawEffect effect = (halfTrans ? Gods98::DrawEffect::HalfTrans : Gods98::DrawEffect::None);
-	
+
+	Gods98::Draw_Begin(); // Start of only Draw calls for tooltip box.
+
 	// Draw fill.
 	Gods98::Draw_RectListEx(&valueRect, 1, rcRed, rcGreen, rcBlue, effect);
 	// Draw outline.
@@ -80,6 +82,8 @@ void __cdecl LegoRR::ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGr
 		Gods98::Draw_LineListEx(ln1ListFrom, ln1ListTo, lineCount, ln1Red, ln1Green, ln1Blue, effect);
 		Gods98::Draw_LineListEx(ln2ListFrom, ln2ListTo, lineCount, ln2Red, ln2Green, ln2Blue, effect);
 	}
+
+	Gods98::Draw_End(); // End of only Draw calls for tooltip box.
 }
 
 #pragma endregion

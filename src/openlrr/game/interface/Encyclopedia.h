@@ -94,8 +94,14 @@ extern Encyclopedia_Globs & encyclopediaGlobs;
 // <LegoRR.exe @0040e720>
 #define Encyclopedia_Update ((void (__cdecl* )(real32 elapsedAbs))0x0040e720)
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @0040e800>
-#define Encyclopedia_DrawSelectBox ((void (__cdecl* )(Gods98::Viewport* viewMain))0x0040e800)
+//#define Encyclopedia_DrawSelectBox ((void (__cdecl* )(Gods98::Viewport* viewMain))0x0040e800)
+void __cdecl Encyclopedia_DrawSelectBox(Gods98::Viewport* viewMain);
+
+/// CUSTOM: Isolate Draw API calls from Encyclopedia_DrawSelectBox.
+void __cdecl Encyclopedia_DrawSelectName(Gods98::Viewport* viewMain);
+
 
 // Removes the current encyclopedia object if it matches the specified object.
 // <LegoRR.exe @0040e840>

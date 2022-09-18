@@ -138,9 +138,13 @@ void __cdecl RadarMap_Free(RadarMap* radarMap);
 //#define RadarMap_DrawSurveyDotCircle ((void (__cdecl* )(RadarMap* radarMap, const Point2F* center, real32 radius, real32 brightness))0x0045ddc0)
 void __cdecl RadarMap_DrawSurveyDotCircle(RadarMap* radarMap, const Point2F* center, real32 radius, real32 brightness);
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @0045de80>
 //#define RadarMap_Draw ((void (__cdecl* )(RadarMap* radarMap, const Point2F* centerPos))0x0045de80)
 void __cdecl RadarMap_Draw(RadarMap* radarMap, const Point2F* centerPos);
+
+/// CUSTOM: Isolate Draw API calls from RadarMap_Draw.
+void __cdecl RadarMap_ClearScreen(RadarMap* radarMap);
 
 // <LegoRR.exe @0045e6c0>
 //#define RadarMap_CanShowObject ((bool32 (__cdecl* )(LegoObject* liveObj))0x0045e6c0)

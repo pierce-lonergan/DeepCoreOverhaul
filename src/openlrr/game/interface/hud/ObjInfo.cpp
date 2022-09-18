@@ -27,6 +27,7 @@ LegoRR::ObjInfo_Globs & LegoRR::objinfoGlobs = *(LegoRR::ObjInfo_Globs*)0x00500e
 
 #pragma region Functions
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @00459dc0>
 void __cdecl LegoRR::ObjInfo_DrawHealthBar(LegoObject* liveObj, sint32 screenX, sint32 screenY)
 {

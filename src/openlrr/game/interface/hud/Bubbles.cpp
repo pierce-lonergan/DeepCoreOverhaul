@@ -358,13 +358,28 @@ void LegoRR::Bubble_HideHealthBar(LegoObject* liveObj)
 // <LegoRR.exe @004074d0>
 void __cdecl LegoRR::Bubble_DrawAllObjInfos(real32 elapsedAbs)
 {
+	/// OLD CODE: We're not using this since health bars drawing has been split apart from hunger/bubble image drawing.
 	// Draw info for all Mini-Figure units (health bar, hunger image, bubble image).
 	// And skip drawing for Mini-Figure units in the lists below.
-	if (bubbleGlobs.alwaysVisible && !Lego_IsFirstPersonView()) {
+	/*if (bubbleGlobs.alwaysVisible && !Lego_IsFirstPersonView()) {
 		for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
 			Bubble_Callback_DrawObjInfo(obj, &elapsedAbs);
 		}
 		//LegoObject_RunThroughListsSkipUpgradeParts(Bubble_Callback_DrawObjInfo, &elapsedAbs);
+	}*/
+
+
+	/// CHANGE: All health bars now render before all other ObjInfo.
+	///         Rendering health bars should no longer tank framerate.
+	//Gods98::Draw_Begin(); // Start of only Draw calls for health bars.
+
+	if (bubbleGlobs.alwaysVisible && !Lego_IsFirstPersonView()) {
+		// Lock if we know we're going to be drawing health bars (assume MiniFigures exist in level).
+		Gods98::Draw_Begin(); // Start of only Draw calls for health bars.
+
+		for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
+			Bubble_Callback_DrawObjInfoHealthBars(obj, &elapsedAbs);
+		}
 	}
 
 	// Draw health bars over units for a period of time.
@@ -378,6 +393,11 @@ void __cdecl LegoRR::Bubble_DrawAllObjInfos(real32 elapsedAbs)
 		if ((bubble->object->type != LegoObject_MiniFigure || !bubbleGlobs.alwaysVisible) &&
 			!Lego_IsFirstPersonView() && !(bubble->object->flags1 & (LIVEOBJ1_TELEPORTINGDOWN|LIVEOBJ1_TELEPORTINGUP)))
 		{
+			// Otherwise lock now if we haven't locked yet.
+			if (!Gods98::Draw_IsLocked()) {
+				Gods98::Draw_Begin(); // Start of only Draw calls for health bars.
+			}
+
 			Vector3F wPos = { 0.0f }; // dummy init
 			Gods98::Container* cont = LegoObject_GetActivityContainer(bubble->object);
 			Gods98::Container_GetPosition(cont, nullptr, &wPos);
@@ -392,6 +412,18 @@ void __cdecl LegoRR::Bubble_DrawAllObjInfos(real32 elapsedAbs)
 		bubble->remainingTimer -= elapsedAbs;
 		if (bubble->remainingTimer < 0.0f) {
 			bubble->object = nullptr; // Free up this bubble.
+		}
+	}
+
+	if (Gods98::Draw_IsLocked()) {
+		Gods98::Draw_End(); // End of only Draw calls for health bars.
+	}
+
+
+	/// CHANGE: Draw hunger and bubble images now after all the health bars.
+	if (bubbleGlobs.alwaysVisible && !Lego_IsFirstPersonView()) {
+		for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
+			Bubble_Callback_DrawObjInfoImages(obj, &elapsedAbs);
 		}
 	}
 
@@ -539,6 +571,51 @@ bool32 __cdecl LegoRR::Bubble_Callback_DrawObjInfo(LegoObject* liveObj, void* pE
 	}
 	return false;
 }
+
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
+// DATA: real32* elapsedAbs
+/// CUSTOM: Split up version of Bubble_Callback_DrawObjInfo that only handles health bars.
+///         For use with Draw_Begin()/Draw_End() API.
+bool32 __cdecl LegoRR::Bubble_Callback_DrawObjInfoHealthBars(LegoObject* liveObj, void* pElapsedAbs)
+{
+	if (liveObj->type == LegoObject_MiniFigure && !(liveObj->flags1 & (LIVEOBJ1_TELEPORTINGDOWN|LIVEOBJ1_TELEPORTINGUP))) {
+		Gods98::Image* bubbleImage = nullptr; // dummy output
+		Point2F screenPt = { 0.0f };
+		// Don't update elapsed bubble time yet, we just need the screenPt.
+		Bubble_UpdateAndGetBubbleImage(liveObj, 0.0f, &bubbleImage, &screenPt);
+
+		const sint32 x = static_cast<sint32>(screenPt.x);
+		const sint32 y = static_cast<sint32>(screenPt.y);
+
+		ObjInfo_DrawHealthBar(liveObj, x, y);
+	}
+	return false;
+}
+
+// DATA: real32* elapsedAbs
+/// CUSTOM: Split up version of Bubble_Callback_DrawObjInfo that only handles hunger images and bubble images.
+///         For use with Draw_Begin()/Draw_End() API.
+bool32 __cdecl LegoRR::Bubble_Callback_DrawObjInfoImages(LegoObject* liveObj, void* pElapsedAbs)
+{
+	const real32 elapsedAbs = *static_cast<real32*>(pElapsedAbs);
+
+	if (liveObj->type == LegoObject_MiniFigure && !(liveObj->flags1 & (LIVEOBJ1_TELEPORTINGDOWN|LIVEOBJ1_TELEPORTINGUP))) {
+		Gods98::Image* bubbleImage = nullptr;
+		Point2F screenPt = { 0.0f };
+		Bubble_UpdateAndGetBubbleImage(liveObj, elapsedAbs, &bubbleImage, &screenPt);
+
+		const sint32 x = static_cast<sint32>(screenPt.x);
+		const sint32 y = static_cast<sint32>(screenPt.y);
+
+		ObjInfo_DrawHungerImage(liveObj, x, y);
+
+		if (bubbleImage != nullptr) {
+			ObjInfo_DrawBubbleImage(bubbleImage, x, y);
+		}
+	}
+	return false;
+}
+
 
 // <LegoRR.exe @00407940>
 void __cdecl LegoRR::Bubble_EvaluateObjectBubbleImage(LegoObject* liveObj, OUT Gods98::Image** bubbleImage)

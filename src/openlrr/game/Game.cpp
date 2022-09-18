@@ -771,6 +771,7 @@ void __cdecl LegoRR::Lego_UpdateSceneFog(bool32 fogEnabled, real32 elapsed)
 	}
 }
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // DATA: Gods98::Viewport* viewMain
 // <LegoRR.exe @00424700>
 bool32 __cdecl LegoRR::Lego_Callback_DrawObjectLaserTrackerBox(LegoObject* liveObj, void* pViewMain)
@@ -783,6 +784,7 @@ bool32 __cdecl LegoRR::Lego_Callback_DrawObjectLaserTrackerBox(LegoObject* liveO
 	return false;
 }
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @00424740>
 void __cdecl LegoRR::Lego_DrawAllLaserTrackerBoxes(Gods98::Viewport* viewMain)
 {
@@ -792,6 +794,17 @@ void __cdecl LegoRR::Lego_DrawAllLaserTrackerBoxes(Gods98::Viewport* viewMain)
 	//LegoObject_RunThroughListsSkipUpgradeParts(Lego_Callback_DrawObjectLaserTrackerBox, viewMain);
 }
 
+/// CUSTOM: Isolate Draw API calls from Lego_DrawAllLaserTrackerBoxes.
+void LegoRR::Lego_DrawAllLaserTrackerNames(Gods98::Viewport* viewMain)
+{
+	for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
+		if (obj->flags4 & LIVEOBJ4_LASERTRACKERMODE) {
+			Lego_DrawObjectName(obj, viewMain);
+		}
+	}
+}
+
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @00424760>
 void __cdecl LegoRR::Lego_DrawAllSelectedUnitBoxes(Gods98::Viewport* viewMain)
 {
@@ -809,6 +822,17 @@ void __cdecl LegoRR::Lego_DrawAllSelectedUnitBoxes(Gods98::Viewport* viewMain)
 	}
 }
 
+/// CUSTOM: Isolate Draw API calls from Lego_DrawAllSelectedUnitBoxes.
+void LegoRR::Lego_DrawAllSelectedUnitNames(Gods98::Viewport* viewMain)
+{
+	const uint32 unitCount = Message_GetNumSelectedUnits();
+	LegoObject** units = Message_GetSelectedUnits();
+	for (uint32 i = 0; i < unitCount; i++) {
+		Lego_DrawObjectName(units[i], viewMain);
+	}
+}
+
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @004247e0>
 void __cdecl LegoRR::Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Viewport* view, real32 r, real32 g, real32 b)
 {
@@ -912,9 +936,9 @@ void __cdecl LegoRR::Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Vi
 
 		Gods98::Draw_LineListEx(linePts1, linePts2, 8, r, g, b, Gods98::DrawEffect::None);
 
-
+		/// CHANGE: Moved to separate Lego_DrawObjectName call.
 		// Draw custom name if the unit has one.
-		if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE) &&
+		/*if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE) &&
 			liveObj->customName != nullptr && liveObj->customName[0] != '\0')
 		{
 			Gods98::Font* font = legoGlobs.fontToolTip;
@@ -923,11 +947,69 @@ void __cdecl LegoRR::Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Vi
 
 			/// FIX APPLY: Printf safety (use %s).
 			Gods98::Font_PrintF(font, x, y, "%s", liveObj->customName);
-		}
+		}*/
+	}
+}
+
+/// CUSTOM: Isolate Draw API calls from Lego_DrawObjectSelectionBox.
+void LegoRR::Lego_DrawObjectName(LegoObject* liveObj, Gods98::Viewport* view)
+{
+	if (LegoObject_IsHidden(liveObj))
+		return; // Don't show for hidden objects.
+
+	if (legoGlobs.flags1 & GAME1_FREEZEINTERFACE)
+		return; // Don't draw names right now.
+
+	if (liveObj->customName == nullptr || liveObj->customName[0] == '\0')
+		return; // No custom name to draw.
+
+
+	Vector3F wPos = { 0.0f }; // dummy init
+	LegoObject_GetPosition(liveObj, &wPos.x, &wPos.y);
+	wPos.z = Map3D_GetWorldZ(Lego_GetMap(), wPos.x, wPos.y);
+	wPos.z -= StatsObject_GetCollHeight(liveObj) / 2.0f; // Raise Z to center of collision box.
+
+	Point2F screenPt = { 0.0f }; // dummy init
+	Gods98::Viewport_WorldToScreen(view, &screenPt, &wPos);
+	if (screenPt.x >= 0.0f && screenPt.x <= Gods98::appWidth() &&
+		screenPt.y >= 0.0f && screenPt.y <= Gods98::appHeight())
+	{
+		const Vector4F transform4d = { screenPt.x, screenPt.y, 0.0f, 1.0f };
+		Vector3F wFromScreenPos;
+		Gods98::Viewport_InverseTransform(view, &wFromScreenPos, &transform4d);
+
+		Vector3F wDiff;
+		Gods98::Maths_Vector3DSubtract(&wDiff, &wPos, &wFromScreenPos);
+		Gods98::Maths_Vector3DNormalize(&wDiff);
+		const Vector3F crossProdRhs = { 0.0f, 1.0f, 0.0f };
+		Vector3F crossProd;
+		Gods98::Maths_Vector3DCrossProduct(&crossProd, &wDiff, &crossProdRhs);
+		Gods98::Maths_Vector3DNormalize(&crossProd);
+
+		Vector3F wPos2;
+		Gods98::Maths_RayEndPoint(&wPos2, &wPos, &crossProd, StatsObject_GetPickSphere(liveObj));
+		//Gods98::Maths_Vector3DScale(&crossProd, &crossProd, StatsObject_GetPickSphere(liveObj));
+		//Gods98::Maths_Vector3DAdd(&wPos2, &wPos, &crossProd);
+
+		//Vector3F local_4c;
+		//Point2F local_40[2];
+		Point2F screenPt2; // local_40
+		Gods98::Viewport_WorldToScreen(view, &screenPt2, &wPos2);
+		const real32 dist = Gods98::Maths_Vector2DDistance(&screenPt, &screenPt2);
+		const real32 radius = (dist / 2.5f);
+
+		// Draw custom name if the unit has one.
+		Gods98::Font* font = legoGlobs.fontToolTip;
+		const sint32 x = static_cast<sint32>(screenPt.x - radius);
+		const sint32 y = static_cast<sint32>(screenPt.y - radius) - Gods98::Font_GetHeight(font);
+
+		/// FIX APPLY: Printf safety (use %s).
+		Gods98::Font_PrintF(font, x, y, "%s", liveObj->customName);
 	}
 }
 
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @00426180>
 void __cdecl LegoRR::Lego_DrawRadarMap(void)
 {
@@ -942,7 +1024,7 @@ void __cdecl LegoRR::Lego_DrawRadarMap(void)
 	else {
 		radarCenterPos = legoGlobs.radarCenter;
 	}
-	
+
 	RadarMap_SetZoom(Lego_GetRadarMap(), legoGlobs.radarZoom);
 	RadarMap_Draw(Lego_GetRadarMap(), &radarCenterPos);
 }
@@ -2098,6 +2180,7 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 }
 
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @004292e0>
 void __cdecl LegoRR::Lego_DrawDragSelectionBox(Lego_Level* level)
 {

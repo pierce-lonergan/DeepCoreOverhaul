@@ -1058,22 +1058,38 @@ bool32 __cdecl Lego_MainLoop(real32 elapsed);
 //#define Lego_UpdateSceneFog ((void (__cdecl* )(bool32 fogEnabled, real32 elapsed))0x00424660)
 void __cdecl Lego_UpdateSceneFog(bool32 fogEnabled, real32 elapsed);
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // DATA: Gods98::Viewport* viewMain
 // <LegoRR.exe @00424700>
 //#define Lego_Callback_DrawObjectLaserTrackerBox ((bool32 (__cdecl* )(LegoObject* liveObj, void* pViewMain))0x00424700)
 bool32 __cdecl Lego_Callback_DrawObjectLaserTrackerBox(LegoObject* liveObj, void* pViewMain);
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @00424740>
 //#define Lego_DrawAllLaserTrackerBoxes ((void (__cdecl* )(Gods98::Viewport* viewMain))0x00424740)
 void __cdecl Lego_DrawAllLaserTrackerBoxes(Gods98::Viewport* viewMain);
 
+/// CUSTOM: Isolate Draw API calls from Lego_DrawAllLaserTrackerBoxes.
+void Lego_DrawAllLaserTrackerNames(Gods98::Viewport* viewMain);
+
+
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @00424760>
 //#define Lego_DrawAllSelectedUnitBoxes ((void (__cdecl* )(Gods98::Viewport* viewMain))0x00424760)
 void __cdecl Lego_DrawAllSelectedUnitBoxes(Gods98::Viewport* viewMain);
 
+/// CUSTOM: Isolate Draw API calls from Lego_DrawAllSelectedUnitBoxes.
+void Lego_DrawAllSelectedUnitNames(Gods98::Viewport* viewMain);
+
+
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @004247e0>
 //#define Lego_DrawObjectSelectionBox ((void (__cdecl* )(LegoObject* liveObj, Gods98::Viewport* view, real32 r, real32 g, real32 b))0x004247e0)
 void __cdecl Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Viewport* view, real32 r, real32 g, real32 b);
+
+/// CUSTOM: Isolate Draw API calls from Lego_DrawObjectSelectionBox.
+void Lego_DrawObjectName(LegoObject* liveObj, Gods98::Viewport* view);
+
 
 // Main_State.Shutdown function
 // Simply halts music playback, then calls std::exit(0); (by calling Lego_Exit();)
@@ -1145,6 +1161,7 @@ __inline bool32 __cdecl Lego_IsFirstPersonView() { return (legoGlobs.viewMode ==
 //#define Lego_GetMouseWorldPosition ((void (__cdecl* )(OUT Vector3F* vector))0x00426160)
 __inline void __cdecl Lego_GetMouseWorldPosition(OUT Vector3F* vector) { *vector = legoGlobs.mouseWorldPos; }
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @00426180>
 //#define Lego_DrawRadarMap ((void (__cdecl* )(void))0x00426180)
 void __cdecl Lego_DrawRadarMap(void);
@@ -1223,6 +1240,7 @@ void __cdecl Lego_HandleWorldDebugKeys(sint32 bx, sint32 by, LegoObject* mouseOv
 #define Lego_UnkUpdateMapsWorldUnk_FUN_004290d0 ((void (__cdecl* )(real32 elapsedAbs, bool32 pass2))0x004290d0)
 //void __cdecl Lego_UnkUpdateMapsWorldUnk_FUN_004290d0(real32 elapsedAbs, bool32 pass2);
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @004292e0>
 //#define Lego_DrawDragSelectionBox ((void (__cdecl* )(Lego_Level* level))0x004292e0)
 void __cdecl Lego_DrawDragSelectionBox(Lego_Level* level);

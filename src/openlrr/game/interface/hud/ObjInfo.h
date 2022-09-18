@@ -111,6 +111,7 @@ extern ObjInfo_Globs & objinfoGlobs;
 // <LegoRR.exe @00459d10>
 #define ObjInfo_LoadBubble ((bool32 (__cdecl* )(const Gods98::Config* config, const char* gameName))0x00459d10)
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @00459dc0>
 //#define ObjInfo_DrawHealthBar ((void (__cdecl* )(LegoObject* liveObj, sint32 screenX, sint32 screenY))0x00459dc0)
 void __cdecl ObjInfo_DrawHealthBar(LegoObject* liveObj, sint32 screenX, sint32 screenY);

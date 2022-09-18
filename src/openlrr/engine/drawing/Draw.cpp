@@ -47,7 +47,7 @@ static Gods98::DrawEffect _drawEffect = Gods98::DrawEffect::None;
 #define Draw_Pixel24Address(x, y)	static_cast<uint8*> (DirectDraw_PixelAddress(drawGlobs.buffer, drawGlobs.pitch, 24, x, y))
 #define Draw_Pixel32Address(x, y)	static_cast<uint32*>(DirectDraw_PixelAddress(drawGlobs.buffer, drawGlobs.pitch, 32, x, y))
 
- /// CUSTOM: Unlocks the surface during normal Draw calls while not using Draw_Begin().
+/// CUSTOM: Unlocks the surface during normal Draw calls while not using Draw_Begin().
 #define Draw_TryUnlockSurface(surf)	if (!_drawBegin) Draw_UnlockSurface(surf)
 
 #pragma endregion

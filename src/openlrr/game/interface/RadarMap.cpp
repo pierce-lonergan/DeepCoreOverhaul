@@ -235,6 +235,7 @@ void __cdecl LegoRR::RadarMap_DrawSurveyDotCircle(RadarMap* radarMap, const Poin
 	Gods98::Draw_SetClipWindow(&oldClipWindow);
 }
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @0045de80>
 void __cdecl LegoRR::RadarMap_Draw(RadarMap* radarMap, const Point2F* centerPos)
 {
@@ -323,8 +324,9 @@ void __cdecl LegoRR::RadarMap_Draw(RadarMap* radarMap, const Point2F* centerPos)
 		}
 	}
 
+	/// CHANGE: Moved to RadarMap_ClearScreen, and must be called beforehand.
 	// Clear the radar screen to black.
-	Gods98::DirectDraw_Clear(&radarMap->screenRect, 0); // black
+	//Gods98::DirectDraw_Clear(&radarMap->screenRect, 0); // black
 
 	// Draw block squares.
 	Gods98::Draw_RectList2Ex(rectList, blockCount, Gods98::DrawEffect::None);
@@ -470,6 +472,13 @@ void __cdecl LegoRR::RadarMap_Draw(RadarMap* radarMap, const Point2F* centerPos)
 		Gods98::Draw_LineListEx(boxListFromTo, (boxListFromTo + 1), 4, 0.7f, 0.7f, 0.7f, Gods98::DrawEffect::HalfTrans);
 	}
 	Gods98::Draw_SetClipWindow(&oldClipWindow);
+}
+
+/// CUSTOM: Isolate Draw API calls from RadarMap_Draw.
+void __cdecl LegoRR::RadarMap_ClearScreen(RadarMap* radarMap)
+{
+	// Clear the radar screen to black.
+	Gods98::DirectDraw_Clear(&radarMap->screenRect, 0); // black
 }
 
 // <LegoRR.exe @0045e6c0>

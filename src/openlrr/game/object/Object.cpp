@@ -12,6 +12,7 @@
 #include "../interface/InfoMessages.h"
 #include "../interface/Interface.h"
 #include "../interface/Pointers.h"
+#include "../interface/RadarMap.h"
 #include "../interface/TextMessages.h"
 #include "../mission/Messages.h"
 #include "../mission/NERPsFile.h"
@@ -23,6 +24,18 @@
 #include "Stats.h"
 #include "Object.h"
 
+
+
+/**********************************************************************************
+ ******** Constants
+ **********************************************************************************/
+
+#pragma region Constants
+
+// Logic for how often survey scan is performed, and speed at which dots extend out on radar map.
+#define OBJECT_SURVEY_CYCLEDURATION		(STANDARD_FRAMERATE * 1.0f)
+
+#pragma endregion
 
 /**********************************************************************************
  ******** Globals
@@ -1434,6 +1447,63 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Remove(LegoObject* liveObj, void* unu
 	return false;
 }
 
+
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
+// <LegoRR.exe @0043c570>
+void __cdecl LegoRR::LegoObject_UpdateAllRadarSurvey(real32 elapsedGame, bool32 inRadarMapView)
+{
+	objectGlobs.radarSurveyCycleTimer += elapsedGame;
+	// Survey dots have a one second duration.
+	if (objectGlobs.radarSurveyCycleTimer > OBJECT_SURVEY_CYCLEDURATION) {
+		objectGlobs.radarSurveyCycleTimer = 0.0f;
+	}
+
+	for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
+		LegoObject_Callback_UpdateRadarSurvey(obj, &inRadarMapView);
+	}
+	//LegoObject_RunThroughListsSkipUpgradeParts(LegoObject_Callback_UpdateRadarSurvey, &inRadarMapView);
+}
+
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
+// DATA: bool32* inRadarMapView
+// <LegoRR.exe @0043c5b0>
+bool32 __cdecl LegoRR::LegoObject_Callback_UpdateRadarSurvey(LegoObject* liveObj, void* pInRadarMapView)
+{
+	const bool32 inRadarMapView = *static_cast<bool32*>(pInRadarMapView);
+
+	if (liveObj->abilityFlags & ABILITY_FLAG_SCANNER) {
+		const uint32 surveyRadius = StatsObject_GetSurveyRadius(liveObj);
+		if (surveyRadius <= 0)
+			return false; // No distance to survey.
+
+		if (liveObj->type == LegoObject_Building && !LegoObject_IsActive(liveObj, false))
+			return false; // Building is not currently surveying.
+
+		if (objectGlobs.radarSurveyCycleTimer == 0.0f) {
+			// Start of next survey cycle. Perform survey checks now.
+			// Also this means the survey dots are at their center, so we don't draw them.
+			Point2I blockPos = { 0 }; // dummy init
+			LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+			Level_Block_UpdateSurveyRadius_FUN_00434f40(&blockPos, surveyRadius);
+		}
+		else if (inRadarMapView) {
+			Point2F centerPos = { 0.0f }; // dummy init
+			LegoObject_GetPosition(liveObj, &centerPos.x, &centerPos.y);
+
+			// Range from [0.0,1.0].
+			const real32 range = (objectGlobs.radarSurveyCycleTimer / OBJECT_SURVEY_CYCLEDURATION);
+
+			const real32 blockSize = Map3D_BlockSize(Lego_GetMap());
+			// Dots draw starting from the center of the unit and expand out to `surveyRadius` blocks.
+			const real32 radius = (blockSize * range * static_cast<real32>(surveyRadius));
+			// Dots get darker the further out they're drawn.
+			const real32 brightness = 1.0f - range;
+
+			RadarMap_DrawSurveyDotCircle(Lego_GetRadarMap(), &centerPos, radius, brightness);
+		}
+	}
+	return false;
+}
 
 
 

@@ -1233,12 +1233,30 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		legoGlobs.flags1 &= ~GAME1_RADARON;
 
 
+	if (Message_AnyUnitSelected()) {
+		// Only lock if we know we're going to be drawing selection boxes,
+		//  this doesn't account for tracker, but no big deal.
+		Gods98::Draw_Begin(); // Start of only Draw calls for selection boxes.
+	}
+
 	if (legoGlobs.viewMode == ViewMode_Top) {
 		Lego_DrawAllSelectedUnitBoxes(legoGlobs.viewMain);
 		Lego_DrawAllLaserTrackerBoxes(legoGlobs.viewMain);
 		Encyclopedia_DrawSelectBox(legoGlobs.viewMain);
 	}
 	Lego_DrawDragSelectionBox(legoGlobs.currLevel);
+
+	if (Message_AnyUnitSelected()) {
+		Gods98::Draw_End(); // End of only Draw calls for selection boxes.
+	}
+
+	if (legoGlobs.viewMode == ViewMode_Top) {
+		Lego_DrawAllSelectedUnitNames(legoGlobs.viewMain);
+		Lego_DrawAllLaserTrackerNames(legoGlobs.viewMain);
+		Encyclopedia_DrawSelectName(legoGlobs.viewMain);
+	}
+
+
 
 	if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE)) {
 		Bubble_DrawAllObjInfos(elapsedInterface);
@@ -1279,12 +1297,23 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	Map3D_HideVisibleBlocksList((legoGlobs.currLevel)->map);
 
 
+
 	const bool32 inRadarMapView = ((legoGlobs.flags1 & GAME1_RADARON) && (legoGlobs.flags1 & GAME1_RADAR_MAPVIEW));
 
 	if (inRadarMapView) {
+		/// CHANGE: Move this call outside of RadarMap_Draw, so that we can lock the drawing surface during it.
+		RadarMap_ClearScreen(Lego_GetRadarMap());
+
+		Gods98::Draw_Begin(); // Start of only Draw calls for radar map.
+
 		Lego_DrawRadarMap();
 	}
 	LegoObject_UpdateAllRadarSurvey(elapsedWorld, inRadarMapView);
+	
+	if (inRadarMapView) {
+		Gods98::Draw_End(); // End of only Draw calls for radar map.
+	}
+
 
 
 	if (legoGlobs.flags1 & GAME1_RENDERPANELS) {

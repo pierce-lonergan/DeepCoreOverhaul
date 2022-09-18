@@ -450,7 +450,7 @@ struct LegoObject_Globs // [LegoRR/LegoObject.c|struct:0xc644|tags:GLOBS]
 	/*0670,4*/      void* UnkSurfaceGrid_1_TABLE;
 	/*0674,4*/      void* UnkSurfaceGrid_2_TABLE;
 	/*0678,4*/      uint32 UnkSurfaceGrid_COUNT;
-	/*067c,4*/      real32 radarElapsed_67c;
+	/*067c,4*/      real32 radarSurveyCycleTimer; // Timer for how often survey scans update.
 	/*0680,4*/      uint32 listCount;
 	/*0684,4*/      LegoObject_GlobFlags flags;
 	/*0688,2c*/     sint32 toolNullIndex[LegoObject_ToolType_Count]; // [toolType:11]
@@ -957,11 +957,16 @@ bool32 __cdecl LegoObject_Callback_Remove(LegoObject* liveObj, void* unused);
 // <LegoRR.exe @0043c540>
 #define LegoObject_Callback_SumOfOxygenCoefs ((bool32 (__cdecl* )(LegoObject* liveObj, real32* oxygenCoef))0x0043c540)
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @0043c570>
-#define LegoObject_UpdateAllRadarSurvey ((void (__cdecl* )(real32 elapsedGame, bool32 isRadarMapView))0x0043c570)
+//#define LegoObject_UpdateAllRadarSurvey ((void (__cdecl* )(real32 elapsedGame, bool32 inRadarMapView))0x0043c570)
+void __cdecl LegoObject_UpdateAllRadarSurvey(real32 elapsedGame, bool32 inRadarMapView);
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
+// DATA: bool32* inRadarMapView
 // <LegoRR.exe @0043c5b0>
-#define LegoObject_Callback_UpdateRadarSurvey ((bool32 (__cdecl* )(LegoObject* liveObj, bool32* pIsRadarMapView))0x0043c5b0)
+//#define LegoObject_Callback_UpdateRadarSurvey ((bool32 (__cdecl* )(LegoObject* liveObj, void* pInRadarMapView))0x0043c5b0)
+bool32 __cdecl LegoObject_Callback_UpdateRadarSurvey(LegoObject* liveObj, void* pInRadarMapView);
 
 // <LegoRR.exe @0043c6a0>
 #define LegoObject_FUN_0043c6a0 ((bool32 (__cdecl* )(LegoObject* liveObj))0x0043c6a0)

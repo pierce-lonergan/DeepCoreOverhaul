@@ -550,7 +550,7 @@ bool32 __cdecl Gods98::DirectDraw_GetAvailTextureMem(OUT uint32* total, OUT uint
 }
 
 // <LegoRR.exe @0047d0e0>
-void __cdecl Gods98::DirectDraw_Clear(const Area2F* window, uint32 colour)
+void __cdecl Gods98::DirectDraw_Clear(OPTIONAL const Area2F* window, uint32 colour)
 {
 	log_firstcall();
 

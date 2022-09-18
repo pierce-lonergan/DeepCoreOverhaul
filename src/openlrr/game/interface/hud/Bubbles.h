@@ -186,6 +186,17 @@ void __cdecl Bubble_UpdateAndGetBubbleImage(LegoObject* liveObj, real32 elapsedA
 //#define Bubble_Callback_DrawObjInfo ((bool32 (__cdecl* )(LegoObject* liveObj, void* pElapsedAbs))0x00407890)
 bool32 __cdecl Bubble_Callback_DrawObjInfo(LegoObject* liveObj, void* pElapsedAbs);
 
+// DRAW MODE: Only Draw API drawing calls can be used within this function.
+// DATA: real32* elapsedAbs
+/// CUSTOM: Split up version of Bubble_Callback_DrawObjInfo that only handles health bars.
+///         For use with Draw_Begin()/Draw_End() API.
+bool32 __cdecl Bubble_Callback_DrawObjInfoHealthBars(LegoObject* liveObj, void* pElapsedAbs);
+
+// DATA: real32* elapsedAbs
+/// CUSTOM: Split up version of Bubble_Callback_DrawObjInfo that only handles hunger images and bubble images.
+///         For use with Draw_Begin()/Draw_End() API.
+bool32 __cdecl Bubble_Callback_DrawObjInfoImages(LegoObject* liveObj, void* pElapsedAbs);
+
 // <LegoRR.exe @00407940>
 //#define Bubble_EvaluateObjectBubbleImage ((void (__cdecl* )(LegoObject* liveObj, OUT Gods98::Image** bubbleImage))0x00407940)
 void __cdecl Bubble_EvaluateObjectBubbleImage(LegoObject* liveObj, OUT Gods98::Image** bubbleImage);
