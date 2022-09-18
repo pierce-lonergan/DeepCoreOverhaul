@@ -142,6 +142,7 @@ void __cdecl Gods98::Graphics_Finalise3D(void)
 	log_firstcall();
 
 	if (!(mainGlobs.flags & MainFlags::MAIN_FLAG_UPDATED)) {
+		Draw_AssertUnlocked("Graphics_Finalise3D");
 		mainGlobs.device->Update();
 		mainGlobs.flags |= MainFlags::MAIN_FLAG_UPDATED;
 	}

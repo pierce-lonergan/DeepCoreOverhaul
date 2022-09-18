@@ -10,6 +10,7 @@
 #include "../util/Dxbug.h"
 #include "Bmp.h"
 #include "DirectDraw.h"
+#include "Draw.h"
 
 #include "Images.h"
 
@@ -366,6 +367,7 @@ void __cdecl Gods98::Image_DisplayScaled(Image* image, const Area2F* src, const 
 		}
 	}
 
+	Draw_AssertUnlocked("Image_DisplayScaled");
 	uint32 flags = DDBLT_WAIT;
 	if (image->flags & ImageFlags::IMAGE_FLAG_TRANS) flags |= DDBLT_KEYSRC;
 	DirectDraw_bSurf()->Blt((destPos)?&r_dst:nullptr, image->surface, (src)?&r_src:nullptr, flags, nullptr);
@@ -688,6 +690,7 @@ void __cdecl Gods98::Image_GetScreenshot(OUT Image* image, uint32 xsize, uint32 
 			(sint32)xsize,
 			(sint32)ysize,
 		};
+		Draw_AssertUnlocked("Image_GetScreenshot");
 		surf->Blt(&dest, DirectDraw_bSurf(), nullptr, 0, nullptr);
 	}
 	// Create image

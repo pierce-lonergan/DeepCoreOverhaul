@@ -163,6 +163,25 @@ extern Draw_Globs & drawGlobs;
 #define Draw_RectListHalfTrans(a,c,r,g,b)			Draw_RectListEx((a),(c),(r),(g),(b),Gods98::DrawEffect::HalfTrans)
 
 
+/// CUSTOM: Returns true if the drawing surface is currently locked, i.e. after calling Draw_Begin().
+bool Draw_IsLocked();
+
+/// CUSTOM: Locks the drawing surface and waits for Draw_End() to be called before unlocking it.
+bool Draw_Begin();
+
+/// CUSTOM: Unlocks the drawing surface after Draw_Begin() was called.
+void Draw_End();
+
+/// CUSTOM: Gets the current effect while the drawing surface has been locked with Draw_Begin().
+DrawEffect Draw_GetEffect();
+
+/// CUSTOM: Sets the current effect while the drawing surface has been locked with Draw_Begin().
+void Draw_SetEffect(DrawEffect effect);
+
+/// CUSTOM:
+void Draw_AssertUnlocked(const char* caller);
+
+
 // <LegoRR.exe @00486140>
 void __cdecl Draw_Initialise(const Area2F* window);
 

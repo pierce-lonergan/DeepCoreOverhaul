@@ -12,6 +12,7 @@
 #include "../Graphics.h"
 #include "../Main.h"
 #include "Bmp.h"
+#include "Draw.h"
 
 #include "DirectDraw.h"
 
@@ -368,6 +369,7 @@ void __cdecl Gods98::DirectDraw_Flip(void)
 {
 	log_firstcall();
 
+	Draw_AssertUnlocked("DirectDraw_Flip");
 	if (directDrawGlobs.fullScreen) {
 		HRESULT r = directDrawGlobs.fSurf->Flip(nullptr, DDFLIP_WAIT);
 		Error_Fatal(r == DDERR_SURFACELOST, "Surface lost");
@@ -429,6 +431,7 @@ void __cdecl Gods98::DirectDraw_ReturnFrontBuffer(void)
 {
 	log_firstcall();
 
+	Draw_AssertUnlocked("DirectDraw_ReturnFrontBuffer");
 	if (directDrawGlobs.fullScreen) {
 		directDrawGlobs.bSurf->Blt(nullptr, directDrawGlobs.fSurf, nullptr, DDBLT_WAIT, nullptr);
 	}
@@ -458,6 +461,7 @@ void __cdecl Gods98::DirectDraw_BlitBuffers(void)
 		(sint32) directDrawGlobs.height,
 	};
 
+	Draw_AssertUnlocked("DirectDraw_BlitBuffers");
 	HRESULT r = directDrawGlobs.fSurf->Blt(&dest, directDrawGlobs.bSurf, &src, DDBLT_WAIT, nullptr);
 	Error_Fatal(r == DDERR_SURFACELOST, "Front surface lost");
 
@@ -556,6 +560,7 @@ void __cdecl Gods98::DirectDraw_Clear(const Area2F* window, uint32 colour)
 	bltFX.dwSize = sizeof(DDBLTFX);
 	bltFX.dwFillColor = DirectDraw_GetColour(directDrawGlobs.bSurf, colour);
 
+	Draw_AssertUnlocked("DirectDraw_Clear");
 	if (window) {
 		/// FIXME: Cast from float to unsigned
 		RECT rect = { // sint32 casts to stop compiler from complaining

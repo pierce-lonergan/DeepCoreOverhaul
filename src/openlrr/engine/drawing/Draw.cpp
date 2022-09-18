@@ -6,6 +6,7 @@
 
 #include "../core/Errors.h"
 #include "../core/Maths.h"
+#include "../Main.h"
 #include "DirectDraw.h"
 
 #include "Draw.h"
@@ -28,6 +29,11 @@ static uint32 _drawGreenShift = 0;
 static uint32 _drawBlueShift  = 0;
 static uint32 _drawAlphaShift = 0;
 
+/// CUSTOM: Draw_Begin() has been called, normal Draw operations will not unlock the drawing surface until Draw_End().
+static bool _drawBegin = false;
+/// CUSTOM: The current drawing effect while using Draw_Begin().
+static Gods98::DrawEffect _drawEffect = Gods98::DrawEffect::None;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -41,11 +47,68 @@ static uint32 _drawAlphaShift = 0;
 #define Draw_Pixel24Address(x, y)	static_cast<uint8*> (DirectDraw_PixelAddress(drawGlobs.buffer, drawGlobs.pitch, 24, x, y))
 #define Draw_Pixel32Address(x, y)	static_cast<uint32*>(DirectDraw_PixelAddress(drawGlobs.buffer, drawGlobs.pitch, 32, x, y))
 
+ /// CUSTOM: Unlocks the surface during normal Draw calls while not using Draw_Begin().
+#define Draw_TryUnlockSurface(surf)	if (!_drawBegin) Draw_UnlockSurface(surf)
+
 #pragma endregion
 
 /**********************************************************************************
  ******** Functions
  **********************************************************************************/
+
+/// CUSTOM: Returns true if the drawing surface is currently locked, i.e. after calling Draw_Begin().
+bool Gods98::Draw_IsLocked()
+{
+	return (drawGlobs.buffer != nullptr);
+}
+
+/// CUSTOM: Locks the drawing surface and waits for Draw_End() to be called before unlocking it.
+bool Gods98::Draw_Begin()
+{
+	Error_Warn(Draw_IsLocked(), "Draw_Begin: Called more than once before calling Draw_End()");
+
+	// Will still set new effect if already locked.
+	if (Draw_LockSurface(DirectDraw_bSurf(), Gods98::DrawEffect::None)) {
+		_drawBegin = true;
+	}
+	return _drawBegin;
+}
+
+/// CUSTOM: Unlocks the drawing surface after Draw_Begin() was called.
+void Gods98::Draw_End()
+{
+	Error_Warn(!Draw_IsLocked(), "Draw_End: Called without first calling Draw_Begin()");
+
+	Draw_UnlockSurface(DirectDraw_bSurf());
+	_drawBegin = false;
+}
+
+/// CUSTOM: Gets the current effect while the drawing surface has been locked with Draw_Begin().
+Gods98::DrawEffect Gods98::Draw_GetEffect()
+{
+	return _drawEffect;
+}
+
+/// CUSTOM: Sets the current effect while the drawing surface has been locked with Draw_Begin().
+void Gods98::Draw_SetEffect(DrawEffect effect)
+{
+	Error_Warn(!Draw_IsLocked(), "Draw_SetEffect: Called without first calling Draw_Begin()");
+
+	// We need to know the bitdepth to set the pixel function, so we must be locked.
+	if (Draw_IsLocked()) {
+		Draw_SetDrawPixelFunc(effect);
+	}
+}
+
+/// CUSTOM:
+void Gods98::Draw_AssertUnlocked(const char* caller)
+{
+	if (Draw_IsLocked()) {
+		Error_FatalF(true, "%s: Draw_End() has not been called before the back surface is needed", caller);
+		Draw_End(); // End for users that want to continue past the error dialog.
+	}
+}
+
 
 // <LegoRR.exe @00486140>
 void __cdecl Gods98::Draw_Initialise(const Area2F* window)
@@ -124,7 +187,7 @@ void __cdecl Gods98::Draw_PixelListEx(const Point2F* pointList, uint32 count, re
 				drawGlobs.drawPixelFunc((sint32) point->x, (sint32) point->y, colour);
 			}
 		}
-		Draw_UnlockSurface(surf);
+		Draw_TryUnlockSurface(surf);
 	}
 }
 
@@ -146,7 +209,7 @@ void __cdecl Gods98::Draw_LineListEx(const Point2F* fromList, const Point2F* toL
 			const Point2F* to = &toList[loop];
 			Draw_LineActual((sint32) from->x, (sint32) from->y, (sint32) to->x, (sint32) to->y, colour);
 		}
-		Draw_UnlockSurface(surf);
+		Draw_TryUnlockSurface(surf);
 	}
 }
 
@@ -187,7 +250,7 @@ void __cdecl Gods98::Draw_RectListEx(const Area2F* rectList, uint32 count, real3
 				}
 			}
 		}
-		Draw_UnlockSurface(surf);
+		Draw_TryUnlockSurface(surf);
 	}
 }
 
@@ -228,7 +291,7 @@ void __cdecl Gods98::Draw_RectList2Ex(const Draw_Rect* rectList, uint32 count, D
 				}
 			}
 		}
-		Draw_UnlockSurface(surf);
+		Draw_TryUnlockSurface(surf);
 	}
 }
 
@@ -254,7 +317,7 @@ void __cdecl Gods98::Draw_DotCircle(const Point2F* pos, uint32 radius, uint32 do
 				drawGlobs.drawPixelFunc(x, y, colour);
 			}
 		}
-		Draw_UnlockSurface(surf);
+		Draw_TryUnlockSurface(surf);
 	}
 }
 
@@ -263,7 +326,7 @@ uint32 __cdecl Gods98::Draw_GetColour(real32 r, real32 g, real32 b)
 {
 	log_firstcall();
 
-	Error_Fatal(drawGlobs.buffer==nullptr, "Must be called after Draw_LockSurface()");
+	Error_Fatal(!Draw_IsLocked(), "Draw_GetColour: Must be called after Draw_LockSurface()");
 	
 	if (drawGlobs.bpp == 8) {
 		/// FIXME: not implemented by GODS98 or LegoRR
@@ -283,13 +346,16 @@ bool32 __cdecl Gods98::Draw_LockSurface(IDirectDrawSurface4* surf, DrawEffect ef
 {
 	log_firstcall();
 
-	DDSURFACEDESC2 desc;
-	HRESULT r;
+	if (Draw_IsLocked()) {
+		Draw_SetDrawPixelFunc(effect);
+		return true; // Already locked.
+	}
 
-	std::memset(&desc, 0, sizeof(DDSURFACEDESC2));
+	DDSURFACEDESC2 desc = { 0 };
 	desc.dwSize = sizeof(DDSURFACEDESC2);
-//	if ((r = surf->Lock(reinterpret_cast<RECT*>(&drawGlobs.lockRect), &desc, DDLOCK_WAIT, nullptr)) == DD_OK) {
-	if ((r = surf->Lock(nullptr, &desc, DDLOCK_WAIT, nullptr)) == DD_OK) {
+
+//	if (surf->Lock(reinterpret_cast<RECT*>(&drawGlobs.lockRect), &desc, DDLOCK_WAIT, nullptr) == DD_OK) {
+	if (surf->Lock(nullptr, &desc, DDLOCK_WAIT, nullptr) == DD_OK) {
 
 		drawGlobs.buffer    = desc.lpSurface;
 		drawGlobs.pitch     = desc.lPitch;
@@ -313,6 +379,7 @@ bool32 __cdecl Gods98::Draw_LockSurface(IDirectDrawSurface4* surf, DrawEffect ef
 		if (Draw_SetDrawPixelFunc(effect)) {
 			return true;
 		}
+
 		Draw_UnlockSurface(surf);
 	}
 
@@ -324,16 +391,22 @@ void __cdecl Gods98::Draw_UnlockSurface(IDirectDrawSurface4* surf)
 {
 	log_firstcall();
 
-//	surf->Unlock(reinterpret_cast<RECT*>(&drawGlobs.lockRect));
-	surf->Unlock(nullptr);
-	drawGlobs.buffer    = nullptr;
-	drawGlobs.pitch     = 0;
-	drawGlobs.redMask   = 0;
-	drawGlobs.greenMask = 0;
-	drawGlobs.blueMask  = 0;
-	_drawAlphaMask      = 0;
-	drawGlobs.bpp       = 0;
-	drawGlobs.drawPixelFunc = nullptr;
+	if (Draw_IsLocked()) {
+
+	//	surf->Unlock(reinterpret_cast<RECT*>(&drawGlobs.lockRect));
+		surf->Unlock(nullptr);
+		drawGlobs.buffer    = nullptr;
+		drawGlobs.pitch     = 0;
+		drawGlobs.redMask   = 0;
+		drawGlobs.greenMask = 0;
+		drawGlobs.blueMask  = 0;
+		_drawAlphaMask      = 0;
+		drawGlobs.bpp       = 0;
+		drawGlobs.drawPixelFunc = nullptr;
+
+		_drawEffect = DrawEffect::None;
+		_drawBegin = false;
+	}
 }
 
 // <LegoRR.exe @00486950>
@@ -344,6 +417,7 @@ bool32 __cdecl Gods98::Draw_SetDrawPixelFunc(DrawEffect effect)
 	switch (drawGlobs.bpp) {
 	case 8:
 		drawGlobs.drawPixelFunc = Draw_Pixel8;
+		_drawEffect = DrawEffect::None;
 		return true;
 
 	case 16:
@@ -353,6 +427,7 @@ bool32 __cdecl Gods98::Draw_SetDrawPixelFunc(DrawEffect effect)
 		case DrawEffect::HalfTrans:	drawGlobs.drawPixelFunc = Draw_Pixel16HalfTrans; break;
 		default:					return false;
 		}
+		_drawEffect = effect;
 		return true;
 
 	case 24:
@@ -362,6 +437,7 @@ bool32 __cdecl Gods98::Draw_SetDrawPixelFunc(DrawEffect effect)
 		case DrawEffect::HalfTrans:	drawGlobs.drawPixelFunc = Draw_Pixel24HalfTrans; break;
 		default:					return false;
 		}
+		_drawEffect = effect;
 		return true;
 
 	case 32:
@@ -371,6 +447,7 @@ bool32 __cdecl Gods98::Draw_SetDrawPixelFunc(DrawEffect effect)
 		case DrawEffect::HalfTrans:	drawGlobs.drawPixelFunc = Draw_Pixel32HalfTrans; break;
 		default:					return false;
 		}
+		_drawEffect = effect;
 		return true;
 
 	default:

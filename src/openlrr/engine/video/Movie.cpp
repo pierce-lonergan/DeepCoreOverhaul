@@ -2,6 +2,7 @@
 //
 
 #include "../drawing/DirectDraw.h"
+#include "../drawing/Draw.h"
 #include "../core/Files.h"
 
 #include "Movie.hpp"
@@ -173,7 +174,7 @@ bool Gods98::G98CMovie::Update(real32 speed, const Rect2I* destRect)
 		return false;
 	}
 
-	// Copy from draw surface to render surface
+	// Copy from draw surface to render surface.
 	HRESULT r = this->m_bSurf->Blt(const_cast<RECT*>((const RECT*)destRect), this->m_surf, nullptr, DDBLT_WAIT /*0x1000000*/, nullptr);
 	return (r == DD_OK);
 }
@@ -315,6 +316,7 @@ bool32 __cdecl Gods98::Movie_Update(Movie_t* mov, real32 speed, const Rect2I* de
 
 	G98CMovie* movie = (G98CMovie*)mov;
 
+	Draw_AssertUnlocked("Movie_Update");
 	return (bool32)(movie->Update(speed, destRect) != false);
 }
 

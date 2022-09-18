@@ -9,6 +9,7 @@
 #include "../core/Memory.h"
 #include "../Main.h"
 #include "DirectDraw.h"
+#include "Draw.h"
 #include "Images.h"
 
 #include "Flic.h"
@@ -377,6 +378,7 @@ bool Gods98::Flic_Animate2(Flic* fsp, OPTIONAL const Area2F* destArea, uint32 ad
 		ddBltFx.dwSize = sizeof(DDBLTFX);
 		ddBltFx.dwFillColor = 0xff00;
 
+		Draw_AssertUnlocked("Flic_Animate2");
 		//hr = (*lpBB)->Blt(dest, fsp->fsSurface, nullptr, /*DDBLT_COLORFILL |*/ DDBLT_WAIT|(trans?DDBLT_KEYSRC:0), &ddBltFx);
 		hr = DirectDraw_bSurf()->Blt(dest, fsp->fsSurface, nullptr, /*DDBLT_COLORFILL |*/ DDBLT_WAIT|(trans?DDBLT_KEYSRC:0), &ddBltFx);
 	}
