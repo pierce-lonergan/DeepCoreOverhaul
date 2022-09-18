@@ -9,6 +9,7 @@
 #include "../../platform/windows.h"
 
 #include "../../common.h"
+#include "../colour.h"
 #include "../geometry.h"
 
 
@@ -82,9 +83,14 @@ assert_sizeof(DrawEffect, 0x4);
 struct Draw_Rect
 {
 	/*00,10*/ Area2F rect;
-	/*10,4*/ real32 r;
-	/*14,4*/ real32 g;
-	/*18,4*/ real32 b;
+	/*10,c*/ union {
+		struct {
+			/*10,4*/ real32 r;
+			/*14,4*/ real32 g;
+			/*18,4*/ real32 b;
+		};
+		/*10,c*/ ColourRGBF colour;
+	};
 	/*1c*/
 };
 assert_sizeof(Draw_Rect, 0x1c);
