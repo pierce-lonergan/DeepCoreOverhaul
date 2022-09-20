@@ -831,7 +831,10 @@ bool Gods98::DirectDraw_CopySurface(const BMP_Image* dstImage, const DDSURFACEDE
 	BMP_Image srcImage = { 0 };
 	DirectDraw_GetSurfaceInfo(srcDesc, &srcImage, srcPalette);
 
-	return DirectDraw_CopySurface(dstImage, &srcImage, flip);
+	const bool result = DirectDraw_CopySurface(dstImage, &srcImage, flip);
+
+	BMP_Cleanup(&srcImage);
+	return result;
 }
 
 /// CUSTOM:
@@ -840,7 +843,10 @@ bool Gods98::DirectDraw_CopySurface(const DDSURFACEDESC2* dstDesc, const BMP_Ima
 	BMP_Image dstImage = { 0 };
 	DirectDraw_GetSurfaceInfo(dstDesc, &dstImage);
 
-	return DirectDraw_CopySurface(&dstImage, srcImage, flip);
+	const bool result = DirectDraw_CopySurface(&dstImage, srcImage, flip);
+
+	BMP_Cleanup(&dstImage);
+	return result;
 }
 
 /// CUSTOM:
@@ -850,7 +856,11 @@ bool Gods98::DirectDraw_CopySurface(const DDSURFACEDESC2* dstDesc, const DDSURFA
 	DirectDraw_GetSurfaceInfo(srcDesc, &srcImage, srcPalette);
 	DirectDraw_GetSurfaceInfo(dstDesc, &dstImage);
 
-	return DirectDraw_CopySurface(&dstImage, &srcImage, flip);
+	const bool result = DirectDraw_CopySurface(&dstImage, &srcImage, flip);
+
+	BMP_Cleanup(&srcImage);
+	BMP_Cleanup(&dstImage);
+	return result;
 }
 
 /// CUSTOM:
@@ -893,7 +903,7 @@ void Gods98::DirectDraw_GetSurfaceInfo(const DDSURFACEDESC2* desc, OUT BMP_Image
 	image->aspectx = image->aspecty = 1;
 
 	if (palette != nullptr) {
-		Error_Fatal(image->depth != 8, "DirectDraw_SurfaceAsSource: 8-bit source surface required for palette");
+		Error_Fatal(image->depth != 8, "DirectDraw_GetSurfaceInfo: 8-bit source surface required for palette");
 		image->rgb = false;
 		image->palette_size = 256;
 		//image->palette = const_cast<BMP_PaletteEntry*>(palette);
@@ -901,7 +911,7 @@ void Gods98::DirectDraw_GetSurfaceInfo(const DDSURFACEDESC2* desc, OUT BMP_Image
 		std::memcpy(image->palette, palette, (256 * sizeof(BMP_PaletteEntry)));
 	}
 	else {
-		Error_Fatal(image->depth == 8, "DirectDraw_SurfaceAsSource: 8-bit source surface not supported without palette");
+		Error_Fatal(image->depth == 8, "DirectDraw_GetSurfaceInfo: 8-bit source surface not supported without palette");
 		image->rgb = true;
 		image->palette_size = 0;
 		image->palette = nullptr;
