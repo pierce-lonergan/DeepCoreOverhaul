@@ -445,7 +445,6 @@ void __cdecl Gods98::Draw_UnlockSurface(IDirectDrawSurface4* surf)
 	_drawEffect = DrawEffect::None;
 	_drawBegin = false;
 	_drawLocked = false;
-	_drawRenderTarget = nullptr;
 }
 
 // <LegoRR.exe @00486950>
