@@ -136,6 +136,11 @@
 #define IDM_ROUTING_REMOVESELECTED		360
 #define IDM_ROUTING_REMOVEALL			361
 // --------------
+// &Debug > Rendering
+#define IDM_RENDERING_DRAW				365
+#define IDM_RENDERING_IMAGES			366
+#define IDM_RENDERING_FONTS				367
+// --------------
 // &Debug > Experimental
 #define IDM_BLOCKFADE					321
 #define IDM_DDRAWCLEAR					322

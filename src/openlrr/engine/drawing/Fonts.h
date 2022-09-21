@@ -142,6 +142,13 @@ extern Font_ListSet fontListSet;
 
 #pragma region Functions
 
+/// CUSTOM: Gets if the Fonts module is enabled.
+bool Font_IsRenderEnabled();
+
+/// CUSTOM: Sets if the Fonts module rendering is enabled. For testing performance.
+void Font_SetRenderEnabled(bool enabled);
+
+
 // <missing>
 void __cdecl Font_Initialise(void);
 

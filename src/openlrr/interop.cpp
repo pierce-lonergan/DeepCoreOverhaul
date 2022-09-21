@@ -954,8 +954,8 @@ bool interop_hook_Gods98_Images(void)
 	// used by: Font_Load
 	//result &= hook_write_jmpret(0x0047e120, Gods98::Image_LockSurface);
 	//result &= hook_write_jmpret(0x0047e190, Gods98::Image_UnlockSurface);
-	//result &= hook_write_jmpret(0x0047e1b0, Gods98::Image_GetPen255);
-	//result &= hook_write_jmpret(0x0047e210, Gods98::Image_GetPixelMask);
+	//result &= hook_write_jmpret(0x0047e1b0, Gods98::Image_GetPen255BigEndian);
+	//result &= hook_write_jmpret(0x0047e210, Gods98::Image_GetPixelMaskBigEndian);
 
 	// REPLACEMENT FOR: Image_GetPixel, because the functions that use GetPixel are checking specifically for black (0).
 	result &= hook_write_jmpret(0x0047e260, Gods98::Image_GetPixelTruncate);

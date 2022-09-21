@@ -198,7 +198,7 @@ Gods98::Container* __cdecl Gods98::Container_GetRoot(void)
 }
 
 // <LegoRR.exe @00472c10>
-Gods98::Container* __cdecl Gods98::Container_Create(Container* parent)
+Gods98::Container* __cdecl Gods98::Container_Create(OPTIONAL Container* parent)
 {
 	Container_DebugCheckOK(CONTAINER_DEBUG_NOTREQUIRED);
 
@@ -425,7 +425,7 @@ void __cdecl Gods98::Container_Remove2(Container* dead, bool32 kill)
 }
 
 // <LegoRR.exe @00472f90>
-Gods98::Container* __cdecl Gods98::Container_Load(Container* parent, const char* filename, const char* typestr, bool32 looping)
+Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, const char* filename, const char* typestr, bool32 looping)
 {
 	Config* rootConf;
 	const Config* conf;
@@ -1398,9 +1398,6 @@ IDirectDrawSurface4* __cdecl Gods98::Container_LoadTextureSurface(const char* fn
 					{
 						if (surface->SetPalette(palette) == D3DRM_OK) {
 
-							uint32 r, g, b;
-							uint32 decalColour;
-
 							if (copy) { // Find the cards preferred texture format...
 
 								std::memset(&descBak.ddpfPixelFormat, 0, sizeof(descBak.ddpfPixelFormat));
@@ -1433,14 +1430,14 @@ IDirectDrawSurface4* __cdecl Gods98::Container_LoadTextureSurface(const char* fn
 
 							if (trans)
 							{
+								uint32 decalColour;
 								if (Container_GetDecalColour(fname, &decalColour)) {
 
 //									if(desc.ddpfPixelFormat.dwRGBBitCount > 8)
 									if (copy) {
-										r = image.palette[decalColour].red;
-										g = image.palette[decalColour].green;
-										b = image.palette[decalColour].blue;
-										decalColour = DirectDraw_GetColour(surface, RGB_MAKE(r, g, b));
+										Error_FatalF(decalColour > 256, "Decal colour index is greater than 256: %s", fname);
+										const BMP_PaletteEntry entry = image.palette[decalColour];
+										decalColour = DirectDraw_ToColourFromRGB(surface, entry.red, entry.green, entry.blue);
 									}
 									uint32 low = decalColour, high = decalColour;
 
@@ -1650,7 +1647,7 @@ void __cdecl Gods98::Container_FreeTexture(Container_Texture* text)
 }
 
 // <LegoRR.exe @00474a20>
-void __cdecl Gods98::Container_Mesh_Swap(Container* target, Container* origin, bool32 restore)
+void __cdecl Gods98::Container_Mesh_Swap(Container* target, OPTIONAL Container* origin, bool32 restore)
 {
 	// If not restoring then move any visuals on the container onto its hidden frame
 	// and add the mesh from the origin container onto the target contianer...

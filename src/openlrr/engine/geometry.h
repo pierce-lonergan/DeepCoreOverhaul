@@ -442,7 +442,7 @@ struct Vertex {
 		};
 		/*18,8*/	Point2F tuv;
 	};
-	/*20,4*/ colour32 colour;
+	/*20,4*/ uint32 colour;
 	/*24*/
 }; assert_sizeof(Vertex, 0x24);
 

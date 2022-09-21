@@ -1435,7 +1435,7 @@ void __cdecl Gods98::Main_LoopUpdate2(bool clear, bool updateGraphics)
 		Graphics_Finalise3D();
 		DirectDraw_Flip();
 
-		if (clear) DirectDraw_Clear(nullptr, 0 /*black*/);
+		if (clear) DirectDraw_ClearRGB(nullptr, 0, 0, 0); // black
 		mainGlobs.flags &= ~MainFlags::MAIN_FLAG_UPDATED;
 	}
 

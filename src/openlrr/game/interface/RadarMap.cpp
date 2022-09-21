@@ -478,7 +478,7 @@ void __cdecl LegoRR::RadarMap_Draw(RadarMap* radarMap, const Point2F* centerPos)
 void __cdecl LegoRR::RadarMap_ClearScreen(RadarMap* radarMap)
 {
 	// Clear the radar screen to black.
-	Gods98::DirectDraw_Clear(&radarMap->screenRect, 0); // black
+	Gods98::DirectDraw_ClearRGB(&radarMap->screenRect, 0, 0, 0); // black
 }
 
 // <LegoRR.exe @0045e6c0>

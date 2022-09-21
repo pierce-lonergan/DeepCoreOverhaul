@@ -1928,7 +1928,7 @@ void __cdecl LegoRR::Lego_Shutdown_Full(void)
 	Gods98::Image_Shutdown();
 	Gods98::Lws_Shutdown();
 	Gods98::Sound3D_ShutDown();
-	Gods98::DirectDraw_Clear(nullptr, 0 /*black*/);
+	Gods98::DirectDraw_ClearRGB(nullptr, 0, 0, 0); // black
 }
 
 // Simply halts music playback, then calls std::exit(0);

@@ -506,7 +506,7 @@ void __cdecl Container_SetSoundTriggerCallback(ContainerSoundTriggerCallback Cal
 Container* __cdecl Container_GetRoot(void);
 
 // <LegoRR.exe @00472c10>
-Container* __cdecl Container_Create(Container* parent);
+Container* __cdecl Container_Create(OPTIONAL Container* parent);
 
 // <LegoRR.exe @00472d00>
 void __cdecl Container_Remove(Container* dead);
@@ -515,7 +515,7 @@ void __cdecl Container_Remove(Container* dead);
 void __cdecl Container_Remove2(Container* dead, bool32 kill);
 
 // <LegoRR.exe @00472f90>
-Container* __cdecl Container_Load(Container* parent, const char* filename, const char* typestr, bool32 looping);
+Container* __cdecl Container_Load(OPTIONAL Container* parent, const char* filename, const char* typestr, bool32 looping);
 
 
 // <inlined>
@@ -612,7 +612,7 @@ Container_Texture* __cdecl Container_LoadTexture2(const char* fname, bool32 imme
 void __cdecl Container_FreeTexture(Container_Texture* text);
 
 // <LegoRR.exe @00474a20>
-void __cdecl Container_Mesh_Swap(Container* target, Container* origin, bool32 restore);
+void __cdecl Container_Mesh_Swap(Container* target, OPTIONAL Container* origin, bool32 restore);
 
 // <LegoRR.exe @00474bb0>
 uint32 __cdecl Container_Mesh_AddGroup(Container* cont, uint32 vertexCount,
@@ -749,6 +749,7 @@ void __cdecl Container_GetFrames(Container* cont, OPTIONAL Container* ref, OUT I
 // <LegoRR.exe @00475bf0>
 Container_Type __cdecl Container_ParseTypeString(const char* str, OUT bool32* noTexture);
 
+/// LEGACY:
 // <LegoRR.exe @00475cb0>
 void __cdecl Container_AddList(void);
 

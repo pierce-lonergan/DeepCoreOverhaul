@@ -195,6 +195,12 @@ BEGIN
             MENUITEM "Remove Selected",         IDM_ROUTING_REMOVESELECTED
             MENUITEM "Remove All",              IDM_ROUTING_REMOVEALL
         END
+        POPUP "Rendering"
+        BEGIN
+            MENUITEM "Draw",                    IDM_RENDERING_DRAW,CHECKED
+            MENUITEM "Images",                  IDM_RENDERING_IMAGES,CHECKED
+            MENUITEM "Fonts",                   IDM_RENDERING_FONTS,CHECKED
+        END
         POPUP "&Experimental"
         BEGIN
             MENUITEM "Block Fade",              IDM_BLOCKFADE

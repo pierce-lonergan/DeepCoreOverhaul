@@ -12,6 +12,7 @@
 #include "../../platform/windows.h"
 
 #include "../../common.h"
+#include "../colour.h"
 #include "../geometry.h"
 
 
@@ -29,6 +30,8 @@ struct _D3DDeviceDesc;
 typedef struct _D3DDeviceDesc			D3DDEVICEDESC, * LPD3DDEVICEDESC;
 struct _DDSURFACEDESC2;
 typedef struct _DDSURFACEDESC2			DDSURFACEDESC2, FAR* LPDDSURFACEDESC2;
+struct _DDPIXELFORMAT;
+typedef struct _DDPIXELFORMAT			DDPIXELFORMAT, FAR* LPDDPIXELFORMAT;
 
 #pragma endregion
 
@@ -264,8 +267,24 @@ void __cdecl DirectDraw_AdjustTextureUsage(IN OUT uint32* textureUsage);
 // <LegoRR.exe @0047d090>
 bool32 __cdecl DirectDraw_GetAvailTextureMem(OUT uint32* total, OUT uint32* avail);
 
+/// LEGACY: Use DirectDraw_ClearRGB or DirectDraw_ClearRGBF.
 // <LegoRR.exe @0047d0e0>
-void __cdecl DirectDraw_Clear(const Area2F* window, uint32 colour);
+void __cdecl DirectDraw_Clear(OPTIONAL const Area2F* window, ColourBGRAPacked bgrColour);
+
+/// CUSTOM:
+void DirectDraw_ClearRGBF(OPTIONAL const Area2F* window, real32 r, real32 g, real32 b, real32 a = 1.0f);
+
+/// CUSTOM:
+void DirectDraw_ClearRGB(OPTIONAL const Area2F* window, uint8 r, uint8 g, uint8 b, uint8 a = 255);
+
+/// CUSTOM:
+void DirectDraw_ClearSurfaceRGBF(IDirectDrawSurface4* surf, OPTIONAL const Area2F* window, real32 r, real32 g, real32 b, real32 a = 1.0f);
+
+/// CUSTOM:
+void DirectDraw_ClearSurfaceRGB(IDirectDrawSurface4* surf, OPTIONAL const Area2F* window, uint8 r, uint8 g, uint8 b, uint8 a = 255);
+
+/// CUSTOM:
+void _DirectDraw_ClearSurface(IDirectDrawSurface4* surf, OPTIONAL const Area2F* window, uint32 surfColour);
 
 // <LegoRR.exe @0047d1a0>
 bool32 __cdecl DirectDraw_CreateClipper(bool32 fullscreen, uint32 width, uint32 height);
@@ -302,8 +321,25 @@ bool DirectDraw_CopySurface(IDirectDrawSurface4* dstSurf, IDirectDrawSurface4* s
 /// CUSTOM:
 void DirectDraw_GetSurfaceInfo(const DDSURFACEDESC2* desc, OUT BMP_Image* image, OPTIONAL const BMP_PaletteEntry* palette = nullptr);
 
+/// LEGACY: Use DirectDraw_ToColourFromRGB.
 // <LegoRR.exe @0047d590>
-uint32 __cdecl DirectDraw_GetColour(IDirectDrawSurface4* surf, uint32 colour);
+uint32 __cdecl DirectDraw_GetColour(IDirectDrawSurface4* surf, ColourBGRAPacked bgrColour);
+
+/// CUSTOM: Converts real RGB values to a surface colour value.
+uint32 DirectDraw_ToColourFromRGBF(IDirectDrawSurface4* surf, real32 r, real32 g, real32 b, real32 a = 1.0f);
+
+/// CUSTOM: Converts byte RGB values to a surface colour value.
+uint32 DirectDraw_ToColourFromRGB(IDirectDrawSurface4* surf, uint8 r, uint8 g, uint8 b, uint8 a = 255);
+
+/// CUSTOM: Converts a surface colour value to real RGB values.
+bool DirectDraw_FromColourToRGBF(IDirectDrawSurface4* surf, uint32 surfColour, OPTIONAL OUT real32* r, OPTIONAL OUT real32* g, OPTIONAL OUT real32* b, OPTIONAL OUT real32* a = nullptr);
+
+/// CUSTOM: Converts a surface colour value to byte RGB values.
+bool DirectDraw_FromColourToRGB(IDirectDrawSurface4* surf, uint32 surfColour, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b, OPTIONAL OUT uint8* a = nullptr);
+
+/// CUSTOM:
+bool DirectDraw_GetPaletteEntries(IDirectDrawSurface4* surf, OUT BMP_PaletteEntry* palette, uint32 index = 0, uint32 count = 256);
+
 
 // <LegoRR.exe @0047d6b0>
 uint32 __cdecl DirectDraw_CountMaskBits(uint32 mask);
@@ -311,40 +347,68 @@ uint32 __cdecl DirectDraw_CountMaskBits(uint32 mask);
 /// CUSTOM: Replacement for Image_CountMaskBitShift.
 uint32 __cdecl DirectDraw_CountMaskBitShift(uint32 mask);
 
-/// CUSTOM: Shorthand to get number of bytes in a bit depth.
-constexpr uint32 DirectDraw_BitToByteDepth(uint32 bitDepth) { return (bitDepth + 7) / 8; }
-
-/// CUSTOM:
-constexpr uint32 DirectDraw_ShiftChannelByte(uint8 value, uint32 bitCount, uint32 bitShift)
-{
-	return ((value >> (8 - bitCount)) << bitShift);
-}
-
-/// CUSTOM:
-constexpr uint8 DirectDraw_UnshiftChannelByte(uint32 value, uint32 bitCount, uint32 bitShift)
-{
-	return (((value >> bitShift) & ((1 << bitCount) - 1)) << (8 - bitCount));
-}
-
-/// CUSTOM:
-constexpr void* DirectDraw_PixelAddress(void* buffer, uint32 pitch, uint32 bitDepth, uint32 x, uint32 y)
-{
-	return (static_cast<uint8*>(buffer) + (y * pitch) + (x * DirectDraw_BitToByteDepth(bitDepth)));
-}
-
-// <inlined>
-__inline bool32 DirectDraw_SetupFullScreen(const Graphics_Driver* driver, const Graphics_Device* device, const Graphics_Mode* mode) { return DirectDraw_Setup(true, driver, device, mode, 0, 0, 320, 200); }
-
-// <inlined>
-__inline bool32 DirectDraw_SetupWindowed(const Graphics_Device* device, uint32 xPos, uint32 yPos, uint32 width, uint32 height) { return DirectDraw_Setup(false, nullptr, device, nullptr, xPos, yPos, width, height); }
-
-
 /// CUSTOM: Gets the bit depth selected during DirectDraw_Setup.
 uint32 DirectDraw_BitDepth();
 
 /// NOTE: This expects low,high to be in COLORREF format (from lowest to highest bit order: RGBA).
 /// CUSTOM: Expand a colour key to a 16-bit range, to include colours that normally don't match when in 24-bit or 32-bit mode.
-void DirectDraw_ColourKeyTo16BitRange(IN OUT uint32* low, IN OUT uint32* high);
+void DirectDraw_ColourKeyTo16BitRange(IN OUT uint8* lowr,  IN OUT uint8* lowg,  IN OUT uint8* lowb,
+									  IN OUT uint8* highr, IN OUT uint8* highg, IN OUT uint8* highb);
+
+
+
+/// CUSTOM: Shorthand to get number of bytes in a bit depth.
+constexpr uint32 DirectDraw_BitToByteDepth(uint32 bitDepth)
+{
+	return (bitDepth + 7) / 8;
+}
+
+/// CUSTOM: Gets the mask for a bit count with optional shift.
+constexpr uint32 DirectDraw_BitCountToMask(uint32 bitCount, uint32 bitShift = 0)
+{
+	// Note: Left shifting as many bits as the type size is undefined behaviour.
+	if (bitShift >= (sizeof(uint32) * 8)) return 0;
+	return (((bitCount >= (sizeof(uint32) * 8)) ? 0u : (1u << bitCount)) - 1) << bitShift;
+}
+
+/// CUSTOM: Converts a singel RGBA channel value to part of a pixel colour value.
+constexpr uint32 DirectDraw_ShiftChannelByte(uint8 value, uint32 bitCount, uint32 bitShift)
+{
+	// Note: Left shifting as many bits as the type size is undefined behaviour.
+	if (bitShift >= (sizeof(uint32) * 8)) return 0;
+	return ((value >> (8 - bitCount)) << bitShift);
+}
+
+/// CUSTOM: Extracts a single RGBA channel value from a pixel colour value.
+constexpr uint8 DirectDraw_UnshiftChannelByte(uint32 value, uint32 bitCount, uint32 bitShift)
+{
+	return (((value >> bitShift) & DirectDraw_BitCountToMask(bitCount)) << (8 - bitCount));
+}
+
+/// CUSTOM: Returns the address offset to a pixel from the start of the buffer.
+constexpr void* DirectDraw_PixelAddress(void* buffer, uint32 pitch, uint32 bitDepth, uint32 x, uint32 y)
+{
+	return (static_cast<uint8*>(buffer) + (y * pitch) + (x * DirectDraw_BitToByteDepth(bitDepth)));
+}
+
+/// CUSTOM: Returns the address offset to a pixel from the start of the buffer.
+constexpr const void* DirectDraw_PixelAddress(const void* buffer, uint32 pitch, uint32 bitDepth, uint32 x, uint32 y)
+{
+	return DirectDraw_PixelAddress(const_cast<void*>(buffer), pitch, bitDepth, x, y);
+}
+
+
+// <inlined>
+inline bool32 DirectDraw_SetupFullScreen(const Graphics_Driver* driver, const Graphics_Device* device, const Graphics_Mode* mode)
+{
+	return DirectDraw_Setup(true, driver, device, mode, 0, 0, 320, 200);
+}
+
+// <inlined>
+inline bool32 DirectDraw_SetupWindowed(const Graphics_Device* device, uint32 xPos, uint32 yPos, uint32 width, uint32 height)
+{
+	return DirectDraw_Setup(false, nullptr, device, nullptr, xPos, yPos, width, height);
+}
 
 #pragma endregion
 

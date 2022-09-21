@@ -66,17 +66,19 @@ constexpr const size_t MaxLists()
  */
 constexpr const size_t CapacityOfLists(size_t listCount)
 {
-	return ((static_cast<size_t>(1U) << listCount) - 1U);
+	// Note: Left shifting as many bits as the type size is undefined behaviour.
+	return (((listCount >= (sizeof(size_t) * 8)) ? static_cast<size_t>(0U) : (static_cast<size_t>(1U) << listCount)) - 1U);
 }
 
 /**
  * @brief Returns the number of items available in a single list at index N in a listSet.
  * @param listIndex The index of the list in a listSet.
- * @return The combined size of listCount lists.
+ * @return The size of the list at listIndex.
  */
 constexpr const size_t CountOfList(size_t listIndex)
 {
-	return (static_cast<size_t>(1U) << listIndex);
+	// Note: Left shifting as many bits as the type size is undefined behaviour.
+	return ((listIndex >= (sizeof(size_t) * 8)) ? static_cast<size_t>(0U) : (static_cast<size_t>(1U) << listIndex));
 }
 
 /**

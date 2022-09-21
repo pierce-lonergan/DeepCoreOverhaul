@@ -162,6 +162,12 @@ extern Draw_Globs & drawGlobs;
 //#define Draw_WorldLineListHalfTrans(v,f,t,c,r,g,b,a)	Draw_WorldLineListEx((v),(f),(t),(c),(r),(g),(b),(a),Gods98::DrawEffect::HalfTrans)
 #define Draw_RectListHalfTrans(a,c,r,g,b)			Draw_RectListEx((a),(c),(r),(g),(b),Gods98::DrawEffect::HalfTrans)
 
+/// CUSTOM: Gets if the Draw module rendering is enabled.
+bool Draw_IsRenderEnabled();
+
+/// CUSTOM: Sets if the Draw module rendering is enabled. For testing performance.
+void Draw_SetRenderEnabled(bool enabled);
+
 
 /// CUSTOM: Returns true if the drawing surface is currently locked, i.e. after calling Draw_Begin().
 bool Draw_IsLocked();
@@ -229,6 +235,9 @@ void __cdecl Draw_LineActual(sint32 x1, sint32 y1, sint32 x2, sint32 y2, uint32 
 
 /// CUSTOM:
 uint32 _Draw_ConvertHalfTrans(uint32 pixel, uint32 value);
+
+/// CUSTOM:
+void __cdecl Draw_PixelDummy(sint32 x, sint32 y, uint32 value);
 
 // <LegoRR.exe @00486b40>
 void __cdecl Draw_Pixel8(sint32 x, sint32 y, uint32 value);

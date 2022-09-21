@@ -34,6 +34,11 @@ static bool _drawBegin = false;
 /// CUSTOM: The current drawing effect while using Draw_Begin().
 static Gods98::DrawEffect _drawEffect = Gods98::DrawEffect::None;
 
+/// CUSTOM: If false, then the Draw module will not lock or draw to surfaces at all.
+static bool _renderEnabled = true;
+/// CUSTOM: True if the drawing surface is supposed to be locked, or Draw_Begin() has been called.
+static bool _drawLocked = false;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -56,10 +61,28 @@ static Gods98::DrawEffect _drawEffect = Gods98::DrawEffect::None;
  ******** Functions
  **********************************************************************************/
 
+/// CUSTOM: Gets if the Draw module rendering is enabled.
+bool Gods98::Draw_IsRenderEnabled()
+{
+	return _renderEnabled;
+}
+
+/// CUSTOM: Sets if the Draw module rendering is enabled. For testing performance.
+void Gods98::Draw_SetRenderEnabled(bool enabled)
+{
+	if (_renderEnabled != enabled) {
+		if (!enabled && _drawBegin) {
+			Draw_End();
+		}
+		_renderEnabled = enabled;
+	}
+}
+
+
 /// CUSTOM: Returns true if the drawing surface is currently locked, i.e. after calling Draw_Begin().
 bool Gods98::Draw_IsLocked()
 {
-	return (drawGlobs.buffer != nullptr);
+	return _drawLocked || (drawGlobs.buffer != nullptr);
 }
 
 /// CUSTOM: Locks the drawing surface and waits for Draw_End() to be called before unlocking it.
@@ -326,6 +349,10 @@ uint32 __cdecl Gods98::Draw_GetColour(real32 r, real32 g, real32 b)
 {
 	log_firstcall();
 
+	if (!Draw_IsRenderEnabled()) {
+		return 0; // Behave as if colour was returned.
+	}
+
 	Error_Fatal(!Draw_IsLocked(), "Draw_GetColour: Must be called after Draw_LockSurface()");
 	
 	if (drawGlobs.bpp == 8) {
@@ -349,6 +376,12 @@ bool32 __cdecl Gods98::Draw_LockSurface(IDirectDrawSurface4* surf, DrawEffect ef
 	if (Draw_IsLocked()) {
 		Draw_SetDrawPixelFunc(effect);
 		return true; // Already locked.
+	}
+
+	if (!Draw_IsRenderEnabled()) {
+		_drawLocked = true;
+		Draw_SetDrawPixelFunc(effect);
+		return true; // Behave as if locked.
 	}
 
 	DDSURFACEDESC2 desc = { 0 };
@@ -375,6 +408,7 @@ bool32 __cdecl Gods98::Draw_LockSurface(IDirectDrawSurface4* surf, DrawEffect ef
 		_drawBlueShift      = DirectDraw_CountMaskBitShift(drawGlobs.blueMask);
 		_drawAlphaShift     = DirectDraw_CountMaskBitShift(_drawAlphaMask);
 
+		_drawLocked = true;
 
 		if (Draw_SetDrawPixelFunc(effect)) {
 			return true;
@@ -391,7 +425,10 @@ void __cdecl Gods98::Draw_UnlockSurface(IDirectDrawSurface4* surf)
 {
 	log_firstcall();
 
-	if (Draw_IsLocked()) {
+	if (!Draw_IsRenderEnabled()) {
+		// Behave as if unlocked.
+	}
+	else if (Draw_IsLocked()) {
 
 	//	surf->Unlock(reinterpret_cast<RECT*>(&drawGlobs.lockRect));
 		surf->Unlock(nullptr);
@@ -403,16 +440,24 @@ void __cdecl Gods98::Draw_UnlockSurface(IDirectDrawSurface4* surf)
 		_drawAlphaMask      = 0;
 		drawGlobs.bpp       = 0;
 		drawGlobs.drawPixelFunc = nullptr;
-
-		_drawEffect = DrawEffect::None;
-		_drawBegin = false;
 	}
+
+	_drawEffect = DrawEffect::None;
+	_drawBegin = false;
+	_drawLocked = false;
+	_drawRenderTarget = nullptr;
 }
 
 // <LegoRR.exe @00486950>
 bool32 __cdecl Gods98::Draw_SetDrawPixelFunc(DrawEffect effect)
 {
 	log_firstcall();
+
+	if (!Draw_IsRenderEnabled()) {
+		drawGlobs.drawPixelFunc = Draw_PixelDummy;
+		_drawEffect = effect;
+		return true; // Behave as if pixel function is set.
+	}
 
 	switch (drawGlobs.bpp) {
 	case 8:
@@ -541,6 +586,12 @@ uint32 Gods98::_Draw_ConvertHalfTrans(uint32 pixel, uint32 value)
 	const uint32 b = (((pix_b + val_b) / 2) << _drawBlueShift)  & drawGlobs.blueMask;
 
 	return (r|g|b);
+}
+
+/// CUSTOM:
+void __cdecl Gods98::Draw_PixelDummy(sint32 x, sint32 y, uint32 value)
+{
+	// Do nothing.
 }
 
 // <LegoRR.exe @00486b40>

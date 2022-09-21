@@ -26,6 +26,9 @@ Gods98::Image_Globs & Gods98::imageGlobs = *(Gods98::Image_Globs*)0x00534908;
 
 Gods98::Image_ListSet Gods98::imageListSet = Gods98::Image_ListSet(Gods98::imageGlobs);
 
+/// CUSTOM: If false, then the Fonts module will not render images at all.
+static bool _renderEnabled = true;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -33,6 +36,19 @@ Gods98::Image_ListSet Gods98::imageListSet = Gods98::Image_ListSet(Gods98::image
  **********************************************************************************/
 
 #pragma region Functions
+
+/// CUSTOM: Gets if the Images module rendering is enabled.
+bool Gods98::Image_IsRenderEnabled()
+{
+	return _renderEnabled;
+}
+
+/// CUSTOM: Sets if the Images module rendering is enabled. For testing performance.
+void Gods98::Image_SetRenderEnabled(bool enabled)
+{
+	_renderEnabled = enabled;
+}
+
 
 // <LegoRR.exe @0047d6d0>
 void __cdecl Gods98::Image_Initialise(void)
@@ -137,14 +153,14 @@ Gods98::Image* Gods98::Image_LoadBMPScaled2(const char* fileName, uint32 width, 
 		return nullptr; // Failed to load file, or file is invalid.
 
 
-	COLORREF penZero, pen255;
-	penZero = pen255 = Image_RGBA2CR(0, 0, 0, Image_GetAlphaChannel());
+	ColourRGBAPacked penZero, pen255;
+	penZero = pen255 = Image_RGB2CR(0, 0, 0);
 
 	BMP_Image image = { 0 };  // D3DRMIMAGE
 	BMP_Parse(buffer, fileSize, &image);
 	if (!image.rgb) {
-		penZero = Image_RGBA2CR(image.palette[0].red, image.palette[0].green, image.palette[0].blue, Image_GetAlphaChannel());
-		pen255 = Image_RGBA2CR(image.palette[255].red, image.palette[255].green, image.palette[255].blue, Image_GetAlphaChannel());
+		penZero = Image_RGB2CR(image.palette[0].red, image.palette[0].green, image.palette[0].blue);
+		pen255 = Image_RGB2CR(image.palette[255].red, image.palette[255].green, image.palette[255].blue);
 	}
 	BMP_SetupChannelMasks(&image, true); // BMP images treat 16-bit as 15-bit.
 
@@ -182,27 +198,68 @@ Gods98::Image* Gods98::Image_LoadBMPScaled2(const char* fileName, uint32 width, 
 	return nullptr;
 }
 
-// <LegoRR.exe @0047de50>
-COLORREF __cdecl Gods98::Image_RGB2CR(uint8 r, uint8 g, uint8 b)
+/// CUSTOM: Create an empty image without needing to load a file.
+Gods98::Image* Gods98::Image_CreateNew(uint32 width, uint32 height)
 {
-	return Image_RGBA2CR(r, g, b, 0);
+	ColourRGBAPacked penZero, pen255;
+	penZero = pen255 = Image_RGB2CR(0, 0, 0);
+
+	DDSURFACEDESC2 ddsd = { 0 };
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
+	ddsd.dwWidth = width;
+	ddsd.dwHeight = height;
+
+	IDirectDrawSurface4* surface = nullptr;
+	if (DirectDraw()->CreateSurface(&ddsd, &surface, nullptr) == DD_OK) {
+
+		Image* newImage;
+		if (newImage = Image_Create(surface, width, height, penZero, pen255)) {
+			Image_ClearRGB(newImage, nullptr, penZero.red, penZero.green, penZero.blue, penZero.alpha);
+			return newImage;
+		}
+		else Error_Warn(true, "Could not create image");
+
+	}
+	else Error_Warn(true, "Could not create surface");
+
+	if (surface) surface->Release();
+	return nullptr;
 }
 
 /// CUSTOM:
-COLORREF __cdecl Gods98::Image_RGBA2CR(uint8 r, uint8 g, uint8 b, uint8 a)
+void Gods98::Image_ClearRGBF(Image* image, OPTIONAL const Area2F* window, real32 r, real32 g, real32 b, real32 a)
+{
+	DirectDraw_ClearSurfaceRGBF(image->surface, window, r, g, b, a);
+}
+
+/// CUSTOM:
+void Gods98::Image_ClearRGB(Image* image, OPTIONAL const Area2F* window, uint8 r, uint8 g, uint8 b, uint8 a)
+{
+	DirectDraw_ClearSurfaceRGB(image->surface, window, r, g, b, a);
+}
+
+// <LegoRR.exe @0047de50>
+ColourRGBAPacked __cdecl Gods98::Image_RGB2CR(uint8 r, uint8 g, uint8 b)
+{
+	return Image_RGBA2CR(r, g, b, 255);
+}
+
+/// CUSTOM:
+ColourRGBAPacked __cdecl Gods98::Image_RGBA2CR(uint8 r, uint8 g, uint8 b, uint8 a)
 {
 	log_firstcall();
 
-	COLORREF cr = 0; // dummy init
-	uint8* ptr = (uint8*)&cr;
-	ptr[0] = r;
-	ptr[1] = g;
-	ptr[2] = b;
-	ptr[3] = a;
-	return cr;
+	ColourRGBAPacked colour = { 0 }; // dummy init
+	colour.red   = r;
+	colour.green = g;
+	colour.blue  = b;
+	colour.alpha = a;
+	return colour;//.rgbaColour;
 }
 
-void Gods98::_Image_SetupTrans(Gods98::Image* image, uint32 low, uint32 high)
+void Gods98::_Image_SetupTrans(Gods98::Image* image, uint32 surfLow, uint32 surfHigh, bool truncateTo16Bit)
 {
 	log_firstcall();
 
@@ -218,7 +275,22 @@ void Gods98::_Image_SetupTrans(Gods98::Image* image, uint32 low, uint32 high)
 
 	bool approxTrans = false;
 
-	if ((low != high) || (DirectDraw_BitDepth() == 24 || DirectDraw_BitDepth() == 32)) {
+	// When transitioning to True Colour support, many images didn't have an exact match for transparency anymore.
+	// Some non-paletted and even paletted images were slightly off on colour, just small enough that it would be
+	// ignored when truncated to 16-bit colour. We need to manually correct this in True Colour mode.
+	// Especially because SetColourKey doesn't actually support ranges. So along with True Colour mode,
+	//  force a conversion when the passed low and high colour values don't match.
+	if (surfLow != surfHigh || DirectDraw_BitDepth() > 16) {
+
+		uint8 lowr, lowg, lowb, highr, highg, highb;
+		DirectDraw_FromColourToRGB(image->surface, surfLow,  &lowr,  &lowg,  &lowb);
+		DirectDraw_FromColourToRGB(image->surface, surfHigh, &highr, &highg, &highb);
+
+		const uint8 exactr = lowr, exactg = lowg, exactb = lowb;
+
+		if (DirectDraw_BitDepth() > 16) {
+			DirectDraw_ColourKeyTo16BitRange(&lowr, &lowg, &lowb, &highr, &highg, &highb);
+		}
 
 		DDSURFACEDESC2 desc = { 0 };
 		desc.dwSize = sizeof(DDSURFACEDESC2);
@@ -247,20 +319,6 @@ void Gods98::_Image_SetupTrans(Gods98::Image* image, uint32 low, uint32 high)
 			const uint32 byteDepth = DirectDraw_BitToByteDepth(bitDepth);
 
 			uint8* data = static_cast<uint8*>(desc.lpSurface);
-
-
-			uint32 low2 = low, high2 = high;
-			if (DirectDraw_BitDepth() == 24 || DirectDraw_BitDepth() == 32) {
-				DirectDraw_ColourKeyTo16BitRange(&low2, &high2);
-			}
-
-			uint8 exactr, exactg, exactb;
-			Image_CR2RGBA(low, &exactr, &exactg, &exactb, nullptr);
-
-			uint8 lowr, lowg, lowb, highr, highg, highb;
-			Image_CR2RGBA(low2, &lowr, &lowg, &lowb, nullptr);
-			Image_CR2RGBA(high2, &highr, &highg, &highb, nullptr);
-
 
 			for (uint32 y = 0; y < image->height; y++) {
 				for (uint32 x = 0; x < image->width; x++) {
@@ -302,7 +360,8 @@ void Gods98::_Image_SetupTrans(Gods98::Image* image, uint32 low, uint32 high)
 
 	//Error_InfoF("_Image_SetupTrans: %i (checked=%i, approx=%i)", transCount, transMutateCount, transApproxCount);
 	
-	DDCOLORKEY colourKey = { low, high };
+	// Ranges aren't actually supported, so only pass low,low instead of low,high.
+	DDCOLORKEY colourKey = { surfLow, surfLow };
 	image->surface->SetColorKey(DDCKEY_SRCBLT, &colourKey);
 	image->flags |= ImageFlags::IMAGE_FLAG_TRANS;
 }
@@ -312,7 +371,7 @@ void __cdecl Gods98::Image_SetPenZeroTrans(Image* image)
 {
 	log_firstcall();
 
-	_Image_SetupTrans(image, image->penZero, image->penZero);
+	_Image_SetupTrans(image, image->penZero, image->penZero, true); // Truncate colour range to 16-bit.
 }
 
 // <LegoRR.exe @0047deb0>
@@ -320,14 +379,15 @@ void __cdecl Gods98::Image_SetupTrans(Image* image, real32 lowr, real32 lowg, re
 {
 	log_firstcall();
 
-	COLORREF low  = Image_RGBA2CR((uint8)(lowr *255), (uint8)(lowg *255), (uint8)(lowb *255), Image_GetAlphaChannel());
-	COLORREF high = Image_RGBA2CR((uint8)(highr*255), (uint8)(highg*255), (uint8)(highb*255), Image_GetAlphaChannel());
+	const uint32 surfLow  = DirectDraw_ToColourFromRGBF(image->surface, lowr,  lowg,  lowb);
+	const uint32 surfHigh = DirectDraw_ToColourFromRGBF(image->surface, highr, highg, highb);
 
-	_Image_SetupTrans(image, low, high);
+	_Image_SetupTrans(image, surfLow, surfHigh, true); // Truncate colour range to 16-bit.
 }
 
 // <LegoRR.exe @0047df70>
-void __cdecl Gods98::Image_DisplayScaled(Image* image, const Area2F* src, const Point2F* destPos, const Point2F* destSize)
+void __cdecl Gods98::Image_DisplayScaled(Image* image, OPTIONAL const Area2F* src,
+										 OPTIONAL const Point2F* destPos, OPTIONAL const Point2F* destSize)
 {
 	// function taken from: `if (!(image->flags & ImageFlags::IMAGE_FLAG_TEXTURE))` of `Image_DisplayScaled2`
 
@@ -368,9 +428,11 @@ void __cdecl Gods98::Image_DisplayScaled(Image* image, const Area2F* src, const 
 	}
 
 	Draw_AssertUnlocked("Image_DisplayScaled");
-	uint32 flags = DDBLT_WAIT;
-	if (image->flags & ImageFlags::IMAGE_FLAG_TRANS) flags |= DDBLT_KEYSRC;
-	DirectDraw_bSurf()->Blt((destPos)?&r_dst:nullptr, image->surface, (src)?&r_src:nullptr, flags, nullptr);
+	if (Image_IsRenderEnabled()) {
+		uint32 flags = DDBLT_WAIT;
+		if (image->flags & ImageFlags::IMAGE_FLAG_TRANS) flags |= DDBLT_KEYSRC;
+		DirectDraw_bSurf()->Blt((destPos) ? &r_dst : nullptr, image->surface, (src) ? &r_src : nullptr, flags, nullptr);
+	}
 }
 
 // <LegoRR.exe @0047e120>
@@ -400,7 +462,7 @@ void __cdecl Gods98::Image_UnlockSurface(Image* image)
 }
 
 // <LegoRR.exe @0047e1b0>
-colour32 __cdecl Gods98::Image_GetPen255(Image* image)
+uint32 __cdecl Gods98::Image_GetPen255BigEndian(Image* image)
 {
 	log_firstcall();
 
@@ -426,7 +488,7 @@ colour32 __cdecl Gods98::Image_GetPen255(Image* image)
 }
 
 // <LegoRR.exe @0047e210>
-uint32 __cdecl Gods98::Image_GetPixelMask(Image* image)
+uint32 __cdecl Gods98::Image_GetPixelMaskBigEndian(Image* image)
 {
 	log_firstcall();
 
@@ -440,15 +502,39 @@ uint32 __cdecl Gods98::Image_GetPixelMask(Image* image)
 		// and the RGB channels cover the most significant bytes(?)
 		// Mask for a 24-bit colour would be  0xffffff00
 		// Mask for a 16-bit colour would be  0xffff0000
-		// See Image_GetPen255 and Font_Load
+		// See Image_GetPen255BigEndian and Font_Load
 
 		return 0xffffffff << (32 - pf.dwRGBBitCount);
 	}
 	return 0;
 }
 
+/// CUSTOM: Replacement for Image_GetPenZero. Returns colour as it is stored in the surface.
+uint32 Gods98::Image_GetPaletteEntry0(Image* image)
+{
+	return image->penZero;
+}
+
+/// CUSTOM: Replacement for Image_GetPen255BigEndian. Returns colour as it is stored in the surface.
+uint32 Gods98::Image_GetPaletteEntry255(Image* image)
+{
+	return image->pen255;
+}
+
+/// CUSTOM: Replacement for Image_GetPixelMaskBigEndian. Returns pixel mask as it is stored in the surface.
+uint32 Gods98::Image_GetPixelMask(Image* image)
+{
+	DDPIXELFORMAT pf = { 0 };
+	pf.dwSize = sizeof(DDPIXELFORMAT);
+
+	if (image->surface->GetPixelFormat(&pf) == DD_OK) {
+		return DirectDraw_BitCountToMask(pf.dwRGBBitCount);
+	}
+	return 0;
+}
+
 // <LegoRR.exe @0047e260>
-bool32 __cdecl Gods98::Image_GetPixel(Image* image, uint32 x, uint32 y, OUT colour32* colour)
+bool32 __cdecl Gods98::Image_GetPixel(Image* image, uint32 x, uint32 y, OUT uint32* colour)
 {
 	log_firstcall();
 
@@ -489,7 +575,7 @@ bool32 __cdecl Gods98::Image_GetPixel(Image* image, uint32 x, uint32 y, OUT colo
 
 // REPLACEMENT FOR: Image_GetPixel, because the functions that use GetPixel are checking specifically for black (0).
 // <LegoRR.exe @0047e260>
-bool32 __cdecl Gods98::Image_GetPixelTruncate(Image* image, uint32 x, uint32 y, OUT colour32* colour)
+bool32 __cdecl Gods98::Image_GetPixelTruncate(Image* image, uint32 x, uint32 y, OUT uint32* colour)
 {
 	DDSURFACEDESC2 desc;
 	std::memset(&desc, 0, sizeof(DDSURFACEDESC2));
@@ -561,7 +647,8 @@ bool32 __cdecl Gods98::Image_GetPixelTruncate(Image* image, uint32 x, uint32 y, 
 }
 
 // <LegoRR.exe @0047e310>
-Gods98::Image* __cdecl Gods98::Image_Create(IDirectDrawSurface4* surface, uint32 width, uint32 height, COLORREF penZero, COLORREF pen255)
+Gods98::Image* __cdecl Gods98::Image_Create(IDirectDrawSurface4* surface, uint32 width, uint32 height,
+											ColourRGBAPacked penZero, ColourRGBAPacked pen255)
 {
 	log_firstcall();
 
@@ -598,67 +685,31 @@ void __cdecl Gods98::Image_RemoveAll(void)
 }
 
 // <LegoRR.exe @0047e450>
-uint32 __cdecl Gods98::Image_DDColorMatch(IDirectDrawSurface4* surface, uint32 rgb)
+uint32 __cdecl Gods98::Image_DDColorMatch(IDirectDrawSurface4* surface, ColourRGBAPacked cr)
 {
 	log_firstcall();
 
-	DDPIXELFORMAT pf = { 0 };
-	pf.dwSize = sizeof(DDPIXELFORMAT);
-	//DDSURFACEDESC2 ddsd = { 0 };
-	//ddsd.dwSize = sizeof(ddsd);
+	uint8 r, g, b, a;
+	Image_CR2RGBA(cr, &r, &g, &b, &a);
 
-	if (surface->GetPixelFormat(&pf) == DD_OK) {
-	//if (surface->Lock(nullptr, &ddsd, DDLOCK_WAIT, nullptr) == DD_OK) {
-		uint8 r, g, b, a;
-		Image_CR2RGBA(rgb, &r, &g, &b, &a);
-
-		const uint32 rMask = pf.dwRBitMask;
-		const uint32 gMask = pf.dwGBitMask;
-		const uint32 bMask = pf.dwBBitMask;
-		const uint32 aMask = pf.dwRGBAlphaBitMask;
-
-		const uint32 rBitCount = DirectDraw_CountMaskBits(rMask);
-		const uint32 gBitCount = DirectDraw_CountMaskBits(gMask);
-		const uint32 bBitCount = DirectDraw_CountMaskBits(bMask);
-		const uint32 aBitCount = DirectDraw_CountMaskBits(aMask);
-
-		const uint32 rBitShift = DirectDraw_CountMaskBitShift(rMask);
-		const uint32 gBitShift = DirectDraw_CountMaskBitShift(gMask);
-		const uint32 bBitShift = DirectDraw_CountMaskBitShift(bMask);
-		const uint32 aBitShift = DirectDraw_CountMaskBitShift(aMask);
-
-		uint32 dw =
-			DirectDraw_ShiftChannelByte(r, rBitCount, rBitShift) |
-			DirectDraw_ShiftChannelByte(g, gBitCount, gBitShift) |
-			DirectDraw_ShiftChannelByte(b, bBitCount, bBitShift) |
-			DirectDraw_ShiftChannelByte(a, aBitCount, aBitShift);
-
-		if (pf.dwRGBBitCount < 32) {
-			dw &= (1 << pf.dwRGBBitCount) - 1; // Mask to bit count.
-		}
-
-		//surface->Unlock(nullptr);
-		return dw;
-	}
-	return 0;
+	return DirectDraw_ToColourFromRGB(surface, r, g, b, a);
 }
 
 // <LegoRR.exe @0047e590>
-void __cdecl Gods98::Image_CR2RGB(COLORREF cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b)
+void __cdecl Gods98::Image_CR2RGB(ColourRGBAPacked cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b)
 {
 	return Image_CR2RGBA(cr, r, g, b, nullptr);
 }
 
 /// CUSTOM:
-void __cdecl Gods98::Image_CR2RGBA(COLORREF cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b, OPTIONAL OUT uint8* a)
+void __cdecl Gods98::Image_CR2RGBA(ColourRGBAPacked cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b, OPTIONAL OUT uint8* a)
 {
 	log_firstcall();
-
-	uint8* ptr = (uint8*)&cr;
-	if (r) *r = ptr[0];
-	if (g) *g = ptr[1];
-	if (b) *b = ptr[2];
-	if (a) *a = ptr[3];
+	
+	if (r) *r = cr.red;
+	if (g) *g = cr.green;
+	if (b) *b = cr.blue;
+	if (a) *a = cr.alpha;
 }
 
 
@@ -694,12 +745,12 @@ void __cdecl Gods98::Image_GetScreenshot(OUT Image* image, uint32 xsize, uint32 
 		surf->Blt(&dest, DirectDraw_bSurf(), nullptr, 0, nullptr);
 	}
 	// Create image
-	Image_InitFromSurface(image, surf, xsize, ysize, 0, 0);
+	Image_InitFromSurface(image, surf, xsize, ysize, ColourRGBAPacked { 0 }, ColourRGBAPacked { 0 });
 }
 
 // <LegoRR.exe @0047e6a0>
 void __cdecl Gods98::Image_InitFromSurface(Image* newImage, IDirectDrawSurface4* surface,
-								uint32 width, uint32 height, COLORREF penZero, COLORREF pen255)
+								uint32 width, uint32 height, ColourRGBAPacked penZero, ColourRGBAPacked pen255)
 {
 	log_firstcall();
 
@@ -737,7 +788,7 @@ bool Gods98::Image_SaveBMP2(Image* image, const char* fname, FileFlags fileFlags
 }
 
 // <missing>
-void __cdecl Gods98::Image_GetPenZero(const Image* image, OPTIONAL OUT real32* r, OPTIONAL OUT real32* g, OPTIONAL OUT real32* b)
+/*void __cdecl Gods98::Image_GetPenZero(const Image* image, OPTIONAL OUT real32* r, OPTIONAL OUT real32* g, OPTIONAL OUT real32* b)
 {
 	log_firstcall();
 
@@ -745,9 +796,4 @@ void __cdecl Gods98::Image_GetPenZero(const Image* image, OPTIONAL OUT real32* r
 	if (r) *r = (real32)((image->penZeroRGB >> 16) & 0xff) / 255.0f;
 	if (g) *g = (real32)((image->penZeroRGB >>  8) & 0xff) / 255.0f;
 	if (b) *b = (real32)((image->penZeroRGB)       & 0xff) / 255.0f;
-}
-
-uint8 Gods98::Image_GetAlphaChannel()
-{
-	return (DirectDraw_BitDepth() == 32 ? 0xff : 0);
-}
+}*/

@@ -9,6 +9,9 @@
 #include "interop.h"
 #include "dllmain.h"
 
+#include "engine/drawing/Draw.h"
+#include "engine/drawing/Fonts.h"
+#include "engine/drawing/Images.h"
 #include "engine/Graphics.h"
 #include "engine/Main.h"
 #include "game/Debug.h"
@@ -125,7 +128,9 @@ static constexpr const auto Menu_LegoInitIDs = array_of<uint32>(
 	IDM_SHOWOBJINFO, IDM_RENDERPANELS, IDM_TOOLTIPSOUND, IDM_LIGHTEFFECTS, IDM_DETAILON, IDM_DYNAMICPM, IDM_ALLOWDEBUGKEYS,
 	IDM_ALLOWEDITMODE, IDM_SHOWDEBUGTOOLTIPS, IDM_DDRAWCLEAR, IDM_FPSMONITOR, IDM_MEMORYMONITOR, IDM_NONERPS, IDM_UNLOCKCAMERA,
 	IDM_UNLOCKBUILD, IDM_BUILDWITHOUTPATHS, IDM_FPNOCLIP, IDM_NOROCKFALL, IDM_QUICKREINFORCE,
-	IDM_SELECTPLACEARROW_NEVER, IDM_SELECTPLACEARROW_SOLIDONLY, IDM_SELECTPLACEARROW_ALWAYS
+	IDM_SELECTPLACEARROW_NEVER, IDM_SELECTPLACEARROW_SOLIDONLY, IDM_SELECTPLACEARROW_ALWAYS,
+
+	IDM_RENDERING_DRAW, IDM_RENDERING_IMAGES, IDM_RENDERING_FONTS
 );
 
 static constexpr const auto Menu_InLevelIDs = array_of<uint32>(
@@ -165,7 +170,7 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_DUALMOUSE,			Gods98::Main_IsDualMouse());
 	Menu_CheckButton(IDM_LOSEFOCUSANDPAUSE,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsLoseFocusAndPause()));
 
-	Menu_CheckButton(IDM_SHOWOBJINFO,	(LegoRR::Lego_IsInit() && Bubble_GetObjectUIsAlwaysVisible()));
+	Menu_CheckButton(IDM_SHOWOBJINFO,	(LegoRR::Lego_IsInit() && LegoRR::Bubble_GetObjectUIsAlwaysVisible()));
 	Menu_CheckButton(IDM_RENDERPANELS,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsRenderPanels()));
 	Menu_CheckButton(IDM_TOOLTIPSOUND,	(LegoRR::Lego_IsInit() && !LegoRR::Lego_IsDisableToolTipSound()));
 
@@ -231,6 +236,10 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_ALLOWDEBUGKEYS,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsAllowDebugKeys()));
 	Menu_CheckButton(IDM_ALLOWEDITMODE,		(LegoRR::Lego_IsInit() && LegoRR::Lego_IsAllowEditMode()));
 	Menu_CheckButton(IDM_SHOWDEBUGTOOLTIPS,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsShowDebugToolTips()));
+
+	Menu_CheckButton(IDM_RENDERING_DRAW,	Gods98::Draw_IsRenderEnabled());
+	Menu_CheckButton(IDM_RENDERING_IMAGES,	Gods98::Image_IsRenderEnabled());
+	Menu_CheckButton(IDM_RENDERING_FONTS,	Gods98::Font_IsRenderEnabled());
 
 	Menu_CheckButton(IDM_BLOCKFADE,     Gods98::Main_IsCLBlockFade());
 	Menu_CheckButton(IDM_DDRAWCLEAR,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsDDrawClear()));
@@ -389,7 +398,7 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 
 	case IDM_SHOWOBJINFO:
 		//std::printf("IDM_SHOWOBJINFO\n");
-		Bubble_ToggleObjectUIsAlwaysVisible();
+		LegoRR::Bubble_ToggleObjectUIsAlwaysVisible();
 		break;
 
 	case IDM_RENDERPANELS:
@@ -628,6 +637,18 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 
 	case IDM_ROUTING_REMOVEALL:
 		LegoRR::Debug_RouteVisual_RemoveAll();
+		break;
+
+	case IDM_RENDERING_DRAW:
+		Gods98::Draw_SetRenderEnabled(!Gods98::Draw_IsRenderEnabled());
+		break;
+
+	case IDM_RENDERING_IMAGES:
+		Gods98::Image_SetRenderEnabled(!Gods98::Image_IsRenderEnabled());
+		break;
+
+	case IDM_RENDERING_FONTS:
+		Gods98::Font_SetRenderEnabled(!Gods98::Font_IsRenderEnabled());
 		break;
 
     case IDM_BLOCKFADE:

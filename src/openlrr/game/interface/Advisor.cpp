@@ -137,7 +137,7 @@ void __cdecl LegoRR::Advisor_LoadAnims(const Gods98::Config* config, const char*
 			// BAD BAD BAD BAD! Using Util_Tokenise on TempStringValue (should not be modified)
 			Gods98::Util_Tokenise(value, parts, ",");
 
-			animData->cont = Gods98::Container_Load(advisorGlobs.cameraCont, parts[0], "LWS", true);
+			animData->cont = Gods98::Container_Load(advisorGlobs.cameraCont, parts[0], CONTAINER_LWSSTRING, true);
 			if (animData->cont != nullptr) {
 				Gods98::Container_SetOrientation(animData->cont, advisorGlobs.cameraCont, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
 				Gods98::Container_Hide(animData->cont, true);

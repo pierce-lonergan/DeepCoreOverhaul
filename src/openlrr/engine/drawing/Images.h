@@ -9,6 +9,7 @@
 #pragma once
 
 #include "../../common.h"
+#include "../colour.h"
 #include "../geometry.h"
 #include "../core/ListSet.hpp"
 
@@ -134,9 +135,9 @@ struct Image
 	//D3DTEXTUREHANDLE textureHandle;
 	/*04,4*/ uint32 width;
 	/*08,4*/ uint32 height;
-	/*0c,4*/ uint32 penZero;
-	/*10,4*/ uint32 pen255;
-	/*14,4*/ uint32 penZeroRGB;
+	/*0c,4*/ uint32 penZero; // Surface colour.
+	/*10,4*/ uint32 pen255;  // Surface colour.
+	/*14,4*/ ColourRGBAPacked penZeroRGB;
 	/*18,4*/ ImageFlags flags;
 	/*1c,4*/ Image *nextFree;
 	/*20*/
@@ -180,6 +181,13 @@ extern Image_ListSet imageListSet;
 
 #pragma region Functions
 
+/// CUSTOM: Gets if the Images module rendering is enabled.
+bool Image_IsRenderEnabled();
+
+/// CUSTOM: Sets if the Images module rendering is enabled. For testing performance.
+void Image_SetRenderEnabled(bool enabled);
+
+
 // <LegoRR.exe @0047d6d0>
 void __cdecl Image_Initialise(void);
 
@@ -218,14 +226,24 @@ Image* __cdecl Image_LoadBMPScaled(const char* fileName, uint32 width, uint32 he
 /// CUSTOM: Support for FileFlags.
 Image* Image_LoadBMPScaled2(const char* fileName, uint32 width, uint32 height, FileFlags fileFlags);
 
-// <LegoRR.exe @0047de50>
-COLORREF __cdecl Image_RGB2CR(uint8 r, uint8 g, uint8 b);
+/// CUSTOM: Create an empty image without needing to load a file.
+Image* Image_CreateNew(uint32 width, uint32 height);
 
 /// CUSTOM:
-COLORREF __cdecl Image_RGBA2CR(uint8 r, uint8 g, uint8 b, uint8 a);
+void Image_ClearRGBF(Image* image, OPTIONAL const Area2F* window, real32 r, real32 g, real32 b, real32 a = 1.0f);
+
+/// CUSTOM:
+void Image_ClearRGB(Image* image, OPTIONAL const Area2F* window, uint8 r, uint8 g, uint8 b, uint8 a = 255);
+
+
+// <LegoRR.exe @0047de50>
+ColourRGBAPacked __cdecl Image_RGB2CR(uint8 r, uint8 g, uint8 b);
+
+/// CUSTOM:
+ColourRGBAPacked __cdecl Image_RGBA2CR(uint8 r, uint8 g, uint8 b, uint8 a);
 
 /// CUSTOM: Core functionality that Image_SetPenZeroTrans and Image_SetupTrans wraps around.
-void _Image_SetupTrans(Image* image, uint32 low, uint32 high);
+void _Image_SetupTrans(Image* image, uint32 low, uint32 high, bool truncateTo16Bit);
 
 // <LegoRR.exe @0047de80>
 void __cdecl Image_SetPenZeroTrans(Image* image);
@@ -234,7 +252,7 @@ void __cdecl Image_SetPenZeroTrans(Image* image);
 void __cdecl Image_SetupTrans(Image* image, real32 lowr, real32 lowg, real32 lowb, real32 highr, real32 highg, real32 highb);
 
 // <LegoRR.exe @0047df70>
-void __cdecl Image_DisplayScaled(Image* image, const Area2F* src, const Point2F* destPos, const Point2F* destSize);
+void __cdecl Image_DisplayScaled(Image* image, OPTIONAL const Area2F* src, OPTIONAL const Point2F* destPos, OPTIONAL const Point2F* destSize);
 
 // <LegoRR.exe @0047e120>
 void* __cdecl Image_LockSurface(Image* image, OUT uint32* pitch, OUT uint32* bpp);
@@ -242,21 +260,33 @@ void* __cdecl Image_LockSurface(Image* image, OUT uint32* pitch, OUT uint32* bpp
 // <LegoRR.exe @0047e190>
 void __cdecl Image_UnlockSurface(Image* image);
 
+/// LEGACY: Previously named Image_GetPen255. Converts Palette Entry 255 to big endian. Don't use.
 // <LegoRR.exe @0047e1b0>
-colour32 __cdecl Image_GetPen255(Image* image);
+uint32 __cdecl Image_GetPen255BigEndian(Image* image);
 
+/// LEGACY: Previously named Image_GetPixelMask. Converts pixel mask to big endian. Don't use.
 // <LegoRR.exe @0047e210>
-uint32 __cdecl Image_GetPixelMask(Image* image);
+uint32 __cdecl Image_GetPixelMaskBigEndian(Image* image);
 
+/// CUSTOM: Replacement for Image_GetPenZero. Returns colour as it is stored in the surface.
+uint32 Image_GetPaletteEntry0(Image* image);
+
+/// CUSTOM: Replacement for Image_GetPen255BigEndian. Returns colour as it is stored in the surface.
+uint32 Image_GetPaletteEntry255(Image* image);
+
+/// CUSTOM: Replacement for Image_GetPixelMaskBigEndian. Returns pixel mask as it is stored in the surface.
+uint32 Image_GetPixelMask(Image* image);
+
+// Returns pixel as it is stored in the surface.
 // <LegoRR.exe @0047e260>
-bool32 __cdecl Image_GetPixel(Image* image, uint32 x, uint32 y, OUT colour32* colour);
+bool32 __cdecl Image_GetPixel(Image* image, uint32 x, uint32 y, OUT uint32* colour);
 
 // REPLACEMENT FOR: Image_GetPixel, because the functions that use GetPixel are checking specifically for black (0).
 // <LegoRR.exe @0047e260>
-bool32 __cdecl Image_GetPixelTruncate(Image* image, uint32 x, uint32 y, OUT colour32* colour);
+bool32 __cdecl Image_GetPixelTruncate(Image* image, uint32 x, uint32 y, OUT uint32* colour);
 
 // <LegoRR.exe @0047e310>
-Image* __cdecl Image_Create(IDirectDrawSurface4* surface, uint32 width, uint32 height, COLORREF penZero, COLORREF pen255);
+Image* __cdecl Image_Create(IDirectDrawSurface4* surface, uint32 width, uint32 height, ColourRGBAPacked penZero, ColourRGBAPacked pen255);
 
 /// LEGACY:
 // <LegoRR.exe @0047e380>
@@ -266,21 +296,21 @@ void __cdecl Image_AddList(void);
 void __cdecl Image_RemoveAll(void);
 
 // <LegoRR.exe @0047e450>
-uint32 __cdecl Image_DDColorMatch(IDirectDrawSurface4* surface, uint32 rgb);
+uint32 __cdecl Image_DDColorMatch(IDirectDrawSurface4* surface, ColourRGBAPacked cr);
 
 // <LegoRR.exe @0047e590>
-void __cdecl Image_CR2RGB(COLORREF cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b);
+void __cdecl Image_CR2RGB(ColourRGBAPacked cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b);
 
 /// CUSTOM:
-void __cdecl Image_CR2RGBA(COLORREF cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b, OPTIONAL OUT uint8* a);
+void __cdecl Image_CR2RGBA(ColourRGBAPacked cr, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b, OPTIONAL OUT uint8* a);
 
 // <LegoRR.exe @0047e5c0>
 void __cdecl Image_GetScreenshot(OUT Image* image, uint32 xsize, uint32 ysize);
 
 
 // <LegoRR.exe @0047e6a0>
-void __cdecl Image_InitFromSurface(Image* newImage, IDirectDrawSurface4* surface,
-								uint32 width, uint32 height, COLORREF penZero, COLORREF pen255);
+void __cdecl Image_InitFromSurface(Image* newImage, IDirectDrawSurface4* surface, uint32 width, uint32 height,
+								   ColourRGBAPacked penZero, ColourRGBAPacked pen255);
 
 // <LegoRR.exe @0047e700>
 bool32 __cdecl Image_SaveBMP(Image* image, const char* fname);
@@ -290,9 +320,8 @@ bool Image_SaveBMP2(Image* image, const char* fname, FileFlags fileFlags);
 
 
 // <missing>
-void __cdecl Image_GetPenZero(const Image* image, OPTIONAL OUT real32* r, OPTIONAL OUT real32* g, OPTIONAL OUT real32* b);
+//void __cdecl Image_GetPenZero(const Image* image, OPTIONAL OUT real32* r, OPTIONAL OUT real32* g, OPTIONAL OUT real32* b);
 
-uint8 Image_GetAlphaChannel();
 
 /*Image* __cdecl Image_LoadBMPTexture(const char* filename);
 void __cdecl Image_SetMainViewport(Viewport* vp);

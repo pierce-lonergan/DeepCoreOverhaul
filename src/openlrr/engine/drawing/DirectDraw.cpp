@@ -550,27 +550,58 @@ bool32 __cdecl Gods98::DirectDraw_GetAvailTextureMem(OUT uint32* total, OUT uint
 }
 
 // <LegoRR.exe @0047d0e0>
-void __cdecl Gods98::DirectDraw_Clear(OPTIONAL const Area2F* window, uint32 colour)
+void __cdecl Gods98::DirectDraw_Clear(OPTIONAL const Area2F* window, ColourBGRAPacked bgrColour)
 {
-	log_firstcall();
+	_DirectDraw_ClearSurface(DirectDraw_bSurf(), window, DirectDraw_GetColour(DirectDraw_bSurf(), bgrColour));
+}
 
-	DDBLTFX bltFX;
+/// CUSTOM:
+void Gods98::DirectDraw_ClearRGBF(OPTIONAL const Area2F* window, real32 r, real32 g, real32 b, real32 a)
+{
+	DirectDraw_ClearSurfaceRGBF(DirectDraw_bSurf(), window, r, g, b, a);
+}
 
-	std::memset(&bltFX, 0, sizeof(DDBLTFX));
+/// CUSTOM:
+void Gods98::DirectDraw_ClearRGB(OPTIONAL const Area2F* window, uint8 r, uint8 g, uint8 b, uint8 a)
+{
+	DirectDraw_ClearSurfaceRGB(DirectDraw_bSurf(), window, r, g, b, a);
+}
+
+/// CUSTOM:
+void Gods98::DirectDraw_ClearSurfaceRGBF(IDirectDrawSurface4* surf, OPTIONAL const Area2F* window, real32 r, real32 g, real32 b, real32 a)
+{
+	_DirectDraw_ClearSurface(surf, window, DirectDraw_ToColourFromRGBF(surf, r, g, b, a));
+}
+
+/// CUSTOM:
+void Gods98::DirectDraw_ClearSurfaceRGB(IDirectDrawSurface4* surf, OPTIONAL const Area2F* window, uint8 r, uint8 g, uint8 b, uint8 a)
+{
+	_DirectDraw_ClearSurface(surf, window, DirectDraw_ToColourFromRGB(surf, r, g, b, a));
+}
+
+/// CUSTOM:
+void Gods98::_DirectDraw_ClearSurface(IDirectDrawSurface4* surf, OPTIONAL const Area2F* window, uint32 surfColour)
+{
+	DDBLTFX bltFX = { 0 };
 	bltFX.dwSize = sizeof(DDBLTFX);
-	bltFX.dwFillColor = DirectDraw_GetColour(directDrawGlobs.bSurf, colour);
+	bltFX.dwFillColor = surfColour;
 
-	Draw_AssertUnlocked("DirectDraw_Clear");
+	Draw_AssertUnlocked("_DirectDraw_ClearSurface");
 	if (window) {
 		/// FIXME: Cast from float to unsigned
-		RECT rect = { // sint32 casts to stop compiler from complaining
-			(sint32) (uint32) window->x,
-			(sint32) (uint32) window->y,
-			(sint32) (uint32) (window->x + window->width),
-			(sint32) (uint32) (window->y + window->height)
+		RECT rect = {
+			std::max(0, static_cast<sint32>(window->x)),
+			std::max(0, static_cast<sint32>(window->y)),
+			std::max(0, static_cast<sint32>(window->x + window->width)),
+			std::max(0, static_cast<sint32>(window->y + window->height)),
 		};
-		directDrawGlobs.bSurf->Blt(&rect, nullptr, nullptr, DDBLT_COLORFILL|DDBLT_WAIT, &bltFX);
-	} else directDrawGlobs.bSurf->Blt(nullptr, nullptr, nullptr, DDBLT_COLORFILL|DDBLT_WAIT, &bltFX);
+		if (rect.left < rect.right && rect.top < rect.bottom) {
+			surf->Blt(&rect, nullptr, nullptr, DDBLT_COLORFILL|DDBLT_WAIT, &bltFX);
+		}
+	}
+	else {
+		surf->Blt(nullptr, nullptr, nullptr, DDBLT_COLORFILL|DDBLT_WAIT, &bltFX);
+	}
 }
 
 // <LegoRR.exe @0047d1a0>
@@ -919,49 +950,138 @@ void Gods98::DirectDraw_GetSurfaceInfo(const DDSURFACEDESC2* desc, OUT BMP_Image
 }
 
 // <LegoRR.exe @0047d590>
-uint32 __cdecl Gods98::DirectDraw_GetColour(IDirectDrawSurface4* surf, uint32 colour)
+uint32 __cdecl Gods98::DirectDraw_GetColour(IDirectDrawSurface4* surf, ColourBGRAPacked bgrColour)
 {
-	log_firstcall();
+	return DirectDraw_ToColourFromRGB(surf, bgrColour.red, bgrColour.green, bgrColour.blue);
+}
 
-	DDPIXELFORMAT pf;
+/// CUSTOM: Converts real RGB values to a surface colour value.
+uint32 Gods98::DirectDraw_ToColourFromRGBF(IDirectDrawSurface4* surf, real32 r, real32 g, real32 b, real32 a)
+{
+	return DirectDraw_ToColourFromRGB(surf,
+									static_cast<uint8>(std::clamp(r, 0.0f, 1.0f) * 255.0f),
+									static_cast<uint8>(std::clamp(g, 0.0f, 1.0f) * 255.0f),
+									static_cast<uint8>(std::clamp(b, 0.0f, 1.0f) * 255.0f),
+									static_cast<uint8>(std::clamp(a, 0.0f, 1.0f) * 255.0f));
+}
 
-	uint32 r = (colour & 0x00ff0000) >> 16;
-	uint32 g = (colour & 0x0000ff00) >> 8;
-	uint32 b = (colour & 0x000000ff);
-
-	std::memset(&pf, 0, sizeof(pf));
+/// CUSTOM: Converts byte RGB values to a surface colour value.
+uint32 Gods98::DirectDraw_ToColourFromRGB(IDirectDrawSurface4* surf, uint8 r, uint8 g, uint8 b, uint8 a)
+{
+	DDPIXELFORMAT pf = { 0 };
 	pf.dwSize = sizeof(pf);
-	surf->GetPixelFormat(&pf);
-	if (pf.dwFlags & DDPF_RGB) {
-		uint32 rbc = DirectDraw_CountMaskBits(pf.dwRBitMask);
-		uint32 gbc = DirectDraw_CountMaskBits(pf.dwGBitMask);
-		uint32 bbc = DirectDraw_CountMaskBits(pf.dwBBitMask);
 
-		r = r >> (8 - rbc);
-		g = g >> (8 - gbc);
-		b = b >> (8 - bbc);
+	if (surf->GetPixelFormat(&pf) == DD_OK) {
+		if (pf.dwFlags & DDPF_RGB) {
+			const uint32 rBitCount = DirectDraw_CountMaskBits(pf.dwRBitMask);
+			const uint32 gBitCount = DirectDraw_CountMaskBits(pf.dwGBitMask);
+			const uint32 bBitCount = DirectDraw_CountMaskBits(pf.dwBBitMask);
+			const uint32 aBitCount = DirectDraw_CountMaskBits(pf.dwRGBAlphaBitMask);
 
-		r = r << (gbc + bbc);
-		g = g << (bbc);
+			const uint32 rBitShift = DirectDraw_CountMaskBitShift(pf.dwRBitMask);
+			const uint32 gBitShift = DirectDraw_CountMaskBitShift(pf.dwGBitMask);
+			const uint32 bBitShift = DirectDraw_CountMaskBitShift(pf.dwBBitMask);
+			const uint32 aBitShift = DirectDraw_CountMaskBitShift(pf.dwRGBAlphaBitMask);
 
-		return (r|g|b);
-	} else {
-		IDirectDrawPalette* pal;
-		PALETTEENTRY entries[256];
+			uint32 colour =
+				DirectDraw_ShiftChannelByte(r, rBitCount, rBitShift) |
+				DirectDraw_ShiftChannelByte(g, gBitCount, gBitShift) |
+				DirectDraw_ShiftChannelByte(b, bBitCount, bBitShift) |
+				DirectDraw_ShiftChannelByte(a, aBitCount, aBitShift);
 
-		surf->GetPalette(&pal);
-		pal->GetEntries(0, 0, 256, entries);
-		for (uint32 loop=0; loop<256; loop++) {
-			if (entries[loop].peRed   == r &&
-				entries[loop].peGreen == g &&
-				entries[loop].peBlue  == b) {
+			if (pf.dwRGBBitCount < (sizeof(uint32) * 8)) {
+				// Note: Left shifting as many bits as the type size is undefined behaviour.
+				colour &= (1 << pf.dwRGBBitCount) - 1; // Mask to bit count.
+			}
+			return colour;
+		}
+		else {
+			BMP_PaletteEntry palette[BMP_MAXPALETTEENTRIES];
+			if (DirectDraw_GetPaletteEntries(surf, palette, 0, _countof(palette))) {
 
-				return loop;
+				for (uint32 i = 0; i < _countof(palette); i++) {
+					if (palette[i].red   == r &&
+						palette[i].green == g &&
+						palette[i].blue  == b)
+					{
+						return i;
+					}
+				}
 			}
 		}
 	}
 	return 0;
 }
+
+/// CUSTOM: Converts a surface colour value to real RGB values.
+bool Gods98::DirectDraw_FromColourToRGBF(IDirectDrawSurface4* surf, uint32 surfColour, OPTIONAL OUT real32* r, OPTIONAL OUT real32* g, OPTIONAL OUT real32* b, OPTIONAL OUT real32* a)
+{
+	uint8 rbyte, gbyte, bbyte, abyte;
+	DirectDraw_FromColourToRGB(surf, surfColour, &rbyte, &gbyte, &bbyte, &abyte);
+	if (r) *r = static_cast<real32>(rbyte) / 255.0f;
+	if (g) *g = static_cast<real32>(gbyte) / 255.0f;
+	if (b) *b = static_cast<real32>(bbyte) / 255.0f;
+	if (a) *a = static_cast<real32>(abyte) / 255.0f;
+}
+
+/// CUSTOM: Converts a surface colour value to byte RGB values.
+bool Gods98::DirectDraw_FromColourToRGB(IDirectDrawSurface4* surf, uint32 surfColour, OPTIONAL OUT uint8* r, OPTIONAL OUT uint8* g, OPTIONAL OUT uint8* b, OPTIONAL OUT uint8* a)
+{
+	DDPIXELFORMAT pf = { 0 };
+	pf.dwSize = sizeof(pf);
+
+	if (surf->GetPixelFormat(&pf) == DD_OK) {
+		// Also needed for palette entries to supply default alpha.
+		const uint32 aBitCount = DirectDraw_CountMaskBits(pf.dwRGBAlphaBitMask);
+		const uint32 aBitShift = DirectDraw_CountMaskBitShift(pf.dwRGBAlphaBitMask);
+
+		if (pf.dwFlags & DDPF_RGB) {
+			const uint32 rBitCount = DirectDraw_CountMaskBits(pf.dwRBitMask);
+			const uint32 gBitCount = DirectDraw_CountMaskBits(pf.dwGBitMask);
+			const uint32 bBitCount = DirectDraw_CountMaskBits(pf.dwBBitMask);
+
+			const uint32 rBitShift = DirectDraw_CountMaskBitShift(pf.dwRBitMask);
+			const uint32 gBitShift = DirectDraw_CountMaskBitShift(pf.dwGBitMask);
+			const uint32 bBitShift = DirectDraw_CountMaskBitShift(pf.dwBBitMask);
+
+			if (r) *r = DirectDraw_UnshiftChannelByte(surfColour, rBitCount, rBitShift);
+			if (g) *g = DirectDraw_UnshiftChannelByte(surfColour, gBitCount, gBitShift);
+			if (b) *b = DirectDraw_UnshiftChannelByte(surfColour, bBitCount, bBitShift);
+			if (a) *a = DirectDraw_UnshiftChannelByte(surfColour, aBitCount, aBitShift);
+
+			return true;
+		}
+		else if (surfColour >= 0 && surfColour < BMP_MAXPALETTEENTRIES) {
+			BMP_PaletteEntry entry;
+			if (DirectDraw_GetPaletteEntries(surf, &entry, surfColour, 1)) {
+
+				if (r) *r = entry.red;
+				if (g) *g = entry.green;
+				if (b) *b = entry.blue;
+				if (a) *a = DirectDraw_UnshiftChannelByte(pf.dwRGBAlphaBitMask, aBitCount, aBitShift);
+
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/// CUSTOM:
+bool Gods98::DirectDraw_GetPaletteEntries(IDirectDrawSurface4* surf, OUT BMP_PaletteEntry* palette, uint32 index, uint32 count)
+{
+	IDirectDrawPalette* pal = nullptr;
+	if (surf->GetPalette(&pal) == DD_OK) {
+		HRESULT r = pal->GetEntries(0, index, count, reinterpret_cast<PALETTEENTRY*>(palette));
+		if (r == DDERR_NOTPALETTIZED) {
+			return false; // TODO: How to let the caller know this...
+		}
+		return (r == DD_OK);
+	}
+	return false;
+}
+
+
 
 // <LegoRR.exe @0047d6b0>
 uint32 __cdecl Gods98::DirectDraw_CountMaskBits(uint32 mask)
@@ -1002,7 +1122,6 @@ uint32 __cdecl Gods98::DirectDraw_CountMaskBitShift(uint32 mask)
 	return 0xffffffffU;
 }
 
-
 /// CUSTOM: Gets the bitdepth selected during DirectDraw_Setup.
 uint32 Gods98::DirectDraw_BitDepth()
 {
@@ -1011,31 +1130,18 @@ uint32 Gods98::DirectDraw_BitDepth()
 
 /// NOTE: This expects low,high to be in COLORREF format (from lowest to highest bit order: RGBA).
 /// CUSTOM: Expand a colour key to a 16-bit range, to include colours that normally don't match when in 24-bit or 32-bit mode.
-void Gods98::DirectDraw_ColourKeyTo16BitRange(IN OUT uint32* low, IN OUT uint32* high)
+void Gods98::DirectDraw_ColourKeyTo16BitRange(IN OUT uint8* lowr,  IN OUT uint8* lowg,  IN OUT uint8* lowb,
+											  IN OUT uint8* highr, IN OUT uint8* highg, IN OUT uint8* highb)
 {
-	const uint8 lowr = DirectDraw_UnshiftChannelByte(*low, 8, 0);
-	const uint8 lowg = DirectDraw_UnshiftChannelByte(*low, 8, 8);
-	const uint8 lowb = DirectDraw_UnshiftChannelByte(*low, 8, 16);
-	const uint8 lowa = DirectDraw_UnshiftChannelByte(*low, 8, 24);
-		
-	const uint8 highr = DirectDraw_UnshiftChannelByte(*high, 8, 0);
-	const uint8 highg = DirectDraw_UnshiftChannelByte(*high, 8, 8);
-	const uint8 highb = DirectDraw_UnshiftChannelByte(*high, 8, 16);
-	const uint8 higha = DirectDraw_UnshiftChannelByte(*high, 8, 24);
-
 	// Round-down last 3 bits for red/blue, and last 2 bits for green.
-	*low =
-		DirectDraw_ShiftChannelByte((lowr & ~0x7), 8, 0) |
-		DirectDraw_ShiftChannelByte((lowg & ~0x3), 8, 8) |
-		DirectDraw_ShiftChannelByte((lowb & ~0x7), 8, 16) |
-		DirectDraw_ShiftChannelByte(lowa, 8, 24);
+	*lowr &= ~0x7;
+	*lowg &= ~0x3;
+	*lowb &= ~0x7;
 
 	// Round-up last 3 bits for red/blue, and last 2 bits for green.
-	*high =
-		DirectDraw_ShiftChannelByte((highr | 0x7), 8, 0) |
-		DirectDraw_ShiftChannelByte((highg | 0x3), 8, 8) |
-		DirectDraw_ShiftChannelByte((highb | 0x7), 8, 16) |
-		DirectDraw_ShiftChannelByte(higha, 8, 24);
+	*highr |= 0x7;
+	*highg |= 0x3;
+	*highb |= 0x7;
 }
 
 #pragma endregion

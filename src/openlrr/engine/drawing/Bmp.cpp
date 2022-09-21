@@ -74,32 +74,23 @@ void Gods98::BMP_ParseInfoHeader(const void* data, OUT BMP_Image* image)
 	uint32 paletteOffset = 0;
 	if (info->bits_per_pixel == 8) {
 		// BMP treats 0 as 256 palette colours.
-		uint32 colourCount = std::min(256u, (info->colours == 0 ? 256 : info->colours));
+		uint32 colourCount = (info->colours == 0 ? 256 : info->colours);
 		paletteOffset = colourCount * sizeof(BMP_PaletteEntry);
 
 		// It's impossible to have more than 256 colours with 8-bits per pixel,
 		//  so cap at 256 to stop the compiler from complaining.
-		if (colourCount > 256) colourCount = 256;
+		colourCount = std::min(BMP_MAXPALETTEENTRIES, colourCount);
 		
 		// Always create a table 256 long.
-		BMP_PaletteEntry* palette = static_cast<BMP_PaletteEntry*>(Mem_Alloc(sizeof(BMP_PaletteEntry) * 256));
-		std::memset(palette, 0, sizeof(BMP_PaletteEntry) * 256);
+		BMP_PaletteEntry* palette = static_cast<BMP_PaletteEntry*>(Mem_Alloc(sizeof(BMP_PaletteEntry) * BMP_MAXPALETTEENTRIES));
+		std::memset(palette, 0, sizeof(BMP_PaletteEntry) * BMP_MAXPALETTEENTRIES);
 		//std::memcpy(palette, (static_cast<uint8*>(data) + sizeof(BMP_InfoHeader)), colourCount * sizeof(BMP_PaletteEntry));
 		std::memcpy(palette, (static_cast<const uint8*>(data) + info->img_header_size), colourCount * sizeof(BMP_PaletteEntry));
 
 		image->rgb = false;
-		//BMP_SetupChannelMasks(image);
-		//image->red_mask   = 0xfc; // Mask value unique to paletted image.
-		//image->green_mask = 0xfc;
-		//image->blue_mask  = 0xfc;
-		//image->alpha_mask = 0xfc;
-
 		image->palette_size = colourCount;
 		for (uint32 i = 0; i < colourCount; i++) {
 			std::swap(palette[i].red, palette[i].blue); // Convert palette from BGR to RGB.
-			//const uint8 swap = palette[i].red;
-			//palette[i].red = palette[i].blue;
-			//palette[i].blue = swap;
 		}
 		image->palette = palette; // Place in image structure.
 	}

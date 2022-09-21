@@ -3,6 +3,7 @@
 
 #include "../core/Errors.h"
 #include "../core/Memory.h"
+#include "DirectDraw.h"
 #include "Images.h"
 
 #include "Fonts.h"
@@ -19,6 +20,9 @@ Gods98::Font_Globs & Gods98::fontGlobs = *(Gods98::Font_Globs*)0x00507528; // (n
 
 Gods98::Font_ListSet Gods98::fontListSet = Gods98::Font_ListSet(Gods98::fontGlobs);
 
+/// CUSTOM: If false, then the Fonts module will not render fonts at all.
+static bool _renderEnabled = true;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -26,6 +30,19 @@ Gods98::Font_ListSet Gods98::fontListSet = Gods98::Font_ListSet(Gods98::fontGlob
  **********************************************************************************/
 
 #pragma region Functions
+
+/// CUSTOM: Gets if the Fonts module rendering is enabled.
+bool Gods98::Font_IsRenderEnabled()
+{
+	return _renderEnabled;
+}
+
+/// CUSTOM: Sets if the Fonts module rendering is enabled. For testing performance.
+void Gods98::Font_SetRenderEnabled(bool enabled)
+{
+	_renderEnabled = enabled;
+}
+
 
 // <missing>
 void __cdecl Gods98::Font_Initialise(void)
@@ -84,26 +101,54 @@ Gods98::Font* __cdecl Gods98::Font_Load(const char* fname)
 	if (image = Image_LoadBMP(fname)) {
 		if (font = Font_Create(image)) {
 			Image_SetPenZeroTrans(image);
-			uint32 width = Image_GetWidth(image) / FONT_GRIDWIDTH;
-			uint32 height = Image_GetHeight(image) / FONT_GRIDHEIGHT;
+			// Cell dimensions.
+			const uint32 width  = Image_GetWidth(image) / FONT_GRIDWIDTH;
+			const uint32 height = Image_GetHeight(image) / FONT_GRIDHEIGHT;
 
-			uint32 pen255 = Image_GetPen255(image);
-			uint32 mask = Image_GetPixelMask(image);
+			// The old behaviour of PixelMask and GetPen255 converts to big endian, which is really awkward. So don't use this.
+			//const uint32 pen255 = Image_GetPen255BigEndian(image);
+			//const uint32 mask = Image_GetPixelMaskBigEndian(image);
+
+			const uint32 mask = Image_GetPixelMask(image);
+			const uint32 pen255 = Image_GetPaletteEntry255(image);
 
 			uint32 pitch, bpp;
 			uint8* buffer;
-			if (buffer = (uint8*)Image_LockSurface(image, &pitch, &bpp)) {
+			if (buffer = static_cast<uint8*>(Image_LockSurface(image, &pitch, &bpp))) {
+
+				const uint32 byteDepth = DirectDraw_BitToByteDepth(bpp);
+				//const uint32 mask = DirectDraw_BitCountToMask(bpp);
+				//const uint32 pen255 = image->pen255;
+
+				// Cell coordinates.
 				for (uint32 y = 0; y < FONT_GRIDHEIGHT; y++) {
 					for (uint32 x = 0; x < FONT_GRIDWIDTH; x++) {
 						Area2F* pos = &font->posSet[x][y];
-						pos->x = (real32)(width  * x);
-						pos->y = (real32)(height * y);
-						pos->width  = (real32)width;
-						pos->height = (real32)height;
+						pos->x = static_cast<real32>(width  * x);
+						pos->y = static_cast<real32>(height * y);
+						pos->width  = static_cast<real32>(width);
+						pos->height = static_cast<real32>(height);
 
 						// Pull back the width while the pixel on the end is pen255...
+						uint32 charWidth = width;
+						uint32 xBack = width - 1;
+						uint8* src = static_cast<uint8*>(DirectDraw_PixelAddress(buffer, pitch, bpp, (width * x) + xBack, (height * y)));
 
-						for (uint32 xBack = width-1; xBack != 0; xBack--) {
+						for (; xBack > 0; xBack--) {
+							uint32 colour = 0;
+							for (uint32 k = 0; k < bpp; k += 8) {
+								colour |= (src[(k/8)] << k);
+							}
+							src -= byteDepth;
+
+							if ((colour & mask) == pen255)
+								charWidth--;
+							else
+								break;
+						}
+						pos->width = static_cast<real32>(charWidth);
+
+						/*for (uint32 xBack = width - 1; xBack > 0; xBack--) {
 							uint32 loc = pitch * (uint32)pos->y;			// Get the start of the line...
 							loc += (uint32) (pos->x+xBack) * (bpp/8);		// Get the end of the current character	
 							uint32 dw = buffer[loc] << 24;
@@ -114,14 +159,14 @@ Gods98::Font* __cdecl Gods98::Font_Load(const char* fname)
 								pos->width--;
 							else
 								break;
-						}
+						}*/
 					}
 				}
 
-				font->fontHeight = (uint32)font->posSet[0][0].height;
-				font->tabWidth = (uint32)font->posSet[0][0].width * 8; // 8-character tab width?
+				font->fontHeight = static_cast<uint32>(font->posSet[0][0].height);
+				font->tabWidth = static_cast<uint32>(font->posSet[0][0].width * 8); // 8-character tab width?
 
-				// Clean up an return...
+				// Clean up and return...
 				Image_UnlockSurface(image);
 				return font;
 
@@ -249,6 +294,10 @@ uint32 __cdecl Gods98::Font_OutputChar(const Font* font, sint32 x, sint32 y, cha
 {
 	log_firstcall();
 
+	// Don't render while the module is disabled for performance testing.
+	if (!Font_IsRenderEnabled()) render = false;
+
+
 	Point2F pos = { (real32)x, (real32)y };
 
 	uchar8 uc = (uchar8)c;
@@ -329,7 +378,7 @@ void __cdecl Gods98::Font_RemoveAll(void)
 // <missing>
 void __cdecl Gods98::Font_GetBackgroundColour(const Font* font, OUT real32* r, OUT real32* g, OUT real32* b)
 {
-	Image_GetPenZero(font->image, r, g, b);
+	DirectDraw_FromColourToRGBF(font->image->surface, Image_GetPaletteEntry0(font->image), r, g, b);
 }
 
 // <missing>
