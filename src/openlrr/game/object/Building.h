@@ -31,7 +31,7 @@ struct Map3D;
 #define BUILDING_MAXCAMERAS			4
 #define BUILDING_MAXCARRYS			6
 
- // NOTE: Index five is never observed, this may actually be a max of 5.
+// NOTE: Index five is never observed, this may actually be a max of 5.
 #define BUILDING_MAXTOOLS			6
 
 #pragma endregion
@@ -44,9 +44,9 @@ struct Map3D;
 
 enum BuildingFlags : uint32
 {
-	BUILDING_FLAG_NONE            = 0,
-	BUILDING_FLAG_SOURCE          = 0x1, // Source object container data with original memory allocations. (broken in LegoRR)
-	BUILDING_FLAG_POWERLEVELSCENE = 0x2, // powerLevelScene is playing(?)
+	BUILDING_FLAG_NONE             = 0,
+	BUILDING_FLAG_SOURCE           = 0x1, // Source object container data with original memory allocations. (broken in LegoRR)
+	BUILDING_FLAG_UPDATEPOWERLEVEL = 0x2, // PowerLevelScene needs its animation time set.
 };
 flags_end(BuildingFlags, 0x4);
 
@@ -78,8 +78,10 @@ struct BuildingModel // [LegoRR/Building.c|struct:0x14c]
 	/*070,4*/	uint32 carryNullFrames;		// (ae: CarryNullFrames)
 	/*074,4*/	uint32 cameraNullFrames;	// (ae: CameraNullFrames)
 	/*078,4*/	uint32 toolNullFrames;		// (ae: ToolNullFrames)
-	/*07c,4*/	Gods98::Container* powerLevelScene;	// (ae: PowerLevelScene, LWS, true)
-	/*080,4*/	real32 powerLevelTimer;
+	/*07c,4*/	Gods98::Container* contPowerLevel;	// (ae: PowerLevelScene, LWS, true)
+													// Scene used as some sort of power quantity representation,
+													//  with diminishing returns during increment.
+	/*080,4*/	real32 powerLevel;			// Range of [0.0,1.0] represents the animation time of scene, and likely how full the power meter is.
 	/*084,4*/	Point2I* shapePoints;		// (ae: Shape) always Point2I[10]
 	/*088,4*/	uint32 shapeCount;			// (ae: Shape)
 	/*08c,14*/	UpgradesModel upgrades;
@@ -97,26 +99,33 @@ assert_sizeof(BuildingModel, 0x14c);
 
 #pragma region Functions
 
+/// CUSTOM: Properly cleanup Container references to nulls.
+void _Building_RemoveNulls(BuildingModel* building);
+
+/// CUSTOM: Properly cleanup Container references to nulls.
+void _Building_RemoveWeaponNulls(BuildingModel* building);
+
+
+
 // Merged function: Object_GetActivityContainer
 // <LegoRR.exe @00406d60>
-#define Building_GetActivityContainer ((Gods98::Container* (__cdecl* )(BuildingModel* building))0x00406d60)
-//Gods98::Container* __cdecl Building_GetActivityContainer(BuildingModel* building);
+//#define Building_GetActivityContainer ((Gods98::Container* (__cdecl* )(BuildingModel* building))0x00406d60)
+Gods98::Container* __cdecl Building_GetActivityContainer(BuildingModel* building);
 
 // Merged function: Object_FindNull
 // <LegoRR.exe @00406e80>
-#define Building_FindNull ((Gods98::Container* (__cdecl* )(BuildingModel* building, const char* name, uint32 frameNo))0x00406e80)
-//Gods98::Container* __cdecl Building_FindNull(BuildingModel* building, const char* name, uint32 frameNo);
+//#define Building_FindNull ((Gods98::Container* (__cdecl* )(BuildingModel* building, const char* name, uint32 frameNo))0x00406e80)
+Gods98::Container* __cdecl Building_FindNull(BuildingModel* building, const char* name, uint32 frameNo);
 
 // Merged function: Object_SetOwnerObject
 // <LegoRR.exe @004082b0>
-#define Building_SetOwnerObject ((void (__cdecl* )(BuildingModel* building, LegoObject* liveObj))0x004082b0)
-//void __cdecl Building_SetOwnerObject(BuildingModel* building, LegoObject* liveObj);
+//#define Building_SetOwnerObject ((void (__cdecl* )(BuildingModel* building, LegoObject* liveObj))0x004082b0)
+void __cdecl Building_SetOwnerObject(BuildingModel* building, LegoObject* liveObj);
 
 // Merged function: Object_IsHidden
 // <LegoRR.exe @004085d0>
-#define Building_IsHidden ((bool32 (__cdecl* )(BuildingModel* building))0x004085d0)
-//bool32 __cdecl Building_IsHidden(BuildingModel* building);
-
+//#define Building_IsHidden ((bool32 (__cdecl* )(BuildingModel* building))0x004085d0)
+bool32 __cdecl Building_IsHidden(BuildingModel* building);
 
 
 
@@ -125,85 +134,94 @@ assert_sizeof(BuildingModel, 0x14c);
 //bool32 __cdecl Building_Load(OUT BuildingModel* building, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName);
 
 // <LegoRR.exe @00408210>
-#define Building_AnimatePowerLevelScene ((void (__cdecl* )(BuildingModel* building, bool32 forward))0x00408210)
-//void __cdecl Building_AnimatePowerLevelScene(BuildingModel* building, bool32 forward);
+//#define Building_ChangePowerLevel ((void (__cdecl* )(BuildingModel* building, bool32 increment))0x00408210)
+void __cdecl Building_ChangePowerLevel(BuildingModel* building, bool32 increment);
 
 // <LegoRR.exe @00408290>
-#define Building_GetShapePoints ((const Point2I* (__cdecl* )(BuildingModel* building, OPTIONAL OUT uint32* shapeCount))0x00408290)
-//Point2I* __cdecl Building_GetShapePoints(BuildingModel* building, OPTIONAL OUT uint32* shapeCount);
+//#define Building_GetShapePoints ((const Point2I* (__cdecl* )(BuildingModel* building, OPTIONAL OUT uint32* shapeCount))0x00408290)
+const Point2I* __cdecl Building_GetShapePoints(BuildingModel* building, OPTIONAL OUT uint32* shapeCount);
 
 // <LegoRR.exe @004082d0>
-#define Building_SetUpgradeActivity ((void (__cdecl* )(BuildingModel* building, const char* activityName))0x004082d0)
-//void __cdecl Building_SetUpgradeActivity(BuildingModel* building, const char* activityName);
+//#define Building_SetUpgradeActivity ((void (__cdecl* )(BuildingModel* building, OPTIONAL const char* activityName))0x004082d0)
+void __cdecl Building_SetUpgradeActivity(BuildingModel* building, OPTIONAL const char* activityName);
 
 // <LegoRR.exe @004084a0>
-#define Building_SetActivity ((bool32 (__cdecl* )(BuildingModel* building, const char* activityName, real32 elapsed))0x004084a0)
-//bool32 __cdecl Building_SetActivity(BuildingModel* building, const char* activityName, real32 elapsed);
+//#define Building_SetActivity ((bool32 (__cdecl* )(BuildingModel* building, const char* activityName, real32 elapsed))0x004084a0)
+bool32 __cdecl Building_SetActivity(BuildingModel* building, const char* activityName, real32 elapsed);
 
 // <LegoRR.exe @00408520>
-#define Building_GetCameraNull ((Gods98::Container* (__cdecl* )(BuildingModel* building, uint32 frameNo))0x00408520)
-//Gods98::Container* __cdecl Building_GetCameraNull(BuildingModel* building, uint32 frameNo);
+//#define Building_GetCameraNull ((Gods98::Container* (__cdecl* )(BuildingModel* building, uint32 frameNo))0x00408520)
+Gods98::Container* __cdecl Building_GetCameraNull(BuildingModel* building, uint32 frameNo);
 
 // <LegoRR.exe @00408550>
-#define Building_Clone ((void (__cdecl* )(IN BuildingModel* srcBuilding, OUT BuildingModel* destBuilding))0x00408550)
-//void __cdecl Building_Clone(IN BuildingModel* srcBuilding, OUT BuildingModel* destBuilding);
+//#define Building_Clone ((void (__cdecl* )(IN BuildingModel* srcBuilding, OUT BuildingModel* destBuilding))0x00408550)
+void __cdecl Building_Clone(IN BuildingModel* srcBuilding, OUT BuildingModel* destBuilding);
 
 // <LegoRR.exe @004085a0>
-#define Building_Hide ((void (__cdecl* )(BuildingModel* building, bool32 hide))0x004085a0)
-//void __cdecl Building_Hide(BuildingModel* building, bool32 hide);
+//#define Building_Hide ((void (__cdecl* )(BuildingModel* building, bool32 hide))0x004085a0)
+void __cdecl Building_Hide(BuildingModel* building, bool32 hide);
 
 
 // <LegoRR.exe @004085f0>
-#define Building_SetOrientation ((void (__cdecl* )(BuildingModel* building, real32 xDir, real32 yDir))0x004085f0)
-// void __cdecl Building_SetOrientation(BuildingModel* building, real32 xDir, real32 yDir);
+//#define Building_SetOrientation ((void (__cdecl* )(BuildingModel* building, real32 xDir, real32 yDir))0x004085f0)
+void __cdecl Building_SetOrientation(BuildingModel* building, real32 xDir, real32 yDir);
 
 // <LegoRR.exe @00408640>
-#define Building_SetPosition ((void (__cdecl* )(BuildingModel* building, real32 xPos, real32 yPos, GetWorldZCallback zCallback, Map3D* map))0x00408640)
-//void __cdecl Building_SetPosition(BuildingModel* building, real32 xPos, real32 yPos, GetWorldZCallback zCallback, Map3D* map);
+//#define Building_SetPosition ((void (__cdecl* )(BuildingModel* building, real32 xPos, real32 yPos, GetWorldZCallback zCallback, Map3D* map))0x00408640)
+void __cdecl Building_SetPosition(BuildingModel* building, real32 xPos, real32 yPos, GetWorldZCallback zCallback, Map3D* map);
 
 // <LegoRR.exe @004086a0>
-#define Building_GetCarryNull ((Gods98::Container* (__cdecl* )(BuildingModel* building, uint32 frameNo))0x004086a0)
-//Gods98::Container* __cdecl Building_GetCarryNull(BuildingModel* building, uint32 frameNo);
+//#define Building_GetCarryNull ((Gods98::Container* (__cdecl* )(BuildingModel* building, uint32 frameNo))0x004086a0)
+Gods98::Container* __cdecl Building_GetCarryNull(BuildingModel* building, uint32 frameNo);
 
 // <LegoRR.exe @004086e0>
-#define Building_GetDepositNull ((Gods98::Container* (__cdecl* )(BuildingModel* building))0x004086e0)
-//Gods98::Container* __cdecl Building_GetDepositNull(BuildingModel* building);
+//#define Building_GetDepositNull ((Gods98::Container* (__cdecl* )(BuildingModel* building))0x004086e0)
+Gods98::Container* __cdecl Building_GetDepositNull(BuildingModel* building);
 
 // <LegoRR.exe @00408710>
-#define Building_GetEntranceNull ((Gods98::Container* (__cdecl* )(BuildingModel* building))0x00408710)
-//Gods98::Container* __cdecl Building_GetEntranceNull(BuildingModel* building);
+//#define Building_GetEntranceNull ((Gods98::Container* (__cdecl* )(BuildingModel* building))0x00408710)
+Gods98::Container* __cdecl Building_GetEntranceNull(BuildingModel* building);
 
 // <LegoRR.exe @00408740>
-#define Building_GetToolNull ((Gods98::Container* (__cdecl* )(BuildingModel* building, uint32 frameNo))0x00408740)
-//Gods98::Container* __cdecl Building_GetToolNull(BuildingModel* building, uint32 frameNo);
+//#define Building_GetToolNull ((Gods98::Container* (__cdecl* )(BuildingModel* building, uint32 frameNo))0x00408740)
+Gods98::Container* __cdecl Building_GetToolNull(BuildingModel* building, uint32 frameNo);
 
 // <LegoRR.exe @00408780>
-#define Building_GetCarryNullFrames ((uint32 (__cdecl* )(BuildingModel* building))0x00408780)
-//uint32 __cdecl Building_GetCarryNullFrames(BuildingModel* building);
+//#define Building_GetCarryNullFrames ((uint32 (__cdecl* )(BuildingModel* building))0x00408780)
+uint32 __cdecl Building_GetCarryNullFrames(BuildingModel* building);
+
+// <missing>
+uint32 __cdecl Building_GetCameraNullFrames(BuildingModel* building);
+
+// <missing>
+uint32 __cdecl Building_GetToolNullFrames(BuildingModel* building);
 
 // <LegoRR.exe @00408790>
-#define Building_MoveAnimation ((real32 (__cdecl* )(BuildingModel* building, real32 elapsed, uint32 unkFrameNo))0x00408790)
-//real32 __cdecl Building_MoveAnimation(BuildingModel* building, real32 elapsed, uint32 unkFrameNo);
+//#define Building_MoveAnimation ((real32 (__cdecl* )(BuildingModel* building, real32 elapsed, uint32 repeatCount))0x00408790)
+real32 __cdecl Building_MoveAnimation(BuildingModel* building, real32 elapsed, uint32 repeatCount);
 
 // Returns 0.0f
 // <LegoRR.exe @00408860>
 //#define Building_GetTransCoef ((real32 (__cdecl* )(BuildingModel* building))0x00408860)
-__inline real32 __cdecl Building_GetTransCoef(BuildingModel* building) { return 0.0f; }
+real32 __cdecl Building_GetTransCoef(BuildingModel* building);
 
 // <LegoRR.exe @00408870>
-#define Building_Remove ((void (__cdecl* )(BuildingModel* building))0x00408870)
-//void __cdecl Building_Remove(BuildingModel* building);
+//#define Building_Remove ((void (__cdecl* )(BuildingModel* building))0x00408870)
+void __cdecl Building_Remove(BuildingModel* building);
 
 // When `current` is true, the function returns whether the object can currently get this upgrade.
 //  (AKA, has the object not gotten the upgrade yet? And does it support the upgrade type?)
 // Otherwise the function returns whether the object type supports the upgrade at all.
 // <LegoRR.exe @004088a0>
-#define Building_CanUpgradeType ((bool32 (__cdecl* )(BuildingModel* building, LegoObject_UpgradeType upgradeType, bool32 current))0x004088a0)
-//bool32 __cdecl Building_CanUpgradeType(BuildingModel* building, LegoObject_UpgradeType upgradeType, bool32 current);
+//#define Building_CanUpgradeType ((bool32 (__cdecl* )(BuildingModel* building, LegoObject_UpgradeType upgradeType, bool32 current))0x004088a0)
+bool32 __cdecl Building_CanUpgradeType(BuildingModel* building, LegoObject_UpgradeType upgradeType, bool32 current);
+
+// <missing>
+uint32 __cdecl Building_GetUpgradeLevel(BuildingModel* building);
 
 // <LegoRR.exe @004088d0>
-#define Building_SetUpgradeLevel ((void (__cdecl* )(BuildingModel* building, uint32 objLevel))0x004088d0)
-//void __cdecl Building_SetUpgradeLevel(BuildingModel* building, uint32 objLevel);
+//#define Building_SetUpgradeLevel ((void (__cdecl* )(BuildingModel* building, uint32 objLevel))0x004088d0)
+void __cdecl Building_SetUpgradeLevel(BuildingModel* building, uint32 objLevel);
 
 #pragma endregion
 

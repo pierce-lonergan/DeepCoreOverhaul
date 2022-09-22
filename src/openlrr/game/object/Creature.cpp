@@ -90,6 +90,13 @@ uint32 __cdecl LegoRR::Creature_GetCarryNullFrames(CreatureModel* creature)
 	return 1;
 }
 
+// <missing>
+uint32 __cdecl LegoRR::Creature_GetCameraNullFrames(CreatureModel* creature)
+{
+	return creature->cameraNullFrames;
+}
+
+
 
 // <LegoRR.exe @004068b0>
 bool32 __cdecl LegoRR::Creature_IsCameraFlipDir(CreatureModel* creature)
@@ -159,14 +166,12 @@ void __cdecl LegoRR::Creature_SetAnimationTime(CreatureModel* creature, real32 t
 // <LegoRR.exe @00406c60>
 real32 __cdecl LegoRR::Creature_MoveAnimation(CreatureModel* creature, real32 elapsed, uint32 repeatCount)
 {
-	const real32 overrun = Gods98::Container_MoveAnimation(creature->contAct, elapsed);
+	real32 overrun = Gods98::Container_MoveAnimation(creature->contAct, elapsed);
 	if (repeatCount > 1 && overrun != 0.0f) {
-		const uint32 frames = Gods98::Container_GetAnimationFrames(creature->contAct);
-		return (overrun - static_cast<real32>(frames * (repeatCount - 1)));
+		const uint32 animFrames = Gods98::Container_GetAnimationFrames(creature->contAct);
+		overrun -= static_cast<real32>(animFrames * (repeatCount - 1));
 	}
-	else {
-		return overrun;
-	}
+	return overrun;
 }
 
 // <LegoRR.exe @00406cd0>

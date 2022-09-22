@@ -58,6 +58,7 @@
 #include "game/mission/PTL.h"
 #include "game/object/AITask.h"
 #include "game/object/BezierCurve.h"
+#include "game/object/Building.h"
 #include "game/object/Creature.h"
 #include "game/object/MeshLOD.h"
 #include "game/object/Object.h"
@@ -1746,6 +1747,64 @@ bool interop_hook_LegoRR_Bubbles(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Building(void)
+{
+	bool result = true;
+
+	// All functions not listed are merged functions, and are best left unhooked.
+
+	// Not ready yet.
+	// used by: Lego_LoadBuildingTypes
+	//result &= hook_write_jmpret(0x00407c90, LegoRR::Building_Load);
+
+	// used by: LegoObject_ProcCarriedObjects_FUN_0043f160
+	result &= hook_write_jmpret(0x00408210, LegoRR::Building_ChangePowerLevel);
+	// used by: Construction_CleanupBuildingFoundation, ElectricFence_Callback_FUN_0040d510,
+	//          Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_Callback_PickSphereSelection,
+	//          LegoObject_Callback_HideCertainObjects, LegoObject_UpdateBuildingPlacement
+	result &= hook_write_jmpret(0x00408290, LegoRR::Building_GetShapePoints);
+	// used by: Building_SetActivity, Building_SetUpgradeLevel
+	result &= hook_write_jmpret(0x004082d0, LegoRR::Building_SetUpgradeActivity);
+	// used by: LegoObject_UpdateActivityChange
+	result &= hook_write_jmpret(0x004084a0, LegoRR::Building_SetActivity);
+	// used by: LegoObject_UpdateActivityChange
+	result &= hook_write_jmpret(0x00408520, LegoRR::Building_GetCameraNull);
+	// used by: LegoObject_Create
+	result &= hook_write_jmpret(0x00408550, LegoRR::Building_Clone);
+	// used by: Lego_LoadBuildingTypes, LegoObject_Hide
+	result &= hook_write_jmpret(0x004085a0, LegoRR::Building_Hide);
+
+	// used by: LegoObject_UnkUpdateOrientation, LegoObject_SetPositionAndHeading
+	result &= hook_write_jmpret(0x004085f0, LegoRR::Building_SetOrientation);
+	// used by: LegoObject_SetPositionAndHeading, LegoObject_UpdateWorldStickyPosition
+	result &= hook_write_jmpret(0x00408640, LegoRR::Building_SetPosition);
+	// used by: LegoObject_UpdateCarrying
+	result &= hook_write_jmpret(0x004086a0, LegoRR::Building_GetCarryNull);
+	// used by: LegoObject_TryDepositCarried, LegoObject_GetDepositNull,
+	//          LegoObject_ProcCarriedObjects_FUN_0043f160, LegoObject_UpdateTeleporter
+	result &= hook_write_jmpret(0x004086e0, LegoRR::Building_GetDepositNull);
+	// used by: AITask_FUN_00404ef0, LegoObject_FUN_00440470, LegoObject_TryFindDriver_FUN_00440690,
+	//          LegoObject_SpawnDropCrystals_FUN_0044b110
+	result &= hook_write_jmpret(0x00408710, LegoRR::Building_GetEntranceNull);
+	// used by: LegoObject_TryDepositCarried, LegoObject_SpawnCarryableObject, LegoObject_DoGetTool
+	result &= hook_write_jmpret(0x00408740, LegoRR::Building_GetToolNull);
+	// used by: LegoObject_Create
+	result &= hook_write_jmpret(0x00408780, LegoRR::Building_GetCarryNullFrames);
+
+	// used by: LegoObject_MoveAnimation
+	result &= hook_write_jmpret(0x00408790, LegoRR::Building_MoveAnimation);
+	// used by: LegoObject_CalculateSpeeds
+	result &= hook_write_jmpret(0x00408860, LegoRR::Building_GetTransCoef);
+	// used by: Lego_Shutdown_Full, LegoObject_Remove
+	result &= hook_write_jmpret(0x00408870, LegoRR::Building_Remove);
+	// used by: Lego_HandleWorldDebugKeys
+	result &= hook_write_jmpret(0x004088a0, LegoRR::Building_CanUpgradeType);
+	// used by: Building_Remove, Lego_HandleWorldDebugKeys, LegoObject_Create, LegoObject_UpgradeBuilding
+	result &= hook_write_jmpret(0x004088d0, LegoRR::Building_SetUpgradeLevel);
+
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Construction(void)
 {
 	bool result = true;
@@ -3241,6 +3300,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_AITask();
 	result &= interop_hook_LegoRR_BezierCurve();
 	result &= interop_hook_LegoRR_Bubbles();
+	result &= interop_hook_LegoRR_Building();
 	result &= interop_hook_LegoRR_Construction();
 	result &= interop_hook_LegoRR_Creature();
 	result &= interop_hook_LegoRR_Credits();

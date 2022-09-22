@@ -121,6 +121,9 @@ bool32 __cdecl Creature_IsHidden(CreatureModel* creature);
 // <LegoRR.exe @00484e50>
 uint32 __cdecl Creature_GetCarryNullFrames(CreatureModel* creature);
 
+// <missing>
+uint32 __cdecl Creature_GetCameraNullFrames(CreatureModel* creature);
+
 
 
 // <LegoRR.exe @004068b0>
