@@ -58,6 +58,7 @@
 #include "game/mission/PTL.h"
 #include "game/object/AITask.h"
 #include "game/object/BezierCurve.h"
+#include "game/object/Creature.h"
 #include "game/object/MeshLOD.h"
 #include "game/object/Object.h"
 #include "game/object/Stats.h"
@@ -546,7 +547,7 @@ bool interop_hook_Gods98_Containers(void)
 	// used by: DynamicPM_Sub2_FUN_0040bac0, FlocksMatrix_FUN_0044ba60
 	result &= hook_write_jmpret(0x00475970, Gods98::Container_AddTransform);
 
-	// used by: Creature_GetThrowNull
+	// used by: Creature_CheckThrowNull
 	result &= hook_write_jmpret(0x00475990, Gods98::Container_GetZXRatio);
 	result &= hook_write_jmpret(0x004759d0, Gods98::Container_SetParent);
 
@@ -1761,6 +1762,68 @@ bool interop_hook_LegoRR_Construction(void)
 	// used by: Construction_UpdateAll
 	result &= hook_write_jmpret(0x00409480, LegoRR::Construction_Zone_RequestPathResources);
 
+	return_interop(result);
+}
+
+bool interop_hook_LegoRR_Creature(void)
+{
+	bool result = true;
+
+	// All functions not listed are merged functions, and are best left unhooked.
+
+	// used by: LegoObject_FP_GetPositionAndHeading
+	result &= hook_write_jmpret(0x004068b0, LegoRR::Creature_IsCameraFlipDir);
+
+	// Not ready yet.
+	// used by: Lego_LoadMiniFigureTypes, Lego_LoadRockMonsterTypes
+	//result &= hook_write_jmpret(0x004068c0, LegoRR::Creature_Load);
+
+	// used by: LegoObject_FP_Callback_SwapPolyMeshParts
+	result &= hook_write_jmpret(0x00406b30, LegoRR::Creature_SwapPolyMedium);
+	// used by: LegoObject_FP_Callback_SwapPolyMeshParts
+	result &= hook_write_jmpret(0x00406b60, LegoRR::Creature_SwapPolyHigh);
+	// used by: LegoObject_SwapPolyFP
+	result &= hook_write_jmpret(0x00406b90, LegoRR::Creature_SwapPolyFP);
+
+	// used by: LegoObject_Create
+	result &= hook_write_jmpret(0x00406be0, LegoRR::Creature_Clone);
+
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00406c40, LegoRR::Creature_SetAnimationTime);
+	// used by: LegoObject_MoveAnimation
+	result &= hook_write_jmpret(0x00406c60, LegoRR::Creature_MoveAnimation);
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00406cd0, LegoRR::Creature_GetAnimationTime);
+	// used by: LegoObject_Route_End, LegoObject_UnkUpdateOrientation, LegoObject_UpdateRoutingVectors_FUN_004428b0,
+	//          LegoObject_SetPositionAndHeading, LegoObject_Route_UpdateMovement
+	result &= hook_write_jmpret(0x00406cf0, LegoRR::Creature_SetOrientation);
+	// used by: LegoObject_UpdateRoutingVectors_FUN_004428b0, LegoObject_SetPositionAndHeading,
+	//          LegoObject_FP_UpdateMovement, LegoObject_UpdateWorldStickyPosition
+	result &= hook_write_jmpret(0x00406d20, LegoRR::Creature_SetPosition);
+
+	// used by: LegoObject_TeleportUp, LegoObject_UpdateActivityChange
+	result &= hook_write_jmpret(0x00406d70, LegoRR::Creature_SetActivity);
+	// used by: Lego_Shutdown_Full, LegoObject_Remove
+	result &= hook_write_jmpret(0x00406df0, LegoRR::Creature_Remove);
+
+	// used by: LegoObject_UpdateActivityChange, LegoObject_FP_GetPositionAndHeading
+	result &= hook_write_jmpret(0x00406eb0, LegoRR::Creature_GetCameraNull);
+	// used by: LegoObject_Callback_Update, LegoObject_GetDrillNullPosition
+	result &= hook_write_jmpret(0x00406ee0, LegoRR::Creature_GetDrillNull);
+	// used by: LegoObject_UpdateCarrying
+	result &= hook_write_jmpret(0x00406f10, LegoRR::Creature_GetCarryNull);
+	// used by: LegoObject_GetDepositNull
+	result &= hook_write_jmpret(0x00406f40, LegoRR::Creature_GetDepositNull);
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00406f70, LegoRR::Creature_CheckThrowNull);
+	// used by: LegoObject_CalculateSpeeds
+	result &= hook_write_jmpret(0x00406fc0, LegoRR::Creature_GetTransCoef);
+
+	// used by: 
+	//result &= hook_write_jmpret(0x, LegoRR::);
+	// used by: 
+	//result &= hook_write_jmpret(0x, LegoRR::);
+	
 	return_interop(result);
 }
 
@@ -3179,6 +3242,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_BezierCurve();
 	result &= interop_hook_LegoRR_Bubbles();
 	result &= interop_hook_LegoRR_Construction();
+	result &= interop_hook_LegoRR_Creature();
 	result &= interop_hook_LegoRR_Credits();
 	result &= interop_hook_LegoRR_ElectricFence();
 	result &= interop_hook_LegoRR_Game();

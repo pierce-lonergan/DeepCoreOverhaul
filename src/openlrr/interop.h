@@ -59,6 +59,7 @@ bool interop_hook_LegoRR_AITask(void);
 bool interop_hook_LegoRR_BezierCurve(void);
 bool interop_hook_LegoRR_Bubbles(void);
 bool interop_hook_LegoRR_Construction(void);
+bool interop_hook_LegoRR_Creature(void);
 bool interop_hook_LegoRR_Credits(void);
 bool interop_hook_LegoRR_ElectricFence(void);
 bool interop_hook_LegoRR_FrontEnd(void);

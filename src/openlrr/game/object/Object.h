@@ -376,8 +376,8 @@ struct LegoObject // [LegoRR/LegoObject.c|struct:0x40c|tags:LISTSET]
 	/*2c8,c*/       Vector3F dirVector_2c8; // Always (0.0f, 0.0f, 0.0f)
 	/*2d4,4*/       real32 animTime;
 	/*2d8,4*/       uint32 animRepeat; // Number of times an activity animation is set to repeat (i.e. number of jumping jacks/reinforce hits). Zero is default.
-	/*2dc,4*/       Gods98::Container* cont_2dc;
-	/*2e0,4*/       sint32 index_2e0;
+	/*2dc,4*/       Gods98::Container* cameraNull;
+	/*2e0,4*/       uint32 cameraFrame;
 	/*2e4,4*/       Gods98::Container* contMiniTeleportUp;
 	/*2e8,4*/       const char* activityName1;
 	/*2ec,4*/       const char* activityName2; // Seems to be used with related objects like driven, swapped with activityName1.

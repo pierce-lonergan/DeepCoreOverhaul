@@ -67,7 +67,7 @@ struct WeaponsModel // [LegoRR/Weapons.c|struct:0xa8]
 	/*24,c*/	Gods98::Container* yPivotNulls[WEAPON_MAXWEAPONS];
 	/*30,4*/	real32 pivotMaxZ;			// (ae: PivotMaxZ)
 	/*34,4*/	real32 pivotMinZ;			// (ae: PivotMinZ)
-	/*38,c*/	bool32 fireNullPairFrames[WEAPON_MAXWEAPONS];	// (valid: [0,1])
+	/*38,c*/	uint32 fireNullPairFrames[WEAPON_MAXWEAPONS];	// (valid: [0,1])
 	/*44,48*/	Vector3F fireDirections[WEAPON_MAXWEAPONS];
 	/*68,48*/	Vector3F targetWorldPos[WEAPON_MAXWEAPONS];
 	/*8c,c*/	Upgrade_PartInfo* weaponParts[WEAPON_MAXWEAPONS];

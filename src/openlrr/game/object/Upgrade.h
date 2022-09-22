@@ -97,10 +97,10 @@ assert_sizeof(UpgradesModel, 0x14);
 //Gods98::Container* __cdecl Upgrade_Part_GetActivityContainer(Upgrade_PartModel* upgradePart);
 
 // Not used by Upgrade_Part_*, but should be supported.
-// Merged function: Object_SearchForPartName
+// Merged function: Object_FindNull
 // <LegoRR.exe @00406e80>
-#define Upgrade_Part_SearchForPartName ((Gods98::Container* (__cdecl* )(Upgrade_PartModel* upgradePart, const char* name, uint32 frameNo))0x00406e80)
-//Gods98::Container* __cdecl Upgrade_Part_SearchForPartName(Upgrade_PartModel* upgradePart, const char* name, uint32 frameNo);
+#define Upgrade_Part_FindNull ((Gods98::Container* (__cdecl* )(Upgrade_PartModel* upgradePart, const char* name, uint32 frameNo))0x00406e80)
+//Gods98::Container* __cdecl Upgrade_Part_FindNull(Upgrade_PartModel* upgradePart, const char* name, uint32 frameNo);
 
 // Not used by Upgrade_Part_*, but should be supported.
 // Merged function: Object_SetOwnerObject

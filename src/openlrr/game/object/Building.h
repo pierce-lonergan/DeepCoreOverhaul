@@ -102,10 +102,10 @@ assert_sizeof(BuildingModel, 0x14c);
 #define Building_GetActivityContainer ((Gods98::Container* (__cdecl* )(BuildingModel* building))0x00406d60)
 //Gods98::Container* __cdecl Building_GetActivityContainer(BuildingModel* building);
 
-// Merged function: Object_SearchForPartName
+// Merged function: Object_FindNull
 // <LegoRR.exe @00406e80>
-#define Building_SearchForPartName ((Gods98::Container* (__cdecl* )(BuildingModel* building, const char* name, uint32 frameNo))0x00406e80)
-//Gods98::Container* __cdecl Building_SearchForPartName(BuildingModel* building, const char* name, uint32 frameNo);
+#define Building_FindNull ((Gods98::Container* (__cdecl* )(BuildingModel* building, const char* name, uint32 frameNo))0x00406e80)
+//Gods98::Container* __cdecl Building_FindNull(BuildingModel* building, const char* name, uint32 frameNo);
 
 // Merged function: Object_SetOwnerObject
 // <LegoRR.exe @004082b0>

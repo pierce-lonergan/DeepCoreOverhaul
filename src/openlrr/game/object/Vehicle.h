@@ -198,8 +198,8 @@ __inline bool32 __cdecl Vehicle_IsCameraFlipDir(VehicleModel* vehicle) { return 
 //Gods98::Container* __cdecl Vehicle_GetActivityContainer(VehicleModel* vehicle);
 
 // <LegoRR.exe @0046dcb0>
-#define Vehicle_GetNull ((Gods98::Container* (__cdecl* )(VehicleModel* vehicle, const char* nullName, uint32 nullFrameNo))0x0046dcb0)
-//Gods98::Container* __cdecl Vehicle_GetNull(VehicleModel* vehicle, char* nullName, uint32 nullFrameNo);
+#define Vehicle_FindNull ((Gods98::Container* (__cdecl* )(VehicleModel* vehicle, const char* name, uint32 frameNo))0x0046dcb0)
+//Gods98::Container* __cdecl Vehicle_FindNull(VehicleModel* vehicle, char* name, uint32 frameNo);
 
 // <LegoRR.exe @0046dd10>
 #define Vehicle_GetCameraNull ((Gods98::Container* (__cdecl* )(VehicleModel* vehicle, uint32 frameNo))0x0046dd10)
