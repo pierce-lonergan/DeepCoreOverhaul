@@ -63,6 +63,7 @@
 #include "game/object/MeshLOD.h"
 #include "game/object/Object.h"
 #include "game/object/Stats.h"
+#include "game/object/Vehicle.h"
 #include "game/object/Weapons.h"
 #include "game/world/Camera.h"
 #include "game/world/Construction.h"
@@ -3135,6 +3136,29 @@ bool interop_hook_LegoRR_ToolTip(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Vehicle(void)
+{
+	bool result = true;
+
+	// used by: LegoObject_FP_GetPositionAndHeading
+	result &= hook_write_jmpret(0x0046c690, LegoRR::Vehicle_IsCameraFlipDir);
+	// used by: LegoObject_UpdateActivityChange
+	result &= hook_write_jmpret(0x0046c6b0, LegoRR::Vehicle_SetActivity);
+	// used by: Vehicle_SetActivity, Vehicle_SetUpgradeLevel
+	result &= hook_write_jmpret(0x0046c7d0, LegoRR::Vehicle_SetUpgradeActivity);
+
+	// used by: Lego_Shutdown_Full, LegoObject_Remove
+	result &= hook_write_jmpret(0x0046d0d0, LegoRR::Vehicle_Remove);
+
+	// used by: LegoObject_Create
+	result &= hook_write_jmpret(0x0046d2b0, LegoRR::Vehicle_Clone);
+
+	// used by: Vehicle_SetActivity, Vehicle_Clone
+	result &= hook_write_jmpret(0x0046d520, LegoRR::Vehicle_PopulateWheelNulls);
+	
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Water(void)
 {
 	bool result = true;
@@ -3325,6 +3349,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Smoke();
 	result &= interop_hook_LegoRR_Stats();
 	result &= interop_hook_LegoRR_ToolTip();
+	result &= interop_hook_LegoRR_Vehicle();
 	result &= interop_hook_LegoRR_Water();
 	result &= interop_hook_LegoRR_Weapons();
 

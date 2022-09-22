@@ -48,7 +48,8 @@ enum VehicleFlags : uint32
 	VEHICLE_FLAG_SOURCE      = 0x1, // Source object container data with original memory allocations.
 	VEHICLE_FLAG_HIDDEN      = 0x2, // Vehicles need to track this manually due to having 1-2 sub-containers.
 	VEHICLE_FLAG_NOACTIVITY1 = 0x4, // Tells the model to not animate contAct1.
-	                                // Set when an assigned activity is not set on contAct1 AND HOLDMISSING is true.
+	                                // Set when an assigned activity is not found in contAct1 AND HOLDMISSING is true.
+									// Better name may be NOANIMATE1.
 	VEHICLE_FLAG_HOLDMISSING = 0x8, // (ae: HoldMissing TRUE)
 };
 flags_end(VehicleFlags, 0x4);
@@ -67,13 +68,13 @@ struct VehicleModel // [LegoRR/Vehicle.c|struct:0x1ec]
 	/*004,4*/	char* wheelNullName;		// (ae: WheelNullName)
 	/*008,4*/	Gods98::Container* contAct1;		// (ACT, true)
 	/*00c,4*/	Gods98::Container* contAct2;		// (ACT, true) Optional second ae file (seen for Grannit Grinder legs) This container has priority for finding null frames
-	/*010,18*/	Gods98::Container* wheelNulls[VEHICLE_MAXWHEELS];	// (ae:WheelMesh, LWO, false) Table for wheel nulls that are assigned a position calculated by wheelRefNulls
-	/*028,18*/	Gods98::Container* wheelRefNulls[VEHICLE_MAXWHEELS];// Root wheel nulls that are used to calculate terrain-relative positioning
+	/*010,18*/	Gods98::Container* contWheels[VEHICLE_MAXWHEELS];	// (ae:WheelMesh, LWO, false) Table for wheel nulls that are assigned a position calculated by wheelNulls
+	/*028,18*/	Gods98::Container* wheelNulls[VEHICLE_MAXWHEELS];// Root wheel nulls that are used to calculate terrain-relative positioning
 	/*040,4*/	uint32 wheelNullFrames;
 	/*044,18*/	undefined reserved1[0x18];
-	/*05c,c*/	Vector3F wheelVector_5c;	// another vector used in wheelNulls positioning
+	/*05c,c*/	Vector3F wheelVector_5c;	// another vector used in contWheels positioning
 	/*068,4*/	real32 wheelRadius;			// (ae: WheelRadius)
-	/*06c,48*/	Vector3F wheelNullPositions[VEHICLE_MAXWHEELS];		// Live position of wheelNulls
+	/*06c,48*/	Vector3F wheelNullPositions[VEHICLE_MAXWHEELS];		// Live position of contWheels
 	/*0b4,4*/	char* drillNullName;		// (ae: DrillNullName)
 	/*0b8,4*/	char* depositNullName;		// (ae: DepositNullName)
 	/*0bc,4*/	char* fireNullName;			// (ae: FireNullName) "fire laser"
@@ -108,17 +109,28 @@ assert_sizeof(VehicleModel, 0x1ec);
 
 #pragma region Functions
 
+/// CUSTOM: Properly cleanup Container references to nulls.
+void _Vehicle_RemoveNulls(VehicleModel* vehicle);
+
+/// CUSTOM: Properly cleanup Container references to nulls.
+void _Vehicle_RemoveWeaponNulls(VehicleModel* vehicle);
+
+/// CUSTOM: Properly cleanup Container references to nulls.
+void _Vehicle_RemoveWheelNulls(VehicleModel* vehicle);
+
+
+
 // <LegoRR.exe @0046c690>
 //#define Vehicle_IsCameraFlipDir ((bool32 (__cdecl* )(VehicleModel* vehicle))0x0046c690)
-__inline bool32 __cdecl Vehicle_IsCameraFlipDir(VehicleModel* vehicle) { return vehicle->cameraFlipDir == BoolTri::BOOL3_TRUE; }
+bool32 __cdecl Vehicle_IsCameraFlipDir(VehicleModel* vehicle);
 
 // <LegoRR.exe @0046c6b0>
-#define Vehicle_SetActivity ((bool32 (__cdecl* )(VehicleModel* vehicle, const char* activityName, real32 elapsed))0x0046c6b0)
-//bool32 __cdecl Vehicle_SetActivity(VehicleModel* vehicle, const char* activityName, real32 elapsed);
+//#define Vehicle_SetActivity ((bool32 (__cdecl* )(VehicleModel* vehicle, const char* activityName, real32 elapsed))0x0046c6b0)
+bool32 __cdecl Vehicle_SetActivity(VehicleModel* vehicle, const char* activityName, real32 elapsed);
 
 // <LegoRR.exe @0046c7d0>
-#define Vehicle_SetUpgradeActivity ((void (__cdecl* )(VehicleModel* vehicle, const char* activityName))0x0046c7d0)
-//void __cdecl Vehicle_SetUpgradeActivity(VehicleModel* vehicle, const char* activityName);
+//#define Vehicle_SetUpgradeActivity ((void (__cdecl* )(VehicleModel* vehicle, const char* activityName))0x0046c7d0)
+void __cdecl Vehicle_SetUpgradeActivity(VehicleModel* vehicle, const char* activityName);
 
 // <LegoRR.exe @0046c9b0>
 #define Vehicle_Load ((bool32 (__cdecl* )(OUT VehicleModel* vehicle, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName))0x0046c9b0)
@@ -126,8 +138,8 @@ __inline bool32 __cdecl Vehicle_IsCameraFlipDir(VehicleModel* vehicle) { return 
 
 // Similar to `Vehicle_Load`, this does not free the passed pointer.
 // <LegoRR.exe @0046d0d0>
-#define Vehicle_Remove ((void (__cdecl* )(IN VehicleModel* vehicle))0x0046d0d0)
-//void __cdecl Vehicle_Remove(VehicleModel* vehicle);
+//#define Vehicle_Remove ((void (__cdecl* )(IN VehicleModel* vehicle))0x0046d0d0)
+void __cdecl Vehicle_Remove(VehicleModel* vehicle);
 
 // <LegoRR.exe @0046d190>
 #define Vehicle_SwapPolyMedium ((void (__cdecl* )(VehicleModel* vehicle, bool32 swap))0x0046d190)
@@ -158,8 +170,8 @@ __inline bool32 __cdecl Vehicle_IsCameraFlipDir(VehicleModel* vehicle) { return 
 //void __cdecl Vehicle_HideWheels(VehicleModel* vehicle, bool32 hide);
 
 // <LegoRR.exe @0046d2b0>
-#define Vehicle_Clone ((bool32 (__cdecl* )(IN VehicleModel* srcVehicle, OUT VehicleModel* destVehicle))0x0046d2b0)
-//bool32 __cdecl Vehicle_Clone(IN VehicleModel* srcVehicle, OUT VehicleModel* destVehicle);
+//#define Vehicle_Clone ((bool32 (__cdecl* )(IN VehicleModel* srcVehicle, OUT VehicleModel* destVehicle))0x0046d2b0)
+bool32 __cdecl Vehicle_Clone(IN VehicleModel* srcVehicle, OUT VehicleModel* destVehicle);
 
 // <LegoRR.exe @0046d400>
 #define Vehicle_SetOwnerObject ((void (__cdecl* )(VehicleModel* vehicle, LegoObject* liveObj))0x0046d400)
@@ -174,8 +186,8 @@ __inline bool32 __cdecl Vehicle_IsCameraFlipDir(VehicleModel* vehicle) { return 
 //real32 __cdecl Vehicle_MoveAnimation(VehicleModel* vehicle, real32 elapsed1, real32 elapsed2, uint32 unkFrameNo);
 
 // <LegoRR.exe @0046d520>
-#define Vehicle_PopulateWheels ((void (__cdecl* )(VehicleModel* vehicle))0x0046d520)
-//void __cdecl Vehicle_PopulateWheels(VehicleModel* vehicle);
+//#define Vehicle_PopulateWheelNulls ((void (__cdecl* )(VehicleModel* vehicle))0x0046d520)
+void __cdecl Vehicle_PopulateWheelNulls(VehicleModel* vehicle);
 
 // <LegoRR.exe @0046d580>
 #define Vehicle_Hide ((void (__cdecl* )(VehicleModel* vehicle, bool32 hide))0x0046d580)
