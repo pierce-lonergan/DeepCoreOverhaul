@@ -268,6 +268,7 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     <ClInclude Include="game\object\Creature.h" />
     <ClInclude Include="game\object\Dependencies.h" />
     <ClInclude Include="game\object\Flocks.h" />
+    <ClInclude Include="game\object\MeshLOD.h" />
     <ClInclude Include="game\object\Object.h" />
     <ClInclude Include="game\object\ObjectRecall.h" />
     <ClInclude Include="game\object\Stats.h" />
@@ -281,7 +282,6 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     <ClInclude Include="game\world\Erode.h" />
     <ClInclude Include="game\world\Fallin.h" />
     <ClInclude Include="game\world\Map3D.h" />
-    <ClInclude Include="game\world\MeshLOD.h" />
     <ClInclude Include="game\world\Roof.h" />
     <ClInclude Include="game\world\SelectPlace.h" />
     <ClInclude Include="game\world\SpiderWeb.h" />
@@ -392,6 +392,7 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     <ClCompile Include="game\object\Creature.cpp" />
     <ClCompile Include="game\object\Dependencies.cpp" />
     <ClCompile Include="game\object\Flocks.cpp" />
+    <ClCompile Include="game\object\MeshLOD.cpp" />
     <ClCompile Include="game\object\Object.cpp" />
     <ClCompile Include="game\object\ObjectRecall.cpp" />
     <ClCompile Include="game\object\Stats.cpp" />
@@ -405,7 +406,6 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     <ClCompile Include="game\world\Erode.cpp" />
     <ClCompile Include="game\world\Fallin.cpp" />
     <ClCompile Include="game\world\Map3D.cpp" />
-    <ClCompile Include="game\world\MeshLOD.cpp" />
     <ClCompile Include="game\world\Roof.cpp" />
     <ClCompile Include="game\world\SelectPlace.cpp" />
     <ClCompile Include="game\world\SpiderWeb.cpp" />
