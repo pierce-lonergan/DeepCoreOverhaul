@@ -570,7 +570,7 @@ Container* __cdecl Container_SearchTree(Container* root, const char* name, Conta
 
 // Pass NULL as instance for any...
 // <LegoRR.exe @00473f20>
-const char* __cdecl Container_FormatPartName(Container* cont, const char* partname, OPTIONAL uint32* instance);
+const char* __cdecl Container_FormatPartName(Container* cont, const char* partname, OPTIONAL const uint32* instance);
 
 // <LegoRR.exe @00474060>
 void __cdecl Container_SetUserData(Container* cont, void* data);
@@ -770,7 +770,7 @@ bool32 __cdecl Container_AddActivity2(Container* cont, const char* filename, con
 void __cdecl Container_Frame_ReferenceDestroyCallback(IDirect3DRMObject* lpD3DRMobj, void* lpArg);
 
 // <LegoRR.exe @00476100>
-IDirect3DRMFrame3* __cdecl Container_Frame_Find(Container* cont, const char* findName, bool32 /*uint32*/ hidden);
+IDirect3DRMFrame3* __cdecl Container_Frame_Find(Container* cont, const char* findName, bool32 hidden);
 
 // <LegoRR.exe @00476230>
 void __cdecl Container_Frame_SetAppData(IDirect3DRMFrame3* frame, Container* owner,

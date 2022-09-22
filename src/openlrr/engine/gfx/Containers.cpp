@@ -649,7 +649,7 @@ bool32 __cdecl Gods98::Container_IsCurrentActivity(Container* cont, const char* 
 	Container_DebugCheckOK(cont);
 
 	if (cont->type == Container_Type::FromActivity) {
-		if (frame = Container_Frame_Find(cont, actname, 0)) return true;
+		if (frame = Container_Frame_Find(cont, actname, false)) return true;
 	}
 
 	return false;
@@ -665,11 +665,11 @@ bool32 __cdecl Gods98::Container_SetActivity(Container* cont, const char* actnam
 	Container_DebugCheckOK(cont);
 
 	if (cont->type == Container_Type::FromActivity) {
-		if (frame = Container_Frame_Find(cont, actname, 1)) {
+		if (frame = Container_Frame_Find(cont, actname, true)) {
 			if (cont->typeData != nullptr) {
 				if (cont->typeData->name != nullptr) {
 					currAnimName = cont->typeData->name;
-					if (currFrame = Container_Frame_Find(cont, currAnimName, 0)) {
+					if (currFrame = Container_Frame_Find(cont, currAnimName, false)) {
 
 						Container_Frame_SafeAddChild(cont->hiddenFrame, currFrame);
 
@@ -694,7 +694,7 @@ bool32 __cdecl Gods98::Container_SetActivity(Container* cont, const char* actnam
 		}
 		else {
 			result = false;
-			Error_Warn(!Container_Frame_Find(cont, actname, 0), Error_Format("Unknown activity (\"%s\") passed to Container_SetActivity()", actname));
+			Error_Warn(!Container_Frame_Find(cont, actname, false), Error_Format("Unknown activity (\"%s\") passed to Container_SetActivity()", actname));
 		}
 
 		// Notify the game that the activity has changed...
@@ -1149,7 +1149,7 @@ Gods98::Container* __cdecl Gods98::Container_SearchTree(Container* root, const c
 
 // Pass NULL as instance for any...
 // <LegoRR.exe @00473f20>
-const char* __cdecl Gods98::Container_FormatPartName(Container* cont, const char* partname, OPTIONAL uint32* instance)
+const char* __cdecl Gods98::Container_FormatPartName(Container* cont, const char* partname, OPTIONAL const uint32* instance)
 {
 	// e.g. xf_????????_lphead_stationary_00_DDc_00 <- clone number (redundant (always zero))
 	//         ^uid     ^part  ^filename  ^instance
@@ -1165,7 +1165,7 @@ const char* __cdecl Gods98::Container_FormatPartName(Container* cont, const char
 
 	if (cont->type == Container_Type::FromActivity) {
 		Error_Fatal(!cont->typeData, "Container has no typeData");
-		frame = Container_Frame_Find(cont, cont->typeData->name, 0);
+		frame = Container_Frame_Find(cont, cont->typeData->name, false);
 		Error_Fatal(frame == nullptr, "Cannot locate current activities frame");
 	}
 	else if (cont->type == Container_Type::Anim) {
@@ -2443,7 +2443,7 @@ real32 __cdecl Gods98::Container_SetAnimationTime(Container* cont, real32 time)
 		Error_Fatal(!cont->typeData, "Container has no typeData");
 
 		currAnimName = cont->typeData->name;
-		if (frame = Container_Frame_Find(cont, currAnimName, 0)) {
+		if (frame = Container_Frame_Find(cont, currAnimName, false)) {
 //			animSet = Container_Frame_GetAnimSet(frame);
 			animClone = Container_Frame_GetAnimClone(frame);
 
@@ -2528,7 +2528,7 @@ void __cdecl Gods98::Container_ForceAnimationUpdate(Container* cont)
 
 		if (cont->type == Container_Type::FromActivity) {
 			Error_Fatal(!cont->typeData, "Container has no typeData");
-			if (frame = Container_Frame_Find(cont, cont->typeData->name, 0)) {
+			if (frame = Container_Frame_Find(cont, cont->typeData->name, false)) {
 				animClone = Container_Frame_GetAnimClone(frame);
 				time = Container_Frame_GetCurrTime(frame);
 			}
@@ -2556,7 +2556,7 @@ real32 __cdecl Gods98::Container_GetAnimationTime(Container* cont)
 		Error_Fatal(!cont->typeData, "Container has no typeData");
 
 		currAnimName = cont->typeData->name;
-		if (frame = Container_Frame_Find(cont, currAnimName, 0)) {
+		if (frame = Container_Frame_Find(cont, currAnimName, false)) {
 			time = Container_Frame_GetCurrTime(frame);
 		}
 		else Error_Warn(true, "Couldn't find frame (thus AnimationSet) to SetTime() on");
@@ -2581,7 +2581,7 @@ uint32 __cdecl Gods98::Container_GetAnimationFrames(Container* cont)
 	if (cont->type == Container_Type::FromActivity) {
 		Error_Fatal(!cont->typeData, "Container has no typeData");
 		currAnimName = cont->typeData->name;
-		frame = Container_Frame_Find(cont, currAnimName, 0);
+		frame = Container_Frame_Find(cont, currAnimName, false);
 	}
 	else if (cont->type == Container_Type::Anim) {
 		frame = cont->activityFrame;
@@ -2845,7 +2845,7 @@ real32 __cdecl Gods98::Container_GetTransCoef(Container* cont)
 
 		if (cont->typeData != nullptr) {
 			if (cont->typeData->name != nullptr) {
-				if (actframe = Container_Frame_Find(cont, cont->typeData->name, 0)) {
+				if (actframe = Container_Frame_Find(cont, cont->typeData->name, false)) {
 					return Container_Frame_GetTransCo(actframe);
 				}
 			}
@@ -3140,7 +3140,7 @@ void __cdecl Gods98::Container_Frame_ReferenceDestroyCallback(IDirect3DRMObject*
 }
 
 // <LegoRR.exe @00476100>
-IDirect3DRMFrame3* __cdecl Gods98::Container_Frame_Find(Container* cont, const char* findName, bool32 /*uint32*/ hidden)
+IDirect3DRMFrame3* __cdecl Gods98::Container_Frame_Find(Container* cont, const char* findName, bool32 hidden)
 {
 	IDirect3DRMFrame3* frame, * childFrame, * foundFrame = nullptr;
 	IDirect3DRMFrame* frame1;

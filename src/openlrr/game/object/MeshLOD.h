@@ -35,7 +35,7 @@ enum MeshLODFlags : uint32 // [LegoRR/MeshLOD.c|flags:0x4|type:uint]
 {
 	MESHLOD_FLAG_NONE     = 0,
 	MESHLOD_FLAG_CLONED   = 0x1,
-	MESHLOD_FLAG_MEMBLOCK = 0x2,
+	MESHLOD_FLAG_MEMBLOCK = 0x2, // Start of linked list contiguous memory allocation.
 };
 flags_end(MeshLODFlags, 0x4);
 
@@ -68,28 +68,28 @@ assert_sizeof(MeshLOD, 0x18);
 #pragma region Functions
 
 // <LegoRR.exe @00451c70>
-#define MeshLOD_Create ((MeshLOD* (__cdecl* )(OPTIONAL MeshLOD* prevMeshLOD, const char* partName, const char* dirname, const char* meshName, uint32 setID))0x00451c70)
-//MeshLOD* __cdecl MeshLOD_Create(OPTIONAL MeshLOD* prevMeshLOD, const char* partName, const char* dirname, const char* meshName, uint32 setID);
+//#define MeshLOD_Create ((MeshLOD* (__cdecl* )(OPTIONAL MeshLOD* prevMeshLOD, const char* partName, const char* dirname, const char* meshName, uint32 setID))0x00451c70)
+MeshLOD* __cdecl MeshLOD_Create(OPTIONAL MeshLOD* prevMeshLOD, const char* partName, const char* dirname, const char* meshName, uint32 setID);
 
 // <LegoRR.exe @00451d70>
-#define MeshLOD_CreateEmpty ((MeshLOD* (__cdecl* )(OPTIONAL MeshLOD* prevMeshLOD, const char* partName, uint32 setID))0x00451d70)
-//MeshLOD* __cdecl MeshLOD_CreateEmpty(OPTIONAL MeshLOD* prevMeshLOD, const char* partName, uint32 setID);
+//#define MeshLOD_CreateEmpty ((MeshLOD* (__cdecl* )(OPTIONAL MeshLOD* prevMeshLOD, const char* partName, uint32 setID))0x00451d70)
+MeshLOD* __cdecl MeshLOD_CreateEmpty(OPTIONAL MeshLOD* prevMeshLOD, const char* partName, uint32 setID);
 
 // <LegoRR.exe @00451df0>
-#define MeshLOD_Clone ((MeshLOD* (__cdecl* )(IN MeshLOD* srcMeshLOD))0x00451df0)
-//MeshLOD* __cdecl MeshLOD_Clone(IN MeshLOD* srcMeshLOD);
+//#define MeshLOD_Clone ((MeshLOD* (__cdecl* )(IN MeshLOD* srcMeshLOD))0x00451df0)
+MeshLOD* __cdecl MeshLOD_Clone(IN MeshLOD* srcMeshLOD);
 
 // <LegoRR.exe @00451e80>
-#define MeshLOD_SwapTarget ((void (__cdecl* )(MeshLOD* meshLOD, Gods98::Container* contActTarget, bool32 restore, uint32 setID))0x00451e80)
-//void __cdecl MeshLOD_SwapTarget(MeshLOD* meshLOD, Gods98::Container* contActTarget, bool32 restore, uint32 setID);
+//#define MeshLOD_SwapTarget ((void (__cdecl* )(MeshLOD* meshLOD, Gods98::Container* contActTarget, bool32 restore, uint32 setID))0x00451e80)
+void __cdecl MeshLOD_SwapTarget(MeshLOD* meshLOD, Gods98::Container* contActTarget, bool32 restore, uint32 setID);
 
 // <LegoRR.exe @00451ef0>
-#define MeshLOD_RemoveTargets ((void (__cdecl* )(MeshLOD* meshLOD))0x00451ef0)
-//void __cdecl MeshLOD_RemoveTargets(MeshLOD* meshLOD);
+//#define MeshLOD_RemoveTargets ((void (__cdecl* )(MeshLOD* meshLOD))0x00451ef0)
+void __cdecl MeshLOD_RemoveTargets(MeshLOD* meshLOD);
 
 // <LegoRR.exe @00451f10>
-#define MeshLOD_Free ((void (__cdecl* )(MeshLOD* meshLOD))0x00451f10)
-//void __cdecl MeshLOD_Free(MeshLOD* meshLOD);
+//#define MeshLOD_Free ((void (__cdecl* )(MeshLOD* meshLOD))0x00451f10)
+void __cdecl MeshLOD_Free(MeshLOD* meshLOD);
 
 #pragma endregion
 

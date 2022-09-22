@@ -58,6 +58,7 @@
 #include "game/mission/PTL.h"
 #include "game/object/AITask.h"
 #include "game/object/BezierCurve.h"
+#include "game/object/MeshLOD.h"
 #include "game/object/Object.h"
 #include "game/object/Stats.h"
 #include "game/object/Weapons.h"
@@ -2068,6 +2069,26 @@ bool interop_hook_LegoRR_LightEffects(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_MeshLOD(void)
+{
+	bool result = true;
+
+	// used by: LegoObject_LoadMeshLOD
+	result &= hook_write_jmpret(0x00451c70, LegoRR::MeshLOD_Create);
+	// used by: LegoObject_LoadMeshLOD
+	result &= hook_write_jmpret(0x00451d70, LegoRR::MeshLOD_CreateEmpty);
+	// used by: Creature_Clone, Vehicle_Clone
+	result &= hook_write_jmpret(0x00451df0, LegoRR::MeshLOD_Clone);
+	// used by: Creature_SwapPolyMedium, Creature_SwapPolyHigh, Creature_SwapPolyFP, Vehicle_SwapPolyMedium
+	result &= hook_write_jmpret(0x00451e80, LegoRR::MeshLOD_SwapTarget);
+	// used by: Creature_SetActivity, Vehicle_SetActivity
+	result &= hook_write_jmpret(0x00451ef0, LegoRR::MeshLOD_RemoveTargets);
+	// used by: Creature_Remove
+	result &= hook_write_jmpret(0x00451f10, LegoRR::MeshLOD_Free);
+
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Messages(void)
 {
 	bool result = true;
@@ -3164,6 +3185,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Interface();
 	result &= interop_hook_LegoRR_LegoCamera();
 	result &= interop_hook_LegoRR_LightEffects();
+	result &= interop_hook_LegoRR_MeshLOD();
 	result &= interop_hook_LegoRR_Messages();
 	result &= interop_hook_LegoRR_NERPsFile();
 	result &= interop_hook_LegoRR_NERPsFunctions();
