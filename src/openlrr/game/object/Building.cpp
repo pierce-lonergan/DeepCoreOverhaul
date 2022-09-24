@@ -19,29 +19,29 @@ void LegoRR::_Building_RemoveNulls(BuildingModel* building)
 {
 	/// FIXME: Properly remove Container references that were being leaked.
 	if (building->depositNull) {
-		//Gods98::Container_RemoveReference(building->depositNull);
+		Gods98::Container_RemoveReference(building->depositNull);
 		building->depositNull = nullptr;
 	}
 	if (building->entranceNull) {
-		//Gods98::Container_RemoveReference(building->entranceNull);
+		Gods98::Container_RemoveReference(building->entranceNull);
 		building->entranceNull = nullptr;
 	}
 
 	for (uint32 i = 0; i < BUILDING_MAXCARRYS; i++) {
 		if (building->carryNulls[i]) {
-			//Gods98::Container_RemoveReference(building->carryNulls[i]);
+			Gods98::Container_RemoveReference(building->carryNulls[i]);
 			building->carryNulls[i] = nullptr;
 		}
 	}
 	for (uint32 i = 0; i < BUILDING_MAXCAMERAS; i++) {
 		if (building->cameraNulls[i]) {
-			//Gods98::Container_RemoveReference(building->cameraNulls[i]);
+			Gods98::Container_RemoveReference(building->cameraNulls[i]);
 			building->cameraNulls[i] = nullptr;
 		}
 	}
 	for (uint32 i = 0; i < BUILDING_MAXTOOLS; i++) {
 		if (building->toolNulls[i]) {
-			//Gods98::Container_RemoveReference(building->toolNulls[i]);
+			Gods98::Container_RemoveReference(building->toolNulls[i]);
 			building->toolNulls[i] = nullptr;
 		}
 	}
@@ -55,17 +55,17 @@ void LegoRR::_Building_RemoveWeaponNulls(BuildingModel* building)
 	for (uint32 i = 0; i < WEAPON_MAXWEAPONS; i++) {
 		for (uint32 j = 0; j < WEAPON_MAXFIRES; j++) {
 			if (building->weapons.fireNullPairs[i][j]) {
-				//Gods98::Container_RemoveReference(building->weapons.fireNullPairs[i][j]);
+				Gods98::Container_RemoveReference(building->weapons.fireNullPairs[i][j]);
 				building->weapons.fireNullPairs[i][j] = nullptr;
 			}
 		}
 
 		if (building->weapons.xPivotNulls[i]) {
-			//Gods98::Container_RemoveReference(building->weapons.xPivotNulls[i]);
+			Gods98::Container_RemoveReference(building->weapons.xPivotNulls[i]);
 			building->weapons.xPivotNulls[i] = nullptr;
 		}
 		if (building->weapons.yPivotNulls[i]) {
-			//Gods98::Container_RemoveReference(building->weapons.yPivotNulls[i]);
+			Gods98::Container_RemoveReference(building->weapons.yPivotNulls[i]);
 			building->weapons.yPivotNulls[i] = nullptr;
 		}
 	}
@@ -235,6 +235,7 @@ bool32 __cdecl LegoRR::Building_SetActivity(BuildingModel* building, const char*
 	/// FIX APPLY: Remove Container references that were being leaked after every SetActivity.
 	/// FIX APPLY: Also remove tool null references, which were originally excluded from being cleared.
 	_Building_RemoveNulls(building);
+	_Building_RemoveWeaponNulls(building);
 
 	bool success = Gods98::Container_SetActivity(building->contAct, activityName);
 	Gods98::Container_SetAnimationTime(building->contAct, elapsed);

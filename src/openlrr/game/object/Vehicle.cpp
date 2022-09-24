@@ -20,27 +20,27 @@ void LegoRR::_Vehicle_RemoveNulls(VehicleModel* vehicle)
 {
 	/// FIXME: Properly remove Container references that were being leaked.
 	if (vehicle->drillNull) {
-		//Gods98::Container_RemoveReference(vehicle->drillNull);
+		Gods98::Container_RemoveReference(vehicle->drillNull);
 		vehicle->drillNull = nullptr;
 	}
 	if (vehicle->depositNull) {
-		//Gods98::Container_RemoveReference(vehicle->depositNull);
+		Gods98::Container_RemoveReference(vehicle->depositNull);
 		vehicle->depositNull = nullptr;
 	}
 	if (vehicle->driverNull) {
-		//Gods98::Container_RemoveReference(vehicle->driverNull);
+		Gods98::Container_RemoveReference(vehicle->driverNull);
 		vehicle->driverNull = nullptr;
 	}
 
 	for (uint32 i = 0; i < VEHICLE_MAXCARRYS; i++) {
 		if (vehicle->carryNulls[i]) {
-			//Gods98::Container_RemoveReference(vehicle->carryNulls[i]);
+			Gods98::Container_RemoveReference(vehicle->carryNulls[i]);
 			vehicle->carryNulls[i] = nullptr;
 		}
 	}
 	for (uint32 i = 0; i < VEHICLE_MAXCAMERAS; i++) {
 		if (vehicle->cameraNulls[i]) {
-			//Gods98::Container_RemoveReference(vehicle->cameraNulls[i]);
+			Gods98::Container_RemoveReference(vehicle->cameraNulls[i]);
 			vehicle->cameraNulls[i] = nullptr;
 		}
 	}
@@ -54,17 +54,17 @@ void LegoRR::_Vehicle_RemoveWeaponNulls(VehicleModel* vehicle)
 	for (uint32 i = 0; i < WEAPON_MAXWEAPONS; i++) {
 		for (uint32 j = 0; j < WEAPON_MAXFIRES; j++) {
 			if (vehicle->weapons.fireNullPairs[i][j]) {
-				//Gods98::Container_RemoveReference(vehicle->weapons.fireNullPairs[i][j]);
+				Gods98::Container_RemoveReference(vehicle->weapons.fireNullPairs[i][j]);
 				vehicle->weapons.fireNullPairs[i][j] = nullptr;
 			}
 		}
 
 		if (vehicle->weapons.xPivotNulls[i]) {
-			//Gods98::Container_RemoveReference(vehicle->weapons.xPivotNulls[i]);
+			Gods98::Container_RemoveReference(vehicle->weapons.xPivotNulls[i]);
 			vehicle->weapons.xPivotNulls[i] = nullptr;
 		}
 		if (vehicle->weapons.yPivotNulls[i]) {
-			//Gods98::Container_RemoveReference(vehicle->weapons.yPivotNulls[i]);
+			Gods98::Container_RemoveReference(vehicle->weapons.yPivotNulls[i]);
 			vehicle->weapons.yPivotNulls[i] = nullptr;
 		}
 	}
@@ -76,7 +76,7 @@ void LegoRR::_Vehicle_RemoveWheelNulls(VehicleModel* vehicle)
 	/// FIXME: Properly remove Container references that were being leaked.
 	for (uint32 i = 0; i < VEHICLE_MAXWHEELS; i++) {
 		if (vehicle->wheelNulls[i]) {
-			//Gods98::Container_RemoveReference(vehicle->wheelNulls[i]);
+			Gods98::Container_RemoveReference(vehicle->wheelNulls[i]);
 			vehicle->wheelNulls[i] = nullptr;
 		}
 	}
@@ -96,11 +96,13 @@ bool32 __cdecl LegoRR::Vehicle_SetActivity(VehicleModel* vehicle, const char* ac
 	MeshLOD_RemoveTargets(vehicle->polyMedium1);
 	/// FIXME: Should we also be calling RemoveTargets for polyMedium2??
 	if (vehicle->polyMedium2 != nullptr) {
-		//MeshLOD_RemoveTargets(vehicle->polyMedium2);
+		MeshLOD_RemoveTargets(vehicle->polyMedium2);
 	}
 
 	/// FIX APPLY: Remove Container references that were being leaked after every SetActivity.
 	_Vehicle_RemoveNulls(vehicle);
+	_Vehicle_RemoveWeaponNulls(vehicle);
+	_Vehicle_RemoveWheelNulls(vehicle);
 
 	bool success2 = false;
 	bool success1 = Gods98::Container_SetActivity(vehicle->contAct1, activityName);
@@ -275,10 +277,10 @@ void __cdecl LegoRR::Vehicle_Remove(VehicleModel* vehicle)
 	for (uint32 i = 0; i < VEHICLE_MAXWHEELS; i++) {
 		// Note: Removing wheel nulls handled by _Vehicle_RemoveWheelNulls.
 		/// CHANGE: Should probably be removing wheel nulls before the container they're likely referencing.
-		if (vehicle->wheelNulls[i]) {
-			Gods98::Container_Remove(vehicle->wheelNulls[i]);
-			vehicle->wheelNulls[i] = nullptr;
-		}
+		//if (vehicle->wheelNulls[i]) {
+		//	Gods98::Container_Remove(vehicle->wheelNulls[i]);
+		//	vehicle->wheelNulls[i] = nullptr;
+		//}
 
 		if (vehicle->contWheels[i]) {
 			Gods98::Container_Remove(vehicle->contWheels[i]);

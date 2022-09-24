@@ -120,11 +120,11 @@ void __cdecl LegoRR::MeshLOD_RemoveTargets(MeshLOD* meshLOD)
 	for (MeshLOD* item = meshLOD; item != nullptr; item = item->next) {
 		/// FIXME: Properly remove Container references that were being leaked.
 		///        This isn't ready yet because it's unclear how to best handle container references.
-		//if (item->contMeshTarget != nullptr) {
-		//	Gods98::Container_RemoveReference(item->contMeshTarget);
-		//	item->contMeshTarget = nullptr;
-		//}
-		item->contMeshTarget = nullptr;
+		if (item->contMeshTarget != nullptr) {
+			Gods98::Container_RemoveReference(item->contMeshTarget);
+			item->contMeshTarget = nullptr;
+		}
+		//item->contMeshTarget = nullptr;
 	}
 }
 

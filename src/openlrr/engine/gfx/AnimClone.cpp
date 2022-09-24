@@ -72,7 +72,7 @@ Gods98::AnimClone* __cdecl Gods98::AnimClone_RegisterLws(Lws_Info* scene, IDirec
 }
 
 // <LegoRR.exe @00489920>
-Gods98::AnimClone* __cdecl Gods98::AnimClone_Make(AnimClone* orig, IDirect3DRMFrame3* parent, OUT uint32* frameCount)
+Gods98::AnimClone* __cdecl Gods98::AnimClone_Make(AnimClone* orig, IDirect3DRMFrame3* parent, OPTIONAL OUT uint32* frameCount)
 {
 	AnimClone* clone = (AnimClone*)Mem_Alloc(sizeof(AnimClone));
 

@@ -33,6 +33,9 @@ extern IID & IID_IDirect3DRMMeshBuilder2;
 // {eb16cb09-d271-11ce-ac48-0000c03825a1}
 // <LegoRR.exe @004a0a18>
 extern IID & IID_IDirect3DRMTexture;
+// {eb16cb0b-d271-11ce-ac48-0000c03825a1}
+// <LegoRR.exe @004a0a58>
+extern IID & IID_IDirect3DRMMaterial;
 // {59163de0-6d43-11cf-ac4a-0000c03825a1}
 // <LegoRR.exe @004a0b48>
 extern IID & IID_IDirect3DRMUserVisual;

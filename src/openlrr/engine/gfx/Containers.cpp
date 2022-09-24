@@ -53,6 +53,57 @@ Gods98::Container_ListSet Gods98::containerListSet = Gods98::Container_ListSet(G
 
 #pragma region Functions
 
+/// CUSTOM:
+bool32 __cdecl Gods98::_Container_RemoveChildReferenceCallback(IDirect3DRMFrame3* frame, void* data)
+{
+	Container* currOwner = Container_Frame_GetOwner(frame);
+	if (currOwner != nullptr && currOwner->type == Container_Type::Reference) {
+		/*char frameName[4096] = {'\0'};
+		DWORD len = 0;
+		frame->GetName(&len, frameName);
+
+		//const char* frameName = Container_Frame_GetName(frame);
+		char nameBuff[4096] = { '\0' };
+		if (frameName && len > 0) {
+			std::strcat(nameBuff, " to \"");
+			std::strcat(nameBuff, frameName);
+			std::strcat(nameBuff, "\"");
+		}
+		char* dataName = (char*)data;
+		if (dataName) {
+			std::strcat(nameBuff, " for \"");
+			std::strcat(nameBuff, dataName);
+			std::strcat(nameBuff, "\"");
+		}
+		Error_DebugF("Removing: Child Reference%s\n", nameBuff);*/
+
+
+		// Unlike Container_Remove(Reference), this will immediately kill the reference.
+		Container_Remove2(currOwner, true);
+	}
+	return false;
+}
+
+/// CUSTOM: Removes the Container only if it's a reference type.
+bool Gods98::Container_RemoveReference(Container* dead)
+{
+	if (dead->type == Container_Type::Reference) {
+		Container_Remove(dead);
+		return true; // This was a reference type.
+	}
+	return false;
+}
+
+/// CUSTOM: Gets the string representation of the container type.
+const char* Gods98::Container_GetTypeName(Container_Type type)
+{
+	static constexpr const auto TYPE_NAMES = array_of<const char*>("Invalid", "Null", "Mesh", "Frame", "Anim", "FromActivity", "Light", "Reference", "LWS", "LWO", "Count");
+
+	return TYPE_NAMES[static_cast<sint32>(type) + 1];
+}
+
+
+
 // <inlined>
 /*__inline*/ uint32 __cdecl Gods98::Container_GetRGBAColour(real32 r, real32 g, real32 b, real32 a)
 {
@@ -278,16 +329,48 @@ void __cdecl Gods98::Container_Remove2(Container* dead, bool32 kill)
 
 	if (dead->type != Container_Type::Reference) Container_SetParent(dead, nullptr);		// Unparent it first...
 
+	/// FIX APPLY: Remove container references that were being leaked.
+	///            This is a sort-of jank solution, because it assumes that other callers
+	///             know to dispose of references first, or to just nullify them.
+	if (dead->type != Container_Type::Reference) {
+		Container_Frame_WalkTree(dead->masterFrame,   0, _Container_RemoveChildReferenceCallback, const_cast<char*>("masterFrame"));
+		Container_Frame_WalkTree(dead->activityFrame, 0, _Container_RemoveChildReferenceCallback, const_cast<char*>("activityFrame"));
+		Container_Frame_WalkTree(dead->hiddenFrame,   0, _Container_RemoveChildReferenceCallback, const_cast<char*>("hiddenFrame"));
+	}
+
 	if (dead->type == Container_Type::FromActivity || dead->type == Container_Type::Anim) {
 
 		if (dead->cloneData) {
 			if (kill) {
-				if (dead->cloneData->cloneTable) Mem_Free(dead->cloneData->cloneTable);
+				if (dead->cloneData->cloneTable) {
+					Mem_Free(dead->cloneData->cloneTable);
+					dead->cloneData->cloneTable = nullptr;
+				}
 				Mem_Free(dead->cloneData);
+				dead->cloneData = nullptr;
 			}
 			else {
 				dead->cloneData->used = false;
 				return;
+			}
+		}
+	}
+	else if (dead->type == Container_Type::Reference) {
+		/// CUSTOM: Track reference counts to reference containers.
+		if (dead->cloneData) {
+			dead->cloneData->cloneCount--;
+
+			if (kill || dead->cloneData->cloneCount == 0) {
+				// Reference is dead.
+				if (dead->cloneData->cloneTable) {
+					Mem_Free(dead->cloneData->cloneTable);
+					dead->cloneData->cloneTable = nullptr;
+				}
+				Mem_Free(dead->cloneData);
+				dead->cloneData = nullptr;
+			}
+			else {
+				return; // Reference is still used.
 			}
 		}
 	}
@@ -521,12 +604,11 @@ Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, co
 					conf = Config_GetNextItem(conf);
 				}
 
+				std::sprintf(tempString, "%s%s%s", containerGlobs.gameName, CONFIG_SEPARATOR, CONTAINER_SCALESTRING);
+				scale = Config_GetRealValue(rootConf, tempString);
+				if (scale != 0.0f) cont->activityFrame->AddScale(D3DRMCOMBINE_REPLACE, scale, scale, scale);
 			}
 			else Error_Fatal(true, Error_Format("Cannot Find Activity List %s", tempString));
-
-			std::sprintf(tempString, "%s%s%s", containerGlobs.gameName, CONFIG_SEPARATOR, CONTAINER_SCALESTRING);
-			scale = Config_GetRealValue(rootConf, tempString);
-			if (scale != 0.0f) cont->activityFrame->AddScale(D3DRMCOMBINE_REPLACE, scale, scale, scale);
 
 			Config_Free(rootConf);
 		}
@@ -658,9 +740,11 @@ bool32 __cdecl Gods98::Container_IsCurrentActivity(Container* cont, const char* 
 // <LegoRR.exe @00473630>
 bool32 __cdecl Gods98::Container_SetActivity(Container* cont, const char* actname)
 {
-	IDirect3DRMFrame3* frame, * currFrame;
+	IDirect3DRMFrame3* frame;
+	IDirect3DRMFrame3* currFrame;
 	bool32 result = false;
-	char* currAnimName, * name, * freeAddr = nullptr;
+	char* currAnimName;
+	char* freeAddr = nullptr;
 
 	Container_DebugCheckOK(cont);
 
@@ -670,6 +754,9 @@ bool32 __cdecl Gods98::Container_SetActivity(Container* cont, const char* actnam
 				if (cont->typeData->name != nullptr) {
 					currAnimName = cont->typeData->name;
 					if (currFrame = Container_Frame_Find(cont, currAnimName, false)) {
+						
+						// Remove references to frames that are about to become unreachable or leaked.
+						Container_Frame_WalkTree(currFrame, 0, _Container_RemoveChildReferenceCallback, currAnimName);
 
 						Container_Frame_SafeAddChild(cont->hiddenFrame, currFrame);
 
@@ -680,8 +767,7 @@ bool32 __cdecl Gods98::Container_SetActivity(Container* cont, const char* actnam
 			}
 
 			Container_Frame_SafeAddChild(cont->activityFrame, frame);
-			name = (char*)Mem_Alloc(std::strlen(actname) + 1);
-			std::strcpy(name, actname);
+			char* name = Util_StrCpy(actname);
 			Container_SetTypeData(cont, name, nullptr, nullptr, nullptr);
 
 			result = true;
@@ -907,7 +993,8 @@ Gods98::Container* __cdecl Gods98::Container_Clone(Container* orig)
 				cont = useOldClone;
 				Container_SetParent(cont, Container_GetParent(orig));
 				Container_SetAnimationTime(cont, 0.0f);
-				Error_Debug(Error_Format("Reusing freed clone\n"));
+				Error_DebugF("Reusing freed clone %i\n", useOldClone->cloneData->cloneNumber);
+				loadRef = useOldClone->cloneData->cloneNumber;
 			}
 			else {
 				cont = Container_Create(Container_GetParent(orig));
@@ -1140,7 +1227,14 @@ Gods98::Container* __cdecl Gods98::Container_SearchTree(Container* root, const c
 #endif // CONTAINER_MATCHHIDDENHIERARCHY
 
 	if (mode == Container_SearchMode::FirstMatch || mode == Container_SearchMode::NthMatch) {
-		if (search.resultFrame) return Container_Frame_GetContainer(search.resultFrame);
+		if (search.resultFrame) {
+			//const bool creatingRef = (Container_Frame_GetOwner(search.resultFrame) == nullptr);
+			Container* result = Container_Frame_GetContainer(search.resultFrame);
+			//if (creatingRef) {
+			//	Error_DebugF("Creating: Search Reference to %s for \"%s\"\n", Container_GetTypeName(root->type), name);
+			//}
+			return result;
+		}
 	}
 	else if (mode == Container_SearchMode::MatchCount) *count = search.count;
 
@@ -2826,7 +2920,11 @@ Gods98::Container* __cdecl Gods98::Container_GetParent(Container* child)
 	childFrame->GetParent(&parentFrame);
 
 	if (parentFrame) {
+		//const bool creatingRef = (Container_Frame_GetOwner(parentFrame) == nullptr);
 		parent = Container_Frame_GetContainer(parentFrame);
+		//if (creatingRef) {
+		//	Error_DebugF("Creating: Parent Reference to %s\n", Container_GetTypeName(child->type));
+		//}
 		parentFrame->Release();
 	}
 	else parent = nullptr;
@@ -2914,6 +3012,12 @@ Gods98::Container* __cdecl Gods98::Container_Frame_GetContainer(IDirect3DRMFrame
 
 			cont->type = Container_Type::Reference;
 
+			/// CUSTOM: Store number of references to reference containers.
+			cont->cloneData = (Container_CloneData*)Mem_Alloc(sizeof(Container_CloneData));
+			std::memset(cont->cloneData, 0, sizeof(Container_CloneData));
+			cont->cloneData->cloneCount = 1;
+			cont->cloneData->used = true;
+
 			frame->AddDestroyCallback(Container_Frame_ReferenceDestroyCallback, nullptr);
 
 			Container_Frame_SetAppData(frame, cont, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -2921,6 +3025,12 @@ Gods98::Container* __cdecl Gods98::Container_Frame_GetContainer(IDirect3DRMFrame
 		}
 		else Error_Warn(true, "Couldn't create Container to surround frame");
 
+	}
+	else if (cont->type == Container_Type::Reference) {
+		/// CUSTOM: Store reference count to reference containers.
+		if (cont->cloneData) {
+			cont->cloneData->cloneCount++; // +1 reference to container.
+		}
 	}
 
 	return cont;
@@ -3495,8 +3605,9 @@ Gods98::AnimClone* __cdecl Gods98::Container_LoadAnimSet(const char* fname, IDir
 		if (scene = Lws_Parse(file, looping)) {
 			Lws_LoadMeshes(scene, frame);
 			Lws_SetTime(scene, 0.0f);
-			if (frameCount) *frameCount = Lws_GetFrameCount(scene);
-			animClone = AnimClone_RegisterLws(scene, frame, *frameCount);
+			const uint32 lwsFrameCount = Lws_GetFrameCount(scene);
+			if (frameCount) *frameCount = lwsFrameCount;
+			animClone = AnimClone_RegisterLws(scene, frame, lwsFrameCount);
 		}
 		else Error_Warn(true, "Cannot load file");
 

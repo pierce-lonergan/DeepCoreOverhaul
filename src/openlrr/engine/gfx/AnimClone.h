@@ -90,7 +90,7 @@ AnimClone* __cdecl AnimClone_Register(IDirect3DRMAnimationSet2* animSet, IDirect
 AnimClone* __cdecl AnimClone_RegisterLws(Lws_Info* scene, IDirect3DRMFrame3* root, uint32 frameCount);
 
 // <LegoRR.exe @00489920>
-AnimClone* __cdecl AnimClone_Make(AnimClone* orig, IDirect3DRMFrame3* parent, OUT uint32* frameCount);
+AnimClone* __cdecl AnimClone_Make(AnimClone* orig, IDirect3DRMFrame3* parent, OPTIONAL OUT uint32* frameCount);
 
 // <LegoRR.exe @00489a10>
 void __cdecl AnimClone_Remove(AnimClone* dead);

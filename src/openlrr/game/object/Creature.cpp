@@ -17,29 +17,29 @@ void LegoRR::_Creature_RemoveNulls(CreatureModel* creature)
 {
 	/// FIXME: Properly remove Container references that were being leaked.
 	if (creature->drillNull) {
-		//Gods98::Container_RemoveReference(creature->drillNull);
+		Gods98::Container_RemoveReference(creature->drillNull);
 		creature->drillNull = nullptr;
 	}
 	if (creature->footStepNull) {
-		//Gods98::Container_RemoveReference(creature->footStepNull);
+		Gods98::Container_RemoveReference(creature->footStepNull);
 		creature->footStepNull = nullptr;
 	}
 	if (creature->carryNull) {
-		//Gods98::Container_RemoveReference(creature->carryNull);
+		Gods98::Container_RemoveReference(creature->carryNull);
 		creature->carryNull = nullptr;
 	}
 	if (creature->throwNull) {
-		//Gods98::Container_RemoveReference(creature->throwNull);
+		Gods98::Container_RemoveReference(creature->throwNull);
 		creature->throwNull = nullptr;
 	}
 	if (creature->depositNull) {
-		//Gods98::Container_RemoveReference(creature->depositNull);
+		Gods98::Container_RemoveReference(creature->depositNull);
 		creature->depositNull = nullptr;
 	}
 
 	for (uint32 i = 0; i < CREATURE_MAXCAMERAS; i++) {
 		if (creature->cameraNulls[i]) {
-			//Gods98::Container_RemoveReference(creature->cameraNulls[i]);
+			Gods98::Container_RemoveReference(creature->cameraNulls[i]);
 			creature->cameraNulls[i] = nullptr;
 		}
 	}

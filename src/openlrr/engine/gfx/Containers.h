@@ -476,6 +476,17 @@ extern Container_ListSet containerListSet;
 
 #pragma region Functions
 
+/// CUSTOM:
+bool32 __cdecl _Container_RemoveChildReferenceCallback(IDirect3DRMFrame3* frame, void* data);
+
+/// CUSTOM: Removes the Container only if it's a reference type.
+bool Container_RemoveReference(Container* dead);
+
+/// CUSTOM: Gets the string representation of the container type.
+const char* Container_GetTypeName(Container_Type type);
+
+
+
 // <inlined>
 /*__inline*/ uint32 __cdecl Container_GetRGBAColour(real32 r, real32 g, real32 b, real32 a);
 

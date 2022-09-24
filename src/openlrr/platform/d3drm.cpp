@@ -29,6 +29,9 @@ IID & Idl::IID_IDirect3DRMMeshBuilder2 = *(IID*)0x004a09c8;
 // {eb16cb09-d271-11ce-ac48-0000c03825a1}
 // <LegoRR.exe @004a0a18>
 IID & Idl::IID_IDirect3DRMTexture = *(IID*)0x004a0a18;
+// {eb16cb0b-d271-11ce-ac48-0000c03825a1}
+// <LegoRR.exe @004a0a58>
+IID & Idl::IID_IDirect3DRMMaterial = *(IID*)0x004a0a58;
 // {59163de0-6d43-11cf-ac4a-0000c03825a1}
 // <LegoRR.exe @004a0b48>
 IID & Idl::IID_IDirect3DRMUserVisual = *(IID*)0x004a0b48;
