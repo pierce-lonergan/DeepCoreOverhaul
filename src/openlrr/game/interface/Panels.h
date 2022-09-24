@@ -156,6 +156,13 @@ extern Panel_Globs & panelGlobs;
 
 #pragma region Functions
 
+/// CUSTOM: Hook function to overwrite Panel maximum radarmap zoom level.
+void Panel_RadarMap_ZoomIn(real32 elapsedInterface);
+
+/// CUSTOM: Hook function to overwrite Panel minimum radarmap zoom level.
+void Panel_RadarMap_ZoomOut(real32 elapsedInterface);
+
+
 // <inlined>
 __inline bool32 Panel_AirMeter_IsOxygenLow(void) { return panelGlobs.airMeterOxygenLow; }
 

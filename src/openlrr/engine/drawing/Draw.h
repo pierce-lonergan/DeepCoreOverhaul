@@ -28,6 +28,16 @@ namespace Gods98
 {; // !<---
 
 /**********************************************************************************
+ ******** Forward Declarations
+ **********************************************************************************/
+
+#pragma region Forward Declarations
+
+struct Viewport; // from `engine/gfx/Viewports.h`
+
+#pragma endregion
+
+/**********************************************************************************
  ******** Function Typedefs
  **********************************************************************************/
 
@@ -43,7 +53,8 @@ typedef void (__cdecl* DrawPixelFunc)(sint32 x, sint32 y, uint32 value);
 
 #pragma region Constants
 
-#define DRAW_MAXLINES				200
+// Max has been removed, lines are allocated for each function call.
+//#define DRAW_MAXLINES				200
 
 #pragma endregion
 
@@ -142,10 +153,10 @@ extern Draw_Globs & drawGlobs;
 #pragma endregion
 
 /**********************************************************************************
- ******** Functions
+ ******** Macros
  **********************************************************************************/
 
-#pragma region Functions
+#pragma region Macros
 
 #define Draw_PixelList(p,c,r,g,b)					Draw_PixelListEx((p),(c),(r),(g),(b),Gods98::DrawEffect::None)
 #define Draw_LineList(f,t,c,r,g,b)					Draw_LineListEx((f),(t),(c),(r),(g),(b),Gods98::DrawEffect::None)
@@ -162,6 +173,14 @@ extern Draw_Globs & drawGlobs;
 //#define Draw_WorldLineListHalfTrans(v,f,t,c,r,g,b,a)	Draw_WorldLineListEx((v),(f),(t),(c),(r),(g),(b),(a),Gods98::DrawEffect::HalfTrans)
 #define Draw_RectListHalfTrans(a,c,r,g,b)			Draw_RectListEx((a),(c),(r),(g),(b),Gods98::DrawEffect::HalfTrans)
 
+#pragma endregion
+
+/**********************************************************************************
+ ******** Functions
+ **********************************************************************************/
+
+#pragma region Functions
+
 /// CUSTOM: Gets if the Draw module rendering is enabled.
 bool Draw_IsRenderEnabled();
 
@@ -177,6 +196,12 @@ bool Draw_Begin();
 
 /// CUSTOM: Unlocks the drawing surface after Draw_Begin() was called.
 void Draw_End();
+
+/// CUSTOM: Gets the absolute scale at which pixels are drawn at.
+sint32 Draw_GetScale();
+
+/// CUSTOM: Sets the scale at which pixels are drawn at. 0 defaults to Main_Scale. Returns the absolute scale assigned.
+sint32 Draw_SetScale(sint32 scale, bool relative);
 
 /// CUSTOM: Gets the current effect while the drawing surface has been locked with Draw_Begin().
 DrawEffect Draw_GetEffect();
@@ -196,6 +221,9 @@ void __cdecl Draw_SetClipWindow(const Area2F* window);
 
 // <LegoRR.exe @00486270>
 void __cdecl Draw_GetClipWindow(OUT Area2F* window);
+
+// <unused>
+void __cdecl Draw_WorldLineListEx(Viewport* vp, const Vector3F* fromList, const Vector3F* toList, uint32 count, real32 r, real32 g, real32 b, real32 a, DrawEffect effect);
 
 // <unused>
 void __cdecl Draw_PixelListEx(const Point2F* pointList, uint32 count, real32 r, real32 g, real32 b, DrawEffect effect);
@@ -232,6 +260,9 @@ bool32 __cdecl Draw_SetDrawPixelFunc(DrawEffect effect);
 // also see: <https://github.com/trigger-segfault/AsciiArtist/blob/75c75467d4f5fa2da02c1ba9712deb16529bbbde/PowerConsoleLib/PowerConsole/Drawing/Graphics.cpp#L459-L499>
 // <LegoRR.exe @004869e0>
 void __cdecl Draw_LineActual(sint32 x1, sint32 y1, sint32 x2, sint32 y2, uint32 colour);
+
+/// CUSTOM: Function to wrap around calling drawPixelFunc. Also performs bounds checking.
+void _Draw_DrawPixel(sint32 x, sint32 y, uint32 value);
 
 /// CUSTOM:
 uint32 _Draw_ConvertHalfTrans(uint32 pixel, uint32 value);

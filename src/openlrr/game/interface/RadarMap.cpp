@@ -97,6 +97,9 @@ static constexpr const ColourRGBF RADARMAP_UNHANDLED_HIDDENCOLOUR = { 1.0f, 1.0f
 // <LegoRR.exe @004a9f28>
 LegoRR::RadarMap_Globs & LegoRR::radarmapGlobs = *(LegoRR::RadarMap_Globs*)0x004a9f28;
 
+// Allocated size of drawRects array.
+static uint32 _radarMapCurrMaxDrawRects = 0;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -112,6 +115,44 @@ LegoRR::RadarMap_Globs & LegoRR::radarmapGlobs = *(LegoRR::RadarMap_Globs*)0x004
  **********************************************************************************/
 
 #pragma region Functions
+
+/// CUSTOM: Gets the drawing API scale used by the radar map.
+sint32 LegoRR::RadarMap_GetDrawScale()
+{
+	return Gods98::Main_RadarMapScale();
+}
+
+/// CUSTOM: Assigns the drawing API scale used by the radar map.
+void LegoRR::RadarMap_ApplyDrawScale()
+{
+	Gods98::Draw_SetScale(RadarMap_GetDrawScale(), false);
+}
+
+/// CUSTOM: Gets the scale that radar screen points are transformed by.
+real32 LegoRR::_RadarMap_GetTransformScale()
+{
+	return static_cast<real32>(Gods98::Main_RenderScale()) / RadarMap_GetDrawScale();
+}
+
+const Area2F* LegoRR::_RadarMap_ScaledScreenRect(const RadarMap* radarMap)
+{
+	static Area2F rect = { 0.0f };
+	rect = radarMap->screenRect;
+
+	rect.x      *= _RadarMap_GetTransformScale();
+	rect.y      *= _RadarMap_GetTransformScale();
+	rect.width  *= _RadarMap_GetTransformScale();
+	rect.height *= _RadarMap_GetTransformScale();
+
+	return &rect;
+}
+
+real32 LegoRR::_RadarMap_ScaledZoom(const RadarMap* radarMap)
+{
+	return (radarMap->zoom * _RadarMap_GetTransformScale());
+}
+
+
 
 /// CUSTOM:
 void LegoRR::RadarMap_ClearHighlightBlock()
@@ -212,7 +253,7 @@ void __cdecl LegoRR::RadarMap_DrawSurveyDotCircle(RadarMap* radarMap, const Poin
 	Area2F oldClipWindow;
 	Gods98::Draw_GetClipWindow(&oldClipWindow);
 
-	Gods98::Draw_SetClipWindow(&radarMap->screenRect);
+	Gods98::Draw_SetClipWindow(_RadarMap_ScaledScreenRect(radarMap));
 
 	// This uses TransformRect for a circle, because it gets the same results that are needed.
 	Area2F rect = {
@@ -241,7 +282,7 @@ void __cdecl LegoRR::RadarMap_Draw(RadarMap* radarMap, const Point2F* centerPos)
 {
 	Area2F oldClipWindow = { 0.0f }; // dummy init
 	Gods98::Draw_GetClipWindow(&oldClipWindow);
-	Gods98::Draw_SetClipWindow(&radarMap->screenRect);
+	Gods98::Draw_SetClipWindow(_RadarMap_ScaledScreenRect(radarMap));
 
 	radarMap->centerPos = *centerPos;
 
@@ -249,26 +290,30 @@ void __cdecl LegoRR::RadarMap_Draw(RadarMap* radarMap, const Point2F* centerPos)
 	Point2F reinforceListTo[200] = { 0.0f }; // dummy init
 	Point2F reinforceListFrom[200] = { 0.0f }; // dummy init
 
-	/// CHANGE: Allocate rectList because it takes up way too much stack space.
-	uint32 blockCount = 0;
-	Gods98::Draw_Rect* rectList = static_cast<Gods98::Draw_Rect*>(Gods98::Mem_Alloc(RADARMAP_MAXDRAWRECTS * sizeof(Gods98::Draw_Rect)));
-	//Gods98::Draw_Rect rectList[RADARMAP_MAXDRAWRECTS] = { 0 }; // dummy init
-
 	const Vector3F worldRadius = {
-		((radarMap->screenRect.width  * 0.5f) * (radarMap->blockSize / radarMap->zoom)),
-		((radarMap->screenRect.height * 0.5f) * (radarMap->blockSize / radarMap->zoom)),
+		((radarMap->screenRect.width  * _RadarMap_GetTransformScale() * 0.5f) * (radarMap->blockSize / _RadarMap_ScaledZoom(radarMap))),
+		((radarMap->screenRect.height * _RadarMap_GetTransformScale() * 0.5f) * (radarMap->blockSize / _RadarMap_ScaledZoom(radarMap))),
 	};
-	
 	// Probably function to get block coordinates unbounded.
 	Point2I blockStart = { 0 }, blockEnd = { 0 }; // dummy inits
 	Map3D_FUN_0044fad0(radarMap->map, centerPos->x - worldRadius.x, centerPos->y + worldRadius.y, &blockStart.x, &blockStart.y);
 	Map3D_FUN_0044fad0(radarMap->map, centerPos->x + worldRadius.x, centerPos->y - worldRadius.y, &blockEnd.x, &blockEnd.y);
 
+	/// FIX APPLY: Allocate array that always has room for at least gridSize blocks.
+	const sint32 gridWidth  = blockEnd.x - blockStart.x + 1;
+	const sint32 gridHeight = blockEnd.y - blockStart.y + 1;
+	const uint32 rectCount = static_cast<uint32>(std::max(RADARMAP_MAXDRAWRECTS, (gridWidth + gridHeight)));
+	_radarMapCurrMaxDrawRects = rectCount;
+	/// CHANGE: Allocate rectList because it takes up way too much stack space.
+	uint32 blockCount = 0;
+	Gods98::Draw_Rect* rectList = static_cast<Gods98::Draw_Rect*>(Gods98::Mem_Alloc(rectCount * sizeof(Gods98::Draw_Rect)));
+	//Gods98::Draw_Rect rectList[RADARMAP_MAXDRAWRECTS] = { 0 }; // dummy init
+
 
 	for (sint32 by = blockStart.y; by <= blockEnd.y; by++) {
 		for (sint32 bx = blockStart.x; bx <= blockEnd.x; bx++) {
 			/// SANITY: It's not possible to hit the block limit based on the hardcoded dimensions, but bounds check anyway.
-			if (blockCount >= RADARMAP_MAXDRAWRECTS)
+			if (blockCount >= rectCount) //RADARMAP_MAXDRAWRECTS)
 				break;
 
 			Gods98::Draw_Rect* drawRect = &rectList[blockCount];
@@ -519,7 +564,7 @@ bool32 __cdecl LegoRR::RadarMap_Callback_AddObjectDrawRect(LegoObject* liveObj, 
 	RadarMap* radarMap = static_cast<RadarMap*>(pRadarMap);
 
 	/// FIX APPLY: Bounds check max draw rects.
-	if (radarMap->drawRectCount >= RADARMAP_MAXDRAWRECTS)
+	if (radarMap->drawRectCount >= _radarMapCurrMaxDrawRects) //RADARMAP_MAXDRAWRECTS)
 		return false;
 
 	if (!RadarMap_CanShowObject(liveObj))
@@ -529,28 +574,32 @@ bool32 __cdecl LegoRR::RadarMap_Callback_AddObjectDrawRect(LegoObject* liveObj, 
 	LegoObject_GetPosition(liveObj, &wPos.x, &wPos.y);
 
 	if (RadarMap_InsideRadarWorld(radarMap, &wPos)) {
+		Gods98::Draw_Rect* drawRect = &radarMap->drawRectList[radarMap->drawRectCount];
+
 		real32 size;
 		if (liveObj->type == LegoObject_PowerCrystal || liveObj->type == LegoObject_Ore) {
 			// Resource.
-			radarMap->drawRectList[radarMap->drawRectCount].colour = radarmapGlobs.colourTable[Radar_Colour::Resource];
+			drawRect->colour = radarmapGlobs.colourTable[Radar_Colour::Resource];
 			size = (1.0f / 4.0f); // Smaller size than friendly/monster units.
 		}
 		else if (liveObj->type == LegoObject_RockMonster) {
 			// Monster unit.
-			radarMap->drawRectList[radarMap->drawRectCount].colour = radarmapGlobs.colourTable[Radar_Colour::EnemyUnit];
+			drawRect->colour = radarmapGlobs.colourTable[Radar_Colour::EnemyUnit];
 			size = (1.0f / 3.0f);
 		}
 		else {
 			// Friendly unit (Vehicle, MiniFigure, ElectricFence).
-			radarMap->drawRectList[radarMap->drawRectCount].colour = radarmapGlobs.colourTable[Radar_Colour::FriendlyUnit];
+			drawRect->colour = radarmapGlobs.colourTable[Radar_Colour::FriendlyUnit];
 			size = (1.0f / 3.0f);
 		}
-		radarMap->drawRectList[radarMap->drawRectCount].rect.x = wPos.x - (size * 0.5f) * radarMap->blockSize;
-		radarMap->drawRectList[radarMap->drawRectCount].rect.y = wPos.y + (size * 0.5f) * radarMap->blockSize;
-		radarMap->drawRectList[radarMap->drawRectCount].rect.width  = size * radarMap->blockSize;
-		radarMap->drawRectList[radarMap->drawRectCount].rect.height = size * radarMap->blockSize;
 
-		RadarMap_TransformRect(radarMap, &radarMap->drawRectList[radarMap->drawRectCount].rect);
+		drawRect->rect.x = wPos.x - (size * 0.5f) * radarMap->blockSize;
+		drawRect->rect.y = wPos.y + (size * 0.5f) * radarMap->blockSize;
+		/// CHANGE: Use minimum size of 1 pixel so that units are always visible.
+		drawRect->rect.width  = std::max(1.0f, size * radarMap->blockSize);
+		drawRect->rect.height = std::max(1.0f, size * radarMap->blockSize);
+
+		RadarMap_TransformRect(radarMap, &drawRect->rect);
 
 		radarMap->drawRectCount++;
 	}
@@ -584,8 +633,8 @@ bool32 __cdecl LegoRR::RadarMap_ScreenToWorldBlockPos(RadarMap* radarMap, uint32
 		Point2F wPos = Point2F { 0.0f, 0.0f };
 		if (radarMap->zoom != 0.0f) {
 			wPos = Point2F {
-				radarMap->centerPos.x - (((radarMap->screenRect.x + centerX) - mouseX) * (radarMap->blockSize / radarMap->zoom)),
-				radarMap->centerPos.y + (((radarMap->screenRect.y + centerY) - mouseY) * (radarMap->blockSize / radarMap->zoom)),
+				radarMap->centerPos.x - (((radarMap->screenRect.x + centerX) - mouseX) * _RadarMap_GetTransformScale() * (radarMap->blockSize / _RadarMap_ScaledZoom(radarMap))),
+				radarMap->centerPos.y + (((radarMap->screenRect.y + centerY) - mouseY) * _RadarMap_GetTransformScale() * (radarMap->blockSize / _RadarMap_ScaledZoom(radarMap))),
 			};
 		}
 
@@ -653,14 +702,14 @@ void __cdecl LegoRR::RadarMap_TransformRect(const RadarMap* radarMap, IN OUT Are
 	Gods98::Maths_Vector2DSubtract(&rect->point, &rect->point, &radarMap->centerPos);
 
 	// rect *= (zoom / blockSize);
-	const real32 scalar = (radarMap->zoom / radarMap->blockSize);
+	const real32 scalar = (_RadarMap_ScaledZoom(radarMap) / radarMap->blockSize);
 	Gods98::Maths_Vector2DScale(&rect->point, &rect->point, scalar);
 	Gods98::Maths_Vector2DScale(&rect->size.vec2, &rect->size.vec2, scalar);
 
 	// Move position from transformed origin to relative to the screen center.
 	// rect.point = screenRect.point + (screenRect.size * 0.5f) + {rect.x, -rect.y}
-	rect->x = (radarMap->screenRect.x + (radarMap->screenRect.width  * 0.5f)) + rect->x;
-	rect->y = (radarMap->screenRect.y + (radarMap->screenRect.height * 0.5f)) - rect->y;
+	rect->x = (radarMap->screenRect.x + (radarMap->screenRect.width  * 0.5f)) * _RadarMap_GetTransformScale() + rect->x;
+	rect->y = (radarMap->screenRect.y + (radarMap->screenRect.height * 0.5f)) * _RadarMap_GetTransformScale() - rect->y;
 }
 
 // <LegoRR.exe @0045eca0>

@@ -4,6 +4,7 @@
 #include "../drawing/DirectDraw.h"
 #include "../drawing/Draw.h"
 #include "../core/Files.h"
+#include "../Main.h"
 
 #include "Movie.hpp"
 #include "Movie.h"
@@ -174,8 +175,15 @@ bool Gods98::G98CMovie::Update(real32 speed, const Rect2I* destRect)
 		return false;
 	}
 
+	Rect2I destRect2 = *destRect;
+	destRect2.left   *= Main_RenderScale();
+	destRect2.top    *= Main_RenderScale();
+	destRect2.right  *= Main_RenderScale();
+	destRect2.bottom *= Main_RenderScale();
+
+	// Note: Draw_AssertUnlocked is in Movie_Update
 	// Copy from draw surface to render surface.
-	HRESULT r = this->m_bSurf->Blt(const_cast<RECT*>((const RECT*)destRect), this->m_surf, nullptr, DDBLT_WAIT /*0x1000000*/, nullptr);
+	HRESULT r = this->m_bSurf->Blt(reinterpret_cast<RECT*>(const_cast<Rect2I*>(&destRect2)), this->m_surf, nullptr, DDBLT_WAIT, nullptr);
 	return (r == DD_OK);
 }
 

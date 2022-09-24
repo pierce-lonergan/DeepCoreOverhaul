@@ -370,11 +370,14 @@ bool Gods98::Flic_Animate2(Flic* fsp, OPTIONAL const Area2F* destArea, uint32 ad
 			static_cast<sint32>(static_cast<uint32>(destArea->x) + static_cast<uint32>(destArea->width)),
 			static_cast<sint32>(static_cast<uint32>(destArea->y) + static_cast<uint32>(destArea->height)),
 		};
+		destRect.left   *= Main_RenderScale();
+		destRect.top    *= Main_RenderScale();
+		destRect.right  *= Main_RenderScale();
+		destRect.bottom *= Main_RenderScale();
+
 		RECT* dest = &destRect;
 
-		DDBLTFX ddBltFx;
-		//::ZeroMemory(&ddBltFx, sizeof(DDBLTFX));
-		std::memset(&ddBltFx, 0, sizeof(DDBLTFX));
+		DDBLTFX ddBltFx = { 0 };
 		ddBltFx.dwSize = sizeof(DDBLTFX);
 		ddBltFx.dwFillColor = 0xff00;
 

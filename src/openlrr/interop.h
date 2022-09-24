@@ -89,6 +89,10 @@ bool interop_hook_LegoRR_Water(void);
 bool interop_hook_LegoRR_Weapons(void);
 #pragma endregion
 
+#pragma region LegoRR Game Special Hooks
+bool interop_hook_replace_LegoRR_PanelRadarMapZoom(void);
+#pragma endregion
+
 #pragma region Hook All
 bool interop_hook_all(void);
 #pragma endregion

@@ -319,8 +319,8 @@ bool32 __cdecl Gods98::DirectDraw_Setup(bool32 fullscreen, const Graphics_Driver
 							desc.ddsCaps.dwCaps &= ~DDSCAPS_PRIMARYSURFACE;
 							desc.ddsCaps.dwCaps |= DDSCAPS_OFFSCREENPLAIN;
 							desc.dwFlags |= DDSD_HEIGHT | DDSD_WIDTH;
-							desc.dwWidth  = width;
-							desc.dwHeight = height;
+							desc.dwWidth  = width  * Main_RenderScale();
+							desc.dwHeight = height * Main_RenderScale();
 							r = directDrawGlobs.lpDirectDraw->CreateSurface(&desc, &directDrawGlobs.bSurf, nullptr);
 						} else {
 							DDSCAPS2 ddscaps;
@@ -331,7 +331,7 @@ bool32 __cdecl Gods98::DirectDraw_Setup(bool32 fullscreen, const Graphics_Driver
 						
 						if (r == DD_OK) {
 							if (DirectDraw_CreateClipper(fullscreen, width, height)) {
-								if (Graphics_SetupDirect3D(device, ddraw1, directDrawGlobs.bSurf, fullscreen)) {
+								if (Graphics_SetupDirect3D(device, ddraw1, DirectDraw_bSurf(), fullscreen)) {
 
 									// Everything went OK, so tidy up and return
 									ddraw1->Release();
@@ -371,7 +371,7 @@ void __cdecl Gods98::DirectDraw_Flip(void)
 
 	Draw_AssertUnlocked("DirectDraw_Flip");
 	if (directDrawGlobs.fullScreen) {
-		HRESULT r = directDrawGlobs.fSurf->Flip(nullptr, DDFLIP_WAIT);
+		HRESULT r = DirectDraw_fSurf()->Flip(nullptr, DDFLIP_WAIT);
 		Error_Fatal(r == DDERR_SURFACELOST, "Surface lost");
 	}
 	else DirectDraw_BlitBuffers();
@@ -433,7 +433,7 @@ void __cdecl Gods98::DirectDraw_ReturnFrontBuffer(void)
 
 	Draw_AssertUnlocked("DirectDraw_ReturnFrontBuffer");
 	if (directDrawGlobs.fullScreen) {
-		directDrawGlobs.bSurf->Blt(nullptr, directDrawGlobs.fSurf, nullptr, DDBLT_WAIT, nullptr);
+		DirectDraw_bSurf()->Blt(nullptr, DirectDraw_fSurf(), nullptr, DDBLT_WAIT, nullptr);
 	}
 }
 
@@ -448,7 +448,7 @@ void __cdecl Gods98::DirectDraw_BlitBuffers(void)
 	POINT pt = { 0, 0 };
 	RECT dest = { // sint32 casts to stop compiler from complaining
 		0, 0,
-		(sint32) directDrawGlobs.width * Main_Scale(),
+		(sint32) directDrawGlobs.width  * Main_Scale(),
 		(sint32) directDrawGlobs.height * Main_Scale(),
 	};
 	::ClientToScreen(directDrawGlobs.hWnd, &pt);
@@ -457,17 +457,17 @@ void __cdecl Gods98::DirectDraw_BlitBuffers(void)
 	// Fill out the source of the blit
 	RECT src = { // sint32 casts to stop compiler from complaining
 		0, 0,
-		(sint32) directDrawGlobs.width,
-		(sint32) directDrawGlobs.height,
+		(sint32) directDrawGlobs.width  * Main_RenderScale(),
+		(sint32) directDrawGlobs.height * Main_RenderScale(),
 	};
 
 	Draw_AssertUnlocked("DirectDraw_BlitBuffers");
-	HRESULT r = directDrawGlobs.fSurf->Blt(&dest, directDrawGlobs.bSurf, &src, DDBLT_WAIT, nullptr);
+	HRESULT r = DirectDraw_fSurf()->Blt(&dest, DirectDraw_bSurf(), &src, DDBLT_WAIT, nullptr);
 	Error_Fatal(r == DDERR_SURFACELOST, "Front surface lost");
 
 /*		while (true){
 
-		if ((ddrval = directDrawGlobs.fSurf->lpVtbl->Blt(directDrawGlobs.fSurf, &dest, directDrawGlobs.bSurf, &src, DDBLT_WAIT, nullptr)) == DD_OK){
+		if ((ddrval = DirectDraw_fSurf()->Blt(&dest, DirectDraw_bSurf(), &src, DDBLT_WAIT, nullptr)) == DD_OK){
 			break;
 		if(ddrval == DDERR_SURFACELOST) if(!Ddraw_RestoreSurfaces()) break;
 		if(ddrval != DDERR_WASSTILLDRAWING) break;
@@ -595,6 +595,10 @@ void Gods98::_DirectDraw_ClearSurface(IDirectDrawSurface4* surf, OPTIONAL const 
 			std::max(0, static_cast<sint32>(window->x + window->width)),
 			std::max(0, static_cast<sint32>(window->y + window->height)),
 		};
+		rect.left   *= Main_RenderScale();
+		rect.top    *= Main_RenderScale();
+		rect.right  *= Main_RenderScale();
+		rect.bottom *= Main_RenderScale();
 		if (rect.left < rect.right && rect.top < rect.bottom) {
 			surf->Blt(&rect, nullptr, nullptr, DDBLT_COLORFILL|DDBLT_WAIT, &bltFX);
 		}
@@ -611,7 +615,7 @@ bool32 __cdecl Gods98::DirectDraw_CreateClipper(bool32 fullscreen, uint32 width,
 
 	if (directDrawGlobs.lpDirectDraw->CreateClipper(0, &directDrawGlobs.lpBackClipper, nullptr) == DD_OK){
 
-		HRGN handle = ::CreateRectRgn(0, 0, width, height);
+		HRGN handle = ::CreateRectRgn(0, 0, width * Main_RenderScale(), height * Main_RenderScale());
 		uint32 size = ::GetRegionData(handle, 0, nullptr);
 		RGNDATA* region = (RGNDATA*)Mem_Alloc(size);
 		::GetRegionData(handle, size, region);

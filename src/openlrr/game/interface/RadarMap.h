@@ -107,7 +107,23 @@ extern RadarMap_Globs & radarmapGlobs;
 
 #pragma region Functions
 
- /// CUSTOM:
+/// CUSTOM: Gets the drawing API scale used by the radar map.
+sint32 RadarMap_GetDrawScale();
+
+/// CUSTOM: Assigns the drawing API scale used by the radar map.
+void RadarMap_ApplyDrawScale();
+
+/// CUSTOM: Gets the scale that radar screen points are transformed by.
+real32 _RadarMap_GetTransformScale();
+
+/// CUSTOM: Gets a modified area for radarMap screenRect based on the draw scale.
+const Area2F* _RadarMap_ScaledScreenRect(const RadarMap* radarMap);
+
+/// CUSTOM: Get modified zoom level for drawing scale.
+real32 _RadarMap_ScaledZoom(const RadarMap* radarMap);
+
+
+/// CUSTOM:
 void RadarMap_ClearHighlightBlock();
 
 /// CUSTOM:

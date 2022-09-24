@@ -95,6 +95,13 @@ BEGIN
             MENUITEM "Solid Buildings &Only",   IDM_SELECTPLACEARROW_SOLIDONLY
             MENUITEM "&Always Show",            IDM_SELECTPLACEARROW_ALWAYS,CHECKED
         END
+        POPUP "Radar Map Scale"
+        BEGIN
+            MENUITEM "x&1",                     IDM_RADARMAPSCALE_X1,CHECKED
+            MENUITEM "x&2",                     IDM_RADARMAPSCALE_X2
+            MENUITEM "x&3",                     IDM_RADARMAPSCALE_X3
+            MENUITEM "x&4",                     IDM_RADARMAPSCALE_X4
+        END
         MENUITEM "Show &ObjInfo",               IDM_SHOWOBJINFO
         MENUITEM "Show &Panels",                IDM_RENDERPANELS,CHECKED
         MENUITEM "&Tooltip Sound",              IDM_TOOLTIPSOUND,CHECKED
@@ -108,14 +115,14 @@ BEGIN
             MENUITEM "Warning",                 IDM_LOGGING_WARNING,CHECKED
             MENUITEM "Fatal",                   IDM_LOGGING_FATAL,CHECKED
         END
-        POPUP "&Scale"
+        POPUP "Window &Scale"
         BEGIN
-            MENUITEM "x&1",                     IDM_SCALE_X1,CHECKED
-            MENUITEM "x&2",                     IDM_SCALE_X2
-            MENUITEM "x&3",                     IDM_SCALE_X3
-            MENUITEM "x&4",                     IDM_SCALE_X4
+            MENUITEM "x&1",                     IDM_WINDOWSCALE_X1,CHECKED
+            MENUITEM "x&2",                     IDM_WINDOWSCALE_X2
+            MENUITEM "x&3",                     IDM_WINDOWSCALE_X3
+            MENUITEM "x&4",                     IDM_WINDOWSCALE_X4
         END
-        POPUP "&Cursor"
+        POPUP "&Cursor Visibility"
         BEGIN
             MENUITEM "&Never Show",             IDM_CURSOR_NEVER,CHECKED
             MENUITEM "Show in &Title Bar",      IDM_CURSOR_TITLEBAR

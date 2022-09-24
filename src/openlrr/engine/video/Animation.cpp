@@ -572,9 +572,15 @@ void __cdecl Gods98::Animation_BlitToBackBuffer(Animation_t* anim, const Rect2I*
 
 	G98CAnimation* animation = (G98CAnimation*)anim;
 
+	Rect2I destRect2 = *destRect;
+	destRect2.left   *= Main_RenderScale();
+	destRect2.top    *= Main_RenderScale();
+	destRect2.right  *= Main_RenderScale();
+	destRect2.bottom *= Main_RenderScale();
+
 	Draw_AssertUnlocked("Animation_BlitToBackBuffer");
 	if (animation->IsOk()) {
-		DirectDraw_bSurf()->Blt(const_cast<RECT*>((const RECT*)destRect), animation->GetSurface(), nullptr, DDBLT_WAIT, nullptr);
+		DirectDraw_bSurf()->Blt(reinterpret_cast<RECT*>(const_cast<Rect2I*>(&destRect2)), animation->GetSurface(), nullptr, DDBLT_WAIT, nullptr);
 	}
 
 	//if (((G98CAnimation*)anim)->isOpen) {

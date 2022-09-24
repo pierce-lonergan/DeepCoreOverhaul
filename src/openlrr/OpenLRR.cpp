@@ -109,7 +109,8 @@ bool InjectOpenLRR(HINSTANCE hInstanceDll)
 #define Menu_CheckRadioButtonsArray(menuIDs, index) Menu_CheckRadioButtons(menuIDs, menuIDs.size(), index)
 
 
-static constexpr const auto Menu_ScaleIDs = array_of<uint32>(IDM_SCALE_X1, IDM_SCALE_X2, IDM_SCALE_X3, IDM_SCALE_X4);
+static constexpr const auto Menu_RadarMapScaleIDs = array_of<uint32>(IDM_RADARMAPSCALE_X1, IDM_RADARMAPSCALE_X2, IDM_RADARMAPSCALE_X3, IDM_RADARMAPSCALE_X4);
+static constexpr const auto Menu_ScaleIDs = array_of<uint32>(IDM_WINDOWSCALE_X1, IDM_WINDOWSCALE_X2, IDM_WINDOWSCALE_X3, IDM_WINDOWSCALE_X4);
 static constexpr const auto Menu_IconIDs = array_of<uint32>(IDM_ICON_NONE, IDM_ICON_NATIVE, IDM_ICON_OPENLRR, IDM_ICON_GOLD, IDM_ICON_TEAL, IDM_ICON_TEALRR);
 static constexpr const auto Menu_CursorIDs = array_of<uint32>(IDM_CURSOR_NEVER, IDM_CURSOR_TITLEBAR, IDM_CURSOR_ALWAYS);
 static constexpr const auto Menu_SelectPlaceArrowIDs = array_of<uint32>(IDM_SELECTPLACEARROW_NEVER, IDM_SELECTPLACEARROW_SOLIDONLY, IDM_SELECTPLACEARROW_ALWAYS);
@@ -217,9 +218,19 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
     Menu_CheckRadioButtonsArray(Menu_IconIDs, curIcon);
 
 	for (size_t i = 0; i < Menu_ScaleIDs.size(); i++) {
-		Menu_EnableButton((IDM_SCALE_X1 + i), Gods98::Main_IsScaleSupported(i + 1)); // scale is "1-indexed"
+		Menu_EnableButton((IDM_WINDOWSCALE_X1 + i), Gods98::Main_IsScaleSupported(i + 1)); // scale is "1-indexed"
 	}
 	Menu_CheckRadioButtonsArray(Menu_ScaleIDs, (Gods98::Main_Scale() - 1)); // scale is "1-indexed"
+
+	// Disable changing scale in this mode, it will break things. i.e. The clipper and d3drm device, so wait until that's fixed.
+	Menu_EnableButtonsArray(Menu_ScaleIDs, !Gods98::Main_IsRenderScaling());
+
+	Menu_CheckRadioButtonsArray(Menu_RadarMapScaleIDs, (Gods98::Main_RadarMapScale() - 1)); // scale is "1-indexed"
+
+	// Disable radar scaling for resolutions higher than window.
+	for (size_t i = static_cast<size_t>(Gods98::Main_RenderScale()); i < Menu_RadarMapScaleIDs.size(); i++) {
+		Menu_EnableButton(Menu_RadarMapScaleIDs[i], false);
+	}
 
 	Menu_CheckButton(IDM_ROUTING_ENABLED,			(LegoRR::Debug_RouteVisual_IsEnabled()));
 	Menu_CheckButton(IDM_ROUTING_COMPLETEDPATHS,	(LegoRR::Debug_RouteVisual_IsCompletedPathsEnabled()));
@@ -437,17 +448,20 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 		Gods98::Error_SetFatalVisible(!Gods98::Error_IsFatalVisible());
 		break;
 
-	case IDM_SCALE_X1:
-	case IDM_SCALE_X2:
-	case IDM_SCALE_X3:
-	case IDM_SCALE_X4:
-		/*switch (wmId) {
-		case IDM_SCALE_X1: std::printf("IDM_SCALE_X1\n"); break;
-		case IDM_SCALE_X2: std::printf("IDM_SCALE_X2\n"); break;
-		case IDM_SCALE_X3: std::printf("IDM_SCALE_X3\n"); break;
-		case IDM_SCALE_X4: std::printf("IDM_SCALE_X4\n"); break;
-		}*/
-		Gods98::Main_SetScale((wmId - IDM_SCALE_X1) + 1); // scale is "1-indexed"
+	case IDM_WINDOWSCALE_X1:
+	case IDM_WINDOWSCALE_X2:
+	case IDM_WINDOWSCALE_X3:
+	case IDM_WINDOWSCALE_X4:
+		if (!Gods98::Main_IsRenderScaling()) {
+			Gods98::Main_SetScale((wmId - IDM_WINDOWSCALE_X1) + 1); // scale is "1-indexed"
+		}
+		break;
+
+	case IDM_RADARMAPSCALE_X1:
+	case IDM_RADARMAPSCALE_X2:
+	case IDM_RADARMAPSCALE_X3:
+	case IDM_RADARMAPSCALE_X4:
+		Gods98::Main_SetRadarMapScale((wmId - IDM_RADARMAPSCALE_X1) + 1); // scale is "1-indexed"
 		break;
 
     case IDM_CURSOR_NEVER:

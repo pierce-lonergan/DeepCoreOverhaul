@@ -69,11 +69,16 @@
 #define IDM_LOGGING_INFO				583
 #define IDM_LOGGING_WARNING				584
 #define IDM_LOGGING_FATAL				585
-// &Options > Scale (Radio Group)
-#define IDM_SCALE_X1					521
-#define IDM_SCALE_X2					522
-#define IDM_SCALE_X3					523
-#define IDM_SCALE_X4					524
+// &Options > Scale > Window (Radio Group)
+#define IDM_WINDOWSCALE_X1				521
+#define IDM_WINDOWSCALE_X2				522
+#define IDM_WINDOWSCALE_X3				523
+#define IDM_WINDOWSCALE_X4				524
+// &Options > Scale > Radar Map (Radio Group)
+#define IDM_RADARMAPSCALE_X1			526
+#define IDM_RADARMAPSCALE_X2			527
+#define IDM_RADARMAPSCALE_X3			528
+#define IDM_RADARMAPSCALE_X4			529
 // &Options > Cursor (Radio Group)
 #define IDM_CURSOR_NEVER				531
 #define IDM_CURSOR_TITLEBAR				532

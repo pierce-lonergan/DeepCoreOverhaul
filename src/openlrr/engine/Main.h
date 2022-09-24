@@ -293,6 +293,9 @@ struct Main_CommandLineOptions
 	std::optional<std::string>	configName;		// -cfgfile <filename> : Change the name of the Lego.cfg config file to load (must be a relative datadir path).
 	std::vector<std::string>	configAppends;	// -cfgadd <filename> : Append extra configs to the Lego.cfg config to overwrite properties (command can be used multiple times).
 
+	std::optional<bool>			renderScaling;	// -scale <scale> : Scales the resolution that drawing surfaces and 3D rendering are displayed at.
+	std::optional<uint32>		radarMapScale;	// -radarscale <scale> : Scales the pixel resolution of the radar map, independent of the render scale.
+
 	/*std::string			startLevel; // Main_GetStartLevel
 
 
@@ -371,6 +374,21 @@ void __cdecl Gods_Go(const char* programName);
  **********************************************************************************/
 
 #pragma region Functions
+
+/// CUSTOM: Returns true if the game is scaling the resolution of drawing surfaces and 3D rendering.
+bool Main_IsRenderScaling();
+
+/// CUSTOM: Gets the rendering scale of the drawing surface, unlike Main_Scale, this affects the resolution that things are drawn at.
+sint32 Main_RenderScale();
+
+
+// This really needs to be moved once there's a better method for executing command line arguments.
+/// CUSTOM: Gets the drawing scale for the radar.
+sint32 Main_RadarMapScale();
+
+/// CUSTOM: Sets the drawing scale for the radar.
+void Main_SetRadarMapScale(uint32 radarMapScale);
+
 
 /// CUSTOM: Scaling for game window (nearest neighbour)
 inline sint32 Main_Scale() { return static_cast<sint32>(mainGlobs2.windowScale); }

@@ -94,6 +94,42 @@ static uint32 _mainLastTime = 0;
 
 #pragma region Functions
 
+/// CUSTOM: Returns true if the game is scaling the resolution of drawing surfaces and 3D rendering.
+bool Gods98::Main_IsRenderScaling()
+{
+	return mainOptions.renderScaling.value_or(false);
+}
+
+/// CUSTOM: Gets the rendering scale of the drawing surface, unlike Main_Scale, this affects the resolution that things are drawn at.
+sint32 Gods98::Main_RenderScale()
+{
+	if (Main_IsRenderScaling()) {
+		return static_cast<sint32>(mainGlobs2.windowScale);
+	}
+	else {
+		return 1;
+	}
+}
+
+/// CUSTOM: Gets the drawing scale for the radar.
+sint32 Gods98::Main_RadarMapScale()
+{
+	if (mainOptions.radarMapScale.has_value()) {
+		return static_cast<sint32>(*mainOptions.radarMapScale);
+	}
+	else {
+		//return 1;
+		// Half of the main render scale, rounded up.
+		return std::max(1, ((Gods98::Main_RenderScale() + 1) / 2));
+	}
+}
+
+/// CUSTOM: Sets the drawing scale for the radar.
+void Gods98::Main_SetRadarMapScale(uint32 radarMapScale)
+{
+	mainOptions.radarMapScale = std::max(1u, radarMapScale);
+}
+
 /// CUSTOM: Checks if the scale creates a window larger than the desktop area size.
 bool Gods98::Main_IsScaleSupported(uint32 windowScale)
 {
@@ -173,15 +209,17 @@ void Gods98::Main_SetScale(uint32 windowScale)
 
 
 
-/// CUSTOM: Adjust rect x,y position so that the bottom,right isn't going off the screen. (Only checks desktop size!!)
+/// CUSTOM: Adjust rect x,y position so that the bottom,right isn't going off the screen.
 void Gods98::Main_AdjustWindowPosition(IN OUT Rect2I* rect)
 {
 	if (!Main_FullScreen() && Main_hWnd() != nullptr) {
 		Rect2I rectDesktop = { 0 }; // dummy init
-		HWND hWndDesktop = ::GetDesktopWindow();
-		::GetWindowRect(hWndDesktop, reinterpret_cast<RECT*>(&rectDesktop));
 
-		//const sint32 taskBarHeight = 40;
+		/// NEW: Check against actual area with taskbar taken into account.
+		if (!::SystemParametersInfoA(SPI_GETWORKAREA, 0, reinterpret_cast<RECT*>(&rectDesktop), 0)) {
+			HWND hWndDesktop = ::GetDesktopWindow();
+			::GetWindowRect(hWndDesktop, reinterpret_cast<RECT*>(&rectDesktop));
+		}
 
 		const sint32 xDiff1 = rect->right - (rectDesktop.right);// -taskBarHeight);
 		const sint32 yDiff1 = rect->bottom - (rectDesktop.bottom);// - taskBarHeight);
@@ -1142,12 +1180,28 @@ void Gods98::Main_ParseCommandLineOptions()
 		mainOptions.gameName = param;
 	}
 
-	// Usage: -scale <number>
+	// Usage: -nnscale <number>
 	// Changes integer scaling of the window.
+	// i.e. -nnscale 2 creates a window that is twice as large as the game resolution.
+	if (FindParameter(args, "-nnscale", param)) {
+		mainGlobs2.windowScale = static_cast<uint32>(std::max(1, std::atoi(param.c_str())));
+		mainOptions.renderScaling = false;
+	}
+	// Usage: -scale <number>
+	// Scales the resolution that drawing surfaces and 3D rendering are displayed at.
 	// i.e. -scale 2 creates a window that is twice as large as the game resolution.
 	if (FindParameter(args, "-scale", param)) {
-		mainGlobs2.windowScale = static_cast<uint32>(std::max(0, std::atoi(param.c_str())));
+		mainGlobs2.windowScale = static_cast<uint32>(std::max(1, std::atoi(param.c_str())));
+		mainOptions.renderScaling = true;
 	}
+
+	// Usage: -radarscale <number>
+	// Scales the pixel resolution of the radar map, independent of the render scale.
+	// i.e. -radarscale 1 will always draw the radar map at 1x1 pixel resolution, regardless of -renderscale.
+	if (FindParameter(args, "-radarscale", param)) {
+		mainOptions.radarMapScale = static_cast<uint32>(std::max(1, std::atoi(param.c_str())));
+	}
+
 	if (mainGlobs2.windowScale <= 0)
 		mainGlobs2.windowScale = 1; // Default scale. Whether invalid or command not used.
 

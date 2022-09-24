@@ -8,6 +8,7 @@
 #include "../core/Files.h"
 #include "../core/Memory.h"
 #include "../util/Dxbug.h"
+#include "../Main.h"
 #include "Bmp.h"
 #include "DirectDraw.h"
 #include "Draw.h"
@@ -396,6 +397,7 @@ void __cdecl Gods98::Image_DisplayScaled(Image* image, OPTIONAL const Area2F* sr
 	Error_Fatal(!image, "NULL passed as image to Image_DisplayScaled()");
 
 	RECT r_src = { 0 }, r_dst = { 0 }; // dummy inits
+	Point2F dummy = { 0.0f }; // Dummy to assign destPos to when using Main_Scale.
 
 	if (src) {
 		r_src.left = (sint32)src->x;
@@ -426,6 +428,20 @@ void __cdecl Gods98::Image_DisplayScaled(Image* image, OPTIONAL const Area2F* sr
 			r_dst.bottom = (sint32)(destPos->y + image->height);
 		}
 	}
+	else if (Main_RenderScale() != 1) {
+		// Force using destination rect to scale images.
+		destPos = &dummy;
+
+		r_dst.left   = 0;
+		r_dst.top    = 0;
+		r_dst.right  = (sint32)(image->width);
+		r_dst.bottom = (sint32)(image->height);
+	}
+
+	r_dst.left   *= Main_RenderScale();
+	r_dst.top    *= Main_RenderScale();
+	r_dst.right  *= Main_RenderScale();
+	r_dst.bottom *= Main_RenderScale();
 
 	Draw_AssertUnlocked("Image_DisplayScaled");
 	if (Image_IsRenderEnabled()) {

@@ -6,6 +6,10 @@
 
 #include "../core/Errors.h"
 #include "../core/Maths.h"
+#include "../gfx/Containers.h"
+#include "../gfx/Mesh.h"
+#include "../gfx/Viewports.h"
+#include "../Graphics.h"
 #include "../Main.h"
 #include "DirectDraw.h"
 
@@ -39,6 +43,14 @@ static bool _renderEnabled = true;
 /// CUSTOM: True if the drawing surface is supposed to be locked, or Draw_Begin() has been called.
 static bool _drawLocked = false;
 
+/// CUSTOM: Width of the locked drawing surface.
+static uint32 _drawWidth  = 0;
+/// CUSTOM: Height of the locked drawing surface.
+static uint32 _drawHeight = 0;
+
+/// CUSTOM: The absolute scale that pixels are drawn at, defaults to Main_RenderScale().
+static uint32 _drawScale  = 1;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -53,7 +65,9 @@ static bool _drawLocked = false;
 #define Draw_Pixel32Address(x, y)	static_cast<uint32*>(DirectDraw_PixelAddress(drawGlobs.buffer, drawGlobs.pitch, 32, x, y))
 
 /// CUSTOM: Unlocks the surface during normal Draw calls while not using Draw_Begin().
-#define Draw_TryUnlockSurface(surf)	if (!_drawBegin) Draw_UnlockSurface(surf)
+#define Draw_TryUnlockSurface(surf)		if (!_drawBegin) Draw_UnlockSurface(surf)
+
+#define Draw_TryDrawPixel(x, y, value)	_Draw_DrawPixel(x, y, value)
 
 #pragma endregion
 
@@ -104,6 +118,38 @@ void Gods98::Draw_End()
 
 	Draw_UnlockSurface(DirectDraw_bSurf());
 	_drawBegin = false;
+}
+
+sint32 Gods98::Draw_GetScale()
+{
+	return _drawScale;
+}
+
+sint32 Gods98::Draw_SetScale(sint32 scale, bool relative)
+{
+	Error_Warn(!Draw_IsLocked(), "Draw_SetScale: Called without first calling Draw_Begin()");
+	
+	if (Draw_IsLocked()) {
+		if (relative) {
+			if (scale == 0) {
+				scale = Main_RenderScale();
+			}
+			else if (scale < 0) {
+				// This is pretty terrible...
+				scale = (Main_RenderScale() / (-1 - scale)); // -1 = / 2, -2 = / 3
+			}
+			else {
+				scale *= Main_RenderScale();
+			}
+		}
+		else {
+			if (scale <= 0) {
+				scale = Main_RenderScale();
+			}
+		}
+		_drawScale = static_cast<uint32>(std::max(1, scale));
+	}
+	return static_cast<sint32>(_drawScale);
 }
 
 /// CUSTOM: Gets the current effect while the drawing surface has been locked with Draw_Begin().
@@ -191,6 +237,75 @@ void __cdecl Gods98::Draw_GetClipWindow(OUT Area2F* window)
 }
 
 // <unused>
+void __cdecl Gods98::Draw_WorldLineListEx(Viewport* vp, const Vector3F* fromList, const Vector3F* toList, uint32 count, real32 r, real32 g, real32 b, real32 a, DrawEffect effect)
+{
+	IDirect3DViewport* viewport1 = nullptr;
+	IDirect3DViewport3* viewport3 = nullptr;
+	D3DMATRIX m = { 0.0f };
+
+	m._11 = m._22 = m._33 = m._44 = 1.0f; // Identity matrix.
+
+	// We allocate vertexList, so no bounds check needed.
+	//Error_Fatal(count > DRAW_MAXLINES, "DRAW_MAXLINES too small");
+
+	DrawLineVertex* vertexList = (DrawLineVertex*)Mem_Alloc(sizeof(DrawLineVertex) * count * 2);
+	//Mesh_Vertex* vertex2List = (Mesh_Vertex*)Mem_Alloc(sizeof(Mesh_Vertex) * count * 2);
+
+	const uint32 colour = Container_GetRGBAColour(r, g, b, a);
+
+	for (uint32 loop = 0; loop < count; loop++) {
+		vertexList[(loop*2) + 0].position = fromList[loop];
+		vertexList[(loop*2) + 0].colour   = colour;
+		vertexList[(loop*2) + 1].position = toList[loop];
+		vertexList[(loop*2) + 1].colour   = colour;
+		//vertex2List[(loop*2) + 0].position = fromList[loop];
+		//vertex2List[(loop*2) + 0].colour = colour;
+		//vertex2List[(loop*2) + 1].position = toList[loop];
+		//vertex2List[(loop*2) + 1].colour = colour;
+	}
+
+	vp->lpVP->GetDirect3DViewport(&viewport1);
+	viewport1->QueryInterface(IID_IDirect3DViewport3, (void**)&viewport3);
+	viewport1->Release();
+	lpIMDevice()->SetCurrentViewport(viewport3);
+	lpIMDevice()->SetTexture(0, nullptr);
+	lpIMDevice()->SetLightState(D3DLIGHTSTATE_MATERIAL, 0);
+	lpIMDevice()->SetLightState(D3DLIGHTSTATE_COLORVERTEX, true);
+	lpIMDevice()->SetTransform(D3DTRANSFORMSTATE_WORLD, &m);
+	//lpIMDevice()->SetTransform(D3DTRANSFORMSTATE_VIEW, &m);
+
+	lpIMDevice()->BeginScene();
+
+	Graphics_ChangeRenderState(D3DRENDERSTATE_ALPHABLENDENABLE, true);
+	Graphics_ChangeRenderState(D3DRENDERSTATE_SRCBLEND, D3DBLEND_SRCALPHA);
+	Graphics_ChangeRenderState(D3DRENDERSTATE_DESTBLEND, D3DBLEND_ONE);
+	Graphics_ChangeRenderState(D3DRENDERSTATE_ZWRITEENABLE, false);
+//	Graphics_ChangeRenderState(D3DRENDERSTATE_ZBIAS, 2);
+
+	//#define DRAW_VERTEXFLAGS	(D3DFVF_DIFFUSE|D3DFVF_XYZ)
+	lpIMDevice()->DrawPrimitive(D3DPT_LINELIST, DRAW_VERTEXFLAGS, vertexList, count * 2, D3DDP_WAIT);
+
+	/*if (lpIMDevice()->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, renderFlags,
+										   vertices, vertexCount, faceData, indexCount, 0) != D3D_OK)
+	{
+		Error_Warn(true, "Cannot 'DrawIndexedPrimitive'.");
+	}*/
+
+	lpIMDevice()->SetLightState(D3DLIGHTSTATE_COLORVERTEX, false);
+	Graphics_ChangeRenderState(D3DRENDERSTATE_ZWRITEENABLE, true);
+//	Graphics_ChangeRenderState(D3DRENDERSTATE_ZBIAS, 0);
+
+	Graphics_RestoreStates();// false);
+	lpIMDevice()->EndScene();
+
+
+	viewport3->Release();
+
+	Mem_Free(vertexList);
+	vertexList = nullptr;
+}
+
+// <unused>
 void __cdecl Gods98::Draw_PixelListEx(const Point2F* pointList, uint32 count, real32 r, real32 g, real32 b, DrawEffect effect)
 {
 	log_firstcall();
@@ -207,7 +322,7 @@ void __cdecl Gods98::Draw_PixelListEx(const Point2F* pointList, uint32 count, re
 			const Point2F* point = &pointList[loop];
 
 			if (point->x >= drawGlobs.clipStart.x && point->y >= drawGlobs.clipStart.y && point->x < drawGlobs.clipEnd.x && point->y < drawGlobs.clipEnd.y){
-				drawGlobs.drawPixelFunc((sint32) point->x, (sint32) point->y, colour);
+				Draw_TryDrawPixel((sint32) point->x, (sint32) point->y, colour);
 			}
 		}
 		Draw_TryUnlockSurface(surf);
@@ -269,7 +384,7 @@ void __cdecl Gods98::Draw_RectListEx(const Area2F* rectList, uint32 count, real3
 			sint32 ey = (sint32) end.y;
 			for (sint32 y=(sint32)rect.y ; y<ey ; y++){
 				for (sint32 x=(sint32)rect.x ; x<ex ; x++){
-					drawGlobs.drawPixelFunc(x, y, colour);
+					Draw_TryDrawPixel(x, y, colour);
 				}
 			}
 		}
@@ -309,7 +424,7 @@ void __cdecl Gods98::Draw_RectList2Ex(const Draw_Rect* rectList, uint32 count, D
 			sint32 ey = (sint32) end.y;
 			for (sint32 y=(sint32)rect.y ; y<ey ; y++){
 				for (sint32 x=(sint32)rect.x ; x<ex ; x++){
-					drawGlobs.drawPixelFunc(x, y, colour);
+					Draw_TryDrawPixel(x, y, colour);
 
 				}
 			}
@@ -337,7 +452,7 @@ void __cdecl Gods98::Draw_DotCircle(const Point2F* pos, uint32 radius, uint32 do
 			uint32 x = (uint32) (pos->x + (Maths_Sin(angle) * radius));
 			uint32 y = (uint32) (pos->y + (Maths_Cos(angle) * radius));
 			if (x >= drawGlobs.clipStart.x && y >= drawGlobs.clipStart.y && x < drawGlobs.clipEnd.x && y < drawGlobs.clipEnd.y){
-				drawGlobs.drawPixelFunc(x, y, colour);
+				Draw_TryDrawPixel(x, y, colour);
 			}
 		}
 		Draw_TryUnlockSurface(surf);
@@ -390,6 +505,8 @@ bool32 __cdecl Gods98::Draw_LockSurface(IDirectDrawSurface4* surf, DrawEffect ef
 //	if (surf->Lock(reinterpret_cast<RECT*>(&drawGlobs.lockRect), &desc, DDLOCK_WAIT, nullptr) == DD_OK) {
 	if (surf->Lock(nullptr, &desc, DDLOCK_WAIT, nullptr) == DD_OK) {
 
+		_drawWidth          = desc.dwWidth;
+		_drawHeight         = desc.dwHeight;
 		drawGlobs.buffer    = desc.lpSurface;
 		drawGlobs.pitch     = desc.lPitch;
 		drawGlobs.redMask   = desc.ddpfPixelFormat.dwRBitMask;
@@ -409,6 +526,7 @@ bool32 __cdecl Gods98::Draw_LockSurface(IDirectDrawSurface4* surf, DrawEffect ef
 		_drawAlphaShift     = DirectDraw_CountMaskBitShift(_drawAlphaMask);
 
 		_drawLocked = true;
+		Draw_SetScale(1, true);
 
 		if (Draw_SetDrawPixelFunc(effect)) {
 			return true;
@@ -432,6 +550,8 @@ void __cdecl Gods98::Draw_UnlockSurface(IDirectDrawSurface4* surf)
 
 	//	surf->Unlock(reinterpret_cast<RECT*>(&drawGlobs.lockRect));
 		surf->Unlock(nullptr);
+		_drawWidth          = 0;
+		_drawHeight         = 0;
 		drawGlobs.buffer    = nullptr;
 		drawGlobs.pitch     = 0;
 		drawGlobs.redMask   = 0;
@@ -445,6 +565,7 @@ void __cdecl Gods98::Draw_UnlockSurface(IDirectDrawSurface4* surf)
 	_drawEffect = DrawEffect::None;
 	_drawBegin = false;
 	_drawLocked = false;
+	_drawScale = 1;
 }
 
 // <LegoRR.exe @00486950>
@@ -554,7 +675,7 @@ void __cdecl Gods98::Draw_LineActual(sint32 x1, sint32 y1, sint32 x2, sint32 y2,
 	for (sint32 loop=1 ; loop<=numpixels ; loop++) {
 		
 		if (x >= drawGlobs.clipStart.x && y >= drawGlobs.clipStart.y && x < drawGlobs.clipEnd.x && y < drawGlobs.clipEnd.y){
-			drawGlobs.drawPixelFunc(x, y, colour);
+			Draw_TryDrawPixel(x, y, colour);
 		}
 		
 		if (d < 0) {
@@ -565,6 +686,23 @@ void __cdecl Gods98::Draw_LineActual(sint32 x1, sint32 y1, sint32 x2, sint32 y2,
 			d = d + dinc2;
 			x = x + xinc2;
 			y = y + yinc2;
+		}
+	}
+}
+
+/// CUSTOM: Function to wrap around calling pixelDrawFunc.
+void Gods98::_Draw_DrawPixel(sint32 x, sint32 y, uint32 value)
+{
+	x *= static_cast<sint32>(_drawScale);
+	y *= static_cast<sint32>(_drawScale);
+	for (uint32 yOff = 0; yOff < _drawScale; yOff++) {
+		for (uint32 xOff = 0; xOff < _drawScale; xOff++) {
+			// Use unsigned int for cheaper comparisons without `> 0`.
+			if (static_cast<uint32>(x + xOff) < _drawWidth &&
+				static_cast<uint32>(y + yOff) < _drawHeight)
+			{
+				Gods98::drawGlobs.drawPixelFunc(x + xOff, y + yOff, value);
+			}
 		}
 	}
 }

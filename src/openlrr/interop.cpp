@@ -48,6 +48,7 @@
 #include "game/interface/hud/ObjInfo.h"
 #include "game/interface/Advisor.h"
 #include "game/interface/Interface.h"
+#include "game/interface/Panels.h"
 #include "game/interface/Pointers.h"
 #include "game/interface/RadarMap.h"
 #include "game/interface/ToolTip.h"
@@ -3252,6 +3253,58 @@ bool interop_hook_LegoRR_Weapons(void)
 #pragma endregion
 
 
+#pragma region LegoRR Game Special Hooks
+bool interop_hook_replace_LegoRR_PanelRadarMapZoom(void)
+{
+	bool result = true;
+
+	// Okay, so the Panel_CheckCollision function is really large, and taking the time to decompile it will be a hassle.
+	// So this replaces the snippets we need to change involving radar zoom and replaces them with function calls.
+
+	// MOV  EAX,dword ptr [ESP + elapsedAbs]
+	// PUSH EAX
+	// CALL Panal_RadarMap_Zoom*
+	// ADD  ESP,0x4
+
+	static constexpr const uint8 movEAX[]  = { 0x8b, 0x44, 0x24, 0x14 }; // MOV EAX,dword ptr [ESP + elapsedAbs]
+	static constexpr const uint8 pushEAX[] = { 0x50 }; // PUSH EAX
+	static constexpr const uint8 addESP[]  = { 0x83, 0xc4, 0x04 }; // ADD ESP,0x4
+
+	static constexpr const uint32 startAddrs[] = { 0x0045b291, 0x0045b2d8 };
+	static constexpr const uint32 endAddrs[]   = { 0x0045b2d1, 0x0045b318 };
+	static constexpr void* funcAddrs[]         = { LegoRR::Panel_RadarMap_ZoomIn, LegoRR::Panel_RadarMap_ZoomOut };
+
+	uint8 slide[std::max(endAddrs[0]-startAddrs[0], endAddrs[1]-startAddrs[1])];
+
+	for (uint32 i = 0; i < 2; i++) {
+		const uint32 startAddr = startAddrs[i];
+		const uint32 size = endAddrs[i] - startAddrs[i];
+
+		// NOP slide everything before changing the assembly.
+		std::memset(slide, 0x90, size); // NOP
+		result &= hook_write(startAddr, slide, size);
+
+		// Write the assembly instructions.
+		uint32 offset = 0;
+
+		result &= hook_write(startAddr + offset, movEAX, sizeof(movEAX));
+		offset += sizeof(movEAX);
+
+		result &= hook_write(startAddr + offset, pushEAX, sizeof(pushEAX));
+		offset += sizeof(pushEAX);
+
+		result &= hook_write_call(startAddr + offset, funcAddrs[i]);
+		offset += 5;
+
+		result &= hook_write(startAddr + offset, addESP, sizeof(addESP));
+		offset += sizeof(addESP);
+	}
+
+	return_interop(result);
+}
+#pragma endregion
+
+
 #pragma region Hook All
 
 bool interop_hook_all(void)
@@ -3318,6 +3371,10 @@ bool interop_hook_all(void)
 
 
 	// Add Game hooks here:
+
+	#pragma region LegoRR Special
+	result &= interop_hook_replace_LegoRR_PanelRadarMapZoom();
+	#pragma endregion
 
 	#pragma region LegoRR Game
 	result &= interop_hook_LegoRR_Advisor();

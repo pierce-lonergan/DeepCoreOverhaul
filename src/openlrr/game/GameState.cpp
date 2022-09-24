@@ -1305,6 +1305,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		RadarMap_ClearScreen(Lego_GetRadarMap());
 
 		Gods98::Draw_Begin(); // Start of only Draw calls for radar map.
+		RadarMap_ApplyDrawScale();
 
 		Lego_DrawRadarMap();
 	}

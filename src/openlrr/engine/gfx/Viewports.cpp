@@ -61,6 +61,8 @@ Gods98::Viewport* __cdecl Gods98::Viewport_Create(real32 xPos, real32 yPos, real
 
 	uint32 devWidth  = lpDevice()->GetWidth();
 	uint32 devHeight = lpDevice()->GetHeight();
+	devWidth  /= Main_RenderScale();
+	devHeight /= Main_RenderScale();
 	
 	/// SANITY: Cast to sint32 for xPos,yPos
 	sint32 actXPos = (sint32)(xPos * devWidth);
@@ -80,6 +82,10 @@ Gods98::Viewport* __cdecl Gods98::Viewport_CreatePixel(sint32 xPos, sint32 yPos,
 
 	uint32 devWidth  = lpDevice()->GetWidth();
 	uint32 devHeight = lpDevice()->GetHeight();
+	xPos   *= Main_RenderScale();
+	yPos   *= Main_RenderScale();
+	width  *= Main_RenderScale();
+	height *= Main_RenderScale();
 
 	// This is only useful if xPos or yPos is >= negative devWidth, or devHeight.
 	// Consider while < 0 or modulus operation instead?
@@ -341,9 +347,17 @@ void __cdecl Gods98::Viewport_InverseTransform(Viewport* vp, OUT Vector3F* dest,
 
 	Viewport_CheckInit();
 	Error_Fatal(!vp, "NULL passed to Viewport_InverseTransform()");
+
+	// Transform from scaled screen coorindates.
+	const Vector4F srcScaled = {
+		src->x * Main_RenderScale(),
+		src->y * Main_RenderScale(),
+		src->z,
+		src->w,
+	};
 	
 	vp->lpVP->InverseTransform(reinterpret_cast<D3DVECTOR*>(dest),
-							   reinterpret_cast<D3DRMVECTOR4D*>(const_cast<Vector4F*>(src)));
+							   reinterpret_cast<D3DRMVECTOR4D*>(const_cast<Vector4F*>(&srcScaled)));
 }
 
 // <LegoRR.exe @00477570>
@@ -352,10 +366,14 @@ void __cdecl Gods98::Viewport_Transform(Viewport* vp, OUT Vector4F* dest, const 
 	log_firstcall();
 
 	Viewport_CheckInit();
-	Error_Fatal(!vp, "NULL passed to Viewport_InverseTransform()");
+	Error_Fatal(!vp, "NULL passed to Viewport_Transform()");
 	
 	vp->lpVP->Transform(reinterpret_cast<D3DRMVECTOR4D*>(dest),
 						reinterpret_cast<D3DVECTOR*>(const_cast<Vector3F*>(src)));
+
+	// Restore scaled screen coordinates.
+	dest->x /= Main_RenderScale();
+	dest->y /= Main_RenderScale();
 }
 
 // <LegoRR.exe @00477590>
