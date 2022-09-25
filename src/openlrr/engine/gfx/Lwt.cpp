@@ -598,7 +598,9 @@ bool32 __cdecl Gods98::LoadLWOB(const char* fn, LWSIZE* sd, real32** verts, LWPO
 	std::sprintf(fname,"%s.lwo",fn);
 	File* file=File_Open(fname, "rb");
 	if(!file)
-	{	Error_Warn(true, Error_Format("Cannot load Lightwave object file %s", fname) );
+	{
+		// Reduce useless warnings:
+		//Error_Warn(true, Error_Format("Cannot load Lightwave object file %s", fname) );
 		return false;
 	}
 	else

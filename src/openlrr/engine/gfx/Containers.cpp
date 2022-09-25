@@ -679,7 +679,8 @@ Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, co
 			/// FIX APPLY: Proper logging, add back-in sprintf that is seen commented out above.
 			///             note that the .lwo extension is automatically applied down the line in Mesh_Load
 			std::sprintf(tempString, "%s.lwo", name);
-			Error_Warn(true, Error_Format("Cannot Load File \"%s\".", tempString));
+			// Reduce useless warnings:
+			//Error_Warn(true, Error_Format("Cannot Load File \"%s\".", tempString));
 			Container_Remove(cont);
 			cont = nullptr;
 		}
@@ -780,7 +781,8 @@ bool32 __cdecl Gods98::Container_SetActivity(Container* cont, const char* actnam
 		}
 		else {
 			result = false;
-			Error_Warn(!Container_Frame_Find(cont, actname, false), Error_Format("Unknown activity (\"%s\") passed to Container_SetActivity()", actname));
+			// Reduce useless warnings:
+			//Error_Warn(!Container_Frame_Find(cont, actname, false), Error_Format("Unknown activity (\"%s\") passed to Container_SetActivity()", actname));
 		}
 
 		// Notify the game that the activity has changed...
@@ -1971,8 +1973,8 @@ void __cdecl Gods98::Container_Mesh_SetQuality(Container* cont, uint32 groupID, 
 	Error_Fatal(cont->type!=Container_Type::Mesh, "Container_Mesh_SetQuality() called with non mesh object");
 
 	if (transmesh = cont->typeData->transMesh) {
-
-		Error_Warn(true, "Not supported yet");
+		// Reduce useless warnings:
+		//Error_Warn(true, "Not yet implemented for immediate mode meshes");
 
 	}
 	else {
@@ -2279,8 +2281,8 @@ void __cdecl Gods98::Container_Mesh_SetPerspectiveCorrection(Container* cont, ui
 	Error_Fatal(cont->type!=Container_Type::Mesh && cont->type!=Container_Type::LWO, "Container_Mesh_SetPerspectiveCorrection() called with non mesh object");
 
 	if (transmesh = cont->typeData->transMesh) {
-
-		Error_Warn(true, "Not yet implemented for immediate mode meshes");
+		// Reduce useless warnings:
+		//Error_Warn(true, "Not yet implemented for immediate mode meshes");
 
 	}
 	else {
@@ -3265,7 +3267,8 @@ IDirect3DRMFrame3* __cdecl Gods98::Container_Frame_Find(Container* cont, const c
 
 	if (frame->GetChildren(&children) == D3DRM_OK) {
 		uint32 count = children->GetSize();
-		Error_Warn(!count, "Can't find any children on frame");
+		// Reduce useless warnings:
+		//Error_Warn(!count, "Can't find any children on frame");
 		for (uint32 loop = 0; loop < count; loop++) {
 			children->GetElement(loop, &frame1);
 

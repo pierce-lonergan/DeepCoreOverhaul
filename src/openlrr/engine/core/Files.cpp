@@ -96,7 +96,8 @@ void __cdecl Gods98::File_Initialise(const char* programName, bool32 insistOnCD,
 			std::sprintf(wadFile, "%s\\%s%i.wad", _initWadDirectory.c_str(), programName, (sint32)i);
 			const sint32 wad = File_LoadWad(wadFile);
 			if (wad == WAD_ERROR) {
-				Error_Warn(true, Error_Format("Cannot load %s", wadFile));
+				// Reduce useless warnings:
+				//Error_Warn(true, Error_Format("Cannot load %s", wadFile));
 			}
 			else {
 //				File_SetActiveWad(wad);
