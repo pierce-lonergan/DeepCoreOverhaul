@@ -43,6 +43,8 @@ enum_scoped_forward_end(FileFlags);
 
 #define CONFIG_CONVERTIONINCPC		200
 
+#define CONFIG_MAXSTRINGID			1024
+
 #define CONFIG_MAXLISTS				32			// 2^32 - 1 possible configs...
 
 #define CONFIG_SEPARATOR			"::"
@@ -108,13 +110,16 @@ struct Config
 	/*18,4*/ Config* linkPrev;
 	/*1c,4*/ Config* nextFree; // (listSet field)
 	/*20*/
+	/// EXPANSION:
+	uint32 lineNumber; // 1-indexed
+	char* fileName;
 };
-assert_sizeof(Config, 0x20);
+//assert_sizeof(Config, 0x20);
 
 
 struct Config_Globs
 {
-	/*000,400*/ char s_JoinPath_string[1024]; // (not part of Globs, static array in BuildStringID func)
+	/*000,400*/ char s_JoinPath_string[CONFIG_MAXSTRINGID]; // (not part of Globs, static array in BuildStringID func)
 	/*400,80*/ Config* listSet[CONFIG_MAXLISTS];
 	/*480,4*/ Config* freeList;
 	/*484,4*/ uint32 listCount;
@@ -175,8 +180,33 @@ Config* __cdecl Config_Load(const char* filename);
 /// CUSTOM: Loads a configuration file, with additional flags specifying where and what checks are used to open it.
 Config* __cdecl Config_Load2(const char* filename, FileFlags fileFlags);
 
+// Always use the Config_ID macro, and never call this directly.
+// Null must always be passed to terminate the arguments list, which is automatically handled by Config_ID.
+// Calling this again will invalidate the previous result.
 // <LegoRR.exe @00479210>
 const char* __cdecl Config_BuildStringID(const char* s, ...);
+
+/// CUSTOM: Returns the last result of Config_BuildStringID or Config_ID.
+const char* Config_LastStringID();
+
+/// CUSTOM: Builds and returns a string ID for the config property. Calling this again will invalidate the previous result.
+const char* Config_GetStringID(const Config* conf);
+
+/// CUSTOM: Gets the parent property of the config property. Returns null if this is a root property.
+const Config* Config_GetParentItem(const Config* conf);
+
+/// CUSTOM: Gets the line number of the config property with the given string ID. Returns 0 on failure.
+uint32 Config_GetLineNumberOf(const Config* root, const char* stringID);
+
+/// CUSTOM: Gets the line number of the config property.
+uint32 Config_GetLineNumber(const Config* conf);
+
+/// CUSTOM: Gets the filename of the config this property with the given string ID was loaded from. Returns "<Config>" on failure.
+///         This is useful for merged configs, where a definition may be in a different file from the root config.
+const char* Config_GetFileNameOf(const Config* root, const char* stringID);
+
+/// CUSTOM: Gets the filename of the config this property was loaded from. Returns "<Config>" on failure.
+const char* Config_GetFileName(OPTIONAL const Config* conf);
 
 // <inlined>
 __inline const char* Config_GetItemName(const Config* conf) { return conf->itemName; }
@@ -258,15 +288,20 @@ Config* __cdecl Config_Create(Config* prev);
 // <LegoRR.exe @00479580>
 void __cdecl Config_Remove(Config* dead);
 
+/// CUSTOM: Subfunction of Config_FindItem.
+bool Config_MatchItemName(const Gods98::Config* conf, const char* name, OPTIONAL OUT bool* wildcard);
+
 // <LegoRR.exe @004795a0>
 const Config* __cdecl Config_FindItem(const Config* conf, const char* stringID);
 
+/// LEGACY:
 // <LegoRR.exe @00479750>
 void __cdecl Config_AddList(void);
 
-
+/// CUSTOM: Count number of items in an array.
 uint32 Config_CountItems(const Config* arrayItem);
 
+/// CUSToM: Merge configs together by appending one to another.
 void Config_AppendConfig(Config* root, Config* config);
 
 
@@ -282,6 +317,24 @@ void Config_AppendConfig(Config* root, Config* config);
 
 /// CUSTOM:
 #define Config_ID(s, ...) Gods98::Config_BuildStringID(s, __VA_ARGS__, nullptr)
+
+// Error reporting for the passed config item.
+
+#define Config_WarnItem(b, conf, s)				{ if (Gods98::Error_IsWarnVisible() && (b)) { \
+	Gods98::Error_Out(false, "%s (%i): Warning: %s\n", Gods98::Config_GetFileName(conf), Gods98::Config_GetLineNumber(conf), (s)); Gods98::Error_SetWarn(); } }
+#define Config_FatalItem(b, conf, s)			{ if (Gods98::Error_IsFatalVisible() && (b)) { \
+	Gods98::Error_Out(true, "%s (%i): Fatal: %s\n", Gods98::Config_GetFileName(conf), Gods98::Config_GetLineNumber(conf), (s)); } }
+
+#define Config_WarnItemF(b, conf, s, ...)		Config_WarnItem((b), (conf), Gods98::Error_Format((s), __VA_ARGS__))
+#define Config_FatalItemF(b, conf, s, ...)		Config_FatalItem((b), (conf), Gods98::Error_Format((s), __VA_ARGS__))
+
+// Error reporting for the last config item looked up with Config_BuildStringID / Config_ID.
+
+#define Config_WarnLast(b, root, s)				Config_WarnItem(b, Gods98::Config_FindItem(root, Gods98::Config_LastStringID()), s)
+#define Config_FatalLast(b, root, s)			Config_FatalItem(b, Gods98::Config_FindItem(root, Gods98::Config_LastStringID()), s)
+
+#define Config_WarnLastF(b, root, s, ...)		Config_WarnItemF(b, Gods98::Config_FindItem(root, Gods98::Config_LastStringID()), s, __VA_ARGS__)
+#define Config_FatalLastF(b, root, s, ...)		Config_FatalItemF(b, Gods98::Config_FindItem(root, Gods98::Config_LastStringID()), s, __VA_ARGS__)
 
 #pragma endregion
 

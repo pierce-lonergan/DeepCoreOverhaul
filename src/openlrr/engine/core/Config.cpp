@@ -37,6 +37,9 @@ void __cdecl Gods98::Config_Initialise(void)
 
 	configListSet.Initialise();
 	configGlobs.flags = Config_GlobFlags::CONFIG_GLOB_FLAG_INITIALISED;
+
+	// Clear this to avoid undefined behaviour with Config_LastStringID().
+	std::memset(configGlobs.s_JoinPath_string, 0, sizeof(configGlobs.s_JoinPath_string));
 }
 
 // <LegoRR.exe @004790e0>
@@ -82,21 +85,32 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 
 		rootConf = Config_Create(nullptr);
 		rootConf->fileData = fdata;
+		rootConf->fileName = Util_StrCpy(filename);
 
-		// Change any return/tab/blah/blah characters to zero...
+		std::vector<uint32> lineNumberEnds;
+		lineNumberEnds.push_back(0); // Line numbers are 1-indexed, so 0 doesn't exist (ends at index 0).
+
+		// Change any whitespace characters to zero...
 		// Clear anything after a semi-colon until the next return character.
+		// Also find the boundaries of each line number so we can store those and give clearer error messages.
 
 		bool commentMode = false;
 		for (s = rootConf->fileData, loop = 0; loop < fileSize; loop++) {
 			const char c = *s;
 
-			if (c == CONFIG_COMMENTCHAR) commentMode = true;
-			else if (c == '\n') commentMode = false;
+			if (c == CONFIG_COMMENTCHAR) {
+				commentMode = true;
+			}
+			else if (c == '\n') {
+				lineNumberEnds.push_back(loop);
+				commentMode = false;
+			}
 
 			if (commentMode || (c == '\t' || c == '\n' || c == '\r' || c == ' ')) *s = '\0';
 
 			s++;
 		}
+		lineNumberEnds.push_back(fileSize); // End final line.
 
 		// Replace the semi-colons that were removed by the language converter...
 		//for (loop = 0; loop < fileSize; loop++) {
@@ -104,10 +118,17 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 		//		rootConf->fileData[loop] = CONFIG_COMMENTCHAR;
 		//}
 
-		// Run through the file data and point in the config structures
+		// Run through the file data and point in the config structures.
 
+		uint32 lineNumber = 0;
 		Config* conf = rootConf;
 		for (s = rootConf->fileData, loop = 0; loop < fileSize; loop++) {
+
+			// Update the current line number we're on.
+			while (loop >= lineNumberEnds[lineNumber]) {
+				lineNumber++;
+			}
+
 			const char c = *s;
 
 			if (c != '\0') {
@@ -115,14 +136,19 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 
 				if (c == CONFIG_CLOSEBLOCKCHAR && cnext == '\0') {
 					// Close block.
-					Error_WarnF((conf->itemName!=nullptr), "Config close brace \"%s\" used between item name and value.", CONFIG_CLOSEBLOCK);
-					Error_FatalF((conf->depth == 0), "Config close brace \"%s\" used at depth 0.", CONFIG_CLOSEBLOCK);
+					Error_WarnF((conf->itemName!=nullptr), "%s (%i): Config close brace \"%s\" used between item name \"%s\" and value",
+								filename, lineNumber, CONFIG_CLOSEBLOCK, conf->itemName);
+					Error_FatalF((conf->depth == 0), "%s (%i): Config close brace \"%s\" used at depth 0",
+								 filename, lineNumber, CONFIG_CLOSEBLOCK);
 					conf->depth--;
 				}
 				else if (conf->itemName == nullptr) {
 					// Assign item key.
-					Error_WarnF((c==CONFIG_OPENBLOCKCHAR && cnext=='\0'), "Config open brace \"%s\" used for item name.", CONFIG_OPENBLOCK);
+					Error_WarnF((c==CONFIG_OPENBLOCKCHAR && cnext=='\0'), "%s (%i): Config open brace \"%s\" used for item name",
+								filename, lineNumber, CONFIG_OPENBLOCK);
 					conf->itemName = s;
+					conf->itemHashCode = Util_HashString(s, false, true);
+					conf->lineNumber = lineNumber;
 				}
 				else {
 					// Assign item value.
@@ -130,15 +156,40 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 					conf = Config_Create(conf);
 					// Open block.
 					if (c==CONFIG_OPENBLOCKCHAR && cnext=='\0') conf->depth++;
-					Error_WarnF((c==CONFIG_CLOSEBLOCKCHAR && cnext=='\0'), "Config close brace \"%s\" used for item value.", CONFIG_CLOSEBLOCK);
+					Error_WarnF((c==CONFIG_CLOSEBLOCKCHAR && cnext=='\0'), "%s (%i): Config close brace \"%s\" used for item value",
+								filename, lineNumber, CONFIG_CLOSEBLOCK);
 				}
 
-				// Skip whitespace.
-				for ( ; loop < fileSize; loop++) if (*(s++) == '\0') break;
+				// Skip until the end of the string.
+				for ( ; loop < fileSize; loop++) if (*s++ == '\0') break;
 			}
 			else {
 				s++;
 			}
+		}
+
+		if (conf->itemName == nullptr) {
+			if (conf == rootConf) {
+				/// FIX APPLY: Handle empty config files, which should be considered invalid...?
+				///            If we allow reduced strictness, then assign empty string to itemName instead.
+				Error_WarnF(true, "%s (%i): Config file has no properties", filename, lineNumber);
+				Config_Free(rootConf);
+				rootConf = nullptr;
+			}
+			else {
+				/// FIX APPLY: Remove empty item from the end of the config.
+				///            This issue becomes relevant when fixing the wildcard bug in Config_FindItem when loading PTL files.
+				Config* prevConf = conf->linkPrev;
+				prevConf->linkNext = nullptr;
+				Config_Remove(conf);
+				conf = prevConf;
+			}
+		}
+		else if (conf->dataString == nullptr) {
+			/// NOTE: This generally won't cause any errors, because most Config functions
+			///       consider a null dataString return value as a property that doesn't exist.
+			Error_WarnF(true, "%s (%i): Last property \"%s\" missing value string",
+						filename, conf->lineNumber, conf->itemName);
 		}
 
 	}
@@ -156,7 +207,9 @@ const char* __cdecl Gods98::Config_BuildStringID(const char* s, ...)
 	std::va_list args;
 	const char* curr;
 
-	//static char s_JoinPath_string[1024];
+	//static char s_JoinPath_string[CONFIG_MAXSTRINGID];
+
+	// Strcpy for the first part to overwrite the previous string.
 	std::strcpy(configGlobs.s_JoinPath_string, s);
 
 	va_start(args, s);
@@ -167,6 +220,81 @@ const char* __cdecl Gods98::Config_BuildStringID(const char* s, ...)
 	va_end(s);
 
 	return configGlobs.s_JoinPath_string;
+}
+
+/// CUSTOM: Returns the last result of Config_BuildStringID or Config_ID.
+const char* Gods98::Config_LastStringID()
+{
+	return configGlobs.s_JoinPath_string;
+}
+
+/// CUSTOM: Builds and returns a string ID for the config property. Calling this again will invalidate the previous result.
+const char* Gods98::Config_GetStringID(const Config* conf)
+{
+	static char s_stringID[CONFIG_MAXSTRINGID] = { '\0' };
+
+	const char* hierarchy[CONFIG_MAXDEPTH] = { nullptr };
+
+	for (const Config* parent = conf; parent != nullptr; parent = Config_GetParentItem(parent)) {
+		hierarchy[parent->depth] = parent->itemName;
+	}
+	Error_FatalF(hierarchy[0] == nullptr, "Config_GetStringID: Could not find all parents for config item \"%s\"", conf->itemName);
+
+	// Strcpy for the first part to overwrite the previous string.
+	std::strcpy(s_stringID, hierarchy[0]);
+
+	for (uint32 i = 1; i < conf->depth + 1; i++) {
+		std::strcat(s_stringID, CONFIG_SEPARATOR);
+		std::strcat(s_stringID, hierarchy[i]);
+	}
+
+	return s_stringID;
+}
+
+/// CUSTOM: Gets the parent property of the config property. Returns null if this is a root property.
+const Gods98::Config* Gods98::Config_GetParentItem(const Config* conf)
+{
+	if (conf->depth > 0) {
+		for (const Config* parent = conf; parent != nullptr; parent = parent->linkPrev) {
+			if (parent->depth == conf->depth - 1)
+				return parent;
+		}
+	}
+	return nullptr;
+}
+
+/// CUSTOM: Gets the line number of the config property with the given string ID. Returns 0 on failure.
+uint32 Gods98::Config_GetLineNumberOf(const Config* root, const char* stringID)
+{
+	const Config* conf;
+	if (conf = Config_FindItem(root, stringID)) {
+		return conf->lineNumber;
+	}
+	return 0;
+}
+
+/// CUSTOM: Gets the line number of the config property.
+uint32 Gods98::Config_GetLineNumber(const Config* conf)
+{
+	return conf->lineNumber;
+}
+
+/// CUSTOM: Gets the filename of the config this property with the given string ID was loaded from. Returns "<Config>" on failure.
+///         This is useful for merged configs, where a definition may be in a different file from the root config.
+const char* Gods98::Config_GetFileNameOf(const Config* root, const char* stringID)
+{
+	return Config_GetFileName(Config_FindItem(root, stringID));
+}
+
+/// CUSTOM: Gets the filename of the config this property was loaded from. Returns "<Config>" on failure.
+const char* Gods98::Config_GetFileName(OPTIONAL const Config* conf)
+{
+	// Walk backwards and find the root config item holding the filename.
+	while (conf && conf->fileName == nullptr) {
+		conf = conf->linkPrev;
+	}
+
+	return (conf && conf->fileName ? conf->fileName : "<Config>");
 }
 
 /*
@@ -464,6 +592,10 @@ void __cdecl Gods98::Config_Free(Config* root)
 			Mem_Free(root->fileData);
 			root->fileData = nullptr;
 		}
+		if (root->fileName) {
+			Mem_Free(root->fileName);
+			root->fileName = nullptr;
+		}
 
 		Config* next = const_cast<Config*>(root->linkNext);
 		Config_Remove(root);
@@ -488,6 +620,7 @@ Gods98::Config* __cdecl Gods98::Config_Create(Config* prev)
 	Config_CheckInit();
 
 	Config* newConfig = configListSet.Add();
+	ListSet::MemZero(newConfig);
 
 	newConfig->fileData = nullptr;
 	newConfig->itemName = nullptr;
@@ -527,6 +660,31 @@ void __cdecl Gods98::Config_Remove(Config* dead)
 	configListSet.Remove(dead);
 }
 
+/// CUSTOM: Subfunction of Config_FindItem.
+bool Gods98::Config_MatchItemName(const Gods98::Config* conf, const char* name, OPTIONAL OUT bool* wildcard)
+{
+	// Check if we can compare by wildcard (only allowed at depth 0).
+	bool wildcardMatch = false;
+	if (conf->depth == 0) {
+		const char* s;
+		uint32 wildcardLength = 0;
+		for (s = conf->itemName; *s != '\0'; s++) {
+			if (*s == CONFIG_WILDCARDCHAR) break; // Anything after the wildcard character is ignored.
+			wildcardLength++;
+		}
+		if (*s == CONFIG_WILDCARDCHAR) {
+			wildcardMatch = (::_strnicmp(conf->itemName, name, wildcardLength) == 0);
+		}
+	}
+
+	// Then check if this is a full match without wildcards.
+	const bool fullMatch = (::_stricmp(conf->itemName, name) == 0);
+
+	/// CHANGE: Never treat full match as a wildcard match.
+	if (wildcard) *wildcard = wildcardMatch && !fullMatch;
+	return (wildcardMatch || fullMatch);
+}
+
 // <LegoRR.exe @004795a0>
 const Gods98::Config* __cdecl Gods98::Config_FindItem(const Config* conf, const char* stringID)
 {
@@ -541,61 +699,52 @@ const Gods98::Config* __cdecl Gods98::Config_FindItem(const Config* conf, const 
 	uint32 count = Util_TokeniseSafe(tempstring, argv, CONFIG_SEPARATOR, CONFIG_MAXDEPTH);
 	Error_Fatal((count > CONFIG_MAXDEPTH), "Config StringID exceeds max depth");
 
+	/*if (count == 0) {
+		Mem_Free(tempstring);
+		return false; // Empty stringID.
+	}*/
+
 	// First find anything that matches the depth of the request
 	// then see if the hierarchy matches the request.
 
-	while (conf) {
-		if (conf->depth == count - 1) {
+	for (const Config* item = conf; item != nullptr && count > 0; item = item->linkNext) {
+		if (item->depth != count - 1)
+			continue; // This isn't the depth of the item we're looking for.
 
-			bool wildcard = false;
+		bool wildcard = false;
 
-			if (count == 1) {
-				const char* s;
-				uint32 index = 0;
-				for (s = conf->itemName; *s != '\0'; s++) {
-					if (*s == CONFIG_WILDCARDCHAR) break;
-					index++;
+		// Match the item we're looking for first.
+		if (Config_MatchItemName(item, argv[count - 1], &wildcard)) {
+			/// FIX APPLY: Don't treat wildcard match as full match for deepest item.
+			/// NOTE: This fix requires a fix in Config_Load2, to strip empty properties from the end of the config file.
+			///       The error can be experienced when loading PTL files since the root property is searched for as an array.
+			//wildcard = false;
+
+			// Then look backwards down the list to check the hierarchy.
+			uint32 currDepth = count - 1;
+			for (const Config* parent = item; parent != nullptr && currDepth > 0; parent = parent->linkPrev) {
+				if (parent->depth < currDepth - 1)
+					break; /// SANITY: Protect against malformed config trees.
+				if (parent->depth != currDepth - 1)
+					continue; // This isn't the depth of the next parent item.
+
+				if (Config_MatchItemName(parent, argv[currDepth - 1], &wildcard)) {
+					currDepth--; // Matched a parent, look for the next parent item.
 				}
-				if (*s == CONFIG_WILDCARDCHAR) {
-					wildcard = (::_strnicmp(argv[count - 1], conf->itemName, index) == 0);
+				else {
+					break; // This parent in the hierarchy doesn't match.
 				}
 			}
 
-			if (wildcard || ::_stricmp(argv[count - 1], conf->itemName) == 0) {
+			// If our depth is zero, then we matched against all parents (or the deepest item was a root item).
+			if (currDepth == 0) {
+				foundConf = item;
 
-				wildcard = false;
-
-				// Look backwards down the list to check the hierarchy.
-				uint32 currDepth = count - 1;
-				const Config* backConf = conf;
-				while (backConf) {
-					if (backConf->depth == currDepth - 1) {
-						if (currDepth == 1) {
-							const char* s;
-							uint32 index = 0;
-							for (s = backConf->itemName; *s != '\0'; s++) {
-								if (*s == CONFIG_WILDCARDCHAR) break;
-								index++;
-							}
-							if (*s == CONFIG_WILDCARDCHAR) {
-								wildcard = (::_strnicmp(argv[currDepth - 1], backConf->itemName, index) == 0);
-							}
-						}
-
-						if (wildcard || ::_stricmp(argv[currDepth - 1], backConf->itemName) == 0) {
-							currDepth--;
-						}
-						else break;
-					}
-					backConf = backConf->linkPrev;
-				}
-				if (currDepth == 0) {
-					foundConf = conf;
-					if (!wildcard) break;
-				}
+				// If we found a wildcard match, then keep looking for a full match.
+				// Otherwise we can exit the loop now and return the found item.
+				if (!wildcard) break;
 			}
 		}
-		conf = conf->linkNext;
 	}
 
 	Mem_Free(tempstring);
@@ -623,6 +772,7 @@ void __cdecl Gods98::Config_AddList(void)
 
 
 
+/// CUSTOM: Count number of items in an array.
 uint32 Gods98::Config_CountItems(const Config* arrayItem)
 {
 	uint32 count = 0;
@@ -633,6 +783,7 @@ uint32 Gods98::Config_CountItems(const Config* arrayItem)
 	return count;
 }
 
+/// CUSToM: Merge configs together by appending one to another.
 void Gods98::Config_AppendConfig(Config* root, Config* config)
 {
 	Error_Fatal((root->depth != 0), "Cannot append to a config that does not start at depth 0.");
