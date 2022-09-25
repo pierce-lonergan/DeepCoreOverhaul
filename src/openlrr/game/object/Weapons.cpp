@@ -99,7 +99,7 @@ bool32 __cdecl LegoRR::Weapon_Initialise(const Gods98::Config* config, const cha
 
 			weaponGlobs.weaponNameList[i] = Gods98::Util_StrCpy(Gods98::Config_GetItemName(item));
 
-			char* stringParts[16];
+			char* stringParts[std::max(2, OBJECT_MAXLEVELS)];
 			char surfaceNameBuff[128];
 
 			const Gods98::Config* statFirst = Gods98::Config_FindArray(config, Lego_ID("WeaponTypes", Gods98::Config_GetItemName(item)));
@@ -108,8 +108,8 @@ bool32 __cdecl LegoRR::Weapon_Initialise(const Gods98::Config* config, const cha
 				if (::_stricmp(Gods98::Config_GetItemName(stat), "SlowDeath") == 0) {
 					/// FIX APPLY: Don't modify the config strings. BAD! NO TOUCH!
 					char* str = Gods98::Util_StrCpy(Gods98::Config_GetDataString(stat));
-					const uint32 argc = Gods98::Util_Tokenise(str, stringParts, ":");
-					Error_Fatal(argc < 2, "Not enough parts in WeaponTypes SlowDeath");
+					const uint32 argc = Gods98::Util_TokeniseSafe(str, stringParts, ":", 2);
+					Config_FatalItem(argc < 2, stat, "Not enough parts in WeaponTypes SlowDeath");
 
 					weaponStats->isSlowDeath = true;
 					weaponStats->slowDeathInitialCoef = (real32)std::atof(stringParts[0]);
@@ -145,6 +145,10 @@ bool32 __cdecl LegoRR::Weapon_Initialise(const Gods98::Config* config, const cha
 
 					// Key wasn't a surface type, the only other thing it can be is object coefs.
 					if (surfaceType == Lego_SurfaceType_Count) {
+						if (::_strnicmp(Gods98::Config_GetItemName(stat), "WallDestroyTime_", std::strlen("WallDestroyTime_")) == 0) {
+							Config_WarnItemF(true, stat, "Unknown WeaponTypes surface %s", Gods98::Config_GetItemName(stat));
+						}
+
 						LegoObject_Type objType = LegoObject_None;
 						LegoObject_ID objID = (LegoObject_ID)0;
 						/// FIX APPLY: Don't infinite loop when failing to parse an object name...
@@ -153,11 +157,12 @@ bool32 __cdecl LegoRR::Weapon_Initialise(const Gods98::Config* config, const cha
 
 							/// FIX APPLY: Don't modify the config strings. BAD! NO TOUCH!
 							char* str = Gods98::Util_StrCpy(Gods98::Config_GetDataString(stat));
-							const uint32 argc = Gods98::Util_Tokenise(str, stringParts, ":");
-							Error_Fatal(argc < objLevelCount, "Not enough levels in WeaponTypes object coefs");
+							const uint32 argc = Gods98::Util_TokeniseSafe(str, stringParts, ":", OBJECT_MAXLEVELS);
+							Config_WarnItemF(argc < objLevelCount, stat, "Not enough levels in WeaponTypes object coef %s", Gods98::Config_GetItemName(stat));
 
 							for (uint32 objLevel = 0; objLevel < objLevelCount; objLevel++) {
-								weaponStats->objectCoefs[objType][objID][objLevel] = (real32)std::atof(stringParts[objLevel]);
+								/// FIX BAZ MOD: Boulder::TeleportBig missing one level, which should be the same as previous values.
+								weaponStats->objectCoefs[objType][objID][objLevel] = (real32)std::atof(stringParts[std::min(argc-1, objLevel)]);
 							}
 
 							Gods98::Mem_Free(str);

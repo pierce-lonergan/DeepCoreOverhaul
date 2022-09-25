@@ -285,8 +285,10 @@ void __cdecl LegoRR::Object_LoadToolTipIcons(const Gods98::Config* config)
 				objectGlobs.ToolTipIcon_Ore = Gods98::Image_LoadBMP(Gods98::Config_GetDataString(prop));
 				found = true;
 			}
+			else {
+				Config_WarnItemF(true, prop, "Unknown ToolTipIcon %s", Gods98::Config_GetItemName(prop));
+			}
 		}
-		Error_Warn(true, Gods98::Error_Format("Unknown ToolTipIcon %s", Gods98::Config_GetItemName(prop)));
 	}
 
 	if (objectGlobs.ToolTipIcon_Ore != nullptr) {

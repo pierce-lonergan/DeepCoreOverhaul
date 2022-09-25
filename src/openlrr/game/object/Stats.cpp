@@ -118,6 +118,8 @@ using namespace Gods98;
 
 #define Stats_ID(name) Config_ID(gameName, "Stats", Gods98::Config_GetItemName(prop), name)
 
+#define argv_minLevels(lvl)	argv[std::min(argcLevels-1, static_cast<uint32>((lvl)))]
+
 // <LegoRR.exe @00466aa0>
 bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char* gameName)
 {
@@ -134,7 +136,7 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
         LegoObject_Type type = LegoObject_None;
         LegoObject_ID id = (LegoObject_ID)0;
         if (!Lego_GetObjectByName(Config_GetItemName(prop), &type, &id, nullptr)) {
-            Error_Warn(true, "Object name in Stats not found");
+            Config_WarnItem(true, prop, "Object name in Stats not found");
             continue;
         }
 
@@ -149,7 +151,7 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         /// REFACTOR: Moved to after Lego_GetObjectByName and type array allocation
         uint32 levels = (uint32)Config_GetIntValue(config, Stats_ID("Levels"));
-        Error_Fatal(levels > OBJECT_MAXLEVELS, "Cannot have levels greater than maximum in Stats");
+        Config_FatalLast(levels > OBJECT_MAXLEVELS, config, "Cannot have levels greater than maximum in Stats");
         StatsFlags1 flags1 = StatsFlags1::STATS1_NONE;
         StatsFlags2 flags2 = StatsFlags2::STATS2_NONE;
         StatsFlags3 flags3 = StatsFlags3::STATS3_NONE;
@@ -166,41 +168,41 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
         if ((str = Config_GetStringValue(config, Stats_ID("RouteSpeed")))) {
 
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats RouteSpeed");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats RouteSpeed");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                statsGlobs.objectStats[type][id][lvl].RouteSpeed = (real32)std::atof(argv[lvl]);
+                statsGlobs.objectStats[type][id][lvl].RouteSpeed = (real32)std::atof(argv_minLevels(lvl));
             }
             Gods98::Mem_Free(str);
         }
 
-        /// REFACTOR: String duplication moved inside the loop
-        const char* drillTimes[Lego_SurfaceType_Count] = { nullptr };
-        drillTimes[Lego_SurfaceType_Soil] = Config_GetTempStringValue(config, Stats_ID("SoilDrillTime"));
-        drillTimes[Lego_SurfaceType_Loose] = Config_GetTempStringValue(config, Stats_ID("LooseDrillTime"));
-        drillTimes[Lego_SurfaceType_Medium] = Config_GetTempStringValue(config, Stats_ID("MedDrillTime"));
-        drillTimes[Lego_SurfaceType_Hard] = Config_GetTempStringValue(config, Stats_ID("HardDrillTime"));
-        drillTimes[Lego_SurfaceType_OreSeam] = Config_GetTempStringValue(config, Stats_ID("SeamDrillTime"));
-        // SeamDrillTime applies to both OreSeam and CrystalSeam
-        if (drillTimes[Lego_SurfaceType_OreSeam] != nullptr)
-            drillTimes[Lego_SurfaceType_CrystalSeam] = drillTimes[Lego_SurfaceType_OreSeam];
-        else
-            drillTimes[Lego_SurfaceType_CrystalSeam] = nullptr;
+        /// REFACTOR: String duplication moved inside the loop.
+		const char* drillTimeNames[Lego_SurfaceType_Count] = { nullptr };
+		drillTimeNames[Lego_SurfaceType_Soil]        = "SoilDrillTime";
+		drillTimeNames[Lego_SurfaceType_Loose]       = "LooseDrillTime";
+		drillTimeNames[Lego_SurfaceType_Medium]      = "MedDrillTime";
+		drillTimeNames[Lego_SurfaceType_Hard]        = "HardDrillTime";
+		// SeamDrillTime applies to both OreSeam and CrystalSeam.
+		drillTimeNames[Lego_SurfaceType_OreSeam]     = "SeamDrillTime";
+		drillTimeNames[Lego_SurfaceType_CrystalSeam] = drillTimeNames[Lego_SurfaceType_OreSeam];
 
         for (uint32 i = 0; i < (uint32)Lego_SurfaceType_Count; i++) {
-            if (drillTimes[i] != nullptr) {
-                /// REFACTOR: String duplication moved inside the loop
-                str = Gods98::Util_StrCpy(drillTimes[i]);
+			if (drillTimeNames[i] == nullptr)
+				continue; // No stat defined for this surface type.
 
-                uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-                Error_Fatal(argcLevels < levels, "Not enough levels in Stats DrillTime");
+			/// REFACTOR: String duplication moved inside the loop.
+			char* str = Gods98::Config_GetStringValue(config, Stats_ID(drillTimeNames[i]));
+			if (str) {
+				uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
+				Config_WarnLastF(argcLevels < levels, config, "Not enough levels in Stats %s", Gods98::Config_GetItemName(prop));
 
-                for (uint32 lvl = 0; lvl < levels; lvl++) {
-                    real32 timeVal = ((real32)std::atof(argv[lvl]) * STANDARD_FRAMERATE);
-                    statsGlobs.objectStats[type][id][lvl].DrillTimes[i] = timeVal;
-                }
-                Gods98::Mem_Free(str);
-            }
+				for (uint32 lvl = 0; lvl < levels; lvl++) {
+					real32 timeVal = ((real32)std::atof(argv_minLevels(lvl)) * STANDARD_FRAMERATE);
+					statsGlobs.objectStats[type][id][lvl].DrillTimes[i] = timeVal;
+				}
+
+				Gods98::Mem_Free(str);
+			}
         }
 
 
@@ -345,10 +347,10 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         if ((str = Config_GetStringValue(config, Stats_ID("SingleWidthDig")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats SingleWidthDig");
+			Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats SingleWidthDig");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv[lvl]);
+                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv_minLevels(lvl));
                 if (boolVal == BoolTri::BOOL3_TRUE) // default: FALSE
                     statsGlobs.objectStats[type][id][lvl].flags1 |= StatsFlags1::STATS1_SINGLEWIDTHDIG;
             }
@@ -357,70 +359,70 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         if ((str = Config_GetStringValue(config, Stats_ID("RepairValue")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats RepairValue");
+			Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats RepairValue");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                statsGlobs.objectStats[type][id][lvl].RepairValue = (real32)std::atof(argv[lvl]);
+                statsGlobs.objectStats[type][id][lvl].RepairValue = (real32)std::atof(argv_minLevels(lvl));
             }
             Gods98::Mem_Free(str);
         }
 
         if ((str = Config_GetStringValue(config, Stats_ID("SurveyRadius")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats SurveyRadius");
+			Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats SurveyRadius");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                statsGlobs.objectStats[type][id][lvl].SurveyRadius = std::atoi(argv[lvl]);
+                statsGlobs.objectStats[type][id][lvl].SurveyRadius = std::atoi(argv_minLevels(lvl));
             }
             Gods98::Mem_Free(str);
         }
 
         if ((str = Config_GetStringValue(config, Stats_ID("MaxCarry")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats MaxCarry");
+			Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats MaxCarry");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                statsGlobs.objectStats[type][id][lvl].MaxCarry = std::atoi(argv[lvl]);
+                statsGlobs.objectStats[type][id][lvl].MaxCarry = std::atoi(argv_minLevels(lvl));
             }
             Gods98::Mem_Free(str);
         }
 
         if ((str = Config_GetStringValue(config, Stats_ID("CarryStart")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats CarryStart");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats CarryStart");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                statsGlobs.objectStats[type][id][lvl].CarryStart = std::atoi(argv[lvl]);
+                statsGlobs.objectStats[type][id][lvl].CarryStart = std::atoi(argv_minLevels(lvl));
             }
             Gods98::Mem_Free(str);
         }
 
         if ((str = Config_GetStringValue(config, Stats_ID("CrystalDrain")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats CrystalDrain");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats CrystalDrain");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                statsGlobs.objectStats[type][id][lvl].CrystalDrain = std::atoi(argv[lvl]);
+                statsGlobs.objectStats[type][id][lvl].CrystalDrain = std::atoi(argv_minLevels(lvl));
             }
             Gods98::Mem_Free(str);
         }
 
         if ((str = Config_GetStringValue(config, Stats_ID("NumOfToolsCanCarry")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats NumOfToolsCanCarry");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats NumOfToolsCanCarry");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                statsGlobs.objectStats[type][id][lvl].NumOfToolsCanCarry = std::atoi(argv[lvl]);
+                statsGlobs.objectStats[type][id][lvl].NumOfToolsCanCarry = std::atoi(argv_minLevels(lvl));
             }
             Gods98::Mem_Free(str);
         }
 
         if ((str = Config_GetStringValue(config, Stats_ID("UpgradeTime")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats UpgradeTime");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats UpgradeTime");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                real32 timeVal = ((real32)std::atof(argv[lvl]) * STANDARD_FRAMERATE);
+                real32 timeVal = ((real32)std::atof(argv_minLevels(lvl)) * STANDARD_FRAMERATE);
                 statsGlobs.objectStats[type][id][lvl].UpgradeTime = timeVal;
             }
             Gods98::Mem_Free(str);
@@ -428,10 +430,10 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         if ((str = Config_GetStringValue(config, Stats_ID("FunctionCoef")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats FunctionCoef");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats FunctionCoef");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                statsGlobs.objectStats[type][id][lvl].FunctionCoef = (real32)std::atof(argv[lvl]);
+                statsGlobs.objectStats[type][id][lvl].FunctionCoef = (real32)std::atof(argv_minLevels(lvl));
             }
             Gods98::Mem_Free(str);
         }
@@ -443,24 +445,26 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
         if ((str = Config_GetStringValue(config, Stats_ID("UpgradeCostOre")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
 			// Any levels items after 4th are ignored
-            Error_Fatal(argcLevels < 4, "Must have 4 levels in Stats UpgradeCostOre");
-            Error_Fatal(levels < 4, "Object must have at least 4 levels when using Stats UpgradeCostOre");
+            Config_WarnLast(argcLevels < 4, config, "Must have 4 levels in Stats UpgradeCostOre");
+			/// FIX BAZ MOD: Be more lenient with missing levels since we force all object stats to 16 levels.
+			Config_WarnLast(levels < 4, config, "Object should have at least 4 levels when using Stats UpgradeCostOre");
 
 			// upg[rade] index is for argc, lvl index is for objectStats
             for (sint32 upg = 3, lvl = 0; upg >= 0; upg--, lvl++) {
-                statsGlobs.objectStats[type][id][lvl].UpgradeCostOre = std::atoi(argv[upg]);
+                statsGlobs.objectStats[type][id][lvl].UpgradeCostOre = std::atoi(argv_minLevels(upg));
             }
             Gods98::Mem_Free(str);
         }
         if ((str = Config_GetStringValue(config, Stats_ID("UpgradeCostStuds")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
 			// Any levels items after 4th are ignored
-            Error_Fatal(argcLevels < 4, "Must have 4 levels in Stats UpgradeCostStuds");
-            Error_Fatal(levels < 4, "Object must have at least 4 levels when using Stats UpgradeCostStuds");
+			Config_WarnLast(argcLevels < 4, config, "Must have 4 levels in Stats UpgradeCostStuds");
+			/// FIX BAZ MOD: Be more lenient with missing levels since we force all object stats to 16 levels.
+			Config_WarnLast(levels < 4, config, "Object should have at least 4 levels when using Stats UpgradeCostStuds");
 
 			// upg[rade] index is for argc, lvl index is for objectStats
             for (sint32 upg = 3, lvl = 0; upg >= 0; upg--, lvl++) {
-                statsGlobs.objectStats[type][id][lvl].UpgradeCostStuds = std::atoi(argv[upg]);
+                statsGlobs.objectStats[type][id][lvl].UpgradeCostStuds = std::atoi(argv_minLevels(upg));
             }
             Gods98::Mem_Free(str);
         }
@@ -580,10 +584,10 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         if ((str = Config_GetStringValue(config, Stats_ID("TrainPilot")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats TrainPilot");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats TrainPilot");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv[lvl]);
+                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv_minLevels(lvl));
                 if (boolVal == BoolTri::BOOL3_TRUE) // default: FALSE
                     statsGlobs.objectStats[type][id][lvl].flags2 |= StatsFlags2::STATS2_TRAINPILOT;
             }
@@ -592,10 +596,10 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         if ((str = Config_GetStringValue(config, Stats_ID("TrainSailor")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats TrainSailor");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats TrainSailor");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv[lvl]);
+                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv_minLevels(lvl));
                 if (boolVal == BoolTri::BOOL3_TRUE) // default: FALSE
                     statsGlobs.objectStats[type][id][lvl].flags2 |= StatsFlags2::STATS2_TRAINSAILOR;
             }
@@ -604,10 +608,10 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         if ((str = Config_GetStringValue(config, Stats_ID("TrainDriver")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats TrainDriver");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats TrainDriver");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv[lvl]);
+                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv_minLevels(lvl));
                 if (boolVal == BoolTri::BOOL3_TRUE) // default: FALSE
                     statsGlobs.objectStats[type][id][lvl].flags2 |= StatsFlags2::STATS2_TRAINDRIVER;
             }
@@ -616,10 +620,10 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         if ((str = Config_GetStringValue(config, Stats_ID("TrainDynamite")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats TrainDynamite");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats TrainDynamite");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv[lvl]);
+                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv_minLevels(lvl));
                 if (boolVal == BoolTri::BOOL3_TRUE) // default: FALSE
                     statsGlobs.objectStats[type][id][lvl].flags2 |= StatsFlags2::STATS2_TRAINDYNAMITE;
             }
@@ -628,10 +632,10 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         if ((str = Config_GetStringValue(config, Stats_ID("TrainRepair")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats TrainRepair");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats TrainRepair");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv[lvl]);
+                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv_minLevels(lvl));
                 if (boolVal == BoolTri::BOOL3_TRUE) // default: FALSE
                     statsGlobs.objectStats[type][id][lvl].flags2 |= StatsFlags2::STATS2_TRAINREPAIR;
             }
@@ -640,10 +644,10 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         if ((str = Config_GetStringValue(config, Stats_ID("TrainScanner")))) {
             uint32 argcLevels = Gods98::Util_Tokenise(str, argv, ":");
-            Error_Fatal(argcLevels < levels, "Not enough levels in Stats TrainScanner");
+            Config_WarnLast(argcLevels < levels, config, "Not enough levels in Stats TrainScanner");
 
             for (uint32 lvl = 0; lvl < levels; lvl++) {
-                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv[lvl]);
+                BoolTri boolVal = Gods98::Util_GetBoolFromString(argv_minLevels(lvl));
                 if (boolVal == BoolTri::BOOL3_TRUE) // default: FALSE
                     statsGlobs.objectStats[type][id][lvl].flags2 |= StatsFlags2::STATS2_TRAINSCANNER;
             }
