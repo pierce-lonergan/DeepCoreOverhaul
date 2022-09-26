@@ -16,6 +16,16 @@ using Shortcuts::ShortcutID;
 
 
 /**********************************************************************************
+ ******** Constants
+ **********************************************************************************/
+
+#pragma region Constants
+
+#define INTERFACE_PRERENDER_HOVEROUTLINES		true
+
+#pragma endregion
+
+/**********************************************************************************
  ******** Globals
  **********************************************************************************/
 
@@ -29,6 +39,10 @@ uint32 & LegoRR::g_Interface_UINT_004a3b5c = *(uint32*)0x004a3b5c;
 
 // <LegoRR.exe @004ddd58>
 LegoRR::Interface_Globs & LegoRR::interfaceGlobs = *(LegoRR::Interface_Globs*)0x004ddd58;
+
+
+/// CUSTOM: Avoid excess surface locking by pre-rendering highlight outlines on demand.
+static std::map<std::pair<uint32, uint32>, Gods98::Image*> _interfaceHoverOutlinesCache;
 
 #pragma endregion
 
@@ -83,6 +97,47 @@ bool32 __cdecl LegoRR::Interface_CallbackDoMenuIconKeyAction(Interface_MenuItemT
 void __cdecl LegoRR::Interface_DrawHoverOutline(const Area2F* area)
 {
 	if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE)) {
+		/// OPTIMISE: Draw pre-rendered hover outlines to avoid locking the back surface every frame.
+		static constexpr const uint32 THICKNESS = 2;
+
+		const ColourRGBF colour = { 0.0f, 1.0f, 0.0f };
+
+		const Point2F destPos = {
+			area->x - THICKNESS,
+			area->y - THICKNESS,
+		};
+
+		Gods98::Image* prerendered = nullptr;
+
+		// Note: Change define to false to disable pre-rendered drawing.
+		#if INTERFACE_PRERENDER_HOVEROUTLINES
+		/// NOTE: +1 is added because of how the line drawing was setup, the area dimensions are actually 1 less than the intended hover outline dimensions.
+		const auto sizePair = std::make_pair(static_cast<uint32>(std::max(0.0f, area->width))  + THICKNESS * 2 + 1,
+											 static_cast<uint32>(std::max(0.0f, area->height)) + THICKNESS * 2 + 1);
+
+		auto it = _interfaceHoverOutlinesCache.find(sizePair);
+		if (it != _interfaceHoverOutlinesCache.end()) {
+			// We've already pre-rendered an image for this size, use that to avoid needlessly locking a surface.
+			prerendered = it->second;
+			Gods98::Image_Display(prerendered, &destPos);
+			return;
+		}
+
+		// We haven't pre-rendered an outline for this size yet, generate it now.
+		prerendered = Gods98::Image_CreateNew(sizePair.first, sizePair.second);
+		ColourRGBF trans;
+		Gods98::Image_FindTransColour(prerendered, &colour, 1, &trans);
+		Gods98::Image_SetupTrans2(prerendered, trans.red, trans.green, trans.blue,
+									trans.red, trans.green, trans.blue, false); // Don't truncate to 16-bit colour.
+
+		_interfaceHoverOutlinesCache[sizePair] = prerendered;
+		#endif
+
+		Gods98::Draw_Begin(prerendered);
+		if (prerendered != nullptr) {
+			Gods98::Draw_SetTranslation(Point2F { -destPos.x, -destPos.y }); // Translate to 0,0.
+		}
+
 		Point2F start = {
 			area->x,
 			area->y,
@@ -95,13 +150,13 @@ void __cdecl LegoRR::Interface_DrawHoverOutline(const Area2F* area)
 		// Draw for rect expanded by 1 pixel.
 		// Then draw for rect expanded by 2 pixels, for a 2-pixel-width rectangle outline.
 
-#if true
+		#if true
 		/// REFACTOR: Draw all sets of lines in one Draw call instead of two.
 
-		Point2F rectLinesFrom[8] = { 0.0f }; // dummy inits
-		Point2F rectLinesTo[8] = { 0.0f };
+		Point2F rectLinesFrom[THICKNESS*4] = { 0.0f }; // dummy inits
+		Point2F rectLinesTo[THICKNESS*4] = { 0.0f };
 		
-		for (uint32 i = 0; i < 2; i++) {
+		for (uint32 i = 0; i < THICKNESS; i++) {
 			start.x -= 1.0f;
 			start.y -= 1.0f;
 			end.x   += 1.0f;
@@ -120,9 +175,9 @@ void __cdecl LegoRR::Interface_DrawHoverOutline(const Area2F* area)
 				rectLinesTo[(i*4) + j] = rectLinesFrom[(i*4) + ((j+1)%4)];
 			}
 		}
-		Gods98::Draw_LineListEx(rectLinesFrom, rectLinesTo, 8, 0.0f, 1.0f, 0.0f, Gods98::DrawEffect::None);
+		Gods98::Draw_LineListEx(rectLinesFrom, rectLinesTo, THICKNESS*4, colour.red, colour.green, colour.blue, Gods98::DrawEffect::None);
 
-#else
+		#else
 		Point2F rectLines[5] = { 0.0f }; // dummy init
 
 		for (uint32 i = 0; i < 2; i++) {
@@ -142,12 +197,16 @@ void __cdecl LegoRR::Interface_DrawHoverOutline(const Area2F* area)
 			rectLines[3] = Point2F { start.x,   end.y };
 			rectLines[4] = rectLines[0];
 
-			Gods98::Draw_LineListEx(rectLines, rectLines + 1, 4, 0.0f, 1.0f, 0.0f, Gods98::DrawEffect::None);
+			Gods98::Draw_LineListEx(rectLines, rectLines + 1, 4, colour.red, colour.green, colour.blue, Gods98::DrawEffect::None);
 		}
-#endif
+		#endif
 
+		Gods98::Draw_End();
+
+		if (prerendered != nullptr) {
+			Gods98::Image_Display(prerendered, &destPos);
+		}
 	}
-	return;
 }
 
 #pragma endregion

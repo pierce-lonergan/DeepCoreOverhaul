@@ -375,7 +375,7 @@ void __cdecl LegoRR::Bubble_DrawAllObjInfos(real32 elapsedAbs)
 
 	if (bubbleGlobs.alwaysVisible && !Lego_IsFirstPersonView()) {
 		// Lock if we know we're going to be drawing health bars (assume MiniFigures exist in level).
-		Gods98::Draw_Begin(); // Start of only Draw calls for health bars.
+		ObjInfo_TryBeginDraw(); // Start of only Draw calls for health bars.
 
 		for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
 			Bubble_Callback_DrawObjInfoHealthBars(obj, &elapsedAbs);
@@ -394,9 +394,8 @@ void __cdecl LegoRR::Bubble_DrawAllObjInfos(real32 elapsedAbs)
 			!Lego_IsFirstPersonView() && !(bubble->object->flags1 & (LIVEOBJ1_TELEPORTINGDOWN|LIVEOBJ1_TELEPORTINGUP)))
 		{
 			// Otherwise lock now if we haven't locked yet.
-			if (!Gods98::Draw_IsLocked()) {
-				Gods98::Draw_Begin(); // Start of only Draw calls for health bars.
-			}
+			// Note: ObjInfo_TryBegin/EndDraw handle checking locked state.
+			ObjInfo_TryBeginDraw(); // Start of only Draw calls for health bars.
 
 			Vector3F wPos = { 0.0f }; // dummy init
 			Gods98::Container* cont = LegoObject_GetActivityContainer(bubble->object);
@@ -415,9 +414,8 @@ void __cdecl LegoRR::Bubble_DrawAllObjInfos(real32 elapsedAbs)
 		}
 	}
 
-	if (Gods98::Draw_IsLocked()) {
-		Gods98::Draw_End(); // End of only Draw calls for health bars.
-	}
+	// Note: ObjInfo_TryBegin/EndDraw handle checking locked state.
+	ObjInfo_TryEndDraw(); // End of only Draw calls for health bars.
 
 
 	/// CHANGE: Draw hunger and bubble images now after all the health bars.

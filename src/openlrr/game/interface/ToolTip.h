@@ -77,7 +77,7 @@ struct ToolTip_Globs // [LegoRR/ToolTip.c|struct:0x61c4|tags:GLOBS]
 {
 	/*0000,4*/	Gods98::Font* font; // (init only)
 	/*0004,4*/	uint32 fontHeight; // (init only)
-	/*0008,4*/	uint32 int2_8; // (init only)
+	/*0008,4*/	uint32 borderThickness; // (init only)
 	/*000c,4*/	sint32 int1_c; // (init only)
 	/*0010,4*/	uint32 width; // (init only)
 	/*0014,4*/	uint32 height; // (init only)

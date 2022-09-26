@@ -96,6 +96,16 @@ extern ObjInfo_Globs & objinfoGlobs;
 
 #pragma region Functions
 
+/// CUSTOM: Invalidate existing pre-rendered health bars. Use when changing health bar settings at runtime.
+void ObjInfo_InvalidateHealthBars();
+
+/// CUSTOM:
+void ObjInfo_TryBeginDraw();
+
+/// CUSTOM:
+void ObjInfo_TryEndDraw();
+
+
 // <LegoRR.exe @004597f0>
 #define ObjInfo_Initialise ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x004597f0)
 
