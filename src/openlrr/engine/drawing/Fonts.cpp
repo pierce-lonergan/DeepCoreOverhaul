@@ -271,7 +271,7 @@ uint32 __cdecl Gods98::Font_VPrintF2(const Font* font, sint32 x, sint32 y, bool3
 				if ((uchar8)line[i] != 203) xPos += image->width;
 
 				if (image->height > yIncrease) yIncrease = image->height;
-				Image_Display(image, &pos);
+				Image_DisplayScaled2(image, nullptr, &pos, nullptr, 0, true);
 			}
 			i += 12;
 
@@ -307,7 +307,7 @@ uint32 __cdecl Gods98::Font_OutputChar(const Font* font, sint32 x, sint32 y, cha
 	uint32 gx = uc % FONT_GRIDWIDTH;
 
 	if (gy < FONT_GRIDHEIGHT) {
-		if (render) Image_DisplayScaled(font->image, &font->posSet[gx][gy], &pos, nullptr);
+		if (render) Image_DisplayScaled2(font->image, &font->posSet[gx][gy], &pos, nullptr, 0, true);
 		return (uint32)font->posSet[gx][gy].width;
 	}
 
@@ -378,7 +378,7 @@ void __cdecl Gods98::Font_RemoveAll(void)
 // <missing>
 void __cdecl Gods98::Font_GetBackgroundColour(const Font* font, OUT real32* r, OUT real32* g, OUT real32* b)
 {
-	DirectDraw_FromColourToRGBF(font->image->surface, Image_GetPaletteEntry0(font->image), r, g, b);
+	DirectDraw_FromColourToRGBF(Image_GetSurface(font->image), Image_GetPaletteEntry0(font->image), r, g, b);
 }
 
 // <missing>

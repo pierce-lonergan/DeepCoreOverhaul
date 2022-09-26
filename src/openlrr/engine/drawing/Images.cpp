@@ -217,7 +217,7 @@ Gods98::Image* Gods98::Image_CreateNew(uint32 width, uint32 height)
 
 		Image* newImage;
 		if (newImage = Image_Create(surface, width, height, penZero, pen255)) {
-			Image_ClearRGB(newImage, nullptr, penZero.red, penZero.green, penZero.blue, penZero.alpha);
+			//Image_ClearRGB(newImage, nullptr, penZero.red, penZero.green, penZero.blue, penZero.alpha);
 			return newImage;
 		}
 		else Error_Warn(true, "Could not create image");
@@ -281,7 +281,7 @@ void Gods98::_Image_SetupTrans(Gods98::Image* image, uint32 surfLow, uint32 surf
 	// ignored when truncated to 16-bit colour. We need to manually correct this in True Colour mode.
 	// Especially because SetColourKey doesn't actually support ranges. So along with True Colour mode,
 	//  force a conversion when the passed low and high colour values don't match.
-	if (surfLow != surfHigh || DirectDraw_BitDepth() > 16) {
+	if (surfLow != surfHigh || (DirectDraw_BitDepth() > 16 && truncateTo16Bit)) {
 
 		uint8 lowr, lowg, lowb, highr, highg, highb;
 		DirectDraw_FromColourToRGB(image->surface, surfLow,  &lowr,  &lowg,  &lowb);
@@ -289,7 +289,7 @@ void Gods98::_Image_SetupTrans(Gods98::Image* image, uint32 surfLow, uint32 surf
 
 		const uint8 exactr = lowr, exactg = lowg, exactb = lowb;
 
-		if (DirectDraw_BitDepth() > 16) {
+		if (DirectDraw_BitDepth() > 16 && truncateTo16Bit) {
 			DirectDraw_ColourKeyTo16BitRange(&lowr, &lowg, &lowb, &highr, &highg, &highb);
 		}
 
@@ -370,29 +370,41 @@ void Gods98::_Image_SetupTrans(Gods98::Image* image, uint32 surfLow, uint32 surf
 // <LegoRR.exe @0047de80>
 void __cdecl Gods98::Image_SetPenZeroTrans(Image* image)
 {
-	log_firstcall();
-
 	_Image_SetupTrans(image, image->penZero, image->penZero, true); // Truncate colour range to 16-bit.
 }
 
 // <LegoRR.exe @0047deb0>
 void __cdecl Gods98::Image_SetupTrans(Image* image, real32 lowr, real32 lowg, real32 lowb, real32 highr, real32 highg, real32 highb)
 {
-	log_firstcall();
+	Image_SetupTrans2(image, lowr, lowg, lowb, highr, highg, highb, true); // Truncate colour range to 16-bit.
+}
 
-	const uint32 surfLow  = DirectDraw_ToColourFromRGBF(image->surface, lowr,  lowg,  lowb);
+/// CUSTOM:
+void Gods98::Image_SetupTrans2(Image* image, real32 lowr, real32 lowg, real32 lowb, real32 highr, real32 highg, real32 highb, bool truncateTo16Bit)
+{
+	const uint32 surfLow  = DirectDraw_ToColourFromRGBF(image->surface, lowr, lowg, lowb);
 	const uint32 surfHigh = DirectDraw_ToColourFromRGBF(image->surface, highr, highg, highb);
 
-	_Image_SetupTrans(image, surfLow, surfHigh, true); // Truncate colour range to 16-bit.
+	_Image_SetupTrans(image, surfLow, surfHigh, truncateTo16Bit); // Truncate colour range to 16-bit.
 }
 
 // <LegoRR.exe @0047df70>
 void __cdecl Gods98::Image_DisplayScaled(Image* image, OPTIONAL const Area2F* src,
 										 OPTIONAL const Point2F* destPos, OPTIONAL const Point2F* destSize)
 {
-	// function taken from: `if (!(image->flags & ImageFlags::IMAGE_FLAG_TEXTURE))` of `Image_DisplayScaled2`
-
 	log_firstcall();
+
+	Image_DisplayScaled2(image, src, destPos, destSize, 0, false); // 0 uses Main_RenderScale()
+}
+
+/// CUSTOM:
+void Gods98::Image_DisplayScaled2(Image* image, OPTIONAL const Area2F* src, OPTIONAL const Point2F* destPos,
+								  OPTIONAL const Point2F* destSize, sint32 drawScale, bool forceRender)
+
+{
+	// function taken from: `if (!(image->flags & ImageFlags::IMAGE_FLAG_TEXTURE))` of `Image_DisplayScaled2` (old Gods98 version)
+
+	if (drawScale == 0) drawScale = Main_RenderScale();
 
 	Error_Fatal(!image, "NULL passed as image to Image_DisplayScaled()");
 
@@ -428,7 +440,7 @@ void __cdecl Gods98::Image_DisplayScaled(Image* image, OPTIONAL const Area2F* sr
 			r_dst.bottom = (sint32)(destPos->y + image->height);
 		}
 	}
-	else if (Main_RenderScale() != 1) {
+	else if (drawScale != 1) {
 		// Force using destination rect to scale images.
 		destPos = &dummy;
 
@@ -438,13 +450,13 @@ void __cdecl Gods98::Image_DisplayScaled(Image* image, OPTIONAL const Area2F* sr
 		r_dst.bottom = (sint32)(image->height);
 	}
 
-	r_dst.left   *= Main_RenderScale();
-	r_dst.top    *= Main_RenderScale();
-	r_dst.right  *= Main_RenderScale();
-	r_dst.bottom *= Main_RenderScale();
+	r_dst.left   *= drawScale;
+	r_dst.top    *= drawScale;
+	r_dst.right  *= drawScale;
+	r_dst.bottom *= drawScale;
 
-	Draw_AssertUnlocked("Image_DisplayScaled");
-	if (Image_IsRenderEnabled()) {
+	Draw_AssertUnlocked("Image_DisplayScaled", image);
+	if (Image_IsRenderEnabled() || forceRender) {
 		uint32 flags = DDBLT_WAIT;
 		if (image->flags & ImageFlags::IMAGE_FLAG_TRANS) flags |= DDBLT_KEYSRC;
 		DirectDraw_bSurf()->Blt((destPos) ? &r_dst : nullptr, image->surface, (src) ? &r_src : nullptr, flags, nullptr);
@@ -737,8 +749,7 @@ void __cdecl Gods98::Image_GetScreenshot(OUT Image* image, uint32 xsize, uint32 
 	HRESULT hr;
 	IDirectDrawSurface4* surf;
 	// Create surface
-	DDSURFACEDESC2 desc;
-	std::memset(&desc, 0, sizeof(DDSURFACEDESC2));
+	DDSURFACEDESC2 desc = { 0 };
 	desc.dwSize = sizeof(DDSURFACEDESC2);
 	desc.dwWidth = xsize;
 	desc.dwHeight = ysize;
@@ -813,3 +824,207 @@ bool Gods98::Image_SaveBMP2(Image* image, const char* fname, FileFlags fileFlags
 	if (g) *g = (real32)((image->penZeroRGB >>  8) & 0xff) / 255.0f;
 	if (b) *b = (real32)((image->penZeroRGB)       & 0xff) / 255.0f;
 }*/
+
+/// CUSTOM: Gets the surface of the image.
+IDirectDrawSurface4* Gods98::Image_GetSurface(Image* image)
+{
+	return image->surface;
+}
+
+/// CUSTOM: Find a valid transparency colour for the image that isn't in the list.
+bool Gods98::Image_FindTransColour(Image* image, const ColourRGBF* colourList, uint32 colourCount, OUT ColourRGBF* transColour)
+{
+	// Always assign default value before returning.
+	*transColour = ColourRGBF { 0.0f, 0.0f, 0.0f };
+
+	// So the general idea of finding an unused colour in a set of all possible colours is to treat each colour
+	//  in the list as a point in 3D space.
+	// From there we would iterate though all possible coordinates and compare against colours in the list.
+	//
+	// However, because this is RGB colours we're dealing with, we can be simplify things a bit.
+	// Instead of comparing colours as 3D coordinates, we can compare them as a single uint32 colour value.
+	// Using the bit counts in the pixel format, we know a valid colour can only exist in the range [0, 2^bpp-1].
+	// So instead of iterating through possible RGB values in nested loops, we can iterate through uint32 colours
+	//  in the above range in a single loop (just increment the value by one until we reach the max).
+	// 
+	// Now because we're comparing against a set of uint32 values, this can be simplified one step further.
+	// Using a binary search (and sorting the list + removing duplicates beforehand), we can find gaps in the list
+	//  where the count is different from the numeric gap between numbers when performing start/end/mid comparisons.
+	//
+	// see: <https://stackoverflow.com/a/22736293/7517185>
+
+	DDPIXELFORMAT pf = { 0 };
+	pf.dwSize = sizeof(DDPIXELFORMAT);
+	if (image->surface->GetPixelFormat(&pf) == DD_OK) {
+
+		if (!(pf.dwFlags & DDPF_RGB)) {
+			// Image is paletted, just compare against all colours in the list because the list can't be that large.
+
+			std::vector<BMP_PaletteEntry> palette(BMP_MAXPALETTEENTRIES, BMP_PaletteEntry { 0 });
+			if (DirectDraw_GetPaletteEntries(image->surface, palette.data(), 0, palette.size())) {
+
+				const bool is16Bit = (DirectDraw_BitDepth() == 16);
+				// Lazy assumption for 16 bit colour mode.
+				const uint32 rBitCount = (is16Bit ? 5 : 8);
+				const uint32 gBitCount = (is16Bit ? 6 : 8);
+				const uint32 bBitCount = (is16Bit ? 5 : 8);
+
+				for (uint32 i = 0; i < colourCount && !palette.empty(); i++) {
+					// It's imporant to truncate values to the proper bit counts so
+					//  that we don't return a false positive when in 16-bit colour mode.
+					const uint8 r = static_cast<uint8>(colourList[i].red   * 255.0f) >> (8 - rBitCount);
+					const uint8 g = static_cast<uint8>(colourList[i].green * 255.0f) >> (8 - gBitCount);
+					const uint8 b = static_cast<uint8>(colourList[i].blue  * 255.0f) >> (8 - bBitCount);
+
+					// Remove colours in the palette until there are none left.
+					for (uint32 j = 0; j < palette.size(); j++) {
+						const uint8 pr = static_cast<uint8>(palette[i].red   * 255.0f) >> (8 - rBitCount);
+						const uint8 pg = static_cast<uint8>(palette[i].green * 255.0f) >> (8 - gBitCount);
+						const uint8 pb = static_cast<uint8>(palette[i].blue  * 255.0f) >> (8 - bBitCount);
+
+						if (pr == r && pg == g && pb == b) {
+							palette.erase(palette.begin() + j);
+							j--;
+						}
+					}
+				}
+
+				if (!palette.empty()) {
+					// An unused palette colour remains.
+					*transColour = {
+						static_cast<real32>(palette.front().red)   / 255.0f,
+						static_cast<real32>(palette.front().green) / 255.0f,
+						static_cast<real32>(palette.front().blue)  / 255.0f,
+					};
+					return true;
+				}
+				else {
+					// All palette colours are in use.
+					return false;
+				}
+			}
+
+			return false; // Failed to get palette entries.
+		}
+		else {
+			// Image is not paletted.
+
+			if (colourCount == 0) {
+				// No colours and not paletted means we can just use black and be done with it.
+				*transColour = ColourRGBF { 0.0f, 0.0f, 0.0f };
+				return true;
+			}
+
+			const uint32 rBitCount = DirectDraw_CountMaskBits(pf.dwRBitMask);
+			const uint32 gBitCount = DirectDraw_CountMaskBits(pf.dwGBitMask);
+			const uint32 bBitCount = DirectDraw_CountMaskBits(pf.dwBBitMask);
+
+			// Note: These counts/shifts are not for the surface format, but for the total bits of range to choose from.
+			//       It doens't matter what the real shifts are, and in-fact we don't want them in-case there are gaps inbetween.
+			const uint32 totalBitCount = rBitCount + gBitCount + bBitCount;
+			const uint32 rBitShift = 0;
+			const uint32 gBitShift = rBitShift;
+			const uint32 bBitShift = rBitShift + gBitShift;
+
+			const uint32 WHITE =
+				DirectDraw_ShiftChannelByte(255, rBitCount, rBitShift) |
+				DirectDraw_ShiftChannelByte(255, gBitCount, gBitShift) |
+				DirectDraw_ShiftChannelByte(255, bBitCount, bBitShift);
+
+			// Convert colours to truncated integer values so we can compare them all with a single operation,
+			//  and also so we can loop over all possible values in a single loop.
+
+			std::vector<uint32> list(colourCount, 0);
+
+			for (uint32 i = 0; i < colourCount; i++) {
+				// It's imporant to truncate values to the proper bit counts so
+				//  that we don't return a false positive when in 16-bit colour mode.
+				const uint8 r = static_cast<uint8>(colourList[i].red   * 255.0f);
+				const uint8 g = static_cast<uint8>(colourList[i].green * 255.0f);
+				const uint8 b = static_cast<uint8>(colourList[i].blue  * 255.0f);
+
+				list[i] =
+					DirectDraw_ShiftChannelByte(r, rBitCount, rBitShift) |
+					DirectDraw_ShiftChannelByte(g, gBitCount, gBitShift) |
+					DirectDraw_ShiftChannelByte(b, bBitCount, bBitShift);
+			}
+
+			// Sort the list for use in our binary search / comparing the ends of the colour space.
+			std::sort(list.begin(), list.end());
+
+			bool found = false;
+
+			// First check if the colour values in the list span the entire range of the colour space.
+			// If not, then we can use one of the ends of the colour space (black or white).
+			if (list.front() != 0) {
+				// Black is unused, prefer to use black when possible.
+				*transColour = ColourRGBF { 0.0f, 0.0f, 0.0f };
+				found = true;
+			}
+			else if (list.back() != WHITE) {
+				// White is unused.
+				*transColour = ColourRGBF { 1.0f, 1.0f, 1.0f };
+				found = true;
+			}
+			else {
+				// Otherwise use a binary search to find the gaps in sequential colour values.
+
+				// Erase duplicates so that we can properly use the binary search.
+				list.erase(std::unique(list.begin(), list.end()), list.end());
+
+				uint32 c = 0; // Our found truncated colour value.
+
+				uint32 first = 0;
+				uint32 last = colourCount - 1;// DirectDraw_BitCountToMask(totalBitCount) - 1;
+
+				uint32 mid = (first + last) / 2;
+
+				while (first < last) {
+					if ((list[mid] - list[first]) != (mid - first)) {
+						// There is a hole in the first half.
+						if ((mid - first) == 1 && (list[mid] - list[first]) > 1) {
+							c = (list[first] + 1);
+							found = true;
+							break;
+						}
+
+						last = mid;
+					}
+					else if ((list[last] - list[mid]) != (last - mid)) {
+						// There is a hole in the second half.
+						if ((last - mid) == 1 && (list[last] - list[mid]) > 1) {
+							c = (list[mid] + 1);
+							found = true;
+							break;
+						}
+
+						first = mid;
+					}
+					else {
+						// There is no hole.
+						break;
+					}
+
+					mid = (first + last) / 2;
+				}
+
+				if (found) {
+					// Convert our colour back from the truncated value to reals.
+					const uint8 r = DirectDraw_UnshiftChannelByte(c, rBitCount, rBitShift);
+					const uint8 g = DirectDraw_UnshiftChannelByte(c, gBitCount, gBitShift);
+					const uint8 b = DirectDraw_UnshiftChannelByte(c, bBitCount, bBitShift);
+					*transColour = ColourRGBF {
+						static_cast<real32>(r) / 255.0f,
+						static_cast<real32>(g) / 255.0f,
+						static_cast<real32>(b) / 255.0f,
+					};
+				}
+			}
+
+			return found;
+		}
+	}
+
+	return false; // Failed to get pixel format.
+}
+

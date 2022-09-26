@@ -251,8 +251,15 @@ void __cdecl Image_SetPenZeroTrans(Image* image);
 // <LegoRR.exe @0047deb0>
 void __cdecl Image_SetupTrans(Image* image, real32 lowr, real32 lowg, real32 lowb, real32 highr, real32 highg, real32 highb);
 
+/// CUSTOM:
+void Image_SetupTrans2(Image* image, real32 lowr, real32 lowg, real32 lowb, real32 highr, real32 highg, real32 highb, bool truncateTo16Bit);
+
 // <LegoRR.exe @0047df70>
 void __cdecl Image_DisplayScaled(Image* image, OPTIONAL const Area2F* src, OPTIONAL const Point2F* destPos, OPTIONAL const Point2F* destSize);
+
+/// CUSTOM:
+void Image_DisplayScaled2(Image* image, OPTIONAL const Area2F* src, OPTIONAL const Point2F* destPos,
+						  OPTIONAL const Point2F* destSize, sint32 drawScale, bool forceRender = false);
 
 // <LegoRR.exe @0047e120>
 void* __cdecl Image_LockSurface(Image* image, OUT uint32* pitch, OUT uint32* bpp);
@@ -323,6 +330,12 @@ bool Image_SaveBMP2(Image* image, const char* fname, FileFlags fileFlags);
 //void __cdecl Image_GetPenZero(const Image* image, OPTIONAL OUT real32* r, OPTIONAL OUT real32* g, OPTIONAL OUT real32* b);
 
 
+/// CUSTOM: Gets the surface of the image.
+IDirectDrawSurface4* Image_GetSurface(Image* image);
+
+/// CUSTOM: Find a valid transparency colour for the image that isn't in the list.
+bool Image_FindTransColour(Image* image, const ColourRGBF* colourList, uint32 colourCount, OUT ColourRGBF* transColour);
+
 /*Image* __cdecl Image_LoadBMPTexture(const char* filename);
 void __cdecl Image_SetMainViewport(Viewport* vp);
 void __cdecl Image_SetAlphaIntensity(real32 level);
@@ -344,6 +357,10 @@ void __cdecl Image_MyBlt(IDirectDrawSurface* dest, IDirectDrawSurface* src, uint
 
 #define Image_LoadBMP(n)					Image_LoadBMPScaled((n),0,0)
 #define Image_Display(p,l)					Image_DisplayScaled((p),nullptr,(l),nullptr)
+
+#define Image_SetupTransBlack(p)			Image_SetupTrans((p),0.0f,0.0f,0.0f,0.0f,0.0f,0.0f)
+
+#define Image_SetupTransBlack2(p,trunc16)	Image_SetupTrans2((p),0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,(trunc16))
 
 
 // <inlined>

@@ -12,6 +12,7 @@
 #include "../Graphics.h"
 #include "../Main.h"
 #include "DirectDraw.h"
+#include "Images.h"
 
 #include "Draw.h"
 
@@ -50,6 +51,16 @@ static uint32 _drawHeight = 0;
 
 /// CUSTOM: The absolute scale that pixels are drawn at, defaults to Main_RenderScale().
 static uint32 _drawScale  = 1;
+
+/// CUSTOM: User-supplied image as a render target to reduce locking larger surfaces, and allow drawing on other surfaces.
+static Gods98::Image* _drawRenderTarget = nullptr;
+
+/// CUSTOM: Extra translation applied to drawing coordinates.
+static Point2F _drawTranslation = { 0.0f, 0.0f };
+
+/// CUSTOM: Backup for Draw_SetClipWindow used on the back surface, since the clip window depends on the render target.
+static Point2F _drawBackClipStart = { 0.0f, 0.0f };
+static Point2F _drawBackClipEnd   = { 0.0f, 0.0f };
 
 #pragma endregion
 
@@ -100,13 +111,31 @@ bool Gods98::Draw_IsLocked()
 }
 
 /// CUSTOM: Locks the drawing surface and waits for Draw_End() to be called before unlocking it.
-bool Gods98::Draw_Begin()
+bool Gods98::Draw_Begin(OPTIONAL Image* renderTarget)
 {
 	Error_Warn(Draw_IsLocked(), "Draw_Begin: Called more than once before calling Draw_End()");
+	Error_Fatal(Draw_IsLocked() && renderTarget != _drawRenderTarget, "Draw_Begin: Called with a different render target before calling Draw_End()");
 
 	// Will still set new effect if already locked.
-	if (Draw_LockSurface(DirectDraw_bSurf(), Gods98::DrawEffect::None)) {
+	IDirectDrawSurface4* surf = (renderTarget ? Image_GetSurface(renderTarget) : DirectDraw_bSurf());
+	const bool alreadyLocked = Draw_IsLocked();
+	if (Draw_LockSurface(surf, Gods98::DrawEffect::None)) {
 		_drawBegin = true;
+
+		if (!alreadyLocked) {
+			// If the user decided to continue past the fatal error, don't change the render target unless we were unlocked.
+			_drawRenderTarget = renderTarget;
+
+			if (_drawRenderTarget != nullptr) {
+				// When drawing to an image, expect the image to be drawn at the render scale.
+				// So we don't want to scale drawing to the image only to have the image be scaled again when being displayed.
+				Draw_SetScale(1, false);
+			}
+
+			// When drawing to an image, we need to reset the clip window, since it's normally set for the back surface.
+			// To stay consistent, we'll reset the clip window every time Draw_Begin is called.
+			Draw_SetClipWindow(nullptr);
+		}
 	}
 	return _drawBegin;
 }
@@ -116,7 +145,8 @@ void Gods98::Draw_End()
 {
 	Error_Warn(!Draw_IsLocked(), "Draw_End: Called without first calling Draw_Begin()");
 
-	Draw_UnlockSurface(DirectDraw_bSurf());
+	IDirectDrawSurface4* surf = (_drawRenderTarget ? Image_GetSurface(_drawRenderTarget) : DirectDraw_bSurf());
+	Draw_UnlockSurface(surf);
 	_drawBegin = false;
 }
 
@@ -152,6 +182,27 @@ sint32 Gods98::Draw_SetScale(sint32 scale, bool relative)
 	return static_cast<sint32>(_drawScale);
 }
 
+/// CUSTOM: Gets the added translation offset for drawing coordinates.
+Point2F Gods98::Draw_GetTranslation()
+{
+	return _drawTranslation;
+}
+
+/// CUSTOM: Sets the added translation offset for drawing coordinates.
+void Gods98::Draw_SetTranslation(Point2F translation, bool relative)
+{
+	Error_Warn(!Draw_IsLocked(), "Draw_SetTranslation: Called without first calling Draw_Begin()");
+
+	if (Draw_IsLocked()) {
+		if (relative) {
+			Gods98::Maths_Vector2DAdd(&_drawTranslation, &_drawTranslation, &translation);
+		}
+		else {
+			_drawTranslation = translation;
+		}
+	}
+}
+
 /// CUSTOM: Gets the current effect while the drawing surface has been locked with Draw_Begin().
 Gods98::DrawEffect Gods98::Draw_GetEffect()
 {
@@ -170,17 +221,19 @@ void Gods98::Draw_SetEffect(DrawEffect effect)
 }
 
 /// CUSTOM:
-void Gods98::Draw_AssertUnlocked(const char* caller)
+void Gods98::Draw_AssertUnlocked(const char* caller, OPTIONAL Image* renderTarget)
 {
 	if (Draw_IsLocked()) {
-		Error_FatalF(true, "%s: Draw_End() has not been called before the back surface is needed", caller);
-		Draw_End(); // End for users that want to continue past the error dialog.
+		if (renderTarget == nullptr || renderTarget == _drawRenderTarget) {
+			Error_FatalF(true, "%s: Draw_End() has not been called before the surface is needed", caller);
+			Draw_End(); // End for users that want to continue past the error dialog.
+		}
 	}
 }
 
 
 // <LegoRR.exe @00486140>
-void __cdecl Gods98::Draw_Initialise(const Area2F* window)
+void __cdecl Gods98::Draw_Initialise(OPTIONAL const Area2F* window)
 {
 	log_firstcall();
 
@@ -189,11 +242,11 @@ void __cdecl Gods98::Draw_Initialise(const Area2F* window)
 }
 
 // <LegoRR.exe @00486160>
-void __cdecl Gods98::Draw_SetClipWindow(const Area2F* window)
+void __cdecl Gods98::Draw_SetClipWindow(OPTIONAL const Area2F* window)
 {
 	log_firstcall();
 
-	IDirectDrawSurface4* surf = DirectDraw_bSurf();
+	IDirectDrawSurface4* surf = (_drawRenderTarget ? Image_GetSurface(_drawRenderTarget) : DirectDraw_bSurf());
 
 	Error_Fatal(!(drawGlobs.flags & Draw_GlobFlags::DRAW_GLOB_FLAG_INITIALISED), "Draw not initialised");
 
@@ -204,9 +257,9 @@ void __cdecl Gods98::Draw_SetClipWindow(const Area2F* window)
 		drawGlobs.clipStart.y = std::max(drawGlobs.clipStart.y, window->y);
 	}
 
-	DDSURFACEDESC2 desc;
-	std::memset(&desc, 0, sizeof(DDSURFACEDESC2));
+	DDSURFACEDESC2 desc = { 0 };
 	desc.dwSize = sizeof(DDSURFACEDESC2);
+
 	if (surf->GetSurfaceDesc(&desc) == DD_OK) {
 		drawGlobs.clipEnd.x = static_cast<real32>(desc.dwWidth);
 		drawGlobs.clipEnd.y = static_cast<real32>(desc.dwHeight);
@@ -216,7 +269,13 @@ void __cdecl Gods98::Draw_SetClipWindow(const Area2F* window)
 		}
 	}
 	else {
-		Error_Warn(true, "Draw_SetClipWindow: Failed to GetSurfaceDesc for DirectDraw_bSurf");
+		Error_Warn(true, "Draw_SetClipWindow: Failed to GetSurfaceDesc");
+	}
+
+	if (_drawRenderTarget == nullptr) {
+		// If this is the back surface, then *backup* our clip window for when using a different render target.
+		_drawBackClipStart = drawGlobs.clipStart;
+		_drawBackClipEnd   = drawGlobs.clipEnd;
 	}
 
 //	drawGlobs.lockRect.left = (uint32) drawGlobs.clipStart.x;
@@ -316,13 +375,15 @@ void __cdecl Gods98::Draw_PixelListEx(const Point2F* pointList, uint32 count, re
 
 	if (Draw_LockSurface(surf, effect)) {
 
-		uint32 colour = Draw_GetColour(r, g, b);
+		const uint32 colour = Draw_GetColour(r, g, b);
 
-		for (uint32 loop=0 ; loop<count ; loop++){
-			const Point2F* point = &pointList[loop];
+		for (uint32 loop = 0; loop < count; loop++) {
+			Point2F point = pointList[loop];
+			// Add translation:
+			Gods98::Maths_Vector2DAdd(&point, &point, &_drawTranslation);
 
-			if (point->x >= drawGlobs.clipStart.x && point->y >= drawGlobs.clipStart.y && point->x < drawGlobs.clipEnd.x && point->y < drawGlobs.clipEnd.y){
-				Draw_TryDrawPixel((sint32) point->x, (sint32) point->y, colour);
+			if (point.x >= drawGlobs.clipStart.x && point.y >= drawGlobs.clipStart.y && point.x < drawGlobs.clipEnd.x && point.y < drawGlobs.clipEnd.y) {
+				Draw_TryDrawPixel(static_cast<sint32>(point.x), static_cast<sint32>(point.y), colour);
 			}
 		}
 		Draw_TryUnlockSurface(surf);
@@ -340,21 +401,21 @@ void __cdecl Gods98::Draw_LineListEx(const Point2F* fromList, const Point2F* toL
 
 	if (Draw_LockSurface(surf, effect)) {
 		
-		uint32 colour = Draw_GetColour(r, g, b);
+		const uint32 colour = Draw_GetColour(r, g, b);
 		
-		for (uint32 loop=0 ; loop<count ; loop++){
-			const Point2F* from = &fromList[loop];
-			const Point2F* to = &toList[loop];
-			Draw_LineActual((sint32) from->x, (sint32) from->y, (sint32) to->x, (sint32) to->y, colour);
+		for (uint32 loop = 0; loop < count; loop++) {
+			Point2F from = fromList[loop];
+			Point2F to   = toList[loop];
+			// Add translation:
+			Gods98::Maths_Vector2DAdd(&from, &from, &_drawTranslation);
+			Gods98::Maths_Vector2DAdd(&to,   &to,   &_drawTranslation);
+
+			Draw_LineActual(static_cast<sint32>(from.x), static_cast<sint32>(from.y),
+							static_cast<sint32>(to.x),   static_cast<sint32>(to.y), colour);
 		}
 		Draw_TryUnlockSurface(surf);
 	}
 }
-
-// <unused>
-//void __cdecl Gods98::Draw_WorldLineListEx(Viewport* vp, const Vector3F* fromList, const Vector3F* toList, uint32 count, real32 r, real32 g, real32 b, real32 a, DrawEffect effect)
-//{
-//}
 
 // <LegoRR.exe @00486350>
 void __cdecl Gods98::Draw_RectListEx(const Area2F* rectList, uint32 count, real32 r, real32 g, real32 b, DrawEffect effect)
@@ -367,23 +428,27 @@ void __cdecl Gods98::Draw_RectListEx(const Area2F* rectList, uint32 count, real3
 
 	if (Draw_LockSurface(surf, effect)) {
 
-		uint32 colour = Draw_GetColour(r, g, b);
+		const uint32 colour = Draw_GetColour(r, g, b);
 
-		for (uint32 loop=0 ; loop<count ; loop++){
+		for (uint32 loop = 0; loop < count; loop++) {
 			Area2F rect = rectList[loop];
+			// Add translation:
+			Gods98::Maths_Vector2DAdd(&rect.point, &rect.point, &_drawTranslation);
+
 			Point2F end = {
 				rect.x + rect.width,
 				rect.y + rect.height
 			};
 
-			if (rect.x < drawGlobs.clipStart.x) rect.x = (real32) drawGlobs.clipStart.x;
-			if (rect.y < drawGlobs.clipStart.y) rect.y = (real32) drawGlobs.clipStart.y;
-			if (end.x >= drawGlobs.clipEnd.x) end.x = (real32) (drawGlobs.clipEnd.x-1);
-			if (end.y >= drawGlobs.clipEnd.y) end.y = (real32) (drawGlobs.clipEnd.y-1);
-			sint32 ex = (sint32) end.x;
-			sint32 ey = (sint32) end.y;
-			for (sint32 y=(sint32)rect.y ; y<ey ; y++){
-				for (sint32 x=(sint32)rect.x ; x<ex ; x++){
+			if (rect.x < drawGlobs.clipStart.x) rect.x = drawGlobs.clipStart.x;
+			if (rect.y < drawGlobs.clipStart.y) rect.y = drawGlobs.clipStart.y;
+			if (end.x >= drawGlobs.clipEnd.x) end.x = (drawGlobs.clipEnd.x - 1);
+			if (end.y >= drawGlobs.clipEnd.y) end.y = (drawGlobs.clipEnd.y - 1);
+
+			const sint32 ex = static_cast<sint32>(end.x);
+			const sint32 ey = static_cast<sint32>(end.y);
+			for (sint32 y = static_cast<sint32>(rect.y); y < ey; y++) {
+				for (sint32 x = static_cast<sint32>(rect.x); x < ex; x++) {
 					Draw_TryDrawPixel(x, y, colour);
 				}
 			}
@@ -398,34 +463,34 @@ void __cdecl Gods98::Draw_RectList2Ex(const Draw_Rect* rectList, uint32 count, D
 	log_firstcall();
 
 	IDirectDrawSurface4* surf = DirectDraw_bSurf();
-	/*uint32 loop, colour;
-	sint32 x, y, ex, ey;
-	Area2F rect;
-	Point2F end;*/
 
 	Error_Fatal(!(drawGlobs.flags & Draw_GlobFlags::DRAW_GLOB_FLAG_INITIALISED), "Draw not initialised");
 
 	if (Draw_LockSurface(surf, effect)) {
 
-		for (uint32 loop=0 ; loop<count ; loop++){
+		for (uint32 loop = 0; loop < count; loop++) {
+
+			const uint32 colour = Draw_GetColour(rectList[loop].r, rectList[loop].g, rectList[loop].b);
 
 			Area2F rect = rectList[loop].rect;
-			uint32 colour = Draw_GetColour(rectList[loop].r, rectList[loop].g, rectList[loop].b);
+			// Add translation:
+			Gods98::Maths_Vector2DAdd(&rect.point, &rect.point, &_drawTranslation);
 
 			Point2F end = {
 				rect.x + rect.width,
 				rect.y + rect.height
 			};
-			if (rect.x < drawGlobs.clipStart.x) rect.x = (real32) drawGlobs.clipStart.x;
-			if (rect.y < drawGlobs.clipStart.y) rect.y = (real32) drawGlobs.clipStart.y;
-			if (end.x >= drawGlobs.clipEnd.x) end.x = (real32) (drawGlobs.clipEnd.x-1);
-			if (end.y >= drawGlobs.clipEnd.y) end.y = (real32) (drawGlobs.clipEnd.y-1);
-			sint32 ex = (sint32) end.x;
-			sint32 ey = (sint32) end.y;
-			for (sint32 y=(sint32)rect.y ; y<ey ; y++){
-				for (sint32 x=(sint32)rect.x ; x<ex ; x++){
-					Draw_TryDrawPixel(x, y, colour);
 
+			if (rect.x < drawGlobs.clipStart.x) rect.x = drawGlobs.clipStart.x;
+			if (rect.y < drawGlobs.clipStart.y) rect.y = drawGlobs.clipStart.y;
+			if (end.x >= drawGlobs.clipEnd.x) end.x = (drawGlobs.clipEnd.x - 1);
+			if (end.y >= drawGlobs.clipEnd.y) end.y = (drawGlobs.clipEnd.y - 1);
+
+			const sint32 ex = static_cast<sint32>(end.x);
+			const sint32 ey = static_cast<sint32>(end.y);
+			for (sint32 y = static_cast<sint32>(rect.y); y < ey; y++) {
+				for (sint32 x = static_cast<sint32>(rect.x); x < ex; x++) {
+					Draw_TryDrawPixel(x, y, colour);
 				}
 			}
 		}
@@ -439,20 +504,25 @@ void __cdecl Gods98::Draw_DotCircle(const Point2F* pos, uint32 radius, uint32 do
 	log_firstcall();
 
 	IDirectDrawSurface4* surf = DirectDraw_bSurf();
-	real32 step = (2.0f * M_PI) / dots;
 
 	Error_Fatal(!(drawGlobs.flags & Draw_GlobFlags::DRAW_GLOB_FLAG_INITIALISED), "Draw not initialised");
 
 	if (Draw_LockSurface(surf, effect)) {
 
-		uint32 colour = Draw_GetColour(r, g, b);
+		const uint32 colour = Draw_GetColour(r, g, b);
 
-		for (uint32 loop=0 ; loop<dots ; loop++){
-			real32 angle = step * loop;
-			uint32 x = (uint32) (pos->x + (Maths_Sin(angle) * radius));
-			uint32 y = (uint32) (pos->y + (Maths_Cos(angle) * radius));
-			if (x >= drawGlobs.clipStart.x && y >= drawGlobs.clipStart.y && x < drawGlobs.clipEnd.x && y < drawGlobs.clipEnd.y){
-				Draw_TryDrawPixel(x, y, colour);
+		const real32 step = (2.0f * M_PI) / dots;
+
+		// Add translation:
+		Point2F point = *pos;
+		Gods98::Maths_Vector2DAdd(&point, &point, &_drawTranslation);
+
+		for (uint32 loop = 0; loop < dots; loop++) {
+			const real32 angle = step * loop;
+			const real32 x = (point.x + (Maths_Sin(angle) * radius));
+			const real32 y = (point.y + (Maths_Cos(angle) * radius));
+			if (x >= drawGlobs.clipStart.x && y >= drawGlobs.clipStart.y && x < drawGlobs.clipEnd.x && y < drawGlobs.clipEnd.y) {
+				Draw_TryDrawPixel(static_cast<sint32>(x), static_cast<sint32>(y), colour);
 			}
 		}
 		Draw_TryUnlockSurface(surf);
@@ -495,6 +565,8 @@ bool32 __cdecl Gods98::Draw_LockSurface(IDirectDrawSurface4* surf, DrawEffect ef
 
 	if (!Draw_IsRenderEnabled()) {
 		_drawLocked = true;
+		Draw_SetTranslation(Point2F { 0.0f, 0.0f });
+		Draw_SetScale(1, true);
 		Draw_SetDrawPixelFunc(effect);
 		return true; // Behave as if locked.
 	}
@@ -526,6 +598,7 @@ bool32 __cdecl Gods98::Draw_LockSurface(IDirectDrawSurface4* surf, DrawEffect ef
 		_drawAlphaShift     = DirectDraw_CountMaskBitShift(_drawAlphaMask);
 
 		_drawLocked = true;
+		Draw_SetTranslation(Point2F { 0.0f, 0.0f });
 		Draw_SetScale(1, true);
 
 		if (Draw_SetDrawPixelFunc(effect)) {
@@ -566,6 +639,15 @@ void __cdecl Gods98::Draw_UnlockSurface(IDirectDrawSurface4* surf)
 	_drawBegin = false;
 	_drawLocked = false;
 	_drawScale = 1;
+	_drawTranslation = Point2F { 0.0f, 0.0f };
+
+	if (_drawRenderTarget != nullptr) {
+		_drawRenderTarget = nullptr;
+
+		// Restore back surface clip window in-case we were rendering using a render target.
+		drawGlobs.clipStart = _drawBackClipStart;
+		drawGlobs.clipEnd   = _drawBackClipEnd;
+	}
 }
 
 // <LegoRR.exe @00486950>
@@ -627,6 +709,8 @@ bool32 __cdecl Gods98::Draw_SetDrawPixelFunc(DrawEffect effect)
 // <LegoRR.exe @004869e0>
 void __cdecl Gods98::Draw_LineActual(sint32 x1, sint32 y1, sint32 x2, sint32 y2, uint32 colour)
 {
+	// Note: Translation should be applied before calling this function.
+
 	log_firstcall();
 
 	sint32 numpixels;
@@ -637,55 +721,57 @@ void __cdecl Gods98::Draw_LineActual(sint32 x1, sint32 y1, sint32 x2, sint32 y2,
 	sint32 yinc1, yinc2;
 
 	// Absolute distance
-	sint32 deltax = std::abs(x2 - x1);
-	sint32 deltay = std::abs(y2 - y1);
+	const sint32 deltax = std::abs(x2 - x1);
+	const sint32 deltay = std::abs(y2 - y1);
 
 	// different drawing behavior depending on the larger coordinate plane distance
 	if (deltax >= deltay) {
 		numpixels = deltax + 1;
 		d = 2 * deltay - deltax;
-		dinc1 = deltay << 1;
-		dinc2 = (deltay - deltax) << 1;
+		dinc1 = deltay * 2;
+		dinc2 = (deltay - deltax) * 2;
 		xinc1 = 1;
 		xinc2 = 1;
 		yinc1 = 0;
 		yinc2 = 1;
-	} else {
+	}
+	else {
 		numpixels = deltay + 1;
 		d = (2 * deltax) - deltay;
-		dinc1 = deltax << 1;
-		dinc2 = (deltax - deltay) << 1;
+		dinc1 = deltax * 2;
+		dinc2 = (deltax - deltay) * 2;
 		xinc1 = 0;
 		xinc2 = 1;
 		yinc1 = 1;
 		yinc2 = 1;
 	}
 	
-	if (x1>x2) {
+	if (x1 > x2) {
 		xinc1 = -xinc1;
 		xinc2 = -xinc2;
 	}
-	if (y1>y2) {
+	if (y1 > y2) {
 		yinc1 = -yinc1;
 		yinc2 = -yinc2;
 	}
 	sint32 x = x1;
 	sint32 y = y1;
 	
-	for (sint32 loop=1 ; loop<=numpixels ; loop++) {
+	for (sint32 loop = 1; loop <= numpixels; loop++) {
 		
-		if (x >= drawGlobs.clipStart.x && y >= drawGlobs.clipStart.y && x < drawGlobs.clipEnd.x && y < drawGlobs.clipEnd.y){
+		if (x >= drawGlobs.clipStart.x && y >= drawGlobs.clipStart.y && x < drawGlobs.clipEnd.x && y < drawGlobs.clipEnd.y) {
 			Draw_TryDrawPixel(x, y, colour);
 		}
 		
 		if (d < 0) {
-			d = d + dinc1;
-			x = x + xinc1;
-			y = y + yinc1;
-		} else {
-			d = d + dinc2;
-			x = x + xinc2;
-			y = y + yinc2;
+			d += dinc1;
+			x += xinc1;
+			y += yinc1;
+		}
+		else {
+			d += dinc2;
+			x += xinc2;
+			y += yinc2;
 		}
 	}
 }

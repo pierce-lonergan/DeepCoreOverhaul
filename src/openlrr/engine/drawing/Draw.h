@@ -33,6 +33,7 @@ namespace Gods98
 
 #pragma region Forward Declarations
 
+struct Image; // from `engine/drawing/Images.h`
 struct Viewport; // from `engine/gfx/Viewports.h`
 
 #pragma endregion
@@ -192,7 +193,7 @@ void Draw_SetRenderEnabled(bool enabled);
 bool Draw_IsLocked();
 
 /// CUSTOM: Locks the drawing surface and waits for Draw_End() to be called before unlocking it.
-bool Draw_Begin();
+bool Draw_Begin(OPTIONAL Image* renderTarget = nullptr);
 
 /// CUSTOM: Unlocks the drawing surface after Draw_Begin() was called.
 void Draw_End();
@@ -203,6 +204,12 @@ sint32 Draw_GetScale();
 /// CUSTOM: Sets the scale at which pixels are drawn at. 0 defaults to Main_Scale. Returns the absolute scale assigned.
 sint32 Draw_SetScale(sint32 scale, bool relative);
 
+/// CUSTOM: Gets the added translation offset for drawing coordinates.
+Point2F Draw_GetTranslation();
+
+/// CUSTOM: Sets the added translation offset for drawing coordinates.
+void Draw_SetTranslation(Point2F translation, bool relative = false);
+
 /// CUSTOM: Gets the current effect while the drawing surface has been locked with Draw_Begin().
 DrawEffect Draw_GetEffect();
 
@@ -210,14 +217,14 @@ DrawEffect Draw_GetEffect();
 void Draw_SetEffect(DrawEffect effect);
 
 /// CUSTOM:
-void Draw_AssertUnlocked(const char* caller);
+void Draw_AssertUnlocked(const char* caller, OPTIONAL Image* renderTarget = nullptr);
 
 
 // <LegoRR.exe @00486140>
-void __cdecl Draw_Initialise(const Area2F* window);
+void __cdecl Draw_Initialise(OPTIONAL const Area2F* window);
 
 // <LegoRR.exe @00486160>
-void __cdecl Draw_SetClipWindow(const Area2F* window);
+void __cdecl Draw_SetClipWindow(OPTIONAL const Area2F* window);
 
 // <LegoRR.exe @00486270>
 void __cdecl Draw_GetClipWindow(OUT Area2F* window);
