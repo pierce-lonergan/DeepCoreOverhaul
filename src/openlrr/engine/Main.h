@@ -161,6 +161,18 @@ enum class CursorVisibility
 	Default = Never,
 };
 
+/// CUSTOM: Behaviour for trapping the cursor in the game window in windowed mode.
+enum class CursorClipping
+{
+	Off,		// Never clip the cursor.
+	MenuArea,	// Clip the cursor and allow accessing the system menu bar.
+	GameArea,	// Clip the cursor and prevent accessing the system menu bar.
+
+	Count,
+
+	Default = Off,
+};
+
 #pragma endregion
 
 /**********************************************************************************
@@ -249,6 +261,7 @@ struct Main_Globs2
 
 	/// FIXES:
 	CursorVisibility	cursorVisibility;	// Mouse cursor visibilty fix behaviour
+	CursorClipping		cursorClipping;		// Trapping the cursor in the game window.
 
 	/// CONTROL:
 	sint32				advanceFrames;	// Number of frames to advance when in the Main_IsPaused state
@@ -414,6 +427,9 @@ __inline HMENU Main_GetMenu(void) { return mainGlobs2.menu; }
 
 /// CUSTOM: Get type of behaviour for mouse cursor visibility fix.
 __inline CursorVisibility Main_GetCursorVisibility(void) { return mainGlobs2.cursorVisibility; }
+
+/// CUSTOM: Get type of behaviour for mouse trapping in the game window.
+__inline CursorClipping Main_GetCursorClipping(void) { return mainGlobs2.cursorClipping; }
 
 /// CUSTOM: Get if Main_InitApp has been called. (just checks hWnd)
 __inline bool32 Main_IsWindowSetup(void) { return mainGlobs.hWnd != nullptr; }
@@ -619,6 +635,12 @@ void __cdecl Main_SetupDisplay(bool32 fullScreen, uint32 xPos, uint32 yPos, uint
 // <LegoRR.exe @004785d0>
 void __cdecl Main_AdjustWindowRect(IN OUT Rect2I* rect);
 
+/// CUSTOM: Adjust window rect while choosing to include or exclude the menu bar.
+void Main_AdjustWindowRect2(IN OUT Rect2I* rect, bool includeMenuBar);
+
+/// CUSTOM: Handles trapping the mouse cursor in the game window.
+void Main_HandleCursorClipping();
+
 
 // <LegoRR.exe @00478690>
 void __cdecl Main_SetTitle(const char* title);
@@ -675,6 +697,9 @@ void __cdecl Main_SetMenu(HMENU menu, bool32 owner);
 
 /// CUSTOM: Set type of behaviour for mouse cursor visibility fix.
 void __cdecl Main_SetCursorVisibility(CursorVisibility newCursorVisibility);
+
+/// CUSTOM: Get type of behaviour for mouse trapping in the game window.
+void Main_SetCursorClipping(CursorClipping newCursorClipping);
 
 /// CUSTOM: Get number of frames advance to when in the Main_IsPaused state (always returns >= 0).
 sint32 __cdecl Main_GetAdvanceFrames(void);

@@ -79,10 +79,14 @@
 #define IDM_RADARMAPSCALE_X2			527
 #define IDM_RADARMAPSCALE_X3			528
 #define IDM_RADARMAPSCALE_X4			529
-// &Options > Cursor (Radio Group)
+// &Options > Cursor Visibility (Radio Group)
 #define IDM_CURSOR_NEVER				531
 #define IDM_CURSOR_TITLEBAR				532
 #define IDM_CURSOR_ALWAYS				533
+// &Options > Cursor Clipping (Radio Group)
+#define IDM_CURSORCLIPPING_OFF			535
+#define IDM_CURSORCLIPPING_MENU			536
+#define IDM_CURSORCLIPPING_GAMEAREA		537
 // &Options > Icon (Radio Group)
 #define IDM_ICON_NONE					541
 #define IDM_ICON_NATIVE					542

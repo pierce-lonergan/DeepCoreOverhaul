@@ -832,6 +832,7 @@ sint32 __stdcall Gods98::Main_WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTAN
 						INPUT.rDoubleClicked = false;
 
 						Main_HandleIO();
+						Main_HandleCursorClipping();
 						// In fullscreen mode we will always be the active application or I will eat my hat.
 						//  --Whoever wrote this 20 years ago, I'll hold you to it
 						if (mainGlobs.flags & MainFlags::MAIN_FLAG_FULLSCREEN) mainGlobs.active = true;
@@ -1205,6 +1206,16 @@ void Gods98::Main_ParseCommandLineOptions()
 	if (mainGlobs2.windowScale <= 0)
 		mainGlobs2.windowScale = 1; // Default scale. Whether invalid or command not used.
 
+	// Usage: -clipcursor [=on|menu|off]
+	// Traps the cursor in the game window while in windowed mode. (Press ALT to untrap the cursor temporarily).
+	if (FindParameter(args, "-clipcursor", param) || FindOption(args, "-clipcursor")) {
+
+		if (ArgumentEquals(param, "menu"))     mainGlobs2.cursorClipping = CursorClipping::MenuArea;
+		else if (ArgumentEquals(param, "off")) mainGlobs2.cursorClipping = CursorClipping::Off;
+		else if (ArgumentEquals(param, "on"))  mainGlobs2.cursorClipping = CursorClipping::GameArea;
+		else                                   mainGlobs2.cursorClipping = CursorClipping::GameArea;
+	}
+
 
 	// usage: -noCD
 	// usage: -useCD
@@ -1481,6 +1492,7 @@ void __cdecl Gods98::Main_LoopUpdate2(bool clear, bool updateGraphics)
 	INPUT.rDoubleClicked = false;
 
 	Main_HandleIO();
+	Main_HandleCursorClipping();
 	Input_ReadKeys();
 	Input_ReadMouse2();
 
@@ -1634,13 +1646,62 @@ void __cdecl Gods98::Main_SetupDisplay(bool32 fullScreen, uint32 xPos, uint32 yP
 // <LegoRR.exe @004785d0>
 void __cdecl Gods98::Main_AdjustWindowRect(IN OUT Rect2I* rect)
 {
+	return Main_AdjustWindowRect2(rect, false);
+}
+
+/// CUSTOM: Adjust window rect while choosing to include or exclude the menu bar.
+void Gods98::Main_AdjustWindowRect2(IN OUT Rect2I* rect, bool cutOutMenuBar)
+{
 	log_firstcall();
 
 	if (!(mainGlobs.flags & MainFlags::MAIN_FLAG_FULLSCREEN)) {
 		/// CUSTOM: Added menu
-		::AdjustWindowRect(reinterpret_cast<RECT*>(rect), mainGlobs.style, Main_GetMenu() != nullptr);// false);
+		::AdjustWindowRect(reinterpret_cast<RECT*>(rect), mainGlobs.style, !cutOutMenuBar && (Main_GetMenu() != nullptr));// false);
 
 		//::AdjustWindowRect(reinterpret_cast<RECT*>(rect), mainGlobs.style, false);
+	}
+}
+
+/// CUSTOM: Handles trapping the mouse cursor in the game window.
+void Gods98::Main_HandleCursorClipping()
+{
+	if (!(mainGlobs.flags & MainFlags::MAIN_FLAG_FULLSCREEN) && mainGlobs.active) {
+
+		switch (mainGlobs2.cursorClipping) {
+		case CursorClipping::Off:
+
+			::ClipCursor(nullptr);
+			break;
+		case CursorClipping::MenuArea:
+		case CursorClipping::GameArea:
+			{
+				Rect2I clipRect = { 0 };
+				::GetClientRect(mainGlobs.hWnd, reinterpret_cast<RECT*>(&clipRect));
+				Point2I screenPt = { 0, 0 };
+				::ClientToScreen(mainGlobs.hWnd, reinterpret_cast<POINT*>(&screenPt));
+				clipRect.left   += screenPt.x;
+				clipRect.top    += screenPt.y;
+				clipRect.right  += screenPt.x;
+				clipRect.bottom += screenPt.y;
+
+				if (mainGlobs2.cursorClipping == CursorClipping::MenuArea) {
+					Rect2I withMenu = { 0, 0, 0, 0 };
+					Rect2I withoutMenu = { 0, 0, 0, 0 };
+					Main_AdjustWindowRect2(&withMenu, false);
+					Main_AdjustWindowRect2(&withoutMenu, true);
+					const sint32 menuBarHeight = (withoutMenu.top - withMenu.top);
+
+					clipRect.top -= menuBarHeight;
+				}
+
+				::ClipCursor(reinterpret_cast<RECT*>(&clipRect));
+			}
+			break;
+		}
+	}
+	else {
+		// Never perform cursor clipping in fullscreen mode.
+		::ClipCursor(nullptr);
 	}
 }
 
@@ -2430,6 +2491,12 @@ void __cdecl Gods98::Main_SetCursorVisibility(CursorVisibility newCursorVisibili
 		}
 
 	}
+}
+
+/// CUSTOM: Get type of behaviour for mouse trapping in the game window.
+void Gods98::Main_SetCursorClipping(CursorClipping newCursorClipping)
+{
+	mainGlobs2.cursorClipping = newCursorClipping;
 }
 
 /// CUSTOM: Get number of frames advance to when in the Main_Paused state (always returns >= 0).

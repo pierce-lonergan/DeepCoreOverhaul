@@ -128,6 +128,12 @@ BEGIN
             MENUITEM "Show in &Title Bar",      IDM_CURSOR_TITLEBAR
             MENUITEM "&Always Show",            IDM_CURSOR_ALWAYS
         END
+        POPUP "&Cursor Clipping"
+        BEGIN
+            MENUITEM "&Off",                    IDM_CURSORCLIPPING_OFF,CHECKED
+            MENUITEM "&Game Area and Menu",     IDM_CURSORCLIPPING_MENU
+            MENUITEM "&Game Area",              IDM_CURSORCLIPPING_GAMEAREA
+        END
         POPUP "&Icon"
         BEGIN
             MENUITEM "None",                    IDM_ICON_NONE,CHECKED

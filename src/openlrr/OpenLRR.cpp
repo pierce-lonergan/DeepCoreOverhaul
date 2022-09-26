@@ -112,6 +112,7 @@ bool InjectOpenLRR(HINSTANCE hInstanceDll)
 static constexpr const auto Menu_RadarMapScaleIDs = array_of<uint32>(IDM_RADARMAPSCALE_X1, IDM_RADARMAPSCALE_X2, IDM_RADARMAPSCALE_X3, IDM_RADARMAPSCALE_X4);
 static constexpr const auto Menu_ScaleIDs = array_of<uint32>(IDM_WINDOWSCALE_X1, IDM_WINDOWSCALE_X2, IDM_WINDOWSCALE_X3, IDM_WINDOWSCALE_X4);
 static constexpr const auto Menu_IconIDs = array_of<uint32>(IDM_ICON_NONE, IDM_ICON_NATIVE, IDM_ICON_OPENLRR, IDM_ICON_GOLD, IDM_ICON_TEAL, IDM_ICON_TEALRR);
+static constexpr const auto Menu_CursorClippingIDs = array_of<uint32>(IDM_CURSORCLIPPING_OFF, IDM_CURSORCLIPPING_MENU, IDM_CURSORCLIPPING_GAMEAREA);
 static constexpr const auto Menu_CursorIDs = array_of<uint32>(IDM_CURSOR_NEVER, IDM_CURSOR_TITLEBAR, IDM_CURSOR_ALWAYS);
 static constexpr const auto Menu_SelectPlaceArrowIDs = array_of<uint32>(IDM_SELECTPLACEARROW_NEVER, IDM_SELECTPLACEARROW_SOLIDONLY, IDM_SELECTPLACEARROW_ALWAYS);
 static constexpr const auto Menu_QualityIDs = array_of<uint32>(IDM_QUALITY_WIREFRAME, IDM_QUALITY_UNLITFLAT, IDM_QUALITY_FLAT, IDM_QUALITY_GOURAUD, IDM_QUALITY_PHONG);
@@ -122,6 +123,7 @@ static constexpr const auto Menu_InitCommandLineIDs = array_of<uint32>(IDM_DUALM
 //static_assert(Menu_ScaleIDs.size() == 4, "Mismatched Menu_ScaleIDs array size");
 static_assert(Menu_IconIDs.size() == openlrrGlobs.iconList.size(), "Mismatched Menu_IconIDs array size");
 static_assert(Menu_CursorIDs.size() == static_cast<size_t>(Gods98::CursorVisibility::Count), "Mismatched Menu_CursorIDs array size");
+static_assert(Menu_CursorClippingIDs.size() == static_cast<size_t>(Gods98::CursorClipping::Count), "Mismatched Menu_CursorClippingIDs array size");
 static_assert(Menu_QualityIDs.size() == static_cast<size_t>(Gods98::Graphics_Quality::Count), "Mismatched Menu_QualityIDs array size");
 
 static constexpr const auto Menu_LegoInitIDs = array_of<uint32>(
@@ -188,6 +190,9 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 
     sint32 curCursor = static_cast<sint32>(Gods98::Main_GetCursorVisibility());
     Menu_CheckRadioButtonsArray(Menu_CursorIDs, curCursor);
+
+    sint32 curCursorClipping = static_cast<sint32>(Gods98::Main_GetCursorClipping());
+    Menu_CheckRadioButtonsArray(Menu_CursorClippingIDs, curCursorClipping);
 
     sint32 curRouteAuto = static_cast<sint32>(LegoRR::Debug_RouteVisual_GetAutoMode());
     Menu_CheckRadioButtonsArray(Menu_RoutingAutoIDs, curRouteAuto);
@@ -474,6 +479,13 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
         }*/
         Gods98::Main_SetCursorVisibility(static_cast<Gods98::CursorVisibility>(wmId - IDM_CURSOR_NEVER));
         break;
+
+	case IDM_CURSORCLIPPING_OFF:
+	case IDM_CURSORCLIPPING_MENU:
+	case IDM_CURSORCLIPPING_GAMEAREA:
+		Gods98::Main_SetCursorClipping(static_cast<Gods98::CursorClipping>(wmId - IDM_CURSORCLIPPING_OFF));
+		break;
+
 
     case IDM_ICON_NONE:
     case IDM_ICON_NATIVE:
@@ -841,6 +853,10 @@ void __cdecl OpenLRR_WindowCallback(HWND hWnd, UINT message, WPARAM wParam, LPAR
 {
     switch (message)
     {
+	case WM_ENTERIDLE:
+		::ClipCursor(nullptr); // Unlock cursor when pressing alt.
+		break;
+
     case WM_INITMENUPOPUP:
         OpenLRR_UpdateMenuItems();
         break;
