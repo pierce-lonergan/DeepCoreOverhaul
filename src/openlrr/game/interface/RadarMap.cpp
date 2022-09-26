@@ -86,6 +86,8 @@ static constexpr const ColourRGBF RADARMAP_UNHANDLED_HIDDENCOLOUR = { 1.0f, 1.0f
 
 #define RADARMAP_MAXDRAWRECTS		1500
 
+#define RADARMAP_USERENDERTARGET	true
+
 #pragma endregion
 
 /**********************************************************************************
@@ -122,10 +124,63 @@ sint32 LegoRR::RadarMap_GetDrawScale()
 	return Gods98::Main_RadarMapScale();
 }
 
-/// CUSTOM: Assigns the drawing API scale used by the radar map.
-void LegoRR::RadarMap_ApplyDrawScale()
+/// CUSTOM:
+void LegoRR::RadarMap_BeginDraw(RadarMap* radarMap)
 {
-	Gods98::Draw_SetScale(RadarMap_GetDrawScale(), false);
+	Size2I size = {
+		static_cast<sint32>(radarMap->screenRect.width  * _RadarMap_GetTransformScale()),
+		static_cast<sint32>(radarMap->screenRect.height * _RadarMap_GetTransformScale()),
+	};
+
+	// Check if we need to create or resize our render target.
+	// Note: Change define to false to disable render target-based drawing.
+	#if RADARMAP_USERENDERTARGET
+	if (radarMap->renderTarget == nullptr ||
+		size.width  != Gods98::Image_GetWidth(radarMap->renderTarget) ||
+		size.height != Gods98::Image_GetHeight(radarMap->renderTarget))
+	{
+		if (radarMap->renderTarget != nullptr) {
+			Gods98::Image_Remove(radarMap->renderTarget);
+			radarMap->renderTarget = nullptr;
+		}
+
+		radarMap->renderTarget = Gods98::Image_CreateNew(size.width, size.height);
+	}
+	#endif
+
+	// Clear the radar screen to black.
+	if (radarMap->renderTarget != nullptr) {
+		Gods98::Image_ClearRGBF(radarMap->renderTarget, nullptr, 0.0f, 0.0f, 0.0f);
+	}
+	else {
+		Gods98::DirectDraw_ClearRGBF(&radarMap->screenRect, 0.0f, 0.0f, 0.0f);
+	}
+
+	Gods98::Draw_Begin(radarMap->renderTarget);
+
+	if (radarMap->renderTarget != nullptr) {
+		Gods98::Draw_SetTranslation(Point2F {
+			-radarMap->screenRect.x * _RadarMap_GetTransformScale(),
+			-radarMap->screenRect.y * _RadarMap_GetTransformScale(),
+		}); // Translate to 0,0.
+	}
+	else {
+		Gods98::Draw_SetScale(RadarMap_GetDrawScale(), false);
+	}
+}
+
+/// CUSTOM:
+void LegoRR::RadarMap_EndDraw(RadarMap* radarMap)
+{
+	Gods98::Draw_End();
+
+	if (radarMap->renderTarget != nullptr) {
+		const Point2F destPos = {
+			radarMap->screenRect.x * _RadarMap_GetTransformScale(),
+			radarMap->screenRect.y * _RadarMap_GetTransformScale(),
+		};
+		Gods98::Image_DisplayScaled2(radarMap->renderTarget, nullptr, &destPos, nullptr, RadarMap_GetDrawScale());
+	}
 }
 
 /// CUSTOM: Gets the scale that radar screen points are transformed by.
@@ -232,6 +287,8 @@ LegoRR::RadarMap* __cdecl LegoRR::RadarMap_Create(Map3D* map, const Area2F* scre
 {
 	RadarMap* radarMap = (RadarMap*)Gods98::Mem_Alloc(sizeof(RadarMap));
 	if (radarMap != nullptr) {
+		std::memset(radarMap, 0, sizeof(RadarMap));
+
 		radarMap->screenRect = *screenRect;
 		radarMap->zoom = zoom;
 		radarMap->blockSize = Map3D_BlockSize(map);
@@ -244,6 +301,11 @@ LegoRR::RadarMap* __cdecl LegoRR::RadarMap_Create(Map3D* map, const Area2F* scre
 // <LegoRR.exe @0045ddb0>
 void __cdecl LegoRR::RadarMap_Free(RadarMap* radarMap)
 {
+	if (radarMap->renderTarget != nullptr) {
+		Gods98::Image_Remove(radarMap->renderTarget);
+		radarMap->renderTarget = nullptr;
+	}
+
 	Gods98::Mem_Free(radarMap);
 }
 
@@ -253,7 +315,10 @@ void __cdecl LegoRR::RadarMap_DrawSurveyDotCircle(RadarMap* radarMap, const Poin
 	Area2F oldClipWindow;
 	Gods98::Draw_GetClipWindow(&oldClipWindow);
 
-	Gods98::Draw_SetClipWindow(_RadarMap_ScaledScreenRect(radarMap));
+	if (radarMap->renderTarget == nullptr) {
+		// We only need to clip if drawing to the back surface.
+		Gods98::Draw_SetClipWindow(_RadarMap_ScaledScreenRect(radarMap));
+	}
 
 	// This uses TransformRect for a circle, because it gets the same results that are needed.
 	Area2F rect = {
@@ -282,7 +347,11 @@ void __cdecl LegoRR::RadarMap_Draw(RadarMap* radarMap, const Point2F* centerPos)
 {
 	Area2F oldClipWindow = { 0.0f }; // dummy init
 	Gods98::Draw_GetClipWindow(&oldClipWindow);
-	Gods98::Draw_SetClipWindow(_RadarMap_ScaledScreenRect(radarMap));
+
+	if (radarMap->renderTarget == nullptr) {
+		// We only need to clip if drawing to the back surface.
+		Gods98::Draw_SetClipWindow(_RadarMap_ScaledScreenRect(radarMap));
+	}
 
 	radarMap->centerPos = *centerPos;
 

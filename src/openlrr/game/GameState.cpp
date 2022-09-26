@@ -1301,18 +1301,14 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	const bool32 inRadarMapView = ((legoGlobs.flags1 & GAME1_RADARON) && (legoGlobs.flags1 & GAME1_RADAR_MAPVIEW));
 
 	if (inRadarMapView) {
-		/// CHANGE: Move this call outside of RadarMap_Draw, so that we can lock the drawing surface during it.
-		RadarMap_ClearScreen(Lego_GetRadarMap());
-
-		Gods98::Draw_Begin(); // Start of only Draw calls for radar map.
-		RadarMap_ApplyDrawScale();
+		RadarMap_BeginDraw(Lego_GetRadarMap()); // Start of only Draw calls for radar map.
 
 		Lego_DrawRadarMap();
 	}
 	LegoObject_UpdateAllRadarSurvey(elapsedWorld, inRadarMapView);
 	
 	if (inRadarMapView) {
-		Gods98::Draw_End(); // End of only Draw calls for radar map.
+		RadarMap_EndDraw(Lego_GetRadarMap()); // End of only Draw calls for radar map.
 	}
 
 

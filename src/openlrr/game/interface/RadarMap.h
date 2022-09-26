@@ -65,8 +65,10 @@ struct RadarMap // [LegoRR/RadarMap.c|struct:0x3c]
 	/*34,4*/	Gods98::Draw_Rect* drawRectList; // Pointer to a list not owned by this struct.
 	/*38,4*/	uint32 drawRectCount;
 	/*3c*/
+	/// EXPANSION:
+	Gods98::Image* renderTarget;
 };
-assert_sizeof(RadarMap, 0x3c);
+//assert_sizeof(RadarMap, 0x3c);
 
 
 struct RadarMap_Globs // [LegoRR/RadarMap.c|struct:0x3f4|tags:GLOBS]
@@ -110,8 +112,11 @@ extern RadarMap_Globs & radarmapGlobs;
 /// CUSTOM: Gets the drawing API scale used by the radar map.
 sint32 RadarMap_GetDrawScale();
 
-/// CUSTOM: Assigns the drawing API scale used by the radar map.
-void RadarMap_ApplyDrawScale();
+/// CUSTOM:
+void RadarMap_BeginDraw(RadarMap* radarMap);
+
+/// CUSTOM:
+void RadarMap_EndDraw(RadarMap* radarMap);
 
 /// CUSTOM: Gets the scale that radar screen points are transformed by.
 real32 _RadarMap_GetTransformScale();
