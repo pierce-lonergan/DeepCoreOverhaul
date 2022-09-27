@@ -80,8 +80,6 @@ void __cdecl LegoRR::ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGr
 		}
 
 		// We need to render a new tooltip image.
-		Error_Debug("Rendering new tooltip image");
-
 		bool needsClear = false;
 
 		if (_toolTipImageCache != nullptr &&
@@ -102,15 +100,10 @@ void __cdecl LegoRR::ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGr
 				// The existing image size is too small, dispose of it and make a larger image.
 				size.width  = std::max(size.width,  Gods98::Image_GetWidth(_toolTipImageCache));
 				size.height = std::max(size.height, Gods98::Image_GetHeight(_toolTipImageCache));
-				Error_DebugF(", increasing size to %ix%i", size.width, size.height);
 				Gods98::Image_Remove(_toolTipImageCache);
-			}
-			else {
-				Error_DebugF(", starting size at %ix%i", size.width, size.height);
 			}
 			prerendered = Gods98::Image_CreateNew(size.width, size.height);
 		}
-		Error_Debug("\n");
 
 		// Pick a transparent colour that isn't rc, ln1, or ln2.
 		const ColourRGBF colours[3] = { rc, ln1, ln2 };
