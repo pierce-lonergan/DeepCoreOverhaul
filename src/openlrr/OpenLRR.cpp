@@ -283,6 +283,7 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 
 	Menu_CheckButton(IDM_NOPOWERCONSUMPTION,	(LegoRR::Lego_IsInit() && LegoRR::Cheat_IsNoPowerConsumption()));
 	Menu_CheckButton(IDM_NOOXYGENCONSUMPTION,	(LegoRR::Lego_IsInit() && LegoRR::Cheat_IsNoOxygenConsumption()));
+	Menu_CheckButton(IDM_SUPERTOOLSTORE,		(LegoRR::Lego_IsInit() && LegoRR::Cheat_IsSuperToolStore()));
 
 	Menu_EnableButton(IDM_SURVEYLEVEL,		(LegoRR::Lego_IsInLevel() && !LegoRR::Lego_IsLevelSurveyed()));
 
@@ -800,6 +801,10 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_NOOXYGENCONSUMPTION:
 		//std::printf("IDM_NOOXYGENCONSUMPTION\n");
 		LegoRR::Cheat_SetNoOxygenConsumption(!LegoRR::Cheat_IsNoOxygenConsumption());
+		break;
+
+	case IDM_SUPERTOOLSTORE:
+		LegoRR::Cheat_SetSuperToolStore(!LegoRR::Cheat_IsSuperToolStore());
 		break;
 
 

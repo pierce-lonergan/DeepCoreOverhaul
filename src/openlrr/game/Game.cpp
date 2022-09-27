@@ -144,6 +144,7 @@ static bool _cheatNoBuildCosts = false;
 static bool _cheatNoConstructionBarriers = false;
 static bool _cheatNoPowerConsumption = false;
 static bool _cheatNoOxygenConsumption = false;
+static bool _cheatSuperToolStore = false;
 
 #pragma endregion
 
@@ -210,6 +211,17 @@ bool LegoRR::Cheat_IsNoOxygenConsumption()
 void LegoRR::Cheat_SetNoOxygenConsumption(bool on)
 {
 	_cheatNoOxygenConsumption = on;
+}
+
+
+bool LegoRR::Cheat_IsSuperToolStore()
+{
+	return _cheatSuperToolStore;
+}
+
+void LegoRR::Cheat_SetSuperToolStore(bool on)
+{
+	_cheatSuperToolStore = on;
 }
 
 

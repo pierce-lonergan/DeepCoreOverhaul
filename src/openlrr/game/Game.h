@@ -813,6 +813,10 @@ void Cheat_SetNoPowerConsumption(bool on);
 bool Cheat_IsNoOxygenConsumption();
 void Cheat_SetNoOxygenConsumption(bool on);
 
+// Tool Stores will be able to teleport down any land vehicles, generates power, and can train any ability.
+bool Cheat_IsSuperToolStore();
+void Cheat_SetSuperToolStore(bool on);
+
 // Marks all blocks in the level as scanned, so that they'll show up on the radar.
 void Cheat_SurveyLevel();
 

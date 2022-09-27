@@ -177,10 +177,11 @@
 // --------------
 #define IDM_NOPOWERCONSUMPTION			411
 #define IDM_NOOXYGENCONSUMPTION			412
-#define IDM_QUICKREINFORCE				413
-#define IDM_PEACEFUL					414
+#define IDM_SUPERTOOLSTORE				413
+#define IDM_QUICKREINFORCE				414
+#define IDM_PEACEFUL					415
 // --------------
-#define IDM_SURVEYLEVEL					415
+#define IDM_SURVEYLEVEL					419
 // --------------
 // &Cheats > Config
 #define IDM_NOROCKFALL					420

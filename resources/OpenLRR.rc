@@ -251,6 +251,7 @@ BEGIN
         //MENUITEM "Always Rock Fall",            IDM_ALWAYSROCKFALL
         MENUITEM "No Power Consumption",        IDM_NOPOWERCONSUMPTION
         MENUITEM "No Oxygen Consumption",       IDM_NOOXYGENCONSUMPTION
+        MENUITEM "Super Tool Store",            IDM_SUPERTOOLSTORE
 #if 0  // not ready yet
         MENUITEM "Quick Reinforce",             IDM_QUICKREINFORCE
         MENUITEM "Peaceful",                    IDM_PEACEFUL

@@ -1066,13 +1066,29 @@ sint32 __cdecl LegoRR::StatsObject_GetSurveyRadius(LegoRR::LegoObject* liveObj)
 // <LegoRR.exe @0046a120>
 LegoRR::StatsFlags1 __cdecl LegoRR::StatsObject_GetStatsFlags1(LegoRR::LegoObject* liveObj)
 {
-	return liveObj->stats->flags1;
+	StatsFlags1 extraFlags = STATS1_NONE;
+	if (Cheat_IsSuperToolStore() && liveObj->type == LegoObject_Building &&
+		::_stricmp(legoGlobs.buildingName[liveObj->id], "ToolStation") == 0)
+	{
+		extraFlags |= STATS1_SMALLTELEPORTER | STATS1_BIGTELEPORTER;
+	}
+
+	return liveObj->stats->flags1 | extraFlags;
 }
 
 // <LegoRR.exe @0046a140>
 LegoRR::StatsFlags2 __cdecl LegoRR::StatsObject_GetStatsFlags2(LegoRR::LegoObject* liveObj)
 {
-	return liveObj->stats->flags2;
+	StatsFlags2 extraFlags = STATS2_NONE;
+	if (Cheat_IsSuperToolStore() && liveObj->type == LegoObject_Building &&
+		::_stricmp(legoGlobs.buildingName[liveObj->id], "ToolStation") == 0)
+	{
+		extraFlags |= STATS2_TRAINDRIVER | STATS2_TRAINPILOT | STATS2_TRAINSAILOR |
+					  STATS2_TRAINREPAIR | STATS2_TRAINSCANNER | STATS2_TRAINDYNAMITE |
+					  STATS2_POWERBUILDING;
+	}
+
+	return liveObj->stats->flags2 | extraFlags;
 }
 
 // <LegoRR.exe @0046a160>
