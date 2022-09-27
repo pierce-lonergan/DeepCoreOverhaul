@@ -277,7 +277,8 @@ LegoRR::LegoObject* LegoRR::Lego_GetTopdownOrFPUnit()
 
 real32 LegoRR::Cheat_IsFasterUnit(LegoObject* liveObj)
 {
-	return (liveObj == Lego_GetTopdownOrFPUnit() && Shortcut_IsDown(ShortcutID::Cheat_FasterUnit));
+	return (liveObj == Lego_GetTopdownOrFPUnit() && Lego_IsAllowDebugKeys() &&
+			Shortcut_IsDown(ShortcutID::Cheat_FasterUnit));
 }
 
 real32 LegoRR::Cheat_GetFasterUnitCoef(LegoObject* liveObj, real32 coef)
