@@ -552,19 +552,37 @@ bool32 __cdecl Gods98::DirectDraw_GetAvailTextureMem(OUT uint32* total, OUT uint
 // <LegoRR.exe @0047d0e0>
 void __cdecl Gods98::DirectDraw_Clear(OPTIONAL const Area2F* window, ColourBGRAPacked bgrColour)
 {
-	_DirectDraw_ClearSurface(DirectDraw_bSurf(), window, DirectDraw_GetColour(DirectDraw_bSurf(), bgrColour));
+	const Area2F windowScaled = {
+		window->x * Gods98::Main_RenderScale(),
+		window->y * Gods98::Main_RenderScale(),
+		window->width  * Gods98::Main_RenderScale(),
+		window->height * Gods98::Main_RenderScale(),
+	};
+	_DirectDraw_ClearSurface(DirectDraw_bSurf(), &windowScaled, DirectDraw_GetColour(DirectDraw_bSurf(), bgrColour));
 }
 
 /// CUSTOM:
 void Gods98::DirectDraw_ClearRGBF(OPTIONAL const Area2F* window, real32 r, real32 g, real32 b, real32 a)
 {
-	DirectDraw_ClearSurfaceRGBF(DirectDraw_bSurf(), window, r, g, b, a);
+	const Area2F windowScaled = {
+		window->x * Gods98::Main_RenderScale(),
+		window->y * Gods98::Main_RenderScale(),
+		window->width  * Gods98::Main_RenderScale(),
+		window->height * Gods98::Main_RenderScale(),
+	};
+	DirectDraw_ClearSurfaceRGBF(DirectDraw_bSurf(), &windowScaled, r, g, b, a);
 }
 
 /// CUSTOM:
 void Gods98::DirectDraw_ClearRGB(OPTIONAL const Area2F* window, uint8 r, uint8 g, uint8 b, uint8 a)
 {
-	DirectDraw_ClearSurfaceRGB(DirectDraw_bSurf(), window, r, g, b, a);
+	const Area2F windowScaled = {
+		window->x * Gods98::Main_RenderScale(),
+		window->y * Gods98::Main_RenderScale(),
+		window->width  * Gods98::Main_RenderScale(),
+		window->height * Gods98::Main_RenderScale(),
+	};
+	DirectDraw_ClearSurfaceRGB(DirectDraw_bSurf(), &windowScaled, r, g, b, a);
 }
 
 /// CUSTOM:
@@ -595,10 +613,6 @@ void Gods98::_DirectDraw_ClearSurface(IDirectDrawSurface4* surf, OPTIONAL const 
 			std::max(0, static_cast<sint32>(window->x + window->width)),
 			std::max(0, static_cast<sint32>(window->y + window->height)),
 		};
-		rect.left   *= Main_RenderScale();
-		rect.top    *= Main_RenderScale();
-		rect.right  *= Main_RenderScale();
-		rect.bottom *= Main_RenderScale();
 		if (rect.left < rect.right && rect.top < rect.bottom) {
 			surf->Blt(&rect, nullptr, nullptr, DDBLT_COLORFILL|DDBLT_WAIT, &bltFX);
 		}
