@@ -136,7 +136,7 @@ bool32 __cdecl LegoRR::Weapon_Initialise(const Gods98::Config* config, const cha
 				else {
 					uint32 surfaceType;
 					for (surfaceType = 0; surfaceType < Lego_SurfaceType_Count; surfaceType++) {
-						std::sprintf(surfaceNameBuff, "WallDestroyTime_%s", legoGlobs.surfaceName[surfaceType]);
+						std::sprintf(surfaceNameBuff, "WallDestroyTime_%s", legoGlobs.surfaceName[surfaceType] + std::strlen("Lego_SurfaceType_"));
 						if (::_stricmp(Gods98::Config_GetItemName(stat), surfaceNameBuff) == 0) {
 							weaponStats->wallDestroyTimes[surfaceType] = (real32)std::atof(Gods98::Config_GetDataString(stat));
 							break;
