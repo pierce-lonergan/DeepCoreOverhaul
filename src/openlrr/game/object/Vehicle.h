@@ -162,12 +162,12 @@ void __cdecl Vehicle_Remove(VehicleModel* vehicle);
 //uint32 __cdecl Vehicle_GetUpgradeLevel(VehicleModel* vehicle);
 
 // <LegoRR.exe @0046d250>
-#define Vehicle_SetUpgradeLevel ((void (__cdecl* )(VehicleModel* vehicle, uint32 objLevel))0x0046d250)
-//void __cdecl Vehicle_SetUpgradeLevel(VehicleModel* vehicle, uint32 objLevel);
+//#define Vehicle_SetUpgradeLevel ((void (__cdecl* )(VehicleModel* vehicle, uint32 objLevel))0x0046d250)
+void __cdecl Vehicle_SetUpgradeLevel(VehicleModel* vehicle, uint32 objLevel);
 
 // <LegoRR.exe @0046d280>
-#define Vehicle_HideWheels ((void (__cdecl* )(VehicleModel* vehicle, bool32 hide))0x0046d280)
-//void __cdecl Vehicle_HideWheels(VehicleModel* vehicle, bool32 hide);
+//#define Vehicle_HideWheels ((void (__cdecl* )(VehicleModel* vehicle, bool32 hide))0x0046d280)
+void __cdecl Vehicle_HideWheels(VehicleModel* vehicle, bool32 hide);
 
 // <LegoRR.exe @0046d2b0>
 //#define Vehicle_Clone ((bool32 (__cdecl* )(IN VehicleModel* srcVehicle, OUT VehicleModel* destVehicle))0x0046d2b0)

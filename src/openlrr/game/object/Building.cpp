@@ -510,6 +510,10 @@ uint32 __cdecl LegoRR::Building_GetUpgradeLevel(BuildingModel* building)
 // <LegoRR.exe @004088d0>
 void __cdecl LegoRR::Building_SetUpgradeLevel(BuildingModel* building, uint32 objLevel)
 {
+	/// FIX APPLY: Remove nulls before they can be changed by Upgrade_SetUpgradeLevel.
+	_Building_RemoveNulls(building);
+	_Building_RemoveWeaponNulls(building);
+
 	Upgrade_SetUpgradeLevel(&building->upgrades, objLevel);
 	Building_SetUpgradeActivity(building, nullptr);
 }

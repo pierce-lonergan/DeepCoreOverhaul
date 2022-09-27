@@ -3151,6 +3151,11 @@ bool interop_hook_LegoRR_Vehicle(void)
 	// used by: Lego_Shutdown_Full, LegoObject_Remove
 	result &= hook_write_jmpret(0x0046d0d0, LegoRR::Vehicle_Remove);
 
+	// used by: Lego_HandleWorldDebugKeys, LegoObject_Create, LegoObject_CompleteVehicleUpgrade,
+	//          LegoObject_TeleportUp, Vehicle_Remove
+	result &= hook_write_jmpret(0x0046d250, LegoRR::Vehicle_SetUpgradeLevel);
+	// used by: LegoObject_FUN_00438720, LegoObject_UpdateTeleporter
+	result &= hook_write_jmpret(0x0046d280, LegoRR::Vehicle_HideWheels);
 	// used by: LegoObject_Create
 	result &= hook_write_jmpret(0x0046d2b0, LegoRR::Vehicle_Clone);
 

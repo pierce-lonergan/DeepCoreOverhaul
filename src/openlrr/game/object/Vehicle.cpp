@@ -93,16 +93,16 @@ bool32 __cdecl LegoRR::Vehicle_IsCameraFlipDir(VehicleModel* vehicle)
 // <LegoRR.exe @0046c6b0>
 bool32 __cdecl LegoRR::Vehicle_SetActivity(VehicleModel* vehicle, const char* activityName, real32 elapsed)
 {
+	/// FIX APPLY: Remove Container references that were being leaked after every SetActivity.
+	_Vehicle_RemoveNulls(vehicle);
+	_Vehicle_RemoveWeaponNulls(vehicle);
+	_Vehicle_RemoveWheelNulls(vehicle);
+
 	MeshLOD_RemoveTargets(vehicle->polyMedium1);
 	/// FIXME: Should we also be calling RemoveTargets for polyMedium2??
 	if (vehicle->polyMedium2 != nullptr) {
 		MeshLOD_RemoveTargets(vehicle->polyMedium2);
 	}
-
-	/// FIX APPLY: Remove Container references that were being leaked after every SetActivity.
-	_Vehicle_RemoveNulls(vehicle);
-	_Vehicle_RemoveWeaponNulls(vehicle);
-	_Vehicle_RemoveWheelNulls(vehicle);
 
 	bool success2 = false;
 	bool success1 = Gods98::Container_SetActivity(vehicle->contAct1, activityName);
@@ -271,7 +271,7 @@ void __cdecl LegoRR::Vehicle_Remove(VehicleModel* vehicle)
 	/// FIX APPLY: Properly remove Container references that were being leaked.
 	_Vehicle_RemoveNulls(vehicle);
 	_Vehicle_RemoveWeaponNulls(vehicle);
-	//_Vehicle_RemoveWheelNulls(vehicle);
+	_Vehicle_RemoveWheelNulls(vehicle);
 
 	// Remove wheel mesh containers.
 	for (uint32 i = 0; i < VEHICLE_MAXWHEELS; i++) {
@@ -298,6 +298,26 @@ void __cdecl LegoRR::Vehicle_Remove(VehicleModel* vehicle)
 	}
 }
 
+
+// <LegoRR.exe @0046d250>
+void __cdecl LegoRR::Vehicle_SetUpgradeLevel(VehicleModel* vehicle, uint32 objLevel)
+{
+	/// FIX APPLY: Remove nulls before they can be changed by Upgrade_SetUpgradeLevel.
+	_Vehicle_RemoveNulls(vehicle);
+	_Vehicle_RemoveWeaponNulls(vehicle);
+	_Vehicle_RemoveWheelNulls(vehicle);
+
+	Upgrade_SetUpgradeLevel(&vehicle->upgrades, objLevel);
+	Vehicle_SetUpgradeActivity(vehicle, nullptr);
+}
+
+// <LegoRR.exe @0046d280>
+void __cdecl LegoRR::Vehicle_HideWheels(VehicleModel* vehicle, bool32 hide)
+{
+	for (uint32 i = 0; i < VEHICLE_MAXWHEELS; i++) {
+		Gods98::Container_Hide(vehicle->contWheels[i], hide);
+	}
+}
 
 // <LegoRR.exe @0046d2b0>
 bool32 __cdecl LegoRR::Vehicle_Clone(IN VehicleModel* srcVehicle, OUT VehicleModel* destVehicle)
