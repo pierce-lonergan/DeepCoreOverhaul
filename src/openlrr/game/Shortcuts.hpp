@@ -212,6 +212,10 @@ enum ShortcutID
 	ChangeViewTop, // [3]
 	// Tracks the selected unit in the radar.
 	TrackUnit, // [4]
+	/// NEW: Follows the selected unit in top-down view.
+	FollowUnit,
+	/// NEW: Hold down to speed up first-person unit movement and turning.
+	Cheat_FasterUnit,
 	/// NEW: Deletes all selected units.
 	Edit_DestroyUnits, // NULL
 	/// NEW: Levels up selected units to max level, and gives selected mini-figures all abilities.

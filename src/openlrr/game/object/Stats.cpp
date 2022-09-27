@@ -958,7 +958,13 @@ bool32 __cdecl LegoRR::StatsObject_SetObjectLevel(LegoRR::LegoObject* liveObj, u
 // <LegoRR.exe @00469f70>
 real32 __cdecl LegoRR::StatsObject_GetRouteSpeed(LegoRR::LegoObject* liveObj)
 {
-	return liveObj->stats->RouteSpeed;
+	// Speed up ultra-slow vehicles a little more.
+	real32 extraCoef = 0.0f;
+	if (Cheat_IsFasterUnit(liveObj)) {
+		extraCoef = (1.0f - std::min(1.0f, liveObj->stats->RouteSpeed));
+	}
+
+	return liveObj->stats->RouteSpeed * Cheat_GetFasterUnitCoef(liveObj, 2.0f) + (extraCoef * 1.5f);
 }
 
 // <LegoRR.exe @00469f80>
@@ -970,6 +976,10 @@ real32 __cdecl LegoRR::StatsObject_GetDrillTimeType(LegoRR::LegoObject* liveObj,
 // <LegoRR.exe @00469fa0>
 real32 __cdecl LegoRR::StatsObject_GetRubbleCoef(LegoRR::LegoObject* liveObj)
 {
+	if (Cheat_IsFasterUnit(liveObj)) {
+		// We don't want to go *too* fast with faster units (for RockMonsters).
+		return std::min(liveObj->stats->RubbleCoef, 1.5f);
+	}
 	return liveObj->stats->RubbleCoef;
 }
 
@@ -982,6 +992,10 @@ real32 __cdecl LegoRR::StatsObject_GetWakeRadius(LegoRR::LegoObject* liveObj)
 // <LegoRR.exe @00469fe0>
 real32 __cdecl LegoRR::StatsObject_GetPathCoef(LegoRR::LegoObject* liveObj)
 {
+	if (Cheat_IsFasterUnit(liveObj)) {
+		// We don't want to go *too* fast with faster units (for MiniFigures).
+		return std::min(liveObj->stats->PathCoef, 1.5f);
+	}
 	return liveObj->stats->PathCoef;
 }
 

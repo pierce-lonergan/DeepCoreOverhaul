@@ -430,6 +430,11 @@ bool32 __cdecl LegoRR::LegoObject_Remove(LegoObject* deadObj)
 	/// CUSTOM: Cleanup disposable stats (if it is overridden).
 	StatsObject_RestoreModified(deadObj);
 
+	/// CUSTOM: Cleanup follow reference.
+	if (Lego_GetFollowUnit() == deadObj) {
+		Lego_SetFollowUnit(nullptr);
+	}
+
 
 	// Increment number of this object type/id/levels that were removed from the level.
 	objectGlobs.objectPrevLevels[deadObj->type][deadObj->id][deadObj->objLevel]++;

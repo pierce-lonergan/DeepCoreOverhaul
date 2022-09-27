@@ -1377,6 +1377,12 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		NERPsRuntime_Execute(elapsedInterface);
 	}
 
+	if (!NERPs_AnyTutorialFlags()) {
+		if (Lego_GetFollowUnit() != nullptr) {
+			Lego_Goto(Lego_GetFollowUnit(), nullptr, true);
+		}
+	}
+
 
 	Objective_Update(legoGlobs.textOnlyWindow, legoGlobs.currLevel, elapsedWorld, elapsedReal);
 
@@ -2068,6 +2074,12 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 			if (fpUnit != nullptr && Message_GetNumSelectedUnits() == 1 && Lego_GetViewMode() == ViewMode_Top) {
 				// Input_ClearKey is used on success so that we don't influence the Camera movement.
 
+				// Turning is ridiculously fast at max speed, it's already fast enough at 100% speed.
+				real32 fasterTurnSpeed = 3.5f;
+				if (Lego_GetGameSpeed() > 1.0f) {
+					fasterTurnSpeed /= Lego_GetGameSpeed();
+				}
+
 				// First person view controls
 				/// CHEAT KEYBIND: [Up]   "First person view: Move forward."
 				if (Shortcut_IsDown(ShortcutID::Cheat_TopdownFPMoveForward)) {
@@ -2081,12 +2093,12 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 				}
 				/// CHEAT KEYBIND: [Left]   "First person view: Turn left."
 				if (Shortcut_IsDown(ShortcutID::Cheat_TopdownFPTurnLeft)) {
-					LegoObject_FP_Move(fpUnit, 0, 0, -0.05f);
+					LegoObject_FP_Move(fpUnit, 0, 0, -0.05f * Cheat_GetFasterUnitCoef(fpUnit, fasterTurnSpeed));
 					//Input_ClearKey(Keys::KEY_CURSORLEFT);
 				}
 				/// CHEAT KEYBIND: [Right]   "First person view: Turn right."
 				if (Shortcut_IsDown(ShortcutID::Cheat_TopdownFPTurnRight)) {
-					LegoObject_FP_Move(fpUnit, 0, 0, 0.05f);
+					LegoObject_FP_Move(fpUnit, 0, 0, 0.05f * Cheat_GetFasterUnitCoef(fpUnit, fasterTurnSpeed));
 					//Input_ClearKey(Keys::KEY_CURSORRIGHT);
 				}
 				/// CHEAT KEYBIND: [Z]  "First person view: Strafe left."
@@ -2261,6 +2273,19 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 			}
 		}
 
+		/// KEYBIND: NULL  "Follows the selected unit in top-down view."
+		if ((Lego_IsAllowDebugKeys() || !NERPs_AnyTutorialFlags()) && legoGlobs.viewMode == ViewMode_Top &&
+			Shortcut_IsPressed(ShortcutID::FollowUnit))
+		{
+			LegoObject* primaryUnit = Message_GetPrimarySelectedUnit();
+			if (primaryUnit != nullptr && primaryUnit != Lego_GetFollowUnit()) {
+				Lego_SetFollowUnit(primaryUnit);
+			}
+			else {
+				Lego_SetFollowUnit(nullptr);
+			}
+		}
+
 		/// KEYBIND: NULL  "Cycle the camera to the next building (or minifigure if no buildings) in the level."
 		if ((Lego_IsAllowDebugKeys() || !NERPs_AnyTutorialFlags()) && Shortcut_IsPressed(ShortcutID::CameraCycleNextUnit)) {
 			LegoObject_CameraCycleUnits();
@@ -2306,12 +2331,12 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 
 			/// KEYBIND: [Left]  "First person view: Turn left (while held)."
 			if (Shortcut_IsDown(ShortcutID::FPTurnLeft)) {
-				LegoObject_FP_Move(legoGlobs.objectFP, 0, 0, -0.05f);
+				LegoObject_FP_Move(legoGlobs.objectFP, 0, 0, -0.05f * Cheat_GetFasterUnitCoef(legoGlobs.objectFP, 3.5f));
 			}
 
 			/// KEYBIND: [Right]  "First person view: Turn right (while held)."
 			if (Shortcut_IsDown(ShortcutID::FPTurnRight)) {
-				LegoObject_FP_Move(legoGlobs.objectFP, 0, 0, 0.05f);
+				LegoObject_FP_Move(legoGlobs.objectFP, 0, 0, 0.05f * Cheat_GetFasterUnitCoef(legoGlobs.objectFP, 3.5f));
 			}
 
 			/// KEYBIND: [Z]  "First person view: Strafe left (while held)."

@@ -146,6 +146,8 @@ static bool _cheatNoPowerConsumption = false;
 static bool _cheatNoOxygenConsumption = false;
 static bool _cheatSuperToolStore = false;
 
+static LegoRR::LegoObject* _followUnit = nullptr;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -247,6 +249,43 @@ bool LegoRR::Lego_IsLevelSurveyed()
 		}
 	}
 	return true;
+}
+
+
+LegoRR::LegoObject* LegoRR::Lego_GetFollowUnit()
+{
+	return _followUnit;
+}
+
+void LegoRR::Lego_SetFollowUnit(OPTIONAL LegoObject* liveObj)
+{
+	_followUnit = liveObj;
+}
+
+LegoRR::LegoObject* LegoRR::Lego_GetTopdownOrFPUnit()
+{
+	if (legoGlobs.viewMode == ViewMode_Top) {
+		if (Message_GetNumSelectedUnits() == 1 && Lego_IsTopdownFPControlsOn()) {
+			return Message_GetPrimarySelectedUnit();
+		}
+	}
+	else if (legoGlobs.viewMode == ViewMode_FP) {
+		return legoGlobs.objectFP;
+	}
+	return nullptr;
+}
+
+real32 LegoRR::Cheat_IsFasterUnit(LegoObject* liveObj)
+{
+	return (liveObj == Lego_GetTopdownOrFPUnit() && Shortcut_IsDown(ShortcutID::Cheat_FasterUnit));
+}
+
+real32 LegoRR::Cheat_GetFasterUnitCoef(LegoObject* liveObj, real32 coef)
+{
+	if (Cheat_IsFasterUnit(liveObj)) {
+		return coef;
+	}
+	return 1.0f;
 }
 
 

@@ -823,6 +823,15 @@ void Cheat_SurveyLevel();
 // Returns true if all blocks in the level have been scanned. Only really useful with Cheat_SurveyLevel.
 bool Lego_IsLevelSurveyed();
 
+LegoObject* Lego_GetFollowUnit();
+
+void Lego_SetFollowUnit(OPTIONAL LegoObject* liveObj);
+
+LegoObject* Lego_GetTopdownOrFPUnit();
+
+real32 Cheat_IsFasterUnit(LegoObject* liveObj);
+
+real32 Cheat_GetFasterUnitCoef(LegoObject* liveObj, real32 coef);
 
 /// <inline>
 inline bool Lego_IsFreezeInterface() { return (legoGlobs.flags1 & GAME1_FREEZEINTERFACE); }
