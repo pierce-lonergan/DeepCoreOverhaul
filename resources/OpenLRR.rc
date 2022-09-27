@@ -152,6 +152,12 @@ BEGIN
             MENUITEM "D&ynamic Promeshes",      IDM_DYNAMICPM
 //#endif
             MENUITEM "&Topdown Fog",            IDM_TOPDOWNFOG
+            POPUP "Topdown LOD"
+            BEGIN
+                MENUITEM "&Low",                IDM_TOPDOWNLOD_LOW,CHECKED
+                MENUITEM "&Medium",             IDM_TOPDOWNLOD_MEDIUM
+                MENUITEM "&High",               IDM_TOPDOWNLOD_HIGH
+            END
             MENUITEM SEPARATOR
             POPUP "&Quality"
             BEGIN

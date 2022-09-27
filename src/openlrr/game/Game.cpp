@@ -146,6 +146,8 @@ static bool _cheatNoPowerConsumption = false;
 static bool _cheatNoOxygenConsumption = false;
 static bool _cheatSuperToolStore = false;
 
+static LegoRR::LOD_PolyLevel _legoTopdownLOD = LegoRR::LOD_PolyLevel::LOD_LowPoly;
+
 static LegoRR::LegoObject* _followUnit = nullptr;
 
 #pragma endregion
@@ -287,6 +289,19 @@ real32 LegoRR::Cheat_GetFasterUnitCoef(LegoObject* liveObj, real32 coef)
 		return coef;
 	}
 	return 1.0f;
+}
+
+
+LegoRR::LOD_PolyLevel LegoRR::Lego_GetTopdownLOD()
+{
+	return _legoTopdownLOD;
+}
+
+void LegoRR::Lego_SetTopdownLOD(LOD_PolyLevel lod)
+{
+	// FP poly is probably special, and may hide parts of a unit from view.
+	if (lod == LOD_FPPoly) lod = LOD_HighPoly;
+	_legoTopdownLOD = lod;
 }
 
 

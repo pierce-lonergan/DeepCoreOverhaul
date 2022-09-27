@@ -833,6 +833,9 @@ real32 Cheat_IsFasterUnit(LegoObject* liveObj);
 
 real32 Cheat_GetFasterUnitCoef(LegoObject* liveObj, real32 coef);
 
+LOD_PolyLevel Lego_GetTopdownLOD();
+void Lego_SetTopdownLOD(LOD_PolyLevel lod);
+
 /// <inline>
 inline bool Lego_IsFreezeInterface() { return (legoGlobs.flags1 & GAME1_FREEZEINTERFACE); }
 

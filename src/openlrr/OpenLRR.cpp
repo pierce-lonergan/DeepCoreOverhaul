@@ -115,6 +115,7 @@ static constexpr const auto Menu_IconIDs = array_of<uint32>(IDM_ICON_NONE, IDM_I
 static constexpr const auto Menu_CursorClippingIDs = array_of<uint32>(IDM_CURSORCLIPPING_OFF, IDM_CURSORCLIPPING_MENU, IDM_CURSORCLIPPING_GAMEAREA);
 static constexpr const auto Menu_CursorIDs = array_of<uint32>(IDM_CURSOR_NEVER, IDM_CURSOR_TITLEBAR, IDM_CURSOR_ALWAYS);
 static constexpr const auto Menu_SelectPlaceArrowIDs = array_of<uint32>(IDM_SELECTPLACEARROW_NEVER, IDM_SELECTPLACEARROW_SOLIDONLY, IDM_SELECTPLACEARROW_ALWAYS);
+static constexpr const auto Menu_TopdownLODIDs = array_of<uint32>(IDM_TOPDOWNLOD_LOW, IDM_TOPDOWNLOD_MEDIUM, IDM_TOPDOWNLOD_HIGH);
 static constexpr const auto Menu_QualityIDs = array_of<uint32>(IDM_QUALITY_WIREFRAME, IDM_QUALITY_UNLITFLAT, IDM_QUALITY_FLAT, IDM_QUALITY_GOURAUD, IDM_QUALITY_PHONG);
 static constexpr const auto Menu_AdvanceFrameIDs = array_of<uint32>(IDM_ADVANCE_1FRAME, IDM_ADVANCE_1SECOND);
 static constexpr const auto Menu_RoutingAutoIDs = array_of<uint32>(IDM_ROUTING_AUTO_NONE, IDM_ROUTING_AUTO_TRACKED, IDM_ROUTING_AUTO_ALLFRIENDLY, IDM_ROUTING_AUTO_ALL);
@@ -196,6 +197,9 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 
     sint32 curRouteAuto = static_cast<sint32>(LegoRR::Debug_RouteVisual_GetAutoMode());
     Menu_CheckRadioButtonsArray(Menu_RoutingAutoIDs, curRouteAuto);
+
+	sint32 curTopdownLOD = static_cast<sint32>(LegoRR::Lego_GetTopdownLOD());
+	Menu_CheckRadioButtonsArray(Menu_TopdownLODIDs, curTopdownLOD);
 
 	Menu_CheckRadioButtonsArray(Menu_QualityIDs,   static_cast<sint32>(Gods98::Graphics_GetRenderQuality()));
 	Menu_CheckButton(IDM_GRAPHICS_BLEND,           Gods98::Graphics_IsBlendTransparency());
@@ -524,6 +528,12 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_TOPDOWNFOG:
 		//std::printf("IDM_TOPDOWNFOG\n");
 		LegoRR::Lego_SetTopdownFogOn(!LegoRR::Lego_IsTopdownFogOn());
+		break;
+
+	case IDM_TOPDOWNLOD_LOW:
+	case IDM_TOPDOWNLOD_MEDIUM:
+	case IDM_TOPDOWNLOD_HIGH:
+		LegoRR::Lego_SetTopdownLOD(static_cast<LegoRR::LOD_PolyLevel>(wmId - IDM_TOPDOWNLOD_LOW));
 		break;
 
     case IDM_QUALITY_WIREFRAME:

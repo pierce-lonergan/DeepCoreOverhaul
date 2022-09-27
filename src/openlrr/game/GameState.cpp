@@ -1144,15 +1144,25 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	Debug_RouteVisual_UpdateAll(elapsedWorld, elapsedInterface);
 
 	if (legoGlobs.viewMode == ViewMode_Top) {
+		LegoObject dummyFPObj;
+		std::memset(&dummyFPObj, 0, sizeof(LegoObject));
 
+		//Roof_Hide(false);
+		//Roof_Update();
+
+		/// CUSTOM: Support LOD in topdown view.
+		if (Lego_GetTopdownLOD() != LOD_LowPoly) {
+			/// NOTE: We need to use some arbitrary number to increase the ranges by so that they work well in topdown.
+			///       This makes assumptions based on the default LOD values defined in Lego.cfg.
+			// Medium LODs don't look great on Mini-Figures at any topdown distance, so only use Medium LOD when requested.
+			const real32 medRange  = (Lego_GetTopdownLOD() == LOD_MediumPoly ? legoGlobs.MedPolyRange  : 0.0f) *  6.0f; // ~15 blocks
+			const real32 highRange = (Lego_GetTopdownLOD() == LOD_HighPoly   ? legoGlobs.HighPolyRange : 0.0f) * 10.0f; // ~15 blocks
+			LegoObject_FP_SetRanges(&dummyFPObj, legoGlobs.cameraMain->contCam,
+									medRange, highRange, true);
+		}
+			
 		/// CUSTOM: Render fog used in FP view when in topdown view.
 		if (Lego_IsTopdownFogOn()) {
-			//Roof_Hide(false);
-			//Roof_Update();
-
-			//LegoObject_FP_SetRanges(legoGlobs.objectFP, (legoGlobs.cameraMain)->contCam, legoGlobs.MedPolyRange, legoGlobs.HighPolyRange, true);
-			//LegoObject_SwapPolyFP(legoGlobs.objectFP, Camera_GetFPCameraFrame(legoGlobs.cameraMain), true);
-
 			Lego_UpdateSceneFog(true, elapsedWorld); // Turn ON fog for rendering.
 		}
 
@@ -1175,15 +1185,16 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		/// CUSTOM: Render fog used in FP view when in topdown view.
 		if (Lego_IsTopdownFogOn()) {
 			Lego_UpdateSceneFog(false, elapsedWorld); // Turn OFF fog for rendering.
-
-			//LegoObject_SwapPolyFP(legoGlobs.objectFP, Camera_GetFPCameraFrame(legoGlobs.cameraMain), false);
-			//LegoObject_FP_SetRanges(legoGlobs.objectFP, nullptr, 0.0f, 0.0f, false);
-
-			//Roof_HideAllVisibleBlocks();
-			//Roof_Hide(true);
-
-			//Level_RemoveAll_ProMeshes();
 		}
+
+		if (Lego_GetTopdownLOD() != LOD_LowPoly) {
+			LegoObject_FP_SetRanges(&dummyFPObj, nullptr, 0.0f, 0.0f, false);
+		}
+
+		//Roof_HideAllVisibleBlocks();
+		//Roof_Hide(true);
+
+		//Level_RemoveAll_ProMeshes();
 	}
 	else if (legoGlobs.viewMode == ViewMode_FP) {
 		// PREPARE: And unhide everything for rendering.

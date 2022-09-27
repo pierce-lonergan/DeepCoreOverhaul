@@ -100,6 +100,10 @@
 #define IDM_DETAILON					552
 #define IDM_DYNAMICPM					553
 #define IDM_TOPDOWNFOG					554
+// &Options > Graphics > Topdown LOD (Radio Group)
+#define IDM_TOPDOWNLOD_LOW				556
+#define IDM_TOPDOWNLOD_MEDIUM			557
+#define IDM_TOPDOWNLOD_HIGH				558
 // &Options > Graphics > Quality (Radio Group)
 #define IDM_QUALITY_WIREFRAME			561
 #define IDM_QUALITY_UNLITFLAT			562
