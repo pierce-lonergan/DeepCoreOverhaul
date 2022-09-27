@@ -146,11 +146,10 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "&Graphics"
         BEGIN
-//#if 0  // not ready yet
+            MENUITEM "Transparent Multi-Select",IDM_TRANSPARENTMULTISELECT,CHECKED
             MENUITEM "Spotl&ight Effects",      IDM_LIGHTEFFECTS,CHECKED
             MENUITEM "&Wall Promeshes",         IDM_DETAILON,CHECKED
             MENUITEM "D&ynamic Promeshes",      IDM_DYNAMICPM
-//#endif
             MENUITEM "&Topdown Fog",            IDM_TOPDOWNFOG
             POPUP "Topdown LOD"
             BEGIN

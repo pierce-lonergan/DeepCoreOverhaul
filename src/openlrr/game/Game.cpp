@@ -4,6 +4,7 @@
 #include "../engine/audio/3DSound.h"
 #include "../engine/core/Maths.h"
 #include "../engine/core/Utils.h"
+#include "../engine/drawing/DirectDraw.h"
 #include "../engine/gfx/Viewports.h"
 #include "../engine/input/Input.h"
 #include "../engine/input/Keys.h"
@@ -119,6 +120,16 @@ void __cdecl LegoRR::Lego_Gods_Go(const char* programName)
 #pragma endregion
 
 /**********************************************************************************
+ ******** Constants
+ **********************************************************************************/
+
+#pragma region Constants
+
+#define LEGO_DRAWFILL_SELECTIONBOXES		true
+
+#pragma endregion
+
+/**********************************************************************************
  ******** Globals
  **********************************************************************************/
 
@@ -146,6 +157,7 @@ static bool _cheatNoPowerConsumption = false;
 static bool _cheatNoOxygenConsumption = false;
 static bool _cheatSuperToolStore = false;
 
+static bool _legoTransparentMultiSelectBox = true;
 static LegoRR::LOD_PolyLevel _legoTopdownLOD = LegoRR::LOD_PolyLevel::LOD_LowPoly;
 
 static LegoRR::LegoObject* _followUnit = nullptr;
@@ -289,6 +301,17 @@ real32 LegoRR::Cheat_GetFasterUnitCoef(LegoObject* liveObj, real32 coef)
 		return coef;
 	}
 	return 1.0f;
+}
+
+
+bool LegoRR::Lego_IsTransparentMultiSelectBox()
+{
+	return _legoTransparentMultiSelectBox;
+}
+
+void LegoRR::Lego_SetTransparentMultiSelectBox(bool on)
+{
+	_legoTransparentMultiSelectBox = on;
 }
 
 
@@ -947,7 +970,7 @@ void __cdecl LegoRR::Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Vi
 		const real32 dist = Gods98::Maths_Vector2DDistance(&screenPt, &screenPt2);
 		const real32 radius = (dist / 2.5f);
 		// Minimum side length of 3 pixels, plus extra length scaled by distance.
-		const real32 sideLength = 3.0f + (radius / 5.0f);
+		real32 sideLength = 3.0f + (radius / 5.0f);
 
 		// 1 __1b  2__ 3
 		//  |         |
@@ -956,10 +979,6 @@ void __cdecl LegoRR::Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Vi
 		// 7b  scrPt   4
 		//  |__     __|
 		// 7   6   5b  5
-
-		Point2F linePts1[8] = { 0.0f }; // dummy inits
-		Point2F linePts2[8] = { 0.0f };
-
 		const Point2F start = {
 			(screenPt.x - radius),
 			(screenPt.y - radius),
@@ -977,31 +996,67 @@ void __cdecl LegoRR::Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Vi
 			(end.y - sideLength),
 		};
 
-		// Top-left corner.
-		linePts1[0] = Point2F { start.x, startSide.y };
-		linePts2[0] = Point2F { start.x,     start.y };
-		linePts1[1] = Point2F { start.x+1,   start.y }; // +1 to skip overlapping pixel.
-		linePts2[1] = Point2F { startSide.x, start.y };
+		//#if LEGO_DRAWFILL_SELECTIONBOXES
+		// If we're already locked due to drawing a transparent selection box, then we may as well use the Draw API.
+		if (!Gods98::Draw_IsLocked()) {
 
-		// Top-right corner.
-		linePts1[2] = Point2F { endSide.x,   start.y };
-		linePts2[2] = Point2F { end.x,       start.y };
-		linePts1[3] = Point2F { end.x,     start.y+1 }; // +1 to skip overlapping pixel.
-		linePts2[3] = Point2F { end.x,   startSide.y };
+			Area2F window;
 
-		// Bottom-right corner.
-		linePts1[4] = Point2F { end.x,     endSide.y };
-		linePts2[4] = Point2F { end.x,         end.y };
-		linePts1[5] = Point2F { end.x-1,       end.y }; // -1 to skip overlapping pixel.
-		linePts2[5] = Point2F { endSide.x,     end.y };
+			sideLength += 1.0f; // +1 because drawing rectagles is different from how the Draw API does line endpoints.
 
-		// Bottom-left corner.
-		linePts1[6] = Point2F { startSide.x,   end.y };
-		linePts2[6] = Point2F { start.x,       end.y };
-		linePts1[7] = Point2F { start.x,     end.y-1 }; // -1 to skip overlapping pixel.
-		linePts2[7] = Point2F { start.x,   endSide.y };
+			window = Area2F { start.x,   start.y,  1,   sideLength };
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+			window = Area2F { start.x+1, start.y,  sideLength-1, 1 };
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
 
-		Gods98::Draw_LineListEx(linePts1, linePts2, 8, r, g, b, Gods98::DrawEffect::None);
+			window = Area2F { endSide.x, start.y,  sideLength,   1 };
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+			window = Area2F { end.x,   start.y+1,  1, sideLength-1 };
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+
+			window = Area2F { end.x,   endSide.y,  1,   sideLength };
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+			window = Area2F { endSide.x,   end.y,  sideLength-1, 1 };
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+
+			window = Area2F { start.x,     end.y,  sideLength,   1 };
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+			window = Area2F { start.x, endSide.y,  1, sideLength-1 };
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+		}
+		else {
+		//#else
+
+			Point2F linePts1[8] = { 0.0f }; // dummy inits
+			Point2F linePts2[8] = { 0.0f };
+
+			// Top-left corner.
+			linePts1[0] = Point2F { start.x, startSide.y };
+			linePts2[0] = Point2F { start.x,     start.y };
+			linePts1[1] = Point2F { start.x+1,   start.y }; // +1 to skip overlapping pixel.
+			linePts2[1] = Point2F { startSide.x, start.y };
+
+			// Top-right corner.
+			linePts1[2] = Point2F { endSide.x,   start.y };
+			linePts2[2] = Point2F { end.x,       start.y };
+			linePts1[3] = Point2F { end.x,     start.y+1 }; // +1 to skip overlapping pixel.
+			linePts2[3] = Point2F { end.x,   startSide.y };
+
+			// Bottom-right corner.
+			linePts1[4] = Point2F { end.x,     endSide.y };
+			linePts2[4] = Point2F { end.x,         end.y };
+			linePts1[5] = Point2F { end.x-1,       end.y }; // -1 to skip overlapping pixel.
+			linePts2[5] = Point2F { endSide.x,     end.y };
+
+			// Bottom-left corner.
+			linePts1[6] = Point2F { startSide.x,   end.y };
+			linePts2[6] = Point2F { start.x,       end.y };
+			linePts1[7] = Point2F { start.x,     end.y-1 }; // -1 to skip overlapping pixel.
+			linePts2[7] = Point2F { start.x,   endSide.y };
+
+			Gods98::Draw_LineListEx(linePts1, linePts2, 8, r, g, b, Gods98::DrawEffect::None);
+		}
+		//#endif
 
 		/// CHANGE: Moved to separate Lego_DrawObjectName call.
 		// Draw custom name if the unit has one.
@@ -1073,6 +1128,30 @@ void LegoRR::Lego_DrawObjectName(LegoObject* liveObj, Gods98::Viewport* view)
 		/// FIX APPLY: Printf safety (use %s).
 		Gods98::Font_PrintF(font, x, y, "%s", liveObj->customName);
 	}
+}
+
+/// CUSTOM:
+void LegoRR::Lego_BeginDrawSelectionBoxes()
+{
+	// We'll need to lock the surface if drawing a transparent multi-select box,
+	//  or if not using drawfill for selection boxes.
+	//#if !LEGO_DRAWFILL_SELECTIONBOXES
+	if (!LEGO_DRAWFILL_SELECTIONBOXES || (Lego_IsTransparentMultiSelectBox() && (legoGlobs.flags1 & GAME1_MULTISELECTING))) {
+		if (!Gods98::Draw_IsLocked()) {
+			Gods98::Draw_Begin();
+		}
+	}
+	//#endif
+}
+
+/// CUSTOM:
+void LegoRR::Lego_EndDrawSelectionBoxes()
+{
+	//#if !LEGO_DRAWFILL_SELECTIONBOXES
+	if (Gods98::Draw_IsLocked()) {
+		Gods98::Draw_End();
+	}
+	//#endif
 }
 
 
@@ -2251,8 +2330,8 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 // <LegoRR.exe @004292e0>
 void __cdecl LegoRR::Lego_DrawDragSelectionBox(Lego_Level* level)
 {
-	if (legoGlobs.flags1 & GAME1_MULTISELECT) {
-		const Point2F end = {
+	if (legoGlobs.flags1 & GAME1_MULTISELECTING) {
+		Point2F end = {
 			static_cast<real32>(Gods98::msx()),
 			static_cast<real32>(Gods98::msy()),
 		};
@@ -2264,16 +2343,66 @@ void __cdecl LegoRR::Lego_DrawDragSelectionBox(Lego_Level* level)
 		//  |____|
 		// 3      2
 
-		Point2F lineList[5] = { 0.0f }; // dummy init
-		lineList[0] = Point2F { start.x, start.y };
-		lineList[1] = Point2F {   end.x, start.y };
-		lineList[2] = Point2F {   end.x,   end.y };
-		lineList[3] = Point2F { start.x,   end.y };
-		lineList[4] = lineList[0];
+		// If the drawing surface is already locked, then we may as well use the Draw API.
+		if (!Gods98::Draw_IsLocked() && LEGO_DRAWFILL_SELECTIONBOXES && !Lego_IsTransparentMultiSelectBox()) {
+			Area2F window;
 
-		Gods98::Draw_LineListEx(lineList, lineList + 1, 4, legoGlobs.DragBoxRGB.red,
-								legoGlobs.DragBoxRGB.green, legoGlobs.DragBoxRGB.blue,
-								Gods98::DrawEffect::HalfTrans);
+			const real32 r = legoGlobs.DragBoxRGB.red;
+			const real32 g = legoGlobs.DragBoxRGB.green;
+			const real32 b = legoGlobs.DragBoxRGB.blue;
+
+			// We need to draw boxes with positive dimensions, so convert start/end to min/max coords.
+			const Point2F min = {
+				std::min(start.x, end.x),
+				std::min(start.y, end.y),
+			};
+			const Point2F max = {
+				std::max(start.x, end.x),
+				std::max(start.y, end.y),
+			};
+
+			start = min;
+			end   = max;
+
+			// +1 because drawing rectagles is different from how the Draw API does line endpoints.
+			// Just ignore the fact that each use of length has -1 after it,
+			//  which is because we're skipping the pixel of the overlapping line.
+			const Point2F length = {
+				end.x - start.x + 1.0f,
+				end.y - start.y + 1.0f,
+			};
+
+			// 3000
+			// 3  1
+			// 2221
+
+			window = Area2F { start.x+1, start.y,  length.x-1, 1 }; // +1/-1 to skip overlapping pixel.
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+			window = Area2F { end.x,   start.y+1,  1, length.y-1 }; // +1/-1 to skip overlapping pixel.
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+
+			window = Area2F { start.x,     end.y,  length.x-1, 1 }; // -1 to skip overlapping pixel.
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+			window = Area2F { start.x,   start.y,  1, length.y-1 }; // -1 to skip overlapping pixel.
+			Gods98::DirectDraw_ClearRGBF(&window, r, g, b);
+		}
+		else {
+
+			Point2F lineList[5] = { 0.0f }; // dummy init
+			lineList[0] = Point2F { start.x, start.y };
+			lineList[1] = Point2F { end.x,   start.y };
+			lineList[2] = Point2F { end.x,     end.y };
+			lineList[3] = Point2F { start.x,   end.y };
+			lineList[4] = lineList[0];
+
+			Gods98::DrawEffect effect = Gods98::DrawEffect::HalfTrans;
+			if (!Lego_IsTransparentMultiSelectBox())
+				effect = Gods98::DrawEffect::None;
+
+			Gods98::Draw_LineListEx(lineList, lineList + 1, 4, legoGlobs.DragBoxRGB.red,
+									legoGlobs.DragBoxRGB.green, legoGlobs.DragBoxRGB.blue,
+									effect);
+		}
 	}
 }
 

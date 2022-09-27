@@ -134,7 +134,9 @@ static constexpr const auto Menu_LegoInitIDs = array_of<uint32>(
 	IDM_UNLOCKBUILD, IDM_BUILDWITHOUTPATHS, IDM_FPNOCLIP, IDM_NOROCKFALL, IDM_QUICKREINFORCE,
 	IDM_SELECTPLACEARROW_NEVER, IDM_SELECTPLACEARROW_SOLIDONLY, IDM_SELECTPLACEARROW_ALWAYS,
 
-	IDM_RENDERING_DRAW, IDM_RENDERING_IMAGES, IDM_RENDERING_FONTS
+	IDM_RENDERING_DRAW, IDM_RENDERING_IMAGES, IDM_RENDERING_FONTS,
+	IDM_TRANSPARENTMULTISELECT, IDM_TOPDOWNLOD_LOW, IDM_TOPDOWNLOD_MEDIUM, IDM_TOPDOWNLOD_HIGH,
+	IDM_NOPOWERCONSUMPTION, IDM_NOOXYGENCONSUMPTION, IDM_SUPERTOOLSTORE
 );
 
 static constexpr const auto Menu_InLevelIDs = array_of<uint32>(
@@ -178,6 +180,7 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_RENDERPANELS,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsRenderPanels()));
 	Menu_CheckButton(IDM_TOOLTIPSOUND,	(LegoRR::Lego_IsInit() && !LegoRR::Lego_IsDisableToolTipSound()));
 
+	Menu_CheckButton(IDM_TRANSPARENTMULTISELECT,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsTransparentMultiSelectBox()));
 	Menu_CheckButton(IDM_LIGHTEFFECTS,	(LegoRR::Lego_IsInit() && !LegoRR::gamectrlGlobs.dbgF9DisableLightEffects));
 	Menu_CheckButton(IDM_DETAILON,		(LegoRR::Lego_IsInit() && LegoRR::Lego_IsDetailOn()));
 	Menu_CheckButton(IDM_DYNAMICPM,		(LegoRR::Lego_IsInit() && LegoRR::Lego_IsDynamicPM()));
@@ -508,6 +511,10 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
         }*/
         Gods98::Main_SetIcon(openlrrGlobs.iconList[static_cast<size_t>(wmId - IDM_ICON_NONE)], false);
         break;
+
+	case IDM_TRANSPARENTMULTISELECT:
+		LegoRR::Lego_SetTransparentMultiSelectBox(!LegoRR::Lego_IsTransparentMultiSelectBox());
+		break;
 
 	case IDM_LIGHTEFFECTS:
 		//std::printf("IDM_LIGHTEFFECTS\n");

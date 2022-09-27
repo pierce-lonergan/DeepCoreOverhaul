@@ -105,7 +105,7 @@ enum GameFlags1 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 	GAME1_USEDETAIL             = 0x20,
 	GAME1_SHOWFPS               = 0x40,
 	GAME1_SHOWMEMORY            = 0x80,
-	GAME1_MULTISELECT           = 0x100,
+	GAME1_MULTISELECTING        = 0x100,
 	GAME1_UNK_200               = 0x200,
 	GAME1_DDRAWCLEAR            = 0x400,
 	GAME1_RENDERPANELS          = 0x800,
@@ -833,6 +833,10 @@ real32 Cheat_IsFasterUnit(LegoObject* liveObj);
 
 real32 Cheat_GetFasterUnitCoef(LegoObject* liveObj, real32 coef);
 
+/// CUSTOM: Change whether the multiselect drag box draws with half-transparency or no transparency.
+bool Lego_IsTransparentMultiSelectBox();
+void Lego_SetTransparentMultiSelectBox(bool on);
+
 LOD_PolyLevel Lego_GetTopdownLOD();
 void Lego_SetTopdownLOD(LOD_PolyLevel lod);
 
@@ -1105,6 +1109,13 @@ void __cdecl Lego_DrawObjectSelectionBox(LegoObject* liveObj, Gods98::Viewport* 
 
 /// CUSTOM: Isolate Draw API calls from Lego_DrawObjectSelectionBox.
 void Lego_DrawObjectName(LegoObject* liveObj, Gods98::Viewport* view);
+
+
+/// CUSTOM:
+void Lego_BeginDrawSelectionBoxes();
+
+/// CUSTOM:
+void Lego_EndDrawSelectionBoxes();
 
 
 // Main_State.Shutdown function

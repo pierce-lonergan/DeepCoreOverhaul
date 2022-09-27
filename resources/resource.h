@@ -96,6 +96,7 @@
 #define IDM_ICON_TEALRR					546
 // --------------
 // &Options > Graphics
+#define IDM_TRANSPARENTMULTISELECT		550
 #define IDM_LIGHTEFFECTS				551
 #define IDM_DETAILON					552
 #define IDM_DYNAMICPM					553

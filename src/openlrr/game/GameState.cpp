@@ -1248,7 +1248,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	if (Message_AnyUnitSelected()) {
 		// Only lock if we know we're going to be drawing selection boxes,
 		//  this doesn't account for tracker, but no big deal.
-		Gods98::Draw_Begin(); // Start of only Draw calls for selection boxes.
+		Lego_BeginDrawSelectionBoxes(); // Start of only Draw calls for selection boxes.
 	}
 
 	if (legoGlobs.viewMode == ViewMode_Top) {
@@ -1259,7 +1259,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	Lego_DrawDragSelectionBox(legoGlobs.currLevel);
 
 	if (Message_AnyUnitSelected()) {
-		Gods98::Draw_End(); // End of only Draw calls for selection boxes.
+		Lego_EndDrawSelectionBoxes(); // End of only Draw calls for selection boxes.
 	}
 
 	if (legoGlobs.viewMode == ViewMode_Top) {
