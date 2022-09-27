@@ -2428,6 +2428,31 @@ bool32 __cdecl LegoRR::Lego_IsFPObject(LegoObject* liveObj)
 	//return false;
 }
 
+
+/// CUSTOM:
+void LegoRR::Lego_SetSceneFogParams(ViewMode viewMode)
+{
+	if (legoGlobs.flags1 & GAME1_FOGCOLOURRGB) {
+		real32 start;
+		real32 end;
+		real32 density;
+		if (viewMode == ViewMode_Top) {
+			start   = legoGlobs.TVClipDist * (3.0f / 4.0f); // Clearer area around the center (helps when cam is zoomed out).
+			end     = legoGlobs.TVClipDist;
+			density = 0.0032f * 0.8f; // Recuce density in topdown.
+		}
+		else if (viewMode == ViewMode_FP) {
+			start   = 0.0f;
+			end     = legoGlobs.FPClipBlocks * Lego_GetLevel()->BlockSize;
+			density = 0.0032f; // Assuming this was from division: 4.0f / 1250.0f
+		}
+		else {
+			return;
+		}
+		Gods98::Container_SetFogParams(start, end, density);
+	}
+}
+
 // <LegoRR.exe @00429520>
 void __cdecl LegoRR::Lego_SetViewMode(ViewMode viewMode, LegoObject* liveObj, uint32 fpCameraFrame)
 {
@@ -2465,6 +2490,9 @@ void __cdecl LegoRR::Lego_SetViewMode(ViewMode viewMode, LegoObject* liveObj, ui
 		Gods98::Viewport_SetField(legoGlobs.viewMain, 0.5f);
 		Gods98::Viewport_SetBackClip(legoGlobs.viewMain, legoGlobs.TVClipDist);
 	}
+
+	Lego_SetSceneFogParams(viewMode);
+
 	legoGlobs.viewMode = viewMode;
 }
 

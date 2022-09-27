@@ -1143,7 +1143,13 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	/// CUSTOM: Render routes in top-down / FP view.
 	Debug_RouteVisual_UpdateAll(elapsedWorld, elapsedInterface);
 
+	if (firstTick) {
+		// Ensure fog settings are configured for the current view mode.
+		Lego_SetSceneFogParams(Lego_GetViewMode());
+	}
+
 	if (legoGlobs.viewMode == ViewMode_Top) {
+		// Dummy for passing to LegoObject_FP_SetRanges until we have a function that can go without it.
 		LegoObject dummyFPObj;
 		std::memset(&dummyFPObj, 0, sizeof(LegoObject));
 

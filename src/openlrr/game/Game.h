@@ -1288,6 +1288,9 @@ __inline Gods98::Container* __cdecl Lego_GetCurrentViewLight(void)
 //#define Lego_IsFPObject ((bool32 (__cdecl* )(LegoObject* liveObj))0x004294f0)
 bool32 __cdecl Lego_IsFPObject(LegoObject* liveObj);
 
+/// CUSTOM:
+void Lego_SetSceneFogParams(ViewMode viewMode);
+
 // <LegoRR.exe @00429520>
 //#define Lego_SetViewMode ((void (__cdecl* )(ViewMode viewMode, LegoObject* liveObj, uint32 fpCameraFrame))0x00429520)
 void __cdecl Lego_SetViewMode(ViewMode viewMode, LegoObject* liveObj, uint32 fpCameraFrame);
