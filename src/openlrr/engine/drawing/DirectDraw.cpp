@@ -552,37 +552,49 @@ bool32 __cdecl Gods98::DirectDraw_GetAvailTextureMem(OUT uint32* total, OUT uint
 // <LegoRR.exe @0047d0e0>
 void __cdecl Gods98::DirectDraw_Clear(OPTIONAL const Area2F* window, ColourBGRAPacked bgrColour)
 {
-	const Area2F windowScaled = {
-		window->x * Gods98::Main_RenderScale(),
-		window->y * Gods98::Main_RenderScale(),
-		window->width  * Gods98::Main_RenderScale(),
-		window->height * Gods98::Main_RenderScale(),
-	};
-	_DirectDraw_ClearSurface(DirectDraw_bSurf(), &windowScaled, DirectDraw_GetColour(DirectDraw_bSurf(), bgrColour));
+	Area2F windowScaled = { 0.0f };
+	if (window != nullptr) {
+		windowScaled = Area2F {
+			window->x * Gods98::Main_RenderScale(),
+			window->y * Gods98::Main_RenderScale(),
+			window->width  * Gods98::Main_RenderScale(),
+			window->height * Gods98::Main_RenderScale(),
+		};
+		window = &windowScaled;
+	}
+	_DirectDraw_ClearSurface(DirectDraw_bSurf(), window, DirectDraw_GetColour(DirectDraw_bSurf(), bgrColour));
 }
 
 /// CUSTOM:
 void Gods98::DirectDraw_ClearRGBF(OPTIONAL const Area2F* window, real32 r, real32 g, real32 b, real32 a)
 {
-	const Area2F windowScaled = {
-		window->x * Gods98::Main_RenderScale(),
-		window->y * Gods98::Main_RenderScale(),
-		window->width  * Gods98::Main_RenderScale(),
-		window->height * Gods98::Main_RenderScale(),
-	};
-	DirectDraw_ClearSurfaceRGBF(DirectDraw_bSurf(), &windowScaled, r, g, b, a);
+	Area2F windowScaled = { 0.0f };
+	if (window != nullptr) {
+		windowScaled = Area2F {
+			window->x * Gods98::Main_RenderScale(),
+			window->y * Gods98::Main_RenderScale(),
+			window->width  * Gods98::Main_RenderScale(),
+			window->height * Gods98::Main_RenderScale(),
+		};
+		window = &windowScaled;
+	}
+	DirectDraw_ClearSurfaceRGBF(DirectDraw_bSurf(), window, r, g, b, a);
 }
 
 /// CUSTOM:
 void Gods98::DirectDraw_ClearRGB(OPTIONAL const Area2F* window, uint8 r, uint8 g, uint8 b, uint8 a)
 {
-	const Area2F windowScaled = {
-		window->x * Gods98::Main_RenderScale(),
-		window->y * Gods98::Main_RenderScale(),
-		window->width  * Gods98::Main_RenderScale(),
-		window->height * Gods98::Main_RenderScale(),
-	};
-	DirectDraw_ClearSurfaceRGB(DirectDraw_bSurf(), &windowScaled, r, g, b, a);
+	Area2F windowScaled = { 0.0f };
+	if (window != nullptr) {
+		windowScaled = Area2F {
+			window->x * Gods98::Main_RenderScale(),
+			window->y * Gods98::Main_RenderScale(),
+			window->width  * Gods98::Main_RenderScale(),
+			window->height * Gods98::Main_RenderScale(),
+		};
+		window = &windowScaled;
+	}
+	DirectDraw_ClearSurfaceRGB(DirectDraw_bSurf(), window, r, g, b, a);
 }
 
 /// CUSTOM:
