@@ -1300,7 +1300,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareObjectToolTip(LegoObject* liveObj)
 		}
 
 		// Something like flushing the tooltip buffer, now that its ready(?)
-		ToolTip_AddFlag4(ToolTip_UnitSelect);
+		ToolTip_Activate(ToolTip_UnitSelect);
 
 		return ToolTip_UnitSelect;
 	}
@@ -1410,7 +1410,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareConstructionToolTip(const Point2I* bloc
 	ToolTip_SetText(ToolTip_Construction, buffText);
 
 	ToolTip_SetSFX(ToolTip_Construction, SFX_NULL);
-	ToolTip_AddFlag4(ToolTip_Construction);
+	ToolTip_Activate(ToolTip_Construction);
 	return ToolTip_Construction;
 }
 
@@ -1645,7 +1645,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareMapBlockToolTip(const Point2I* blockPos
 
 		if (!playSound) surfSFX = SFX_NULL;
 		ToolTip_SetSFX(ToolTip_MapBlock, surfSFX);
-		ToolTip_AddFlag4(ToolTip_MapBlock);
+		ToolTip_Activate(ToolTip_MapBlock);
 		return ToolTip_MapBlock;
 	}
 	return ToolTip_Type_Count; // invalid

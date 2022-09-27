@@ -344,7 +344,7 @@ bool32 __cdecl LegoRR::Objective_HandleKeys(bool32 nextKeyPressed, bool32 leftBu
 	if (objectiveGlobs.currentPages[briefIdx] < objectiveGlobs.pageCounts[briefIdx]) {
 		bool nextButtonPressed = false;
 		if (overNext) {
-			ToolTip_AddFlag4(ToolTip_More);
+			ToolTip_Activate(ToolTip_More);
 			if (leftButtonReleased) {
 				Lego_SetPointerSFX(PointerSFX_Okay);
 				nextButtonPressed = true;
@@ -358,7 +358,7 @@ bool32 __cdecl LegoRR::Objective_HandleKeys(bool32 nextKeyPressed, bool32 leftBu
 	// Press detection for 'previous page' button:
 	if (objectiveGlobs.currentPages[briefIdx] > 0) {
 		if (overPrev) {
-			ToolTip_AddFlag4(ToolTip_Back);
+			ToolTip_Activate(ToolTip_Back);
 			if (leftButtonReleased) {
 				Lego_SetPointerSFX(PointerSFX_Okay);
 				objectiveGlobs.currentPages[briefIdx]--;

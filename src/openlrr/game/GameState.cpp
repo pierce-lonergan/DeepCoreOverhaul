@@ -160,9 +160,6 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 	legoGlobs.fontCredits    = Gods98::Font_Load("Interface\\Fonts\\RSFont.bmp");
 
 
-	Info_Initialise(legoGlobs.fontStandard); // This font is never used by the Info module.
-	Interface_Initialise(565, 18, legoGlobs.fontToolTip);
-
 	legoGlobs.rootCont = Gods98::Container_Initialise(legoGlobs.gameName);
 	if (legoGlobs.rootCont == nullptr)
 		return false;
@@ -211,6 +208,10 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 
 	ToolTip_Initialise(legoGlobs.fontToolTip, 2, 1, 1.0f, Gods98::appWidth(), Gods98::appHeight(),
 					   32, ToolTipRGB.red, ToolTipRGB.green, ToolTipRGB.blue);
+
+	/// FIX APPLY: Move Interface_Initialise after ToolTip_Initialise so that the SetRightAlign call actually works.
+	Info_Initialise(legoGlobs.fontStandard); // This font is never used by the Info module.
+	Interface_Initialise(565, 18, legoGlobs.fontToolTip);
 
 	legoGlobs.CreditsTextFile = Gods98::Config_GetStringValue(legoConfig, Main_ID("CreditsTextFile"));
 	legoGlobs.CreditsBackAVI = Gods98::Config_GetStringValue(legoConfig, Main_ID("CreditsBackAVI"));
