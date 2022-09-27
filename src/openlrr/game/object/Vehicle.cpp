@@ -305,7 +305,8 @@ void __cdecl LegoRR::Vehicle_SetUpgradeLevel(VehicleModel* vehicle, uint32 objLe
 	/// FIX APPLY: Remove nulls before they can be changed by Upgrade_SetUpgradeLevel.
 	_Vehicle_RemoveNulls(vehicle);
 	_Vehicle_RemoveWeaponNulls(vehicle);
-	_Vehicle_RemoveWheelNulls(vehicle);
+	// Don't remove wheels, bad!
+	//_Vehicle_RemoveWheelNulls(vehicle);
 
 	Upgrade_SetUpgradeLevel(&vehicle->upgrades, objLevel);
 	Vehicle_SetUpgradeActivity(vehicle, nullptr);
