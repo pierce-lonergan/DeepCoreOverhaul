@@ -985,7 +985,8 @@ bool32 __cdecl LegoObject_Callback_UpdateRadarSurvey(LegoObject* liveObj, void* 
 #define LegoObject_Proc_FUN_0043c7f0 ((void (__cdecl* )(LegoObject* liveObj))0x0043c7f0)
 
 // <LegoRR.exe @0043c830>
-#define LegoObject_UpdatePowerConsumption ((void (__cdecl* )(LegoObject* liveObj))0x0043c830)
+//#define LegoObject_UpdatePowerConsumption ((void (__cdecl* )(LegoObject* liveObj))0x0043c830)
+void __cdecl LegoObject_UpdatePowerConsumption(LegoObject* liveObj);
 
 // <LegoRR.exe @0043c910>
 #define LegoObject_CheckCanSteal ((bool32 (__cdecl* )(LegoObject* liveObj))0x0043c910)

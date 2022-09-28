@@ -227,17 +227,17 @@ void __cdecl Construction_UpdateAll(real32 elapsedGame);
 //Construction_Zone* __cdecl Construction_Zone_Create(const Point2I* originBlockPos);
 
 // <LegoRR.exe @004092e0>
-#define Construction_PowerGrid_PowerAdjacentBlocks ((void (__cdecl* )(const Point2I* blockPos))0x004092e0)
-//void __cdecl Construction_PowerGrid_PowerAdjacentBlocks(const Point2I* blockPos);
+//#define Construction_PowerGrid_PowerAdjacentBlocks ((void (__cdecl* )(const Point2I* blockPos))0x004092e0)
+void __cdecl Construction_PowerGrid_PowerAdjacentBlocks(const Point2I* blockPos);
 
 // Returns false if a building cannot be powered.
 // <LegoRR.exe @00409380>
-#define Construction_PowerGrid_DrainAdjacentBlocks ((bool32 (__cdecl* )(const Point2I* blockPos, sint32 crystalDrainedAmount))0x00409380)
-//bool32 __cdecl Construction_PowerGrid_DrainAdjacentBlocks(const Point2I* blockPos, sint32 crystalDrainedAmount);
+//#define Construction_PowerGrid_DrainAdjacentBlocks ((bool32 (__cdecl* )(const Point2I* blockPos, sint32 crystalDrainedAmount))0x00409380)
+bool32 __cdecl Construction_PowerGrid_DrainAdjacentBlocks(const Point2I* blockPos, sint32 crystalDrainedAmount);
 
 // <LegoRR.exe @004093a0>
-#define Construction_PowerGrid_DrainAdjacentBlocks_Recurse ((bool32 (__cdecl* )(const Point2I* blockPos, sint32 crystalDrainedAmount))0x004093a0)
-//bool32 __cdecl Construction_PowerGrid_DrainAdjacentBlocks_Recurse(const Point2I* blockPos, sint32 crystalDrainedAmount);
+//#define Construction_PowerGrid_DrainAdjacentBlocks_Recurse ((bool32 (__cdecl* )(const Point2I* blockPos, sint32 crystalDrainedAmount))0x004093a0)
+bool32 __cdecl Construction_PowerGrid_DrainAdjacentBlocks_Recurse(const Point2I* blockPos, sint32 crystalDrainedAmount);
 
 // Internally used for Paths during `Construction_UpdateAll`. Does NOT use objID field.
 // <LegoRR.exe @00409480>

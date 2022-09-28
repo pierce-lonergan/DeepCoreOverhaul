@@ -1820,6 +1820,12 @@ bool interop_hook_LegoRR_Construction(void)
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00409110, LegoRR::Construction_UpdateAll);
 
+	// used by: LegoObject_UpdatePowerConsumption
+	result &= hook_write_jmpret(0x004092e0, LegoRR::Construction_PowerGrid_PowerAdjacentBlocks);
+	// used by: LegoObject_UpdatePowerConsumption
+	result &= hook_write_jmpret(0x00409380, LegoRR::Construction_PowerGrid_DrainAdjacentBlocks);
+	// used by: Construction_PowerGrid_DrainAdjacentBlocks_Recurse
+	result &= hook_write_jmpret(0x004093a0, LegoRR::Construction_PowerGrid_DrainAdjacentBlocks_Recurse);
 	// used by: Construction_UpdateAll
 	result &= hook_write_jmpret(0x00409480, LegoRR::Construction_Zone_RequestPathResources);
 
@@ -2055,7 +2061,23 @@ bool interop_hook_LegoRR_Game(void)
 
 	// used by: SelectPlace_CheckAndUpdate
 	result &= hook_write_jmpret(0x00431a50, LegoRR::Level_CanBuildOnBlock);
-	
+
+	// used by: Construction_PowerGrid_PowerAdjacentBlocks
+	result &= hook_write_jmpret(0x00432030, LegoRR::Level_PowerGrid_AddPoweredBlock);
+	// used by: Construction_PowerGrid_PowerAdjacentBlocks, ElectricFence_CheckBuildingAtBlock,
+	//          RadarMap_GetBlockColour
+	result &= hook_write_jmpret(0x004320a0, LegoRR::Level_Block_IsPowered);
+	// used by: LegoObject_UpdateAll
+	result &= hook_write_jmpret(0x004320d0, LegoRR::Level_PowerGrid_UpdateUnpoweredBlockSurfaces);
+	// used by: LegoObject_UpdateAll
+	result &= hook_write_jmpret(0x00432130, LegoRR::Level_PowerGrid_UnpowerPoweredBlocks);
+	// used by: Construction_PowerGrid_DrainAdjacentBlocks_Recurse
+	result &= hook_write_jmpret(0x004321a0, LegoRR::Level_PowerGrid_AddDrainPowerBlock);
+	// used by: Construction_PowerGrid_DrainAdjacentBlocks_Recurse
+	result &= hook_write_jmpret(0x00432200, LegoRR::Level_PowerGrid_IsDrainPowerBlock);
+	// used by: Construction_PowerGrid_DrainAdjacentBlocks
+	result &= hook_write_jmpret(0x00432230, LegoRR::Level_PowerGrid_ClearDrainPowerBlocks);
+
 	// used by: Lego_MainLoop, Lego_HandleKeys, Objective_HandleKeys
 	result &= hook_write_jmpret(0x00435870, LegoRR::Lego_EndLevel);
 
@@ -2795,6 +2817,9 @@ bool interop_hook_LegoRR_Object(void)
 	result &= hook_write_jmpret(0x0043c570, LegoRR::LegoObject_UpdateAllRadarSurvey);
 	// used by: LegoObject_UpdateAllRadarSurvey
 	result &= hook_write_jmpret(0x0043c5b0, LegoRR::LegoObject_Callback_UpdateRadarSurvey);
+	
+	// used by: LegoObject_Create, LegoObject_Callback_Update, StatsObject_Debug_ToggleSelfPowered
+	result &= hook_write_jmpret(0x0043c830, LegoRR::LegoObject_UpdatePowerConsumption);
 
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00449ec0, LegoRR::LegoObject_HideAllCertainObjects);

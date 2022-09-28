@@ -246,6 +246,88 @@ void __cdecl LegoRR::Construction_UpdateAll(real32 elapsedGame)
 }
 
 
+// <LegoRR.exe @004092e0>
+void __cdecl LegoRR::Construction_PowerGrid_PowerAdjacentBlocks(const Point2I* blockPos)
+{
+	const Point2I DIRECTIONS[DIRECTION__COUNT] = {
+		{  0, -1 },
+		{  1,  0 },
+		{  0,  1 },
+		{ -1,  0 },
+	};
+
+	for (uint32 dir = 0; dir < DIRECTION__COUNT; dir++) {
+		const Point2I blockOffPos = {
+			blockPos->x + DIRECTIONS[dir].x,
+			blockPos->y + DIRECTIONS[dir].y,
+		};
+
+		if (Level_Block_IsPath(&blockOffPos) || Level_Block_IsSolidBuilding(blockOffPos.x, blockOffPos.y, true)) {
+
+			if (!Level_Block_IsPowered(&blockOffPos)) {
+				// Add to list, and mark as visited, so that we don't get stuck in an infinite loop.
+				Level_PowerGrid_AddPoweredBlock(&blockOffPos);
+				/// RECURSION:
+				Construction_PowerGrid_PowerAdjacentBlocks(&blockOffPos);
+			}
+		}
+	}
+}
+
+// Returns false if a building cannot be powered.
+// <LegoRR.exe @00409380>
+bool32 __cdecl LegoRR::Construction_PowerGrid_DrainAdjacentBlocks(const Point2I* blockPos, sint32 crystalDrainedAmount)
+{
+	const bool32 result = Construction_PowerGrid_DrainAdjacentBlocks_Recurse(blockPos, crystalDrainedAmount);
+	Level_PowerGrid_ClearDrainPowerBlocks();
+	return result;
+}
+
+// <LegoRR.exe @004093a0>
+bool32 __cdecl LegoRR::Construction_PowerGrid_DrainAdjacentBlocks_Recurse(const Point2I* blockPos, sint32 crystalDrainedAmount)
+{
+	const Point2I DIRECTIONS[DIRECTION__COUNT] = {
+		{  0, -1 },
+		{  1,  0 },
+		{  0,  1 },
+		{ -1,  0 },
+	};
+
+	for (uint32 dir = 0; dir < DIRECTION__COUNT; dir++) {
+		const Point2I blockOffPos = {
+			blockPos->x + DIRECTIONS[dir].x,
+			blockPos->y + DIRECTIONS[dir].y,
+		};
+
+		// This condition does not check the temp drainpower flag, is it possible for this to be
+		//  hit more than once for the same tile?
+		if (Level_Block_IsGeneratePower(&blockOffPos)) {
+
+			LegoObject* liveObj = LegoObject_FindPoweredBuildingAtBlockPos(&blockOffPos);
+			if (liveObj != nullptr) {
+
+				if (LegoObject_AddThisDrainedCrystals(liveObj, crystalDrainedAmount)) {
+					return true;
+				}
+			}
+		}
+
+		if (Level_Block_IsPath(&blockOffPos) || Level_Block_IsSolidBuilding(blockOffPos.x, blockOffPos.y, true)) {
+
+			if (!Level_PowerGrid_IsDrainPowerBlock(&blockOffPos)) {
+				// Add to list, and mark as visited, so that we don't get stuck in an infinite loop.
+				Level_PowerGrid_AddDrainPowerBlock(&blockOffPos);
+
+				/// RECURSION:
+				if (Construction_PowerGrid_DrainAdjacentBlocks_Recurse(&blockOffPos, crystalDrainedAmount)) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
 // Internally used for Paths during `Construction_UpdateAll`. Does NOT use objID field.
 // <LegoRR.exe @00409480>
 void __cdecl LegoRR::Construction_Zone_RequestPathResources(Construction_Zone* construct)

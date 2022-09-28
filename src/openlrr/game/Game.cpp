@@ -2668,8 +2668,8 @@ const char* __cdecl LegoRR::Level_Free(void)
 		legoGlobs.flags1 &= ~GAME1_LASERTRACKER;
 		legoGlobs.flags2 &= ~(GAME2_ATTACKDEFER|GAME2_UNK_40|GAME2_UNK_80|GAME2_MENU_HASNEXT);
 
-		legoGlobs.pointsCount2_dcc[0] = 0;
-		legoGlobs.pointsCount2_dcc[1] = 0;
+		legoGlobs.poweredBlockCount = 0;
+		legoGlobs.unpoweredBlockCount = 0;
 
 		Camera_Shake(legoGlobs.cameraMain, 0.0f, 0.0f);
 		Camera_SetZoom(legoGlobs.cameraMain, 200.0f);
@@ -2807,6 +2807,83 @@ bool32 __cdecl LegoRR::Level_CanBuildOnBlock(sint32 bx, sint32 by, bool32 isPath
 	//	block->terrain != Lego_SurfaceType_Lava &&
 	//	(block->flags1 & BLOCK1_FLOOR) && (block->flags1 & BLOCK1_CLEARED) &&
 	//	!(block->flags1 & (BLOCK1_BUILDINGSOLID|BLOCK1_BUILDINGPATH|BLOCK1_FOUNDATION)))
+}
+
+
+// <LegoRR.exe @00432030>
+void __cdecl LegoRR::Level_PowerGrid_AddPoweredBlock(const Point2I* blockPos)
+{
+	Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos->x, blockPos->y);
+	block->flags2 |= BLOCK2_POWERED;
+
+	legoGlobs.poweredBlocks[legoGlobs.poweredBlockCount] = *blockPos;
+	legoGlobs.poweredBlockCount++;
+	Level_BlockUpdateSurface(Lego_GetLevel(), blockPos->x, blockPos->y, 0); // 0 = reserved
+}
+
+// <LegoRR.exe @004320a0>
+bool32 __cdecl LegoRR::Level_Block_IsPowered(const Point2I* blockPos)
+{
+	const Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos->x, blockPos->y);
+	return (block->flags2 & BLOCK2_POWERED);
+}
+
+// <LegoRR.exe @004320d0>
+void __cdecl LegoRR::Level_PowerGrid_UpdateUnpoweredBlockSurfaces(void)
+{
+	for (uint32 i = 0; i < legoGlobs.unpoweredBlockCount; i++) {
+		const Point2I blockPos = legoGlobs.unpoweredBlocks[i];
+
+		if (!Level_Block_IsPowered(&blockPos)) {
+			Level_BlockUpdateSurface(Lego_GetLevel(), blockPos.x, blockPos.y, 0); // 0 = reserved
+		}
+	}
+	legoGlobs.unpoweredBlockCount = 0;
+}
+
+// <LegoRR.exe @00432130>
+void __cdecl LegoRR::Level_PowerGrid_UnpowerPoweredBlocks(void)
+{
+	// Move powered blocks to unpowered blocks list and unset powered flag.
+	for (uint32 i = 0; i < legoGlobs.poweredBlockCount; i++) {
+		const Point2I blockPos = legoGlobs.poweredBlocks[i];
+
+		Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos.x, blockPos.y);
+		block->flags2 &= ~BLOCK2_POWERED;
+
+		legoGlobs.unpoweredBlocks[i] = legoGlobs.poweredBlocks[i];
+	}
+	legoGlobs.unpoweredBlockCount = legoGlobs.poweredBlockCount;
+	legoGlobs.poweredBlockCount = 0;
+}
+
+// <LegoRR.exe @004321a0>
+void __cdecl LegoRR::Level_PowerGrid_AddDrainPowerBlock(const Point2I* blockPos)
+{
+	Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos->x, blockPos->y);
+	block->flags2 |= BLOCK2_DRAINPOWER_TEMP;
+	legoGlobs.powerDrainBlocks[legoGlobs.powerDrainCount] = *blockPos;
+	legoGlobs.powerDrainCount++;
+}
+
+// <LegoRR.exe @00432200>
+bool32 __cdecl LegoRR::Level_PowerGrid_IsDrainPowerBlock(const Point2I* blockPos)
+{
+	const Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos->x, blockPos->y);
+	return (block->flags2 & BLOCK2_DRAINPOWER_TEMP);
+}
+
+// <LegoRR.exe @00432230>
+void __cdecl LegoRR::Level_PowerGrid_ClearDrainPowerBlocks(void)
+{
+	for (uint32 i = 0; i < legoGlobs.powerDrainCount; i++) {
+		const Point2I blockPos = legoGlobs.powerDrainBlocks[i];
+
+		Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos.x, blockPos.y);
+		block->flags2 &= ~BLOCK2_DRAINPOWER_TEMP;
+	}
+
+	legoGlobs.powerDrainCount = 0;
 }
 
 

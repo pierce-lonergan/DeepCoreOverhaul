@@ -1389,7 +1389,7 @@ void __cdecl LegoRR::LegoObject_UpdateAll(real32 elapsedGame)
 {
 	// Were we updating our power grid after the update loop last tick?
 	if (objectGlobs.flags & LegoObject_GlobFlags::OBJECT_GLOB_FLAG_POWERUPDATING) {
-		Level_PowerGrid_ClearBlockPowered_100_Points28C();
+		Level_PowerGrid_UnpowerPoweredBlocks();
 	}
 
 
@@ -1405,7 +1405,7 @@ void __cdecl LegoRR::LegoObject_UpdateAll(real32 elapsedGame)
 
 	// Were we updating our power grid after the update loop last tick?
 	if (objectGlobs.flags & LegoObject_GlobFlags::OBJECT_GLOB_FLAG_POWERUPDATING) {
-		Level_PowerGrid_UpdateLevelBlocks_PointsAAC();
+		Level_PowerGrid_UpdateUnpoweredBlockSurfaces();
 	}
 
 	// Stop updating power grid if a recalculation is no longer needed.
@@ -1512,6 +1512,39 @@ bool32 __cdecl LegoRR::LegoObject_Callback_UpdateRadarSurvey(LegoObject* liveObj
 	return false;
 }
 
+
+// <LegoRR.exe @0043c830>
+void __cdecl LegoRR::LegoObject_UpdatePowerConsumption(LegoObject* liveObj)
+{
+	if (liveObj->type == LegoObject_Building && !(liveObj->flags3 & LIVEOBJ3_POWEROFF)) {
+		const sint32 crystalDrainedAmount = StatsObject_GetCrystalDrain(liveObj);
+
+		Point2I blockPos = { 0 }; // dummy init
+		LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+
+		const StatsFlags2 sflags2 = StatsObject_GetStatsFlags2(liveObj);
+
+		if (!(sflags2 & (STATS2_GENERATEPOWER|STATS2_SELFPOWERED))) {
+
+			if (!Construction_PowerGrid_DrainAdjacentBlocks(&blockPos, crystalDrainedAmount)) {
+				liveObj->flags3 &= ~LIVEOBJ3_HASPOWER;
+				Bubble_ShowPowerOff(liveObj);
+				return;
+			}
+		}
+		liveObj->flags3 |= LIVEOBJ3_HASPOWER;
+
+		if (sflags2 & STATS2_GENERATEPOWER) {
+			// Check if building generates power, and is not "powered-off"
+			//  (which is normally not possible outside of debug mode).
+			if (LegoObject_IsActive(liveObj, false)) {
+				if (Level_GetCrystalCount(true) != 0) {
+					Construction_PowerGrid_PowerAdjacentBlocks(&blockPos);
+				}
+			}
+		}
+	}
+}
 
 
 // <LegoRR.exe @00449ec0>

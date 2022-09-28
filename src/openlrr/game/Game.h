@@ -598,8 +598,10 @@ struct Lego_Globs // [LegoRR/Lego.c|struct:0xf00|tags:GLOBS]
 	/*45c,c*/       Vector3F mouseWorldPos;
 	/*468,320*/     Point2I powerDrainBlocks[100]; // Temporary list used during powergrid calculation.
 	/*788,4*/       uint32 powerDrainCount;
-	/*78c,640*/     Point2I points2x100_78c[2][100]; // Related to power grid calculation.
-	/*dcc,8*/       uint32 pointsCount2_dcc[2];
+	/*78c,320*/     Point2I poweredBlocks[100]; // Related to power grid calculation.
+	/*aac,320*/     Point2I unpoweredBlocks[100];
+	/*dcc,4*/       uint32 poweredBlockCount;
+	/*dd0,4*/       uint32 unpoweredBlockCount;
 	/*dd4,4*/       uint32 MaxReturnedCrystals; // (cfg: Main::MaxReturnedCrystals)
 	/*dd8,4*/       sint32 MouseScrollBorder; // (cfg: Main::MouseScrollBorder)
 	/*ddc,4*/       char* langHealth_toolTip; // (cfg: ToolTipInfo::HealthText)
@@ -1549,25 +1551,32 @@ bool32 __cdecl Level_CanBuildOnBlock(sint32 bx, sint32 by, bool32 param_3, bool3
 #define Lego_GetCrossTerrainType ((sint32 (__cdecl* )(LegoObject* liveObj, sint32 bx1, sint32 by1, sint32 bx2, sint32 by2, bool32 param_6))0x00431cd0)
 
 // <LegoRR.exe @00432030>
-#define Level_PowerGrid_AddPoweredBlock ((void (__cdecl* )(const Point2I* blockPos))0x00432030)
+//#define Level_PowerGrid_AddPoweredBlock ((void (__cdecl* )(const Point2I* blockPos))0x00432030)
+void __cdecl Level_PowerGrid_AddPoweredBlock(const Point2I* blockPos);
 
 // <LegoRR.exe @004320a0>
-#define Level_Block_IsPowered ((bool32 (__cdecl* )(const Point2I* blockPos))0x004320a0)
+//#define Level_Block_IsPowered ((bool32 (__cdecl* )(const Point2I* blockPos))0x004320a0)
+bool32 __cdecl Level_Block_IsPowered(const Point2I* blockPos);
 
 // <LegoRR.exe @004320d0>
-#define Level_PowerGrid_UpdateLevelBlocks_PointsAAC ((void (__cdecl* )(void))0x004320d0)
+//#define Level_PowerGrid_UpdateUnpoweredBlockSurfaces ((void (__cdecl* )(void))0x004320d0)
+void __cdecl Level_PowerGrid_UpdateUnpoweredBlockSurfaces(void);
 
 // <LegoRR.exe @00432130>
-#define Level_PowerGrid_ClearBlockPowered_100_Points28C ((void (__cdecl* )(void))0x00432130)
+//#define Level_PowerGrid_UnpowerPoweredBlocks ((void (__cdecl* )(void))0x00432130)
+void __cdecl Level_PowerGrid_UnpowerPoweredBlocks(void);
 
 // <LegoRR.exe @004321a0>
-#define Level_PowerGrid_AddDrainPowerBlock ((void (__cdecl* )(const Point2I* blockPos))0x004321a0)
+//#define Level_PowerGrid_AddDrainPowerBlock ((void (__cdecl* )(const Point2I* blockPos))0x004321a0)
+void __cdecl Level_PowerGrid_AddDrainPowerBlock(const Point2I* blockPos);
 
 // <LegoRR.exe @00432200>
-#define Level_PowerGrid_IsDrainPowerBlock ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432200)
+//#define Level_PowerGrid_IsDrainPowerBlock ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432200)
+bool32 __cdecl Level_PowerGrid_IsDrainPowerBlock(const Point2I* blockPos);
 
 // <LegoRR.exe @00432230>
-#define Legel_PowerGrid_ClearDrainPowerBlocks ((void (__cdecl* )(void))0x00432230)
+//#define Level_PowerGrid_ClearDrainPowerBlocks ((void (__cdecl* )(void))0x00432230)
+void __cdecl Level_PowerGrid_ClearDrainPowerBlocks(void);
 
 // <LegoRR.exe @00432290>
 #define Level_Block_UnsetBuildingTile ((void (__cdecl* )(const Point2I* blockPos))0x00432290)
