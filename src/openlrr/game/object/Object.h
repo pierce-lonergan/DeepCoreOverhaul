@@ -1098,7 +1098,7 @@ bool32 __cdecl LegoObject_Callback_UpdateRadarSurvey(LegoObject* liveObj, void* 
 #define LegoObject_DestroyBoulder_AndCreateExplode ((void (__cdecl* )(LegoObject* liveObj))0x00442160)
 
 // <LegoRR.exe @00442190>
-#define LegoObject_Proc_FUN_00442190 ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* targetObj, Weapon_KnownType knownWeapon))0x00442190)
+#define LegoObject_FireBeamWeaponAtObject ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* targetObj, Weapon_KnownType knownWeapon))0x00442190)
 
 // <LegoRR.exe @00442390>
 #define LegoObject_CreateWeaponProjectile ((void (__cdecl* )(LegoObject* liveObj, Weapon_KnownType knownWeapon))0x00442390)
