@@ -60,7 +60,8 @@
 
 #define IDM_SHOWOBJINFO					511
 #define IDM_RENDERPANELS				512
-#define IDM_TOOLTIPSOUND				513
+#define IDM_SHOWTOOLTIPS				513
+#define IDM_TOOLTIPSOUND				514
 // --------------
 #define IDM_RELOAD_KEYBINDS				580
 // &Options > Logging

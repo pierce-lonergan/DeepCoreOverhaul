@@ -104,6 +104,7 @@ BEGIN
         END
         MENUITEM "Show &ObjInfo",               IDM_SHOWOBJINFO
         MENUITEM "Show &Panels",                IDM_RENDERPANELS,CHECKED
+        MENUITEM "Show Tooltips",               IDM_SHOWTOOLTIPS,CHECKED
         MENUITEM "&Tooltip Sound",              IDM_TOOLTIPSOUND,CHECKED
         MENUITEM SEPARATOR
         MENUITEM "Reload &Keybinds"             IDM_RELOAD_KEYBINDS

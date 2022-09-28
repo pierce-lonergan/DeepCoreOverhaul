@@ -837,6 +837,10 @@ real32 Cheat_GetFasterUnitCoef(LegoObject* liveObj, real32 coef);
 bool Lego_IsTransparentMultiSelectBox();
 void Lego_SetTransparentMultiSelectBox(bool on);
 
+/// CUSTOM: Change whether tooltips are shown at all.
+bool Lego_IsShowToolTips();
+void Lego_SetShowToolTips(bool on);
+
 LOD_PolyLevel Lego_GetTopdownLOD();
 void Lego_SetTopdownLOD(LOD_PolyLevel lod);
 

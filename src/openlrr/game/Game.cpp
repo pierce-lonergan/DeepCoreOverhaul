@@ -158,6 +158,7 @@ static bool _cheatNoOxygenConsumption = false;
 static bool _cheatSuperToolStore = false;
 
 static bool _legoTransparentMultiSelectBox = true;
+static bool _legoShowToolTips = true;
 static LegoRR::LOD_PolyLevel _legoTopdownLOD = LegoRR::LOD_PolyLevel::LOD_LowPoly;
 
 static LegoRR::LegoObject* _followUnit = nullptr;
@@ -312,6 +313,17 @@ bool LegoRR::Lego_IsTransparentMultiSelectBox()
 void LegoRR::Lego_SetTransparentMultiSelectBox(bool on)
 {
 	_legoTransparentMultiSelectBox = on;
+}
+
+
+bool LegoRR::Lego_IsShowToolTips()
+{
+	return _legoShowToolTips;
+}
+
+void LegoRR::Lego_SetShowToolTips(bool on)
+{
+	_legoShowToolTips = on;
 }
 
 
@@ -1180,7 +1192,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareObjectToolTip(LegoObject* liveObj)
 {
 	/// FIX APPLY: Increase horribly small buffer sizes
 	char buffVal[TOOLTIP_BUFFERSIZE]; //[128];
-	char buffText[TOOLTIP_BUFFERSIZE * 4] = { '\0' }; //[256]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetText
+	char buffText[TOOLTIP_BUFFERSIZE * 4] = { '\0' }; //[256]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetContent
 
 
 	const bool debugToolTips = (legoGlobs.flags2 & GAME2_SHOWDEBUGTOOLTIPS);
@@ -1344,7 +1356,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareObjectToolTip(LegoObject* liveObj)
 		if (std::strlen(buffText) >= TOOLTIP_BUFFERSIZE) {
 			std::strcpy(&buffText[TOOLTIP_BUFFERSIZE-4], "...");
 		}
-		ToolTip_SetText(ToolTip_UnitSelect, buffText);
+		ToolTip_SetContent(ToolTip_UnitSelect, buffText);
 
 		const SFX_ID objTtSFX = LegoObject_GetObjTtSFX(liveObj);
 		ToolTip_SetSFX(ToolTip_UnitSelect, objTtSFX);
@@ -1432,7 +1444,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareConstructionToolTip(const Point2I* bloc
 {
 	/// FIX APPLY: Increase horribly small buffer sizes
 	char buffVal[TOOLTIP_BUFFERSIZE]; //[128];
-	char buffText[TOOLTIP_BUFFERSIZE * 4] = { '\0' }; //[128]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetText
+	char buffText[TOOLTIP_BUFFERSIZE * 4] = { '\0' }; //[128]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetContent
 
 
 	const bool debugToolTips = (legoGlobs.flags2 & GAME2_SHOWDEBUGTOOLTIPS);
@@ -1501,7 +1513,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareConstructionToolTip(const Point2I* bloc
 	if (std::strlen(buffText) >= TOOLTIP_BUFFERSIZE) {
 		std::strcpy(&buffText[TOOLTIP_BUFFERSIZE-4], "...");
 	}
-	ToolTip_SetText(ToolTip_Construction, buffText);
+	ToolTip_SetContent(ToolTip_Construction, buffText);
 
 	ToolTip_SetSFX(ToolTip_Construction, SFX_NULL);
 	ToolTip_Activate(ToolTip_Construction);
@@ -1513,7 +1525,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareMapBlockToolTip(const Point2I* blockPos
 	/// FIX APPLY: Increase horribly small buffer sizes
 	// Originally these buffers were only used for Construction.
 	char buffVal[TOOLTIP_BUFFERSIZE]; //[128];
-	char buffText[TOOLTIP_BUFFERSIZE * 4] = { '\0' }; //[128]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetText
+	char buffText[TOOLTIP_BUFFERSIZE * 4] = { '\0' }; //[128]; // x4 so that we can safely cap it at TOOLTIP_BUFFERSIZE before calling ToolTip_SetContent
 
 
 	const bool debugToolTips = (legoGlobs.flags2 & GAME2_SHOWDEBUGTOOLTIPS);
@@ -1735,7 +1747,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareMapBlockToolTip(const Point2I* blockPos
 		if (std::strlen(buffText) >= TOOLTIP_BUFFERSIZE) {
 			std::strcpy(&buffText[TOOLTIP_BUFFERSIZE-4], "...");
 		}
-		ToolTip_SetText(ToolTip_MapBlock, "%s", buffText);
+		ToolTip_SetContent(ToolTip_MapBlock, "%s", buffText);
 
 		if (!playSound) surfSFX = SFX_NULL;
 		ToolTip_SetSFX(ToolTip_MapBlock, surfSFX);

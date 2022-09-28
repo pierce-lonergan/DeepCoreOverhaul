@@ -893,7 +893,7 @@ bool interop_hook_Gods98_Fonts(void)
 
 	result &= hook_write_jmpret(0x00401b90, Gods98::noinline(Font_GetStringWidth));
 
-	// used by: Loader_Initialise, ToolTip_SetText
+	// used by: Loader_Initialise, ToolTip_SetContent
 	result &= hook_write_jmpret(0x00401bc0, Gods98::noinline(Font_GetStringInfo));
 
 	result &= hook_write_jmpret(0x0047a1a0, Gods98::Font_Load);
@@ -3131,8 +3131,34 @@ bool interop_hook_LegoRR_ToolTip(void)
 {
 	bool result = true;
 
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x0046b490, LegoRR::ToolTip_Initialise);
+	// used by: Front_MenuItem_CreateImageItem, Lego_LoadPanelButtons, Lego_LoadToolTips
+	result &= hook_write_jmpret(0x0046b790, LegoRR::ToolTip_GetType);
+	// used by: HelpWindow_LoadButtons, Interface_LoadBackButton, Interface_DoSomethingWithRenameReplace,
+	//          Lego_HandleRadarInput, Lego_ShowObjectToolTip, Lego_ShowBlockToolTip, Lego_LoadToolTips,
+	//          Priorities_HandleInput
+	result &= hook_write_jmpret(0x0046b7e0, LegoRR::ToolTip_SetContent);
+	// used by: Interface_DoSomethingWithRenameReplace, Lego_ShowObjectToolTip
+	result &= hook_write_jmpret(0x0046b920, LegoRR::ToolTip_AddIcon);
+	// used by: Lego_HandleRadarInput, Lego_ShowObjectToolTip, Lego_ShowBlockToolTip, Lego_LoadToolTips
+	result &= hook_write_jmpret(0x0046b9c0, LegoRR::ToolTip_SetSFX);
+	// used by: Interface_Initialise
+	result &= hook_write_jmpret(0x0046b9f0, LegoRR::ToolTip_SetRightAlign);
+	// used by: Front_Menu_Update, HelpWindow, Interface_DoSomethingWithRenameReplace, Lego,
+	//          Objective_HandleKeys, Panel_InputProc_FUN_0045b5d0, Priorities_HandleInput,
+	//          Reward_HandleButtons
+	result &= hook_write_jmpret(0x0046ba30, LegoRR::ToolTip_Activate);
+	// used by: Interface_DoSomethingWithRenameReplace
+	result &= hook_write_jmpret(0x0046ba60, LegoRR::ToolTip_ShowInstant);
+	// used by: Front_ScreenMenuLoop, Lego_MainLoop, Reward_LoopUpdate
+	result &= hook_write_jmpret(0x0046ba80, LegoRR::ToolTip_Update);
 	// used by: Reward_DrawItem, ToolTip_Draw
 	result &= hook_write_jmpret(0x0046bb70, LegoRR::ToolTip_DrawBox);
+	
+	// Not ready yet.
+	// used by: ToolTip_Update
+	//result &= hook_write_jmpret(0x0046bef0, LegoRR::ToolTip_Draw);
 	
 	return_interop(result);
 }

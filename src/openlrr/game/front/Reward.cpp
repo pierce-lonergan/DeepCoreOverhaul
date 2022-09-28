@@ -44,7 +44,7 @@ void LegoRR::Reward_HandleItemToolTip(const Area2F* box, RewardLevelItem* reward
 		if (itemType != Reward_Score && itemType < Reward_Type_Count) {
 
 			// Hijack one of the non-predefined tooltip types that won't conflict and use that here.
-			ToolTip_SetText(ToolTip_UnitSelect, "%s", rewardItem->Text);
+			ToolTip_SetContent(ToolTip_UnitSelect, "%s", rewardItem->Text);
 			ToolTip_SetSFX(ToolTip_UnitSelect, SFX_NULL);
 			ToolTip_Activate(ToolTip_UnitSelect);
 		}

@@ -136,7 +136,7 @@ static constexpr const auto Menu_LegoInitIDs = array_of<uint32>(
 
 	IDM_RENDERING_DRAW, IDM_RENDERING_IMAGES, IDM_RENDERING_FONTS,
 	IDM_TRANSPARENTMULTISELECT, IDM_TOPDOWNLOD_LOW, IDM_TOPDOWNLOD_MEDIUM, IDM_TOPDOWNLOD_HIGH,
-	IDM_NOPOWERCONSUMPTION, IDM_NOOXYGENCONSUMPTION, IDM_SUPERTOOLSTORE
+	IDM_NOPOWERCONSUMPTION, IDM_NOOXYGENCONSUMPTION, IDM_SUPERTOOLSTORE, IDM_SHOWTOOLTIPS
 );
 
 static constexpr const auto Menu_InLevelIDs = array_of<uint32>(
@@ -178,6 +178,7 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 
 	Menu_CheckButton(IDM_SHOWOBJINFO,	(LegoRR::Lego_IsInit() && LegoRR::Bubble_GetObjectUIsAlwaysVisible()));
 	Menu_CheckButton(IDM_RENDERPANELS,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsRenderPanels()));
+	Menu_CheckButton(IDM_SHOWTOOLTIPS,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsShowToolTips()));
 	Menu_CheckButton(IDM_TOOLTIPSOUND,	(LegoRR::Lego_IsInit() && !LegoRR::Lego_IsDisableToolTipSound()));
 
 	Menu_CheckButton(IDM_TRANSPARENTMULTISELECT,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsTransparentMultiSelectBox()));
@@ -428,6 +429,10 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 	case IDM_RENDERPANELS:
 		//std::printf("IDM_RENDERPANELS\n");
 		LegoRR::Lego_SetRenderPanels(!LegoRR::Lego_IsRenderPanels());
+		break;
+
+	case IDM_SHOWTOOLTIPS:
+		LegoRR::Lego_SetShowToolTips(!LegoRR::Lego_IsShowToolTips());
 		break;
 
 	case IDM_TOOLTIPSOUND:
