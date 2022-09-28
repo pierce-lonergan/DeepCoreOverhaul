@@ -256,19 +256,32 @@ void __cdecl LegoRR::Construction_PowerGrid_PowerAdjacentBlocks(const Point2I* b
 		{ -1,  0 },
 	};
 
-	for (uint32 dir = 0; dir < DIRECTION__COUNT; dir++) {
-		const Point2I blockOffPos = {
-			blockPos->x + DIRECTIONS[dir].x,
-			blockPos->y + DIRECTIONS[dir].y,
-		};
+	std::queue<Point2I> blocks;
+	blocks.push(*blockPos);
 
-		if (Level_Block_IsPath(&blockOffPos) || Level_Block_IsSolidBuilding(blockOffPos.x, blockOffPos.y, true)) {
+	while (!blocks.empty()) {
+		const Point2I block = blocks.front();
+		blocks.pop();
 
-			if (!Level_Block_IsPowered(&blockOffPos)) {
-				// Add to list, and mark as visited, so that we don't get stuck in an infinite loop.
-				Level_PowerGrid_AddPoweredBlock(&blockOffPos);
-				/// RECURSION:
-				Construction_PowerGrid_PowerAdjacentBlocks(&blockOffPos);
+		for (uint32 dir = 0; dir < DIRECTION__COUNT; dir++) {
+			const Point2I blockOffPos = {
+				block.x + DIRECTIONS[dir].x,
+				block.y + DIRECTIONS[dir].y,
+			};
+
+			/// SANITY: Bounds check blocks.
+			if (!blockInBounds(Lego_GetLevel(), blockOffPos.x, blockOffPos.y))
+				continue;
+
+			if (Level_Block_IsPath(&blockOffPos) || Level_Block_IsSolidBuilding(blockOffPos.x, blockOffPos.y, true)) {
+
+				if (!Level_Block_IsPowered(&blockOffPos)) {
+					// Add to list, and mark as visited, so that we don't get stuck in an infinite loop.
+					Level_PowerGrid_AddPoweredBlock(&blockOffPos);
+					
+					// Handle this block next.
+					blocks.push(blockOffPos);
+				}
 			}
 		}
 	}
@@ -293,34 +306,44 @@ bool32 __cdecl LegoRR::Construction_PowerGrid_DrainAdjacentBlocks_Recurse(const 
 		{ -1,  0 },
 	};
 
-	for (uint32 dir = 0; dir < DIRECTION__COUNT; dir++) {
-		const Point2I blockOffPos = {
-			blockPos->x + DIRECTIONS[dir].x,
-			blockPos->y + DIRECTIONS[dir].y,
-		};
+	std::queue<Point2I> blocks;
+	blocks.push(*blockPos);
 
-		// This condition does not check the temp drainpower flag, is it possible for this to be
-		//  hit more than once for the same tile?
-		if (Level_Block_IsGeneratePower(&blockOffPos)) {
+	while (!blocks.empty()) {
+		const Point2I block = blocks.front();
+		blocks.pop();
 
-			LegoObject* liveObj = LegoObject_FindPoweredBuildingAtBlockPos(&blockOffPos);
-			if (liveObj != nullptr) {
+		for (uint32 dir = 0; dir < DIRECTION__COUNT; dir++) {
+			const Point2I blockOffPos = {
+				block.x + DIRECTIONS[dir].x,
+				block.y + DIRECTIONS[dir].y,
+			};
 
-				if (LegoObject_AddThisDrainedCrystals(liveObj, crystalDrainedAmount)) {
-					return true;
+			/// SANITY: Bounds check blocks.
+			if (!blockInBounds(Lego_GetLevel(), blockOffPos.x, blockOffPos.y))
+				continue;
+
+			// This condition does not check the temp drainpower flag, is it possible for this to be
+			//  hit more than once for the same tile?
+			if (Level_Block_IsGeneratePower(&blockOffPos)) {
+
+				LegoObject* liveObj = LegoObject_FindPoweredBuildingAtBlockPos(&blockOffPos);
+				if (liveObj != nullptr) {
+
+					if (LegoObject_AddThisDrainedCrystals(liveObj, crystalDrainedAmount)) {
+						return true;
+					}
 				}
 			}
-		}
 
-		if (Level_Block_IsPath(&blockOffPos) || Level_Block_IsSolidBuilding(blockOffPos.x, blockOffPos.y, true)) {
+			if (Level_Block_IsPath(&blockOffPos) || Level_Block_IsSolidBuilding(blockOffPos.x, blockOffPos.y, true)) {
 
-			if (!Level_PowerGrid_IsDrainPowerBlock(&blockOffPos)) {
-				// Add to list, and mark as visited, so that we don't get stuck in an infinite loop.
-				Level_PowerGrid_AddDrainPowerBlock(&blockOffPos);
+				if (!Level_PowerGrid_IsDrainPowerBlock(&blockOffPos)) {
+					// Add to list, and mark as visited, so that we don't get stuck in an infinite loop.
+					Level_PowerGrid_AddDrainPowerBlock(&blockOffPos);
 
-				/// RECURSION:
-				if (Construction_PowerGrid_DrainAdjacentBlocks_Recurse(&blockOffPos, crystalDrainedAmount)) {
-					return true;
+					// Handle this block next.
+					blocks.push(blockOffPos);
 				}
 			}
 		}

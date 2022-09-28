@@ -85,6 +85,7 @@ namespace LegoRR
 #pragma region Constants
 
 //#define EMERGE_MAXPOINTS		5
+#define LEGO_MAXPOWERGRIDBLOCKS		100
 
 #pragma endregion
 
@@ -596,10 +597,10 @@ struct Lego_Globs // [LegoRR/Lego.c|struct:0xf00|tags:GLOBS]
 	/*454,4*/       uint32 objTeleportQueue_COUNT;
 	/*458,4*/       real32 MiniFigureRunAway; // (cfg: Main::MiniFigureRunAway)
 	/*45c,c*/       Vector3F mouseWorldPos;
-	/*468,320*/     Point2I powerDrainBlocks[100]; // Temporary list used during powergrid calculation.
+	/*468,320*/     Point2I powerDrainBlocks[LEGO_MAXPOWERGRIDBLOCKS]; // Temporary list used during powergrid calculation.
 	/*788,4*/       uint32 powerDrainCount;
-	/*78c,320*/     Point2I poweredBlocks[100]; // Related to power grid calculation.
-	/*aac,320*/     Point2I unpoweredBlocks[100];
+	/*78c,320*/     Point2I poweredBlocks[LEGO_MAXPOWERGRIDBLOCKS]; // Related to power grid calculation.
+	/*aac,320*/     Point2I unpoweredBlocks[LEGO_MAXPOWERGRIDBLOCKS];
 	/*dcc,4*/       uint32 poweredBlockCount;
 	/*dd0,4*/       uint32 unpoweredBlockCount;
 	/*dd4,4*/       uint32 MaxReturnedCrystals; // (cfg: Main::MaxReturnedCrystals)

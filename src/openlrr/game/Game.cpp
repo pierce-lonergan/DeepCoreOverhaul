@@ -163,6 +163,11 @@ static LegoRR::LOD_PolyLevel _legoTopdownLOD = LegoRR::LOD_PolyLevel::LOD_LowPol
 
 static LegoRR::LegoObject* _followUnit = nullptr;
 
+// PowerGrid replacements for infinite grid sizes.
+static std::vector<Point2I> _drainPowerBlockList;
+static std::vector<Point2I> _poweredBlockList;
+static std::vector<Point2I> _unpoweredBlockList;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -2668,6 +2673,11 @@ const char* __cdecl LegoRR::Level_Free(void)
 		legoGlobs.flags1 &= ~GAME1_LASERTRACKER;
 		legoGlobs.flags2 &= ~(GAME2_ATTACKDEFER|GAME2_UNK_40|GAME2_UNK_80|GAME2_MENU_HASNEXT);
 
+		_drainPowerBlockList.clear();
+		_poweredBlockList.clear();
+		_unpoweredBlockList.clear();
+		// These fields have been replaced by the above vectors, but clear anyway for sanity.
+		legoGlobs.powerDrainCount = 0;
 		legoGlobs.poweredBlockCount = 0;
 		legoGlobs.unpoweredBlockCount = 0;
 
@@ -2816,8 +2826,9 @@ void __cdecl LegoRR::Level_PowerGrid_AddPoweredBlock(const Point2I* blockPos)
 	Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos->x, blockPos->y);
 	block->flags2 |= BLOCK2_POWERED;
 
-	legoGlobs.poweredBlocks[legoGlobs.poweredBlockCount] = *blockPos;
-	legoGlobs.poweredBlockCount++;
+	_poweredBlockList.push_back(*blockPos);
+	//legoGlobs.poweredBlocks[legoGlobs.poweredBlockCount] = *blockPos;
+	//legoGlobs.poweredBlockCount++;
 	Level_BlockUpdateSurface(Lego_GetLevel(), blockPos->x, blockPos->y, 0); // 0 = reserved
 }
 
@@ -2831,21 +2842,40 @@ bool32 __cdecl LegoRR::Level_Block_IsPowered(const Point2I* blockPos)
 // <LegoRR.exe @004320d0>
 void __cdecl LegoRR::Level_PowerGrid_UpdateUnpoweredBlockSurfaces(void)
 {
-	for (uint32 i = 0; i < legoGlobs.unpoweredBlockCount; i++) {
+	for (size_t i = 0; i < _unpoweredBlockList.size(); i++) {
+		const Point2I blockPos = _unpoweredBlockList[i];
+
+		if (!Level_Block_IsPowered(&blockPos)) {
+			Level_BlockUpdateSurface(Lego_GetLevel(), blockPos.x, blockPos.y, 0); // 0 = reserved
+		}
+	}
+	_unpoweredBlockList.clear();
+
+	/*for (uint32 i = 0; i < legoGlobs.unpoweredBlockCount; i++) {
 		const Point2I blockPos = legoGlobs.unpoweredBlocks[i];
 
 		if (!Level_Block_IsPowered(&blockPos)) {
 			Level_BlockUpdateSurface(Lego_GetLevel(), blockPos.x, blockPos.y, 0); // 0 = reserved
 		}
 	}
-	legoGlobs.unpoweredBlockCount = 0;
+	legoGlobs.unpoweredBlockCount = 0;*/
 }
 
 // <LegoRR.exe @00432130>
 void __cdecl LegoRR::Level_PowerGrid_UnpowerPoweredBlocks(void)
 {
 	// Move powered blocks to unpowered blocks list and unset powered flag.
-	for (uint32 i = 0; i < legoGlobs.poweredBlockCount; i++) {
+	_unpoweredBlockList = _poweredBlockList;
+	_poweredBlockList.clear();
+
+	for (size_t i = 0; i < _unpoweredBlockList.size(); i++) {
+		const Point2I blockPos = _unpoweredBlockList[i];
+
+		Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos.x, blockPos.y);
+		block->flags2 &= ~BLOCK2_POWERED;
+	}
+
+	/*for (uint32 i = 0; i < legoGlobs.poweredBlockCount; i++) {
 		const Point2I blockPos = legoGlobs.poweredBlocks[i];
 
 		Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos.x, blockPos.y);
@@ -2854,7 +2884,7 @@ void __cdecl LegoRR::Level_PowerGrid_UnpowerPoweredBlocks(void)
 		legoGlobs.unpoweredBlocks[i] = legoGlobs.poweredBlocks[i];
 	}
 	legoGlobs.unpoweredBlockCount = legoGlobs.poweredBlockCount;
-	legoGlobs.poweredBlockCount = 0;
+	legoGlobs.poweredBlockCount = 0;*/
 }
 
 // <LegoRR.exe @004321a0>
@@ -2862,8 +2892,9 @@ void __cdecl LegoRR::Level_PowerGrid_AddDrainPowerBlock(const Point2I* blockPos)
 {
 	Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos->x, blockPos->y);
 	block->flags2 |= BLOCK2_DRAINPOWER_TEMP;
-	legoGlobs.powerDrainBlocks[legoGlobs.powerDrainCount] = *blockPos;
-	legoGlobs.powerDrainCount++;
+	_drainPowerBlockList.push_back(*blockPos);
+	//legoGlobs.powerDrainBlocks[legoGlobs.powerDrainCount] = *blockPos;
+	//legoGlobs.powerDrainCount++;
 }
 
 // <LegoRR.exe @00432200>
@@ -2876,14 +2907,23 @@ bool32 __cdecl LegoRR::Level_PowerGrid_IsDrainPowerBlock(const Point2I* blockPos
 // <LegoRR.exe @00432230>
 void __cdecl LegoRR::Level_PowerGrid_ClearDrainPowerBlocks(void)
 {
-	for (uint32 i = 0; i < legoGlobs.powerDrainCount; i++) {
+	for (size_t i = 0; i < _drainPowerBlockList.size(); i++) {
+		const Point2I blockPos = _drainPowerBlockList[i];
+
+		Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos.x, blockPos.y);
+		block->flags2 &= ~BLOCK2_DRAINPOWER_TEMP;
+	}
+
+	_drainPowerBlockList.clear();
+
+	/*for (uint32 i = 0; i < legoGlobs.powerDrainCount; i++) {
 		const Point2I blockPos = legoGlobs.powerDrainBlocks[i];
 
 		Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos.x, blockPos.y);
 		block->flags2 &= ~BLOCK2_DRAINPOWER_TEMP;
 	}
 
-	legoGlobs.powerDrainCount = 0;
+	legoGlobs.powerDrainCount = 0;*/
 }
 
 
