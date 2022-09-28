@@ -516,9 +516,9 @@ bool32 __cdecl LegoRR::Message_SelectObject2(LegoObject* liveObj, bool32 noDoubl
 
 		if (!Message_IsUnitSelected(liveObj, nullptr) && messageGlobs.selectedUnitCount < LEGO_MAXMULTISELECT) {
 			for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
-				LegoObject_Callback_UnkLaserTrackerToggleUnset_FUN_0044c7c0(obj, nullptr);
+				LegoObject_Callback_ExitLaserTrackerMode(obj, nullptr);
 			}
-			//LegoObject_RunThroughListsSkipUpgradeParts(LegoObject_Callback_UnkLaserTrackerToggleUnset_FUN_0044c7c0, nullptr);
+			//LegoObject_RunThroughListsSkipUpgradeParts(LegoObject_Callback_ExitLaserTrackerMode, nullptr);
 
 			messageGlobs.selectedUnitList[messageGlobs.selectedUnitCount] = liveObj;
 			messageGlobs.selectedUnitCount++;

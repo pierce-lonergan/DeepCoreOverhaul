@@ -144,6 +144,7 @@ bool Shortcuts::ShortcutManager::Initialise()
 	Shortcut_Register(TrackUnit, "KEY_FOUR");
 	Shortcut_Register(FollowUnit, nullptr);
 	Shortcut_Register(Cheat_FasterUnit, nullptr);
+	Shortcut_Register(LaserTrackerUnit, nullptr);
 	Shortcut_Register(Edit_DestroyUnits, nullptr);
 	Shortcut_Register(Cheat_MaxOutUnit, nullptr);
 

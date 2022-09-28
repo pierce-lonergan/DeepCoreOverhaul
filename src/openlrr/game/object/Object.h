@@ -1494,7 +1494,7 @@ bool32 __cdecl LegoObject_Freeze(LegoObject* liveObj, real32 freezerTime);
 #define LegoObject_TryEnterLaserTrackerMode ((void (__cdecl* )(LegoObject* liveObj))0x0044c760)
 
 // <LegoRR.exe @0044c7c0>
-#define LegoObject_Callback_UnkLaserTrackerToggleUnset_FUN_0044c7c0 ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0044c7c0)
+#define LegoObject_Callback_ExitLaserTrackerMode ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0044c7c0)
 
 // <LegoRR.exe @0044c7f0>
 #define LegoObject_MiniFigureHasBeamEquipped2 ((bool32 (__cdecl* )(LegoObject* liveObj))0x0044c7f0)

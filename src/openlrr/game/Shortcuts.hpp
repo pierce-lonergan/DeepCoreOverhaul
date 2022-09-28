@@ -216,6 +216,8 @@ enum ShortcutID
 	FollowUnit,
 	/// NEW: Hold down to speed up first-person unit movement and turning.
 	Cheat_FasterUnit,
+	/// NEW: Enters or exits laser tracker mode for the selected unit (the red selection box).
+	LaserTrackerUnit,
 	/// NEW: Deletes all selected units.
 	Edit_DestroyUnits, // NULL
 	/// NEW: Levels up selected units to max level, and gives selected mini-figures all abilities.

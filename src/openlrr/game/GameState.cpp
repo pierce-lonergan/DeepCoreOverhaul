@@ -2304,6 +2304,35 @@ bool32 __cdecl LegoRR::Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterfa
 			}
 		}
 
+		/// KEYBIND: NULL  "Enters or exits laser tracker mode for the selected unit (the red selection box)."
+		if ((Lego_IsAllowDebugKeys() || !NERPs_AnyTutorialFlags()) && legoGlobs.viewMode == ViewMode_Top &&
+			Shortcut_IsPressed(ShortcutID::LaserTrackerUnit))
+		{
+			LegoObject* primaryUnit = Message_GetPrimarySelectedUnit();
+
+			if (primaryUnit != nullptr && !(primaryUnit->flags4 & LIVEOBJ4_LASERTRACKERMODE) &&
+				(StatsObject_GetStatsFlags2(primaryUnit) & STATS2_CANDOUBLESELECT))
+			{
+				// It's necessary to clear selected units before entering laser tracker mode.
+				Message_ClearSelectedUnits();
+				LegoObject_TryEnterLaserTrackerMode(primaryUnit);
+			}
+			else {
+				// Exit mode for all objects, then reselect the object originally in the mode.
+				LegoObject* reselectUnit = nullptr;
+				for (LegoObject* obj : objectListSet.EnumerateSkipUpgradeParts()) {
+					if (obj->flags4 & LIVEOBJ4_LASERTRACKERMODE) {
+						reselectUnit = obj;
+					}
+					LegoObject_Callback_ExitLaserTrackerMode(obj, nullptr);
+				}
+				if (reselectUnit != nullptr) {
+					Message_ClearSelectedUnits();
+					Message_SelectObject(reselectUnit, true);
+				}
+			}
+		}
+
 		/// KEYBIND: NULL  "Cycle the camera to the next building (or minifigure if no buildings) in the level."
 		if ((Lego_IsAllowDebugKeys() || !NERPs_AnyTutorialFlags()) && Shortcut_IsPressed(ShortcutID::CameraCycleNextUnit)) {
 			LegoObject_CameraCycleUnits();
