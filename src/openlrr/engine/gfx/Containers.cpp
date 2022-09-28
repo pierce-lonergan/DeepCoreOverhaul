@@ -333,9 +333,11 @@ void __cdecl Gods98::Container_Remove2(Container* dead, bool32 kill)
 	///            This is a sort-of jank solution, because it assumes that other callers
 	///             know to dispose of references first, or to just nullify them.
 	if (dead->type != Container_Type::Reference) {
-		Container_Frame_WalkTree(dead->masterFrame,   0, _Container_RemoveChildReferenceCallback, const_cast<char*>("masterFrame"));
-		Container_Frame_WalkTree(dead->activityFrame, 0, _Container_RemoveChildReferenceCallback, const_cast<char*>("activityFrame"));
-		Container_Frame_WalkTree(dead->hiddenFrame,   0, _Container_RemoveChildReferenceCallback, const_cast<char*>("hiddenFrame"));
+		/// REMOVED: This was breaking things with references failing to be removed before this was called.
+		///          Let references clean up themselves, since they're already doing a good job of that.
+		//Container_Frame_WalkTree(dead->masterFrame,   0, _Container_RemoveChildReferenceCallback, const_cast<char*>("masterFrame"));
+		//Container_Frame_WalkTree(dead->activityFrame, 0, _Container_RemoveChildReferenceCallback, const_cast<char*>("activityFrame"));
+		//Container_Frame_WalkTree(dead->hiddenFrame,   0, _Container_RemoveChildReferenceCallback, const_cast<char*>("hiddenFrame"));
 	}
 
 	if (dead->type == Container_Type::FromActivity || dead->type == Container_Type::Anim) {
@@ -755,9 +757,11 @@ bool32 __cdecl Gods98::Container_SetActivity(Container* cont, const char* actnam
 				if (cont->typeData->name != nullptr) {
 					currAnimName = cont->typeData->name;
 					if (currFrame = Container_Frame_Find(cont, currAnimName, false)) {
-						
+
+						/// REMOVED: This was breaking things with references failing to be removed before this was called.
+						///          Let references clean up themselves, since they're already doing a good job of that.
 						// Remove references to frames that are about to become unreachable or leaked.
-						Container_Frame_WalkTree(currFrame, 0, _Container_RemoveChildReferenceCallback, currAnimName);
+						//Container_Frame_WalkTree(currFrame, 0, _Container_RemoveChildReferenceCallback, currAnimName);
 
 						Container_Frame_SafeAddChild(cont->hiddenFrame, currFrame);
 
