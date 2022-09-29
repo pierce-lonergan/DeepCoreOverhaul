@@ -199,7 +199,7 @@ BOOL __stdcall Gods98::Init_DialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, L
 	} else if (uMsg == WM_COMMAND) {
 
 		if (HIWORD(wParam) == LBN_SELCHANGE) {
-//			Error_Debug(Error_Format("Selection changed on list box #%i (hWnd == 0x%x)\n", LOWORD(wParam), lParam));
+//			Error_DebugF("Selection changed on list box #%i (hWnd == 0x%x)\n", static_cast<sint32>(LOWORD(wParam)), static_cast<sint32>(lParam));
 			
 			if (LOWORD(wParam) == IDC_DEVICE) {
 

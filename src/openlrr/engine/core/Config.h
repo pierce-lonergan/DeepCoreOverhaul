@@ -10,6 +10,7 @@
 
 #include "../../common.h"
 
+#include "../colour.h"
 #include "../geometry.h"
 
 //#include "../input/Keys.h"
@@ -48,6 +49,8 @@ enum_scoped_forward_end(FileFlags);
 #define CONFIG_MAXLISTS				32			// 2^32 - 1 possible configs...
 
 #define CONFIG_SEPARATOR			"::"
+
+#define CONFIG_ILLEGALCOMMENT		"//"		// Often seen as "// ROCK FOG", this comment type is NOT SUPPORTED!
 
 #define CONFIG_COMMENTCHAR			';'
 #define CONFIG_COMMENT				";"
@@ -235,6 +238,9 @@ real32 __cdecl Config_GetAngle(const Config* root, const char* stringID);
 // <LegoRR.exe @00479430>
 bool32 __cdecl Config_GetRGBValue(const Config* root, const char* stringID, OUT real32* r, OUT real32* g, OUT real32* b);
 
+/// CUSTOM:
+bool Config_GetColourRGBF(const Config* root, const char* stringID, OUT ColourRGBF* colour);
+
 // <missing>
 bool32 __cdecl Config_GetCoord(const Config* root, const char* stringID, OUT real32* x, OUT real32* y, OPTIONAL OUT real32* z);
 
@@ -288,8 +294,11 @@ Config* __cdecl Config_Create(Config* prev);
 // <LegoRR.exe @00479580>
 void __cdecl Config_Remove(Config* dead);
 
+/// CUSTOM:
+uint32 Config_HashItemName(const char* name);
+
 /// CUSTOM: Subfunction of Config_FindItem.
-bool Config_MatchItemName(const Gods98::Config* conf, const char* name, OPTIONAL OUT bool* wildcard);
+bool Config_MatchItemName(const Gods98::Config* conf, const char* name, OPTIONAL uint32 hashCode, OPTIONAL OUT bool* wildcard);
 
 // <LegoRR.exe @004795a0>
 const Config* __cdecl Config_FindItem(const Config* conf, const char* stringID);
@@ -301,12 +310,20 @@ void __cdecl Config_AddList(void);
 /// CUSTOM: Count number of items in an array.
 uint32 Config_CountItems(const Config* arrayItem);
 
-/// CUSToM: Merge configs together by appending one to another.
+/// CUSTOM: Merge configs together by appending one to another.
 void Config_AppendConfig(Config* root, Config* config);
 
+/// CUSTOM: Future replacement for Config_GetIntValue macro. Name will have 2 removed once replaced.
+sint32 Config_GetIntValue2(const Config* root, const char* stringID);
 
-#define Config_GetIntValue(c,s)		std::atoi(Gods98::Config_GetTempStringValue((c),(s))?Gods98::Config_GetTempStringValue((c),(s)):"")
-#define Config_GetRealValue(c,s)	(real32)std::atof(Gods98::Config_GetTempStringValue((c),(s))?Gods98::Config_GetTempStringValue((c),(s)):"")
+/// CUSTOM: Future replacement for Config_GetRealValue macro. Name will have 2 removed once replaced.
+real32 Config_GetRealValue2(const Config* root, const char* stringID);
+
+
+#define Config_GetIntValue(c,s)		Gods98::Config_GetIntValue2((c),(s))
+#define Config_GetRealValue(c,s)	Gods98::Config_GetRealValue2((c),(s))
+//#define Config_GetIntValue(c,s)		std::atoi(Gods98::Config_GetTempStringValue((c),(s))?Gods98::Config_GetTempStringValue((c),(s)):"")
+//#define Config_GetRealValue(c,s)	(real32)std::atof(Gods98::Config_GetTempStringValue((c),(s))?Gods98::Config_GetTempStringValue((c),(s)):"")
 #define Config_Get3DCoord(c,s,v)	Gods98::Config_GetCoord((c),(s),&((v)->x),&((v)->y),&((v)->z))
 #define Config_Get2DCoord(c,s,x,y)	Gods98::Config_GetCoord((c),(s),(x),(y),nullptr)
 
@@ -320,21 +337,32 @@ void Config_AppendConfig(Config* root, Config* config);
 
 // Error reporting for the passed config item.
 
-#define Config_WarnItem(b, conf, s)				{ if (Gods98::Error_IsWarnVisible() && (b)) { \
-	Gods98::Error_Out(false, "%s (%i): Warning: %s\n", Gods98::Config_GetFileName(conf), Gods98::Config_GetLineNumber(conf), (s)); Gods98::Error_SetWarn(); } }
-#define Config_FatalItem(b, conf, s)			{ if (Gods98::Error_IsFatalVisible() && (b)) { \
-	Gods98::Error_Out(true, "%s (%i): Fatal: %s\n", Gods98::Config_GetFileName(conf), Gods98::Config_GetLineNumber(conf), (s)); } }
+#define Config_DebugItem(conf, s)				Error_DebugF2("%s (%i): %s",   Gods98::Config_GetFileName((conf)), Gods98::Config_GetLineNumber((conf)), (s))
+#define Config_InfoItem(conf, s)				Error_InfoF2( "%s (%i): %s\n", Gods98::Config_GetFileName((conf)), Gods98::Config_GetLineNumber((conf)), (s))
+#define Config_WarnItem(b, conf, s)				Error_WarnF2( (b), "%s (%i): Warning: %s\n", Gods98::Config_GetFileName((conf)), Gods98::Config_GetLineNumber((conf)), (s))
+#define Config_FatalItem(b, conf, s)			Error_FatalF2((b), "%s (%i): Fatal: %s\n",   Gods98::Config_GetFileName((conf)), Gods98::Config_GetLineNumber((conf)), (s))
 
-#define Config_WarnItemF(b, conf, s, ...)		Config_WarnItem((b), (conf), Gods98::Error_Format((s), __VA_ARGS__))
+#define Config_DebugItemF(conf, s, ...)			Config_DebugItem((conf), Gods98::Error_Format((s), __VA_ARGS__))
+#define Config_InfoItemF(conf, s, ...)			Config_InfoItem( (conf), Gods98::Error_Format((s), __VA_ARGS__))
+#define Config_WarnItemF(b, conf, s, ...)		Config_WarnItem( (b), (conf), Gods98::Error_Format((s), __VA_ARGS__))
 #define Config_FatalItemF(b, conf, s, ...)		Config_FatalItem((b), (conf), Gods98::Error_Format((s), __VA_ARGS__))
 
 // Error reporting for the last config item looked up with Config_BuildStringID / Config_ID.
 
-#define Config_WarnLast(b, root, s)				Config_WarnItem(b, Gods98::Config_FindItem(root, Gods98::Config_LastStringID()), s)
-#define Config_FatalLast(b, root, s)			Config_FatalItem(b, Gods98::Config_FindItem(root, Gods98::Config_LastStringID()), s)
+// Defaults to root when last item wasn't found.
+#define _Config_LastStringIDItem(root)			(Gods98::Config_FindItem((root), Gods98::Config_LastStringID()) \
+													? Gods98::Config_FindItem((root), Gods98::Config_LastStringID()) \
+													: (root))
 
-#define Config_WarnLastF(b, root, s, ...)		Config_WarnItemF(b, Gods98::Config_FindItem(root, Gods98::Config_LastStringID()), s, __VA_ARGS__)
-#define Config_FatalLastF(b, root, s, ...)		Config_FatalItemF(b, Gods98::Config_FindItem(root, Gods98::Config_LastStringID()), s, __VA_ARGS__)
+#define Config_DebugLast(root, s)				Config_DebugItem(_Config_LastStringIDItem((root)), (s))
+#define Config_InfoLast(root, s)				Config_InfoItem( _Config_LastStringIDItem((root)), (s))
+#define Config_WarnLast(b, root, s)				Config_WarnItem( (b), _Config_LastStringIDItem((root)), (s))
+#define Config_FatalLast(b, root, s)			Config_FatalItem((b), _Config_LastStringIDItem((root)), (s))
+
+#define Config_DebugLastF(root, s, ...)			Config_DebugItemF(_Config_LastStringIDItem((root)), (s), __VA_ARGS__)
+#define Config_InfoLastF(root, s, ...)			Config_InfoItemF( _Config_LastStringIDItem((root)), (s), __VA_ARGS__)
+#define Config_WarnLastF(b, root, s, ...)		Config_WarnItemF( (b), _Config_LastStringIDItem((root)), (s), __VA_ARGS__)
+#define Config_FatalLastF(b, root, s, ...)		Config_FatalItemF((b), _Config_LastStringIDItem((root)), (s), __VA_ARGS__)
 
 #pragma endregion
 

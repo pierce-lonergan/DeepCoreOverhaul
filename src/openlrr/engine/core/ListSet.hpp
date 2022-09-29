@@ -744,7 +744,7 @@ public:
 
 		const size_t count = ListSet::CountOfList(m_cont.listCount);
 
-		value_type* list = m_cont.listSet[m_cont.listCount] = (value_type*)Gods98::Mem_Alloc(sizeof(value_type) * count);
+		value_type* list = m_cont.listSet[m_cont.listCount] = static_cast<value_type*>(Gods98::Mem_Alloc(sizeof(value_type) * count));
 		if (list) {
 			m_cont.listCount++;
 
@@ -760,7 +760,7 @@ public:
 			m_cont.freeList = list;
 
 		}
-		else Error_Fatal(true, Gods98::Error_Format("Unable to allocate %d bytes of memory for new list.\n", sizeof(value_type) * count));
+		else Error_FatalF(true, "Unable to allocate %d bytes of memory for new list.\n", static_cast<uint32>(sizeof(value_type) * count));
 	}
 
 

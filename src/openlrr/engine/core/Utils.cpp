@@ -123,7 +123,7 @@ char* __cdecl Gods98::Util_RemoveUnderscores(const char* str, ...)
 
 	va_start(args, str);
 	uint32 len = std::vsprintf(completeString, str, args);
-	Error_Fatal(len > UTIL_MAXSTRINGLENGTH, Error_Format("String too big for 'Util_RemoveUnderscores'.", str));
+	Error_FatalF(len > UTIL_MAXSTRINGLENGTH, "String too big for 'Util_RemoveUnderscores'.", str);
 	va_end(args);
 
 	char* t = buffer;

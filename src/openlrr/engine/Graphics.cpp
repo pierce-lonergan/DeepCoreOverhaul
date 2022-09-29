@@ -321,7 +321,7 @@ void __cdecl Gods98::Graphics_ChangeRenderState(D3DRENDERSTATETYPE dwRenderState
 	DWORD currValue;
 	Graphics_StateChangeData* data = &mainGlobs.renderStateData[dwRenderStateType];
 	HRESULT r = mainGlobs.imDevice->GetRenderState(dwRenderStateType, &currValue);
-	Error_Fatal(r != D3D_OK, Error_Format("Failed to GetRenderState(%i)", dwRenderStateType));
+	Error_FatalF(r != D3D_OK, "Failed to GetRenderState(%i)", dwRenderStateType);
 
 	if (currValue != dwRenderState) {
 

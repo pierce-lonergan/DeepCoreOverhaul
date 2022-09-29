@@ -108,7 +108,7 @@ bool32 __cdecl Gods98::LWD3D(uint8** p, real32* f)
 bool32 __cdecl Gods98::PNTSprc(File* file, LWSIZE* sizeData, sint32 csize, real32** verts, bool32 dflag)
 {
 	char cbuff[10] = { 0 }; // unused, keeping here in-case it's a bad safeguard for buffer overrun
-	char buff[256];
+	//char buff[256];
 	Vector3F pos;
 
 	uint8* sp=(uint8*)Mem_Alloc(csize+16);
@@ -133,10 +133,8 @@ bool32 __cdecl Gods98::PNTSprc(File* file, LWSIZE* sizeData, sint32 csize, real3
 		*vptr++=pos.x;
 		*vptr++=pos.y;
 		*vptr++=pos.z;
-		if(dflag)
-		{
-			std::sprintf(buff, "Point %d > %f %f %f\n",i, pos.x,pos.y,pos.z);
-			Error_Debug(buff);
+		if (dflag) {
+			Error_DebugF("Point %d > %f %f %f\n", i, pos.x, pos.y, pos.z);
 		}
 		i++;
 		csize-=12; // sizeof(Vector3F)
@@ -237,11 +235,9 @@ bool32 __cdecl Gods98::POLSprc(File* file, LWSIZE* sizeData, LWPOLY** polys, sin
 			vsurf = LWSPVALUE(swp);
 			vsurf--;
 			ply->plySurface = vsurf;
-			if(dflag)
-			{
+			if (dflag) {
 				std::sprintf(buff2, "Surface :- %d\n",vsurf);
 				std::strcat(buff, buff2);
-
 				Error_Debug(buff);
 			}
 		}
@@ -261,7 +257,7 @@ bool32 __cdecl Gods98::SRFSprc(File* file, LWSIZE* sizeData, LWSURFLIST** srfl, 
 {
 	//uint8* sp;
 	//char* cp;
-	char	buff[512];
+	//char	buff[512];
 	uint8	cbuff[10]={0};
 	sint32 nc=0;
 	/// FIX APPLY: dummy init
@@ -279,10 +275,8 @@ bool32 __cdecl Gods98::SRFSprc(File* file, LWSIZE* sizeData, LWSURFLIST** srfl, 
 
 	while(csize>0)
 	{
-		if(dflag)
-		{
-			std::sprintf(buff, "Surface %d > %s\n", nc, cp);
-			Error_Debug(buff);
+		if (dflag) {
+			Error_DebugF("Surface %d > %s\n", nc, cp);
 		}
 		uint32 len = std::strlen(cp) + 1;
 		if(len&1) // round up to unit of two
@@ -351,10 +345,8 @@ bool32 __cdecl Gods98::SURFprc(File* file, LWSIZE* sizeData, LWSURFACE** surf, s
 		}
 	}
 
-	if(dflag)
-	{
-		std::sprintf(buff, "Surface %d :- %s",sc,cp);
-		Error_Debug(buff);
+	if (dflag) {
+		Error_DebugF("Surface %d :- %s", sc, cp);
 	}
 	len = std::strlen(cp) + 1;
 	if(len&1)
@@ -563,16 +555,14 @@ bool32 __cdecl Gods98::SURFprc(File* file, LWSIZE* sizeData, LWSURFACE** surf, s
 				std::strcat(buff,buff2);
 			}
 		}
-		if(dflag)
-		{
+		if (dflag) {
 			Error_Debug(buff);
 		}
 		cp+=len;
 
 		csize-=(len+6);
 	}
-	if(dflag)
-	{
+	if (dflag) {
 		Error_Debug("\n");
 	}
 	sizeData->lwSurfaceCount++;
@@ -584,7 +574,7 @@ bool32 __cdecl Gods98::SURFprc(File* file, LWSIZE* sizeData, LWSURFACE** surf, s
 // <LegoRR.exe @0048d580>
 bool32 __cdecl Gods98::LoadLWOB(const char* fn, LWSIZE* sd, real32** verts, LWPOLY** polys, LWSURFACE** surfs, File** fileUV, bool32 dflag)
 {
-	char buff[1024];
+	//char buff[1024];
 	char cbuff[10]={0};
 	char fname[LBUF_LEN];
 	uint32 size, csize;
@@ -597,14 +587,15 @@ bool32 __cdecl Gods98::LoadLWOB(const char* fn, LWSIZE* sd, real32** verts, LWPO
 
 	std::sprintf(fname,"%s.lwo",fn);
 	File* file=File_Open(fname, "rb");
-	if(!file)
-	{
+	if (!file) {
 		// Reduce useless warnings:
-		//Error_Warn(true, Error_Format("Cannot load Lightwave object file %s", fname) );
+		//Error_WarnF(true, "Cannot load Lightwave object file %s", fname);
 		return false;
 	}
-	else
-		Error_Debug( Error_Format("Loading Lightwave Object file %s\n", fname) );
+	else {
+		// Reduce useless debug messages:
+		//Error_DebugF("Loading Lightwave Object file %s\n", fname);
+	}
 
 	LWSIZE* sizeData=(LWSIZE*)Mem_Alloc(sizeof(LWSIZE));
 	sizeData->lwVertCount=sizeData->lwPolyCount=sizeData->lwSurfaceCount=0;
@@ -616,9 +607,10 @@ bool32 __cdecl Gods98::LoadLWOB(const char* fn, LWSIZE* sd, real32** verts, LWPO
 		if( File_Exists(fname) )
 		{
 			*fileUV = File_Open(fname, "rb");
-			if( *fileUV )
-				Error_Debug( Error_Format("UV file \"%s\" found\n", fname) );
-
+			if (*fileUV) {
+				// Reduce useless debug messages:
+				//Error_DebugF("UV file \"%s\" found\n", fname);
+			}
 		}
 		else
 			*fileUV = nullptr;
@@ -639,10 +631,8 @@ bool32 __cdecl Gods98::LoadLWOB(const char* fn, LWSIZE* sd, real32** verts, LWPO
 		File_Read(&csize, 4, 1, file);
 		csize = LWVALUE(csize);
 
-		if(dflag)
-		{
-			std::sprintf(buff, "LW OBJECT %s %d\n",cbuff, csize);
-			Error_Debug(buff);
+		if (dflag) {
+			Error_DebugF("LW OBJECT %s %d\n", cbuff, csize);
 		}
 
 		if(!::_stricmp(cbuff, "PNTS"))
@@ -728,8 +718,7 @@ bool32 __cdecl Gods98::LoadLWOB(const char* fn, LWSIZE* sd, real32** verts, LWPO
 err:
 	Mem_Free(sizeData);
 	File_Close(file);
-	std::sprintf(buff, "Error in Lightwave file %s",fn);
-	Error_Warn(true, buff);
+	Error_WarnF(true, "Error in Lightwave file %s", fn);
 	return false;
 }
 

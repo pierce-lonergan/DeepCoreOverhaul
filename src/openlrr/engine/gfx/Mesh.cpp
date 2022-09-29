@@ -630,7 +630,7 @@ void __cdecl Gods98::Mesh_GetSurfInfo(const char* basePath, APPOBJ* lightWaveObj
 					}
 					else {
 						lightWaveSurf[loopSurf].textureSeq = nullptr;
-						Error_Fatal(true, Error_Format("No textures found in sequence (%s)", path));
+						Error_FatalF(true, "No textures found in sequence (%s)", path);
 					}*/
 
 					lightWaveSurf[loopSurf].textureSeq = (Mesh_Texture**)Mem_Alloc(sizeof(Mesh_Texture*) * MESH_MAXTEXTURESEQENCE);
@@ -648,7 +648,7 @@ void __cdecl Gods98::Mesh_GetSurfInfo(const char* basePath, APPOBJ* lightWaveObj
 					lightWaveSurf[loopSurf].textureSeq = (Mesh_Texture**)Mem_ReAlloc(lightWaveSurf[loopSurf].textureSeq, sizeof(Mesh_Texture*) * numInTexSeq);
 				}
 				else {
-					Error_Fatal(true, Error_Format("Error loading texture sequence \"%s\".", fname));
+					Error_FatalF(true, "Error loading texture sequence \"%s\".", fname);
 				}
 			}
 			else {
@@ -1767,7 +1767,7 @@ Gods98::Mesh_Texture* __cdecl Gods98::Mesh_LoadTexture(const char* baseDir, cons
 	else {
 		Mem_Free(texture);
 		texture = nullptr;
-//		Error_Fatal(true, Error_Format("Cannot find or load texture >(%s\\)%s<", baseDir, name));
+//		Error_FatalF(true, "Cannot find or load texture >(%s\\)%s<", baseDir, name);
 	}
 
 	return texture;

@@ -142,7 +142,7 @@ LegoRR::Message_Type __cdecl LegoRR::Message_ParsePTLName(const char* ptlName)
     }
 
     /// TODO: Actually return an invalid result on failure
-    Error_Warn(true, Gods98::Error_Format("Invalid message name in PTL: %s", ptlName));
+    Error_WarnF(true, "Invalid message name in PTL: %s", ptlName);
     return Message_Type::Message_Null; // safest possible return
     //return (Message_Type)-1;
 }

@@ -99,38 +99,39 @@ extern Error_LogLevels errorLogLevels;
 #pragma endregion
 
 /**********************************************************************************
- ******** Functions
+ ******** Macros
  **********************************************************************************/
 
-//#ifndef _RELEASE
+#pragma region Macros
+
+#define Error_DebugF2(s, ...)				do { if (Gods98::Error_IsDebugVisible()) { Gods98::Error_Out(false, (s), __VA_ARGS__); } } while (0)
+#define Error_TraceF2(s, ...)				do { if (Gods98::Error_IsTraceVisible()) { Gods98::Error_Out(false, (s), __VA_ARGS__); } } while (0)
+#define Error_InfoF2(s, ...)				do { if (Gods98::Error_IsInfoVisible())  { Gods98::Error_Out(false, (s), __VA_ARGS__); } } while (0)
+#define Error_WarnF2(b, s, ...)				do { if (Gods98::Error_IsWarnVisible()  && (b)) { Gods98::Error_Out(false, (s), __VA_ARGS__); Gods98::Error_SetWarn(); } } while (0)
+#define Error_FatalF2(b, s, ...)			do { if (Gods98::Error_IsFatalVisible() && (b)) { Gods98::Error_Out(true,  (s), __VA_ARGS__); } } while (0)
 
 // Debug is used to log information without the "file(line):" prefix, and without automatically ending the line.
-#define Error_Debug(s)						{ if (Gods98::errorLogLevels.debugVisible) { Gods98::Error_Out(false, "%s", (s)); } }
-#define Error_Trace(s)						{ if (Gods98::errorLogLevels.traceVisible) { std::printf(false, "%s\n", (s)); } }
-#define Error_Info(s)						{ if (Gods98::errorLogLevels.infoVisible) { Gods98::Error_Out(false, "%s\n", (s)); } }
-#define Error_Warn(b, s)					{ if (Gods98::errorLogLevels.warnVisible && (b)) { Gods98::Error_Out(false, "%s(%i): Warning: %s\n", __FILE__, __LINE__, (s)); Gods98::Error_SetWarn(); } }
-#define Error_Fatal(b, s)					{ if (Gods98::errorLogLevels.fatalVisible && (b)) { Gods98::Error_Out(true, "%s(%i): Fatal: %s\n", __FILE__, __LINE__, (s)); } }
+#define Error_Debug(s)						Error_DebugF2("%s",   (s))
+#define Error_Trace(s)						Error_TraceF2("%s\n", (s))
+#define Error_Info(s)						Error_InfoF2( "%s\n", (s))
+#define Error_Warn(b, s)					Error_WarnF2( (b), "%s(%i): Warning: %s\n", __FILE__, __LINE__, (s))
+#define Error_Fatal(b, s)					Error_FatalF2((b), "%s(%i): Fatal: %s\n",   __FILE__, __LINE__, (s))
 
 #define Error_DebugF(s, ...)				Error_Debug(Gods98::Error_Format((s), __VA_ARGS__))
-#define Error_InfoF(s, ...)					Error_Info(Gods98::Error_Format((s), __VA_ARGS__))
-#define Error_WarnF(b, s, ...)				Error_Warn((b), Gods98::Error_Format((s), __VA_ARGS__))
+#define Error_TraceF(s, ...)				Error_Trace(Gods98::Error_Format((s), __VA_ARGS__))
+#define Error_InfoF(s, ...)					Error_Info( Gods98::Error_Format((s), __VA_ARGS__))
+#define Error_WarnF(b, s, ...)				Error_Warn( (b), Gods98::Error_Format((s), __VA_ARGS__))
 #define Error_FatalF(b, s, ...)				Error_Fatal((b), Gods98::Error_Format((s), __VA_ARGS__))
 
-#define Error_LogLoad(b, s)					{ Gods98::Error_Log(errorGlobs.loadLogFile, (b), "%s\n", (s)); }
-#define Error_LogLoadError(b, s)			{ Gods98::Error_Log(errorGlobs.loadErrorLogFile, (b), "%s\n", (s)); }
-#define Error_LogRedundantFile(b, s)		{ Gods98::Error_Log(errorGlobs.redundantLogFile, (b), "%s\n", (s)); }
+#define Error_LogLoad(b, s)					do { Gods98::Error_Log(errorGlobs.loadLogFile,      (b), "%s\n", (s)); } while (0)
+#define Error_LogLoadError(b, s)			do { Gods98::Error_Log(errorGlobs.loadErrorLogFile, (b), "%s\n", (s)); } while (0)
+#define Error_LogRedundantFile(b, s)		do { Gods98::Error_Log(errorGlobs.redundantLogFile, (b), "%s\n", (s)); } while (0)
 
-/*#else
+#pragma endregion
 
-#define Error_Warn(b,s)			(b)
-#define Error_Fatal(b,s)		(b)
-#define Error_Debug(s)
-__inline void Error_CheckWarn(bool32 check) {  }
-#define Error_LogLoad(b,s)					(b)
-#define Error_LogLoadError(b,s)				(b)
-#define Error_LogRedundantFile(b,s)			(b)
-
-#endif*/
+/**********************************************************************************
+ ******** Functions
+ **********************************************************************************/
 
 #pragma region Functions
 
@@ -164,9 +165,11 @@ void __cdecl Error_Out(bool32 ErrFatal, const char* lpOutputString, ...);
 // <missing>
 void __cdecl Error_Log(File* logFile, bool32 log, const char* lpOutputString, ...);
 
+// <missing>
+void Error_CheckWarn(bool32 check);
+
 
 __inline void Error_SetWarn(void) { errorGlobs.warnCalled = true; }
-__inline void Error_CheckWarn(bool32 check) { if (!check) errorGlobs.warnCalled = false; else if (errorGlobs.warnCalled) Error_TerminateProgram("Check warning message log"); }
 
 
 inline bool Error_IsDebugVisible()					{ return errorLogLevels.debugVisible; }

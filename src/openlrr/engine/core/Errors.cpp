@@ -134,7 +134,7 @@ void __cdecl Gods98::Error_TerminateProgram(const char* msg)
 	//if (!DirectDraw_FullScreen()) {
 	if (!errorGlobs.fullScreen) {
 
-		char message[1024];
+		char message[4096];
 		std::sprintf(message, "Error:\n%s\n\nSelect Retry to crash to debugger", msg);
 
 		::ShowCursor(true);
@@ -168,7 +168,7 @@ void __cdecl Gods98::Error_Out(bool32 ErrFatal, const char* lpOutputString, ...)
 	if (errorGlobs.dumpFile) {
 
 		std::va_list args;
-		char msg[512];
+		char msg[1024];
 		va_start(args, lpOutputString);
 		File_VPrintF(errorGlobs.dumpFile, lpOutputString, args);
 		std::vsprintf(msg, lpOutputString, args);
@@ -184,7 +184,7 @@ void __cdecl Gods98::Error_Out(bool32 ErrFatal, const char* lpOutputString, ...)
 		HANDLE heventData;   /* data passing synch object */
 		HANDLE hSharedFile;  /* memory mapped file shared data */
 		LPSTR lpszSharedMem;
-		char achBuffer[500];
+		char achBuffer[1024];
 
 		/* create the output buffer */
 		std::va_list args;
@@ -301,7 +301,7 @@ void __cdecl Gods98::Error_Log(File* logFile, bool32 log, const char* lpOutputSt
 {
 	if (log && logFile) {
 		std::va_list args;
-		char msg[512];
+		char msg[1024];
 
 		va_start(args, lpOutputString);
 		File_VPrintF(logFile, lpOutputString, args);
@@ -310,6 +310,15 @@ void __cdecl Gods98::Error_Log(File* logFile, bool32 log, const char* lpOutputSt
 		File_Flush(logFile);
 
 	}
+}
+
+// <missing>
+void Gods98::Error_CheckWarn(bool32 check)
+{ 
+	if (!check)
+		errorGlobs.warnCalled = false;
+	else if (errorGlobs.warnCalled)
+		Error_TerminateProgram("Check warning message log");
 }
 
 #pragma endregion

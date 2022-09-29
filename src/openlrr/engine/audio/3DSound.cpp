@@ -339,9 +339,9 @@ sint32 __cdecl Gods98::Sound3D_Load(const char* fName, bool32 stream, bool32 sim
 			}
 		}
 		else
-			Error_Warn(true, "Could not get free sound." );
+			Error_Warn(true, "Could not get free sound.");
 
-		Error_Warn( true, Error_Format("Cannot load sound \"%s\".", fName) );
+		Error_WarnF(true, "Cannot load sound \"%s\".", fName);
 	}
 
 	return -1;
@@ -1488,8 +1488,9 @@ void __cdecl Gods98::Sound3D_Stream_CheckPosition(bool32 looping)
 			if (!streamData->wiWave.bFoundEnd) {	
 				// read in more of the file.
 				
-				Error_Debug( Error_Format("Next write pos =	%i\n", streamData->wiWave.dwNextWriteOffset) );
-				Error_Debug( Error_Format("Write size =	%i\n\n", streamData->wiWave.dwNotifySize) );
+				// Reduce useless debug messages:
+				//Error_DebugF("Next write pos = %i\n", streamData->wiWave.dwNextWriteOffset);
+				//Error_DebugF("Write size     = %i\n\n", streamData->wiWave.dwNotifySize);
 
 				// Lock the buffer.
 				if (DS_OK != lpDSStreamBuff(looping)->Lock(streamData->wiWave.dwNextWriteOffset, streamData->wiWave.dwNotifySize, (void**)&lpWrite1, &dwWrite1, NULL, NULL, 0)) {

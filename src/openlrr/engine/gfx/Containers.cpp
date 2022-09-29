@@ -184,7 +184,7 @@ void __cdecl Gods98::Container_Shutdown(void)
 	uint32 unfreed = 0;
 
 	for (Container* cont : containerListSet.EnumerateAlive()) {
-		Error_Debug(Error_Format("Warning: Unfreed Container type #%d\n", cont->type));
+		Error_DebugF("Warning: Unfreed Container type %s\n", Container_GetTypeName(cont->type));
 		unfreed++;
 		Container_Remove2(cont, true);
 	}
@@ -194,7 +194,7 @@ void __cdecl Gods98::Container_Shutdown(void)
 
 	for (uint32 loop = 0; loop < containerGlobs.textureCount; loop++) {
 		if (containerGlobs.textureSet[loop].fileName) {
-			Error_Debug(Error_Format("Texture %s was not removed\n", containerGlobs.textureSet[loop].fileName));
+			Error_DebugF("Texture %s was not removed\n", containerGlobs.textureSet[loop].fileName);
 			Mem_Free(containerGlobs.textureSet[loop].fileName);
 		}
 	}
@@ -204,7 +204,7 @@ void __cdecl Gods98::Container_Shutdown(void)
 
 
 #ifdef _DEBUG_2
-	if (unfreed) Error_Debug(Error_Format("Warning: %d Unremoved Container%s\n", unfreed, unfreed == 1 ? "" : "s"));
+	if (unfreed) Error_DebugF("Warning: %d Unremoved Container%s\n", unfreed, (unfreed == 1 ? "" : "s"));
 #endif // _DEBUG_2
 
 #ifdef _HIERARCHY_DEBUG
@@ -540,14 +540,16 @@ Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, co
 		argc = Util_Tokenise(name, argv, "\\");
 		std::sprintf(tempString, "%s\\%s.%s", baseDir, argv[argc - 1], containerGlobs.extensionName[(uint32)Container_Type::FromActivity]);
 
-		Error_Debug(Error_Format("Loading activity file \"%s\"\n", tempString));
+		// Reduce useless debug messages:
+		//Error_DebugF("Loading activity file \"%s\"\n", tempString);
 
 		if (rootConf = Config_Load(tempString)) {
 
 			char tempString2[UTIL_DEFSTRINGLEN];
 
 			std::sprintf(tempString, "%s%s%s", containerGlobs.gameName, CONFIG_SEPARATOR, ACTIVITY_ACTIVITYSTRING);
-			Error_Debug(Error_Format("Searching for \"%s\" in activity file\n", tempString));
+			// Reduce useless debug messages:
+			//Error_DebugF("Searching for \"%s\" in activity file\n", tempString);
 			if (conf = Config_FindArray(rootConf, tempString)) {
 
 				cont = Container_Create(parent);
@@ -596,11 +598,11 @@ Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, co
 								if (!cont->typeData) Container_SetActivity(cont, itemName);
 
 							}
-							else Error_Fatal(true, Error_Format("Unable to load Activity \"%s\" from \"%s\"", itemName, tempString));
+							else Error_FatalF(true, "Unable to load Activity \"%s\" from \"%s\"", itemName, tempString);
 
-//						} else Error_Fatal(true, Error_Format("Cannot get \"%s\" value from activity file", tempString2));
+//						} else Error_FatalF(true, "Cannot get \"%s\" value from activity file", tempString2);
 						}
-						else Error_Fatal(true, Error_Format("Unable to get item \"%s\" from activity file", tempString2));
+						else Error_FatalF(true, "Unable to get item \"%s\" from activity file", tempString2);
 					}
 
 					conf = Config_GetNextItem(conf);
@@ -610,11 +612,11 @@ Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, co
 				scale = Config_GetRealValue(rootConf, tempString);
 				if (scale != 0.0f) cont->activityFrame->AddScale(D3DRMCOMBINE_REPLACE, scale, scale, scale);
 			}
-			else Error_Fatal(true, Error_Format("Cannot Find Activity List %s", tempString));
+			else Error_FatalF(true, "Cannot Find Activity List %s", tempString);
 
 			Config_Free(rootConf);
 		}
-		else Error_Warn(true, Error_Format("Cannot Find File %s", tempString));
+		else Error_WarnF(true, "Cannot Find File %s", tempString);
 
 	}
 	else if (type == Container_Type::Frame) {
@@ -624,7 +626,7 @@ Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, co
 		// Just add it onto the activity frame...
 		std::sprintf(tempString, "%s.%s", name, containerGlobs.extensionName[(uint32)type]);
 		if (Container_FrameLoad(tempString, cont->activityFrame));
-		else Error_Warn(true, Error_Format("Cannot Load File \"%s\".\n", tempString));
+		else Error_WarnF(true, "Cannot Load File \"%s\".\n", tempString);
 
 	}
 	else if (type == Container_Type::Mesh) {
@@ -642,7 +644,7 @@ Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, co
 			if (mesh = Container_MeshLoad(fdata, fsize, tempString, cont->activityFrame, noTexture)) {
 				Container_SetTypeData(cont, nullptr, nullptr, mesh, nullptr);
 			}
-			//else Error_Warn(true, Error_Format("Cannot Load File \"%s\"", tempString));
+			//else Error_WarnF(true, "Cannot Load File \"%s\"", tempString);
 			Mem_Free(fdata);
 		}
 
@@ -660,7 +662,7 @@ Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, co
 			Container_Frame_SetAppData(cont->activityFrame, cont, animClone, name, &frameCount, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 		}
 		else {
-			Error_Warn(true, Error_Format("Cannot Load File \"%s\".\n", tempString));
+			Error_WarnF(true, "Cannot Load File \"%s\".\n", tempString);
 			Container_Remove(cont);
 			cont = nullptr;
 		}
@@ -682,7 +684,7 @@ Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, co
 			///             note that the .lwo extension is automatically applied down the line in Mesh_Load
 			std::sprintf(tempString, "%s.lwo", name);
 			// Reduce useless warnings:
-			//Error_Warn(true, Error_Format("Cannot Load File \"%s\".", tempString));
+			//Error_WarnF(true, "Cannot Load File \"%s\".", tempString);
 			Container_Remove(cont);
 			cont = nullptr;
 		}
@@ -695,7 +697,7 @@ Gods98::Container* __cdecl Gods98::Container_Load(OPTIONAL Container* parent, co
 	}
 	else {
 
-		Error_Warn(true, Error_Format("Code not implemented for Container type #%d", type));
+		Error_WarnF(true, "Code not implemented for Container type %s", Container_GetTypeName(type));
 
 	}
 
@@ -786,7 +788,7 @@ bool32 __cdecl Gods98::Container_SetActivity(Container* cont, const char* actnam
 		else {
 			result = false;
 			// Reduce useless warnings:
-			//Error_Warn(!Container_Frame_Find(cont, actname, false), Error_Format("Unknown activity (\"%s\") passed to Container_SetActivity()", actname));
+			//Error_WarnF(!Container_Frame_Find(cont, actname, false), "Unknown activity (\"%s\") passed to Container_SetActivity()", actname);
 		}
 
 		// Notify the game that the activity has changed...
@@ -1134,7 +1136,7 @@ Gods98::Container* __cdecl Gods98::Container_Clone(Container* orig)
 //		if (animSet = Container_LoadAnimSet(fname, cont->activityFrame, loadRef, &frameCount)) {
 //			Container_Frame_SetAppData(cont->activityFrame, cont, animSet, fname, &frameCount, nullptr, nullptr, nullptr, nullptr);
 //		}
-//		else Error_Fatal(true, Error_Format("Cannot clone from reference %i of file \"%s\" (too few copies specified in xwave?).\n", loadRef, fname));
+//		else Error_FatalF(true, "Cannot clone from reference %i of file \"%s\" (too few copies specified in xwave?).\n", loadRef, fname);
 
 		origClone = Container_Frame_GetAnimClone(orig->activityFrame);
 		newClone = AnimClone_Make(origClone, cont->activityFrame, &frameCount);
@@ -1149,7 +1151,7 @@ Gods98::Container* __cdecl Gods98::Container_Clone(Container* orig)
 
 	}
 	else {
-		Error_Warn(true, Error_Format("Code not implemented for Container type #%d", orig->type));
+		Error_WarnF(true, "Code not implemented for Container type %s", Container_GetTypeName(orig->type));
 	}
 
 	return cont;
@@ -1591,7 +1593,7 @@ IDirectDrawSurface4* __cdecl Gods98::Container_LoadTextureSurface(const char* fn
 				if (surface->Release() == 0) surface = nullptr;
 			}
 		}
-		else Error_Warn(true, Error_Format("Non 8bit/palettised texture %s", fname));
+		else Error_WarnF(true, "Non 8bit/palettised texture %s", fname);
 
 		BMP_Cleanup(&image);
 		Mem_Free(fileData);
@@ -1642,7 +1644,8 @@ Gods98::Container_Texture* __cdecl Gods98::Container_LoadTexture2(const char* fn
 
 			if (surf = Container_LoadTextureSurface(fname, immediate, width, height, NULL)) {
 
-				Error_Debug(Error_Format("Loaded texture %s\n", path));
+				// Reduce useless debug messages:
+				//Error_DebugF("Loaded texture %s\n", path);
 
 				if (surf->QueryInterface(IID_IDirectDrawSurface, (void**)&surf1) == D3DRM_OK) {
 					if (lpD3DRM()->CreateTextureFromSurface(surf1, &texture) == D3DRM_OK) {
@@ -1684,7 +1687,8 @@ Gods98::Container_Texture* __cdecl Gods98::Container_LoadTexture2(const char* fn
 			if ((r = lpD3DRM()->LoadTexture(path, &texture)) == D3DRM_OK) {
 				Container_NoteCreation(texture);
 
-				Error_Debug(Error_Format("Loaded texture %s\n", path));
+				// Reduce useless debug messages:
+				//Error_DebugF("Loaded texture %s\n", path);
 				Error_LogLoad(true, path);
 
 				D3DRMIMAGE* image;
@@ -1718,12 +1722,12 @@ Gods98::Container_Texture* __cdecl Gods98::Container_LoadTexture2(const char* fn
 
 				/// FIX APPLY: This is almost definitely supposed to be a comparison, not assignment
 				if (r == D3DRMERR_FILENOTFOUND) {
-					Error_Warn(true, Error_Format("Invalid filename specified \"%s\"", path));
+					Error_WarnF(true, "Invalid filename specified \"%s\"", path);
 					Error_LogLoadError(true, Error_Format("%d\t%s", (sint32)Error_LoadError::InvalidFName, path));
 				}
 				else {
+					Error_WarnF(true, "Cannot open file %s", path);
 					Error_LogLoadError(true, Error_Format("%d\t%s", (sint32)Error_LoadError::RMTexture, path));
-					Error_Warn(true, Error_Format("Cannot open file %s", path));
 				}
 
 			}
@@ -1777,7 +1781,7 @@ void __cdecl Gods98::Container_Mesh_Swap(Container* target, OPTIONAL Container* 
 			visuals = containerGlobs.visualArray;
 			frame->GetVisuals(&count, (IUnknown**)visuals);
 
-	//		Error_Debug(Error_Format("Moving %i visuals to the hidden frame\n", count));
+	//		Error_DebugF("Moving %i visuals to the hidden frame\n", count);
 			for (uint32 loop = 0; loop < count; loop++) {
 
 				visual = visuals[loop];
@@ -1829,7 +1833,7 @@ void __cdecl Gods98::Container_Mesh_Swap(Container* target, OPTIONAL Container* 
 			visuals = containerGlobs.visualArray;
 			frame->GetVisuals(&count, (IUnknown**)visuals);
 
-	//		Error_Debug(Error_Format("Deleting %i visuals...\n", count));
+	//		Error_DebugF("Deleting %i visuals...\n", count);
 			for (uint32 loop = 0; loop < count; loop++) {
 				visual = visuals[loop];
 				frame->DeleteVisual((IUnknown*)visual);
@@ -1844,7 +1848,7 @@ void __cdecl Gods98::Container_Mesh_Swap(Container* target, OPTIONAL Container* 
 			visuals = containerGlobs.visualArray;
 			target->hiddenFrame->GetVisuals(&count, (IUnknown**)visuals);
 
-//			Error_Debug(Error_Format("Restoring %i visuals from the hidden frame...\n", count));
+//			Error_DebugF("Restoring %i visuals from the hidden frame...\n", count);
 			for (uint32 loop = 0; loop < count; loop++) {
 				visual = visuals[loop];
 				frame->AddVisual((IUnknown*)visual);
@@ -2516,7 +2520,7 @@ void __cdecl Gods98::Container_SetColourAlpha(Container* cont, real32 r, real32 
 //	else if (cont->type == Container_Type::FromActivity) {
 //		Error_Fatal(!cont->typeData->name, "typedata has no activity name");
 	}
-	else Error_Warn(true, Error_Format("Code not implemented for Container type #%d", cont->type));*/
+	else Error_WarnF(true, "Code not implemented for Container type %s", Container_GetTypeName(cont->type));*/
 }
 
 // <LegoRR.exe @004753e0>
@@ -3194,7 +3198,7 @@ void __cdecl Gods98::Container_FreeTypeData(Container* cont)
 			if (cont->typeData->transMesh)
 				Mesh_Remove(cont->typeData->transMesh, cont->activityFrame);
 		}
-		else Error_Warn(true, Error_Format("Code not implemented for Container type #%d", cont->type));
+		else Error_WarnF(true, "Code not implemented for Container type %s", Container_GetTypeName(cont->type));
 		Mem_Free(cont->typeData);
 		cont->typeData = nullptr;
 	}
@@ -3233,7 +3237,7 @@ bool32 __cdecl Gods98::Container_AddActivity2(Container* cont, const char* filen
 
 		return true;
 
-//		} else Error_Warn(true, Error_Format("Unable to load animset %s", xFile));
+//		} else Error_WarnF(true, "Unable to load animset %s", xFile);
 
 	}
 	else Error_Warn(true, "Unable to create frame for new activity");
@@ -3370,7 +3374,7 @@ void __cdecl Gods98::Container_Frame_RemoveAppData(IDirect3DRMFrame3* frame)
 Gods98::Container* __cdecl Gods98::Container_Frame_GetOwner(IDirect3DRMFrame3* frame)
 {
 	Container_AppData* appData = (Container_AppData*)frame->GetAppData();
-//	Error_Warn(!appData, Error_Format("AppData not set on frame 0x%0.8x", frame));
+//	Error_WarnF(!appData, "AppData not set on frame 0x%0.8x", frame);
 	if (appData) return appData->ownerContainer;
 	return nullptr;
 }
@@ -3593,13 +3597,14 @@ Gods98::AnimClone* __cdecl Gods98::Container_LoadAnimSet(const char* fname, IDir
 			Error_Fatal(std::strlen(fname) > 128, "Name too long");
 			Error_Fatal(nameCount > 1024, "name list overflowed");
 			for (uint32 loop = 0; loop < nameCount; loop++) {
-				Error_Fatal(::_stricmp(fname, nameList[loop]) == 0, Error_Format("Cannot load the same x animation file twice\n(%s)", fname));
+				Error_FatalF(::_stricmp(fname, nameList[loop]) == 0, "Cannot load the same x animation file twice\n(%s)", fname);
 			}
 			std::strcpy(nameList[nameCount++], fname);
 		}*/
 #endif // _DEBUG_2
 
-	Error_Debug(Error_Format("Attempting to load animation from xfile \"%s\"\n", fname));
+	// Reduce useless debug messages:
+	//Error_DebugF("Attempting to load animation from xfile \"%s\"\n", fname);
 
 
 	if (lws) {
@@ -3732,7 +3737,7 @@ IDirect3DRMMesh* __cdecl Gods98::Container_MeshLoad(void* file_data, uint32 file
 			}
 			else Error_Fatal(true, "Unable to add visual to frame");
 		}
-		else Error_Fatal(true, Error_Format("Unable to load MeshBuilder from memory (%s)", file_name));
+		else Error_FatalF(true, "Unable to load MeshBuilder from memory (%s)", file_name);
 		r = mb->Release();
 	}
 	else Error_Fatal(true, "Unable create MeshBuilder");
@@ -3874,7 +3879,7 @@ void __cdecl Gods98::Container_TextureDestroyCallback(IDirect3DRMObject* lpD3DRM
 {
 	Container_TextureRef* textRef = (Container_TextureRef*)lpArg;
 
-	Error_Debug(Error_Format("Removing %s from texture list\n", textRef->fileName));
+	Error_DebugF("Removing %s from texture list\n", textRef->fileName);
 
 	Container_Texture* text = (Container_Texture*)textRef->texture->GetAppData();
 

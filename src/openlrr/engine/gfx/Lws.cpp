@@ -356,12 +356,12 @@ void __cdecl Gods98::Lws_SetupSoundTriggers(Lws_Info* scene)
 						bool32 result = lwsGlobs.FindSFXIDFunc(argv[1], &st->sfxID);
 						
 						if (Graphics_IsReduceSamples()) {
-							Error_Warn(!result, Error_Format("Cannot match sound with %s", argv[1]));
+							Error_WarnF(!result, "Cannot match sound with %s", argv[1]);
 							if (!result)
 								st->sfxID = 0;
 						}
 						else {
-							Error_Fatal(!result, Error_Format("Cannot match sound with %s", argv[1]));
+							Error_FatalF(!result, "Cannot match sound with %s", argv[1]);
 						}
 					}
 
@@ -415,7 +415,7 @@ void __cdecl Gods98::Lws_LoadMeshes(Lws_Info* scene, IDirect3DRMFrame3* parent)
 	uint32 rc;
 
 	frame->GetVisuals(&count, nullptr);
-	Error_Fatal(count != 1, Error_Format("Failed to obtain lwo mesh from lightwave scene.\nLws_GetNodeMesh() - Node name == '%s'", node->name));
+	Error_FatalF(count != 1, "Failed to obtain lwo mesh from lightwave scene.\nLws_GetNodeMesh() - Node name == '%s'", node->name);
 	frame->GetVisuals(&count, &iunknown);
 	r = iunknown->QueryInterface(Idl::IID_IDirect3DRMUserVisual, (void**)&uv);
 	Error_Fatal(r != D3DRM_OK, "Cannot get user visual");
@@ -817,7 +817,7 @@ Gods98::Mesh* __cdecl Gods98::Lws_LoadMesh(const char* baseDir, const char* fnam
 		}
 	}
 
-	Error_Warn(true, Error_Format("Cannot find or load mesh >(%s\\)%s<", baseDir, fname));
+	Error_WarnF(true, "Cannot find or load mesh >(%s\\)%s<", baseDir, fname);
 
 	return nullptr;
 }
@@ -895,7 +895,10 @@ void __cdecl Gods98::Lws_LoadNodes(Lws_Info* scene, Lws_Node* node)
 				Lws_SetDissolveLevel(scene, node, node->dissolveLevel[0]);
 				node->dissolveLevel = nullptr;
 			}
-		} else Error_Fatal(true, Error_Format("Missing object file in lightwave scene \"%s\"", node->name));
+		}
+		else {
+			Error_FatalF(true, "Missing object file in lightwave scene \"%s\"", node->name);
+		}
 
 /*		IDirect3DRMMeshBuilder3* testMesh;
 		IDirect3DRMMesh* mesh;

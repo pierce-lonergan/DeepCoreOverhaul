@@ -81,7 +81,7 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 	configGlobs.flags |= Config_GlobFlags::CONFIG_GLOB_FLAG_LOADINGCONFIG;
 
 	/// FIX APPLY: Use extension of File_LoadBinary function to null-terminate buffer.
-	if (fdata = (char*)File_LoadBinaryString2(filename, &fileSize, fileFlags)) {
+	if (fdata = static_cast<char*>(File_LoadBinaryString2(filename, &fileSize, fileFlags))) {
 
 		rootConf = Config_Create(nullptr);
 		rootConf->fileData = fdata;
@@ -94,6 +94,11 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 		// Clear anything after a semi-colon until the next return character.
 		// Also find the boundaries of each line number so we can store those and give clearer error messages.
 
+		const size_t illegalCommentLength = std::strlen(CONFIG_ILLEGALCOMMENT);
+		uint32 illegalCommentCount = 0;
+		uint32 illegalCommentFirstLineNumber = 0;
+		uint32 illegalCommentLastLineNumber  = 0;
+
 		bool commentMode = false;
 		for (s = rootConf->fileData, loop = 0; loop < fileSize; loop++) {
 			const char c = *s;
@@ -105,12 +110,28 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 				lineNumberEnds.push_back(loop);
 				commentMode = false;
 			}
+			else if (!commentMode && ::_strnicmp(s, CONFIG_ILLEGALCOMMENT, illegalCommentLength) == 0) {
+				// Count number of illegal comment appearances.
+				// Only count illegal comments that are the start of a word.
+				if (loop == 0 || s[-1] == '\0') {
+					if (illegalCommentCount == 0) {
+						illegalCommentFirstLineNumber = static_cast<uint32>(lineNumberEnds.size());
+					}
+					illegalCommentLastLineNumber = static_cast<uint32>(lineNumberEnds.size());
+					illegalCommentCount++;
+				}
+			}
 
 			if (commentMode || (c == '\t' || c == '\n' || c == '\r' || c == ' ')) *s = '\0';
 
 			s++;
 		}
 		lineNumberEnds.push_back(fileSize); // End final line.
+
+
+		Error_WarnF2(illegalCommentCount > 0, "%s (%i-%i): Warning: Found %i illegal \"%s\" comments.\n", filename,
+					 illegalCommentFirstLineNumber, illegalCommentLastLineNumber, illegalCommentCount, CONFIG_ILLEGALCOMMENT);
+
 
 		// Replace the semi-colons that were removed by the language converter...
 		//for (loop = 0; loop < fileSize; loop++) {
@@ -136,18 +157,19 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 
 				if (c == CONFIG_CLOSEBLOCKCHAR && cnext == '\0') {
 					// Close block.
-					Error_WarnF((conf->itemName!=nullptr), "%s (%i): Config close brace \"%s\" used between item name \"%s\" and value",
+					Error_WarnF2((conf->itemName!=nullptr), "%s (%i): Warning: Config close brace \"%s\" used between item name \"%s\" and value.\n",
 								filename, lineNumber, CONFIG_CLOSEBLOCK, conf->itemName);
-					Error_FatalF((conf->depth == 0), "%s (%i): Config close brace \"%s\" used at depth 0",
+					// Treat as non-fatal for when we introduce hot-reloading settings.
+					Error_WarnF2((conf->depth == 0), "%s (%i): Warning: Config close brace \"%s\" used at depth 0.\n",
 								 filename, lineNumber, CONFIG_CLOSEBLOCK);
 					conf->depth--;
 				}
 				else if (conf->itemName == nullptr) {
 					// Assign item key.
-					Error_WarnF((c==CONFIG_OPENBLOCKCHAR && cnext=='\0'), "%s (%i): Config open brace \"%s\" used for item name",
+					Error_WarnF2((c==CONFIG_OPENBLOCKCHAR && cnext=='\0'), "%s (%i): Warning: Config open brace \"%s\" used for item name.\n",
 								filename, lineNumber, CONFIG_OPENBLOCK);
 					conf->itemName = s;
-					conf->itemHashCode = Util_HashString(s, false, true);
+					conf->itemHashCode = Config_HashItemName(s);
 					conf->lineNumber = lineNumber;
 				}
 				else {
@@ -156,7 +178,7 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 					conf = Config_Create(conf);
 					// Open block.
 					if (c==CONFIG_OPENBLOCKCHAR && cnext=='\0') conf->depth++;
-					Error_WarnF((c==CONFIG_CLOSEBLOCKCHAR && cnext=='\0'), "%s (%i): Config close brace \"%s\" used for item value",
+					Error_WarnF2((c==CONFIG_CLOSEBLOCKCHAR && cnext=='\0'), "%s (%i): Warning: Config close brace \"%s\" used for item value.\n",
 								filename, lineNumber, CONFIG_CLOSEBLOCK);
 				}
 
@@ -172,7 +194,7 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 			if (conf == rootConf) {
 				/// FIX APPLY: Handle empty config files, which should be considered invalid...?
 				///            If we allow reduced strictness, then assign empty string to itemName instead.
-				Error_WarnF(true, "%s (%i): Config file has no properties", filename, lineNumber);
+				Error_WarnF2(true, "%s (%i): Warning: Config file has no properties.\n", filename, lineNumber);
 				Config_Free(rootConf);
 				rootConf = nullptr;
 			}
@@ -188,7 +210,7 @@ Gods98::Config* __cdecl Gods98::Config_Load2(const char* filename, FileFlags fil
 		else if (conf->dataString == nullptr) {
 			/// NOTE: This generally won't cause any errors, because most Config functions
 			///       consider a null dataString return value as a property that doesn't exist.
-			Error_WarnF(true, "%s (%i): Last property \"%s\" missing value string",
+			Error_WarnF2(true, "%s (%i): Warning: Last property \"%s\" missing value string.\n",
 						filename, conf->lineNumber, conf->itemName);
 		}
 
@@ -410,7 +432,9 @@ bool32 __cdecl Gods98::Config_GetRGBValue(const Config* root, const char* string
 
 			res = true;
 		}
-		else Error_Warn(true, Error_Format("Invalid RBG entry '%s'", Config_GetTempStringValue(root, stringID)));
+		else {
+			Config_WarnLastF(true, root, "Invalid RBG entry \"%s\"", Config_GetTempStringValue(root, stringID));
+		}
 
 		Mem_Free(str);
 	}
@@ -418,11 +442,17 @@ bool32 __cdecl Gods98::Config_GetRGBValue(const Config* root, const char* string
 	return res;
 }
 
+/// CUSTOM:
+bool Gods98::Config_GetColourRGBF(const Config* root, const char* stringID, OUT ColourRGBF* colour)
+{
+	return Config_GetRGBValue(root, stringID, &colour->red, &colour->green, &colour->blue);
+}
+
 
 // <missing>
 bool32 __cdecl Gods98::Config_GetCoord(const Config* root, const char* stringID, OUT real32* x, OUT real32* y, OPTIONAL OUT real32* z)
 {
-	Error_Fatal(!x || !y, "Null passed as x or y");
+	Error_Fatal(!x || !y, "Config_GetCoord: Null passed as x or y");
 
 	char* argv[3];
 	bool res = false;
@@ -438,7 +468,9 @@ bool32 __cdecl Gods98::Config_GetCoord(const Config* root, const char* stringID,
 
 				res = true;
 			}
-			else Error_Warn(true, Error_Format("Invalid 2D Coordinate entry '%s'", str));
+			else {
+				Config_WarnLastF(true, root, "Invalid 2D Coordinate entry \"%s\"", Config_GetTempStringValue(root, stringID));
+			}
 		}
 		else { // FORMAT: x,y,z
 			if (argc == 3) {
@@ -448,7 +480,9 @@ bool32 __cdecl Gods98::Config_GetCoord(const Config* root, const char* stringID,
 
 				res = true;
 			}
-			else Error_Warn(true, Error_Format("Invalid 3D Coordinate entry '%s'", str));
+			else {
+				Config_WarnLastF(true, root, "Invalid 3D Coordinate entry \"%s\"", Config_GetTempStringValue(root, stringID));
+			}
 		}
 
 		Mem_Free(str);
@@ -584,7 +618,7 @@ void __cdecl Gods98::Config_Free(Config* root)
 {
 	log_firstcall();
 
-	Error_Fatal(root->fileData == nullptr, "Only pass the root (loaded) config structure to Config_Free()");
+	Error_Fatal(root->fileData == nullptr, "Config_Free: Must pass the root (loaded) config structure.");
 
 	while (root) {
 		/// CHANGE: Allow other config properties to store string data allocations.
@@ -653,19 +687,31 @@ void __cdecl Gods98::Config_Remove(Config* dead)
 	Config_CheckInit();
 
 //#ifdef _DEBUG_2
-//	Error_Fatal(!dead, "NULL passed to Config_Remove()");
+//	Error_Fatal(!dead, "Config_Remove: NULL passed.");
 //	if (configGlobs.debugLastFind == dead) configGlobs.debugLastFind = NULL;
 //#endif // _DEBUG_2
 
 	configListSet.Remove(dead);
 }
 
-/// CUSTOM: Subfunction of Config_FindItem.
-bool Gods98::Config_MatchItemName(const Gods98::Config* conf, const char* name, OPTIONAL OUT bool* wildcard)
+/// CUSTOM:
+uint32 Gods98::Config_HashItemName(const char* name)
 {
+	return Util_HashString(name, false, true);
+}
+
+/// CUSTOM: Subfunction of Config_FindItem.
+bool Gods98::Config_MatchItemName(const Gods98::Config* conf, const char* name, OPTIONAL uint32 hashCode, OPTIONAL OUT bool* wildcard)
+{
+	// Then check if this is a full match without wildcards.
+	bool fullMatch = false;
+	if (hashCode == 0 || conf->itemHashCode == hashCode) {
+		fullMatch = (::_stricmp(conf->itemName, name) == 0);
+	}
+
 	// Check if we can compare by wildcard (only allowed at depth 0).
 	bool wildcardMatch = false;
-	if (conf->depth == 0) {
+	if (!fullMatch && conf->depth == 0) {
 		const char* s;
 		uint32 wildcardLength = 0;
 		for (s = conf->itemName; *s != '\0'; s++) {
@@ -676,9 +722,6 @@ bool Gods98::Config_MatchItemName(const Gods98::Config* conf, const char* name, 
 			wildcardMatch = (::_strnicmp(conf->itemName, name, wildcardLength) == 0);
 		}
 	}
-
-	// Then check if this is a full match without wildcards.
-	const bool fullMatch = (::_stricmp(conf->itemName, name) == 0);
 
 	/// CHANGE: Never treat full match as a wildcard match.
 	if (wildcard) *wildcard = wildcardMatch && !fullMatch;
@@ -695,14 +738,18 @@ const Gods98::Config* __cdecl Gods98::Config_FindItem(const Config* conf, const 
 	const Config* foundConf = nullptr;
 
 	char* argv[CONFIG_MAXDEPTH];
+	uint32 hashv[CONFIG_MAXDEPTH];
 	char* tempstring = Util_StrCpy(stringID);
-	uint32 count = Util_TokeniseSafe(tempstring, argv, CONFIG_SEPARATOR, CONFIG_MAXDEPTH);
-	Error_Fatal((count > CONFIG_MAXDEPTH), "Config StringID exceeds max depth");
-
-	/*if (count == 0) {
+	const uint32 count = Util_TokeniseSafe(tempstring, argv, CONFIG_SEPARATOR, CONFIG_MAXDEPTH);
+	if (count > CONFIG_MAXDEPTH) {
 		Mem_Free(tempstring);
-		return false; // Empty stringID.
-	}*/
+		Error_WarnF2(true, "%s: Warning: StringID exceeds max depth of %i \"%s\".\n", Config_GetFileName(conf), CONFIG_MAXDEPTH, stringID);
+		return nullptr;
+	}
+
+	for (uint32 i = 0; i < count; i++) {
+		hashv[i] = Config_HashItemName(argv[i]);
+	}
 
 	// First find anything that matches the depth of the request
 	// then see if the hierarchy matches the request.
@@ -714,7 +761,7 @@ const Gods98::Config* __cdecl Gods98::Config_FindItem(const Config* conf, const 
 		bool wildcard = false;
 
 		// Match the item we're looking for first.
-		if (Config_MatchItemName(item, argv[count - 1], &wildcard)) {
+		if (Config_MatchItemName(item, argv[count - 1], hashv[count - 1], &wildcard)) {
 			/// FIX APPLY: Don't treat wildcard match as full match for deepest item.
 			/// NOTE: This fix requires a fix in Config_Load2, to strip empty properties from the end of the config file.
 			///       The error can be experienced when loading PTL files since the root property is searched for as an array.
@@ -728,7 +775,7 @@ const Gods98::Config* __cdecl Gods98::Config_FindItem(const Config* conf, const 
 				if (parent->depth != currDepth - 1)
 					continue; // This isn't the depth of the next parent item.
 
-				if (Config_MatchItemName(parent, argv[currDepth - 1], &wildcard)) {
+				if (Config_MatchItemName(parent, argv[currDepth - 1], hashv[currDepth - 1], &wildcard)) {
 					currDepth--; // Matched a parent, look for the next parent item.
 				}
 				else {
@@ -783,12 +830,12 @@ uint32 Gods98::Config_CountItems(const Config* arrayItem)
 	return count;
 }
 
-/// CUSToM: Merge configs together by appending one to another.
+/// CUSTOM: Merge configs together by appending one to another.
 void Gods98::Config_AppendConfig(Config* root, Config* config)
 {
-	Error_Fatal((root->depth != 0), "Cannot append to a config that does not start at depth 0.");
-	Error_Fatal((config->depth != 0), "Cannot append a new config that does not start at depth 0.");
-	Error_Fatal((config->linkPrev != nullptr), "Appended config is not the root.");
+	Error_Fatal((root->depth   != 0), "Config_AppendConfig: Base config does not start at depth 0.");
+	Error_Fatal((config->depth != 0), "Config_AppendConfig: Appended config does not start at depth 0.");
+	Error_Fatal((config->linkPrev != nullptr), "Config_AppendConfig: Appended config is not the root.");
 
 	Config* next = root;
 	do {
@@ -798,6 +845,26 @@ void Gods98::Config_AppendConfig(Config* root, Config* config)
 
 	root->linkNext = config;
 	config->linkPrev = root;
+}
+
+/// CUSTOM: Future replacements for Config_GetIntValue macro.
+sint32 Gods98::Config_GetIntValue2(const Config* root, const char* stringID)
+{
+	const char* str = Config_GetTempStringValue(root, stringID);
+	if (str != nullptr) {
+		return std::atoi(str);
+	}
+	return 0;
+}
+
+/// CUSTOM: Future replacements for Config_GetRealValue macro.
+real32 Gods98::Config_GetRealValue2(const Config* root, const char* stringID)
+{
+	const char* str = Config_GetTempStringValue(root, stringID);
+	if (str != nullptr) {
+		return static_cast<real32>(std::atof(str));
+	}
+	return 0.0f;
 }
 
 #pragma endregion

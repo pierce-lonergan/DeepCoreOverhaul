@@ -97,7 +97,7 @@ void __cdecl Gods98::File_Initialise(const char* programName, bool32 insistOnCD,
 			const sint32 wad = File_LoadWad(wadFile);
 			if (wad == WAD_ERROR) {
 				// Reduce useless warnings:
-				//Error_Warn(true, Error_Format("Cannot load %s", wadFile));
+				//Error_WarnF(true, "Cannot load %s", wadFile);
 			}
 			else {
 //				File_SetActiveWad(wad);
@@ -1208,7 +1208,7 @@ const char* Gods98::File_VerifyFilename2(const char* filename, FileFlags fileFla
 		}
 	}
 
-	Error_Warn(true, Error_Format("Cannot verify file name \"%s\".", filename));
+	Error_WarnF(true, "Cannot verify file name \"%s\".", filename);
 	Error_LogLoadError(true, Error_Format("%d\t%s", (sint32)Error_LoadError::UnableToVerifyName, filename));
 
 	return nullptr;
