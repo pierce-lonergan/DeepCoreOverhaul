@@ -1215,7 +1215,16 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 		if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE)) {
 			Gods98::Container_Hide(legoGlobs.pointLightFP, false);
 			if (legoGlobs.dirLightFP != nullptr) {
+				/// ALTERATION: Change FPRotLightRGB property to something actually useful, a forward-facing flashlight.
+				//Vector3F fpPos = { 0.0f }, fpDir = { 0.0f };
+				//LegoObject_FP_GetPositionAndHeading(legoGlobs.objectFP, Camera_GetFPCameraFrame(legoGlobs.cameraFP), &fpPos, &fpDir);
+				//Gods98::Container_SetPosition(legoGlobs.dirLightFP, nullptr, fpPos.x, fpPos.y, fpPos.z);
+				//fpDir.z = 0.0f; // Should we not change Z direction for head bobbing and other movement?
+				//Gods98::Container_SetOrientation(legoGlobs.dirLightFP, nullptr, fpDir.x, fpDir.y, fpDir.z, 0.0f, 0.0f, -1.0f);
+
+				/// OLD CODE:
 				Gods98::Container_AddRotation(legoGlobs.dirLightFP, Gods98::Container_Combine::After, 0.0f, 1.0f, 0.0f, elapsedInterface * 0.01f);
+
 				Gods98::Container_Hide(legoGlobs.dirLightFP, false);
 			}
 		}
