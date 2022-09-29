@@ -15,6 +15,8 @@
 
 Shortcuts::ShortcutManager Shortcuts::shortcutManager = Shortcuts::ShortcutManager();
 
+static size_t _shortcutsMaxNameLength = 0;
+
 #pragma endregion
 
 /**********************************************************************************
@@ -24,6 +26,22 @@ Shortcuts::ShortcutManager Shortcuts::shortcutManager = Shortcuts::ShortcutManag
 #pragma region Macros
 
 #define Shortcut_Register(name, defaultTextorFallback) shortcutInfos[static_cast<size_t>(name)] = ShortcutInfo(nameof(name), name, defaultTextorFallback)
+
+
+// Pad shortcut name to the left for the max name length.
+#define Shortcut_FormatName(name)			std::string((name)).append(std::max(_shortcutsMaxNameLength, std::string(name).length()) - std::string((name)).length(), ' ').c_str()
+
+// General shortcuts error logging.
+#define Shortcuts_DebugF(s, ...)			Error_DebugF2("Shortcuts: %s",   Gods98::Error_Format((s), __VA_ARGS__))
+#define Shortcuts_InfoF(s, ...)				Error_InfoF2( "Shortcuts: %s\n", Gods98::Error_Format((s), __VA_ARGS__))
+#define Shortcuts_WarnF(b, s, ...)			Error_WarnF2( (b), "Shortcuts: Warning: %s\n", Gods98::Error_Format((s), __VA_ARGS__))
+#define Shortcuts_FatalF(b, s, ...)			Error_FatalF2((b), "Shortcuts: Fatal: %s\n",   Gods98::Error_Format((s), __VA_ARGS__))
+
+// Error logging for a specific shortcut. Name parameter can be c-string or std::string.
+#define Shortcut_DebugF(name, s, ...)		Error_DebugF2("Shortcut %s: %s",   Shortcut_FormatName((name)), Gods98::Error_Format((s), __VA_ARGS__))
+#define Shortcut_InfoF(name, s, ...)		Error_InfoF2( "Shortcut %s: %s\n", Shortcut_FormatName((name)), Gods98::Error_Format((s), __VA_ARGS__))
+#define Shortcut_WarnF(b, name, s, ...)		Error_WarnF2( (b), "Shortcut %s: Warning: %s\n", Shortcut_FormatName((name)), Gods98::Error_Format((s), __VA_ARGS__))
+#define Shortcut_FatalF(b, name, s, ...)	Error_FatalF2((b), "Shortcut %s: Fatal: %s\n",   Shortcut_FormatName((name)), Gods98::Error_Format((s), __VA_ARGS__))
 
 #pragma endregion
 
@@ -35,9 +53,10 @@ Shortcuts::ShortcutManager Shortcuts::shortcutManager = Shortcuts::ShortcutManag
 
 bool Shortcuts::ShortcutManager::Initialise()
 {
-	if (!shortcutInfos.empty())
-		return false;
+	if (initialised)
+		return false; // Initialise already called.
 
+	shortcutInfos.clear();
 	shortcutInfos.resize(static_cast<size_t>(ShortcutID::Count));
 
 	Shortcut_Register(InterfaceActionModifier, "KEY_F2");
@@ -75,7 +94,6 @@ bool Shortcuts::ShortcutManager::Initialise()
 	Shortcut_Register(Debug_ToggleBuildDependencies, "KEY_F11");
 	Shortcut_Register(Debug_ToggleInvertLighting, "KEY_F10");
 	Shortcut_Register(Debug_ToggleSpotlightEffects, "KEY_F9");
-	/// NEW:
 	Shortcut_Register(Debug_SwitchDebugOverlay, "KEY_F8");
 
 	Shortcut_Register(Debug_ToggleFallins, "KEY_F6");
@@ -204,14 +222,24 @@ bool Shortcuts::ShortcutManager::Initialise()
 		}
 	}
 	if (!missingList.empty()) {
-		std::string s = "Missing the following ShortcutID registrations:";
+		std::string s = "Missing ShortcutID registrations:";
 		for (size_t i = 0; i < missingList.size(); i++) {
+			//s += "\n- ";
 			if (i > 0) s += ", ";
 			s += std::to_string(missingList[i]);
 		}
-		Error_Fatal(true, s.c_str());
+		Shortcuts_FatalF(true, "%s", s.c_str());
 	}
 
+	// Get padding size used for formatting messages.
+	for (size_t i = 0; i < static_cast<size_t>(ShortcutID::Count); i++) {
+		_shortcutsMaxNameLength = std::max(_shortcutsMaxNameLength, shortcutInfos[i].name.length());
+	}
+
+	// Load default keybinds once to confirm that they're defined correctly.
+	this->LoadDefaults();
+
+	initialised = false;
 	return true;
 }
 
@@ -291,8 +319,8 @@ void Shortcuts::ShortcutManager::AssignDefaults()
 				if (shortcutInfo.defaultText.empty()) {
 					shortcutInfo.button = std::make_shared<Gods98::InputButton>(); // No binding.
 				}
-				else if (!Parse(shortcutInfo, shortcutInfo.defaultText.c_str())) {
-					Error_FatalF(true, "KeyBind [%s] failed to parse defaultText.", shortcutInfo.name.c_str());
+				else if (!Parse(shortcutInfo, shortcutInfo.defaultText)) {
+					Shortcut_FatalF(true, shortcutInfo.name, "%s", "Failed to parse defaultText.");
 				}
 			}
 			else {
@@ -301,29 +329,42 @@ void Shortcuts::ShortcutManager::AssignDefaults()
 		}
 	}
 
-	size_t attemptsLeft = fallbackCount;
+	size_t attemptsLeft = fallbackCount; // Count loops max are needed to resolve references.
 	while (fallbackCount > 0) {
-		if (attemptsLeft-- == 0) {
-			Error_FatalF(true, "KeyBind fallback %i cyclic references found.", fallbackCount);
+		/*if (attemptsLeft-- == 0) {
+			Shortcuts_WarnF(true, "Found %i default fallback cyclic references.", fallbackCount);
 			break;
-		}
+		}*/
 
 		fallbackCount = 0;
 		for (auto& shortcutInfo : shortcutInfos) {
 
 			if (shortcutInfo.shortcutID != ShortcutID::None && shortcutInfo.button == nullptr) {
 				if (shortcutInfo.fallbackID != ShortcutID::None) {
-					Error_FatalF((shortcutInfo.shortcutID == shortcutInfo.fallbackID), "KeyBind [%s] same shortcutID as fallbackID.", shortcutInfo.name.c_str());
+					Shortcut_FatalF(!initialised && (shortcutInfo.shortcutID == shortcutInfo.fallbackID),
+									shortcutInfo.name, "%s", "Same shortcutID as fallbackID.");
+					
+					if (attemptsLeft == 0) {
+						Shortcut_FatalF(!initialised, shortcutInfo.name, "%s", "Default fallbackID is a cyclic reference.");
 
-					auto& fallback = shortcutInfos[static_cast<size_t>(shortcutInfo.fallbackID)];
-					if (fallback.button != nullptr) {
-						shortcutInfo.button = shortcutInfos[static_cast<size_t>(shortcutInfo.fallbackID)].button;
+						shortcutInfo.button = std::make_shared<Gods98::InputButton>(); // No binding.
 					}
 					else {
-						fallbackCount++;
+						auto& fallback = shortcutInfos[static_cast<size_t>(shortcutInfo.fallbackID)];
+						if (fallback.button != nullptr) {
+							shortcutInfo.button = shortcutInfos[static_cast<size_t>(shortcutInfo.fallbackID)].button;
+						}
+						else {
+							fallbackCount++;
+						}
 					}
 				}
 			}
+		}
+
+		if (attemptsLeft-- == 0) {
+			Shortcuts_WarnF(true, "Found %i default fallback cyclic references.", fallbackCount);
+			break;
 		}
 	}
 
@@ -338,13 +379,12 @@ bool Shortcuts::ShortcutManager::Load()
 
 	Gods98::Config* config = Gods98::Config_Load2(SHORTCUTS_FILENAME, Gods98::FileFlags::FILE_FLAG_EXEDIR|Gods98::FileFlags::FILE_FLAG_NOCD); // Load using exeDir.
 	if (config != nullptr) {
-		ok = true;
 
 		const bool fallbackToDefaults = Config_GetBoolOrTrue(config, Lego_ID("FallbackToDefaultKeyBinds"));
 
 		const Gods98::Config* arrayFirst = Gods98::Config_FindArray(config, Lego_ID("KeyBinds"));
 		if (!arrayFirst) {
-			Error_Info("ERROR: Failed to find KeyBinds array.");
+			Shortcuts_WarnF(true, "%s", "Could not find KeyBinds array.");
 			ok = false;
 		}
 
@@ -363,22 +403,23 @@ bool Shortcuts::ShortcutManager::Load()
 					//  existing fallback keybind in the configuration file.
 					// Find the value of the referenced keybind and parse that instead.
 					size_t attemptsLeft = static_cast<size_t>(ShortcutID::Count);
-					while (value != nullptr && std::strstr(value, "::") != nullptr) {
+					while (value != nullptr && std::strstr(value, CONFIG_SEPARATOR) != nullptr) {
 						if (attemptsLeft-- == 0) {
-							Error_InfoF("ERROR: KeyBind [%s] cyclic reference detected for \"%s\".", key, origValue);
+							Shortcut_WarnF(true, key, "Cyclic reference detected \"%s\".", origValue);
 							value = nullptr;
 							break;
 						}
 
 						const char* linkValue = Gods98::Config_GetTempStringValue(config, Lego_ID(value));
-						if (linkValue == nullptr) {
-							Error_InfoF("ERROR: KeyBind [%s] reference not found for \"%s\".", key, value);
-						}
+
+						Shortcut_WarnF(linkValue == nullptr, key, "Reference not found \"%s\".", origValue);
+
 						value = linkValue;
 					}
 
 					if (value == nullptr || !Parse(shortcutInfo, value)) {
-						if (value) Error_InfoF("ERROR: KeyBind [%s] failed to parse \"%s\".", key, value);
+						Shortcut_WarnF(value != nullptr, key, "Failed to parse \"%s\".", value);
+						//if (value) Error_InfoF("ERROR: KeyBind [%s] failed to parse \"%s\".", key, value);
 						ok = false;
 
 						if (!fallbackToDefaults) {
@@ -386,19 +427,19 @@ bool Shortcuts::ShortcutManager::Load()
 						}
 					}
 					else {
-						Error_DebugF("KeyBind [%s] loaded \"%s\".\n", shortcutInfo.name.c_str(), shortcutInfo.button->ToString().c_str());
+						Shortcut_DebugF(shortcutInfo.name, "Loaded: %s.\n", shortcutInfo.button->ToString().c_str());
 					}
 					break;
 				}
 			}
 			if (!found) {
-				Error_InfoF("ERROR: KeyBind [%s] could not find ShortcutID.", key);
+				Shortcut_WarnF(true, key, "%s", "Unknown shortcut ID.");
 				ok = false;
 			}
 		}
 	}
 	else {
-		Error_InfoF("WARN: File not found \"%s\", reverting to default keybinds.", SHORTCUTS_FILENAME);
+		Shortcuts_WarnF(true, "%s file not found, reverting to default keybinds.", SHORTCUTS_FILENAME);
 		ok = false;
 	}
 
@@ -415,14 +456,20 @@ bool Shortcuts::ShortcutManager::Load()
 	//shortcutInfos[ShortcutID::ReloadKeyBinds].button->Update(0.0f);
 	//shortcutInfos[ShortcutID::ReloadKeyBinds].button->Disable(true);
 
-	Error_Info("Reloaded Shortcuts!");
+	if (!loadedOnce) {
+		loadedOnce = true;
+	}
+	else {
+		Shortcuts_InfoF("%s", "Reloaded Shortcuts!");
+	}
 	return ok;
 }
 
 
-bool Shortcuts::ShortcutManager::Parse(ShortcutInfo& shortcutInfo, const char* text)
+bool Shortcuts::ShortcutManager::Parse(ShortcutInfo& shortcutInfo, const std::string& text)
 {
-	char* str = Gods98::Util_StrCpy(text);
+	// We need a manipulatable string for Util_Tokenise.
+	char* str = Gods98::Util_StrCpy(text.c_str());
 	char* s = str;
 
 
@@ -457,7 +504,7 @@ bool Shortcuts::ShortcutManager::Parse(ShortcutInfo& shortcutInfo, const char* t
 	bool ok = true;
 
 	char* bind_argv[1024];// = { nullptr };
-	const uint32 bind_argc = Gods98::Util_Tokenise(s, bind_argv, "|");
+	const uint32 bind_argc = Gods98::Util_TokeniseSafe(s, bind_argv, "|", _countof(bind_argv));
 	for (uint32 i = 0; i < bind_argc && ok; i++) {
 
 		Gods98::InputComboOrder comboOrder = Gods98::InputComboOrder::Final;
@@ -481,7 +528,7 @@ bool Shortcuts::ShortcutManager::Parse(ShortcutInfo& shortcutInfo, const char* t
 		}
 
 		char* combo_argv[1024];// = { nullptr };
-		const uint32 combo_argc = Gods98::Util_Tokenise(bind_argv[i], combo_argv, "+");
+		const uint32 combo_argc = Gods98::Util_TokeniseSafe(bind_argv[i], combo_argv, "+", _countof(combo_argv));
 		for (uint32 j = 0; j < combo_argc && ok; j++) {
 			const char* part = combo_argv[j];
 			const char* p = part;
@@ -501,7 +548,7 @@ bool Shortcuts::ShortcutManager::Parse(ShortcutInfo& shortcutInfo, const char* t
 				p += std::strlen(KEYCODE_PREFIX);
 				const sint32 code = std::atoi(p);
 				if (code < 0 || code > 255 || !Gods98::Util_IsNumber(p)) {
-					Error_FatalF(ok, "Key code for \"%s\" is not a valid number between 0 and 255.\nFor KeyBind: %s", part, str);
+					Shortcut_WarnF(ok, shortcutInfo.name, "Key code \"%s\" is not a valid number between 0 and 255.", part);
 					ok = false;
 				}
 				keyCode = static_cast<Gods98::Keys>(code);
@@ -511,7 +558,7 @@ bool Shortcuts::ShortcutManager::Parse(ShortcutInfo& shortcutInfo, const char* t
 				p += std::strlen(MOUSECODE_PREFIX);
 				const sint32 code = std::atoi(p);
 				if (code < 0 || code > 5 || !Gods98::Util_IsNumber(p)) {
-					Error_FatalF(ok, "Mouse code for \"%s\" is not a valid number between 0 and 5.\nFor KeyBind: %s", part, str);
+					Shortcut_WarnF(ok, shortcutInfo.name, "Mouse code \"%s\" is not a valid number between 0 and 5.", part);
 					ok = false;
 				}
 				mouseCode = static_cast<Gods98::MouseButtons>(code);
@@ -528,7 +575,7 @@ bool Shortcuts::ShortcutManager::Parse(ShortcutInfo& shortcutInfo, const char* t
 				comboButtonBuilder.push_back(std::make_shared<Gods98::InputButton>());
 			}*/
 			else {
-				Error_FatalF(ok, "Key/mouse code for \"%s\" not found.\nFor KeyBind: %s", part, str);
+				Shortcut_WarnF(ok, shortcutInfo.name, "Unknown key/mouse code \"%s\".", part);
 				ok = false;
 				comboButtonBuilder.clear();
 				break;
@@ -537,7 +584,7 @@ bool Shortcuts::ShortcutManager::Parse(ShortcutInfo& shortcutInfo, const char* t
 
 		if (ok) {
 			if (comboButtonBuilder.empty()) {
-				Error_FatalF(ok, "Empty keybind combo.\nFor KeyBind: %s", str);
+				Shortcut_WarnF(ok, shortcutInfo.name, "Empty keybind combo for \"%s\".", str);
 				ok = false;
 				multiButtonBuilder.clear();
 				break;
@@ -553,7 +600,7 @@ bool Shortcuts::ShortcutManager::Parse(ShortcutInfo& shortcutInfo, const char* t
 
 	if (ok) {
 		if (multiButtonBuilder.empty()) {
-			Error_FatalF(ok, "KeyBind [%s] Empty keybinds.\nFor KeyBind: %s", shortcutInfo.name.c_str(), str);
+			Shortcut_WarnF(ok, shortcutInfo.name, "Empty keybinds for \"%s\".", str);
 			ok = false;
 		}
 		else if (multiButtonBuilder.size() == 1) {
@@ -563,7 +610,6 @@ bool Shortcuts::ShortcutManager::Parse(ShortcutInfo& shortcutInfo, const char* t
 			shortcutInfo.button = std::make_shared<Gods98::MultiInputButton>(multiButtonBuilder);
 		}
 	}
-	//Error_InfoF("Loaded KeyBind: %s = %s", shortcutInfo.name.c_str(), shortcutInfo.button->ToString().c_str());
 
 	Gods98::Mem_Free(str);
 	return true;

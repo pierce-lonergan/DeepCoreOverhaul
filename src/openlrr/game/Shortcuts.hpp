@@ -369,9 +369,11 @@ class ShortcutManager
 {
 private:
 	std::vector<ShortcutInfo> shortcutInfos;
+	bool initialised; // Report errors as fatal during initialisation.
+	bool loadedOnce; // Avoid logging reloaded shortcuts on first load.
 
 public:
-	inline ShortcutManager() : shortcutInfos() {}
+	inline ShortcutManager() : shortcutInfos(), initialised(false), loadedOnce(false) {}
 
 public:
 	bool Initialise();
@@ -400,7 +402,7 @@ private:
 	// Assign defaults to all ShortcutInfos with null buttons.
 	void AssignDefaults();
 
-	bool Parse(ShortcutInfo& shortcutInfo, const char* text);
+	bool Parse(ShortcutInfo& shortcutInfo, const std::string& text);
 
 public:
 	inline size_t Count() const { return shortcutInfos.size(); }
