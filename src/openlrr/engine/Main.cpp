@@ -85,6 +85,9 @@ static ULONG_PTR visualStyles_cookie = 0;
 // Store these here to move them out of WinMain loop, allowing to handle update times in other functions.
 static real32 _mainDeltaTime = 1.0f;
 static uint32 _mainLastTime = 0;
+static real64 _mainAccumulatorMS = 0.0f;
+static real32 _mainMaxFrameTiming = 0.0f;
+static bool _mainLowPriority = false;
 
 #pragma endregion
 
@@ -384,18 +387,34 @@ real32 Gods98::Main_GetDeltaTime()
 /// CUSTOM: Calculates the elapsed time for the current update tick.
 void Gods98::Main_UpdateDeltaTime()
 {
+	const real64 realMaxDeltaMS = (3.0 * (1000.0 / STANDARD_FRAMERATE)); // 3 ticks max.
+	real64 minDeltaMS = 0.0;
+	real64 maxDeltaMS = realMaxDeltaMS;
+	if (mainGlobs.flags & MainFlags::MAIN_FLAG_DUMPMODE) {
+		minDeltaMS = maxDeltaMS = std::min(maxDeltaMS, (1000.0 / 30.0));
+	}
+	else {
+		if (mainGlobs.fixedFrameTiming != 0.0f) { // -fpslock <framerate>
+			minDeltaMS = maxDeltaMS = std::min(maxDeltaMS, (mainGlobs.fixedFrameTiming * (1000.0 / STANDARD_FRAMERATE))); // Standard units to milliseconds.
+		}
+		// Defining -fpslock and -fpscap will allow setting the min and max frame rates.
+		if (_mainMaxFrameTiming != 0.0f) { // -fpscap <framerate>
+			minDeltaMS = std::min(maxDeltaMS, (_mainMaxFrameTiming * (1000.0 / STANDARD_FRAMERATE))); // Standard units to milliseconds.
+		}
+	}
+
 	/// CHANGE: Always update last time, in-case the user switches modes.
-	const uint32 lastTime = _mainLastTime;
-	const uint32 currTime = Main_GetTime();
+	uint32 lastTime = _mainLastTime;
+	uint32 currTime = Main_GetTime();
 
 	real32 delta;
 
-	if (mainGlobs.flags & MainFlags::MAIN_FLAG_DUMPMODE) {
+	/*if (mainGlobs.flags & MainFlags::MAIN_FLAG_DUMPMODE) {
 		// In LegoRR, this state is never reachable.
 		delta = STANDARD_FRAMERATE / 30.0f;
 
 	}
-	else if (mainGlobs.flags & MainFlags::MAIN_FLAG_PAUSED) {
+	else */if (mainGlobs.flags & MainFlags::MAIN_FLAG_PAUSED) {
 		// In LegoRR, this state is never reachable because Main_SetPaused is never used.
 		if (mainGlobs2.advanceFrames > 0) {
 			mainGlobs2.advanceFrames--;
@@ -406,9 +425,10 @@ void Gods98::Main_UpdateDeltaTime()
 			delta = 0.0f;
 		}
 	}
-	else if (mainGlobs.fixedFrameTiming == 0.0f) { // no fps defined
+	//else if (mainGlobs.fixedFrameTiming == 0.0f) { // No fps lock or cap defined.
+	else if (minDeltaMS == 0.0f) { // No fps lock or cap defined.
 		// Measure the time taken over the last frame (to be passed next loop)
-		delta = (currTime - lastTime) / (1000.0f / STANDARD_FRAMERATE); // milliseconds to standard units
+		delta = (currTime - lastTime) / (1000.0f / STANDARD_FRAMERATE); // Milliseconds to standard units.
 
 #ifndef _UNLIMITEDUPDATETIME
 		// LegoRR compiles with this preprocessor undefined (this check still happens).
@@ -419,8 +439,35 @@ void Gods98::Main_UpdateDeltaTime()
 
 	}
 	else {
+		if (lastTime == 0) {
+			lastTime = currTime;
+		}
+		// OLD CODE:
 		// Always update with the same time, regardless of actual time passed.
-		delta = mainGlobs.fixedFrameTiming;
+		//delta = mainGlobs.fixedFrameTiming;
+
+		/// FIX APPLY: -fpslock now locks framerate and waits an appropriate amount of time.
+		/// TODO: This still needs a lot of work, and can probably be improved.
+		_mainAccumulatorMS += static_cast<real64>(currTime - lastTime);
+
+		lastTime = currTime;
+		while (_mainAccumulatorMS < minDeltaMS) {
+			/// TODO: This is an arbitrary choice at the moment.
+			if (_mainLowPriority && (minDeltaMS - _mainAccumulatorMS > 1.0)) { // -lowcpu
+				Main_Sleep(static_cast<uint32>(minDeltaMS - _mainAccumulatorMS));
+			}
+
+			currTime = Main_GetTime();
+			_mainAccumulatorMS += static_cast<real64>(currTime - lastTime);
+			lastTime = currTime;
+		}
+
+		// We don't have separate physics and rendering logic, so we have to drop extra frames.
+		real64 deltaMS = std::min(_mainAccumulatorMS, maxDeltaMS);
+		_mainAccumulatorMS -= deltaMS;
+		_mainAccumulatorMS = std::min(_mainAccumulatorMS, realMaxDeltaMS);
+
+		delta = static_cast<real32>(deltaMS / (1000.0 / STANDARD_FRAMERATE)); // Milliseconds to standard units.
 	}
 
 	_mainDeltaTime = delta;
@@ -1074,9 +1121,22 @@ void Gods98::Main_ParseCommandLineOptions()
 	if (FindParameter(args, "-fpslock", param)) {
 		uint32 fps = static_cast<uint32>(std::max(0, std::atoi(param.c_str())));
 		if (fps != 0) {
-			mainGlobs.fixedFrameTiming = STANDARD_FRAMERATE / (real32)fps;
+			mainGlobs.fixedFrameTiming = STANDARD_FRAMERATE / static_cast<real32>(fps);
 		}
 	}
+
+	// Usage: -fpscap <framerate>
+	if (FindParameter(args, "-fpscap", param)) {
+		uint32 fps = static_cast<uint32>(std::max(0, std::atoi(param.c_str())));
+		if (fps != 0) {
+			_mainMaxFrameTiming = STANDARD_FRAMERATE / static_cast<real32>(fps);
+		}
+	}
+
+	// Usage: -lowcpu
+	// Sleeps between game loop ticks when used with -fpslock or -fpscap
+	if (FindOption(args, "-lowcpu")) _mainLowPriority;
+
 
 	// Usage: -programmer [level=1]
 	if (FindParameter(args, "-programmer", param)) {
