@@ -1047,11 +1047,12 @@ uint32 Gods98::DirectDraw_ToColourFromRGB(IDirectDrawSurface4* surf, uint8 r, ui
 bool Gods98::DirectDraw_FromColourToRGBF(IDirectDrawSurface4* surf, uint32 surfColour, OPTIONAL OUT real32* r, OPTIONAL OUT real32* g, OPTIONAL OUT real32* b, OPTIONAL OUT real32* a)
 {
 	uint8 rbyte, gbyte, bbyte, abyte;
-	DirectDraw_FromColourToRGB(surf, surfColour, &rbyte, &gbyte, &bbyte, &abyte);
+	bool const result = DirectDraw_FromColourToRGB(surf, surfColour, &rbyte, &gbyte, &bbyte, &abyte);
 	if (r) *r = static_cast<real32>(rbyte) / 255.0f;
 	if (g) *g = static_cast<real32>(gbyte) / 255.0f;
 	if (b) *b = static_cast<real32>(bbyte) / 255.0f;
 	if (a) *a = static_cast<real32>(abyte) / 255.0f;
+	return result;
 }
 
 /// CUSTOM: Converts a surface colour value to byte RGB values.
