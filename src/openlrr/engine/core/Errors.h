@@ -127,6 +127,11 @@ extern Error_LogLevels errorLogLevels;
 #define Error_LogLoadError(b, s)			do { Gods98::Error_Log(errorGlobs.loadErrorLogFile, (b), "%s\n", (s)); } while (0)
 #define Error_LogRedundantFile(b, s)		do { Gods98::Error_Log(errorGlobs.redundantLogFile, (b), "%s\n", (s)); } while (0)
 
+#define log_firstcall() { static bool _log_firstcallbool = false; \
+	if (!_log_firstcallbool) {_log_firstcallbool = true; \
+		if (Gods98::Error_IsTraceVisible()) { \
+			std::printf("%s called\n", __FUNCTION__); } } }
+
 #pragma endregion
 
 /**********************************************************************************

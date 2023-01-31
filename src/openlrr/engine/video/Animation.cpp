@@ -8,6 +8,7 @@
 #include "../drawing/DirectDraw.h"
 #include "../drawing/Draw.h"
 #include "../core/Files.h"
+#include "../core/Errors.h"
 #include "../Main.h"
 
 #include "Animation.hpp"

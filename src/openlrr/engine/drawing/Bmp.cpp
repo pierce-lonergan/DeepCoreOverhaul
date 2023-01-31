@@ -1,6 +1,7 @@
 // Bmp.cpp : 
 //
 
+#include "../core/Errors.h"
 #include "../core/Memory.h"
 
 #include "Bmp.h"
