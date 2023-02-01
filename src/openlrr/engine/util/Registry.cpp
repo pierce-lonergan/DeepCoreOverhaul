@@ -2,6 +2,7 @@
 //
 
 #include "../../platform/windows.h"
+#include "../core/Errors.h"
 
 #include "Registry.h"
 

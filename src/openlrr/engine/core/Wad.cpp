@@ -2,6 +2,7 @@
 //
 
 #include "../util/Compress.h"
+#include "Errors.h"
 #include "Memory.h"
 
 #include "Wad.h"
