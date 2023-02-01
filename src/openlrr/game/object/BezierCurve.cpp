@@ -2,8 +2,8 @@
 //
 
 #include "../../engine/Main.h"
-#include "../../engine/core/Maths.h"
 #include "../../engine/core/Errors.h"
+#include "../../engine/core/Maths.h"
 
 #include "BezierCurve.h"
 

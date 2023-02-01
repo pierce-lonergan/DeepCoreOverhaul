@@ -3,8 +3,8 @@
 
 #include "../drawing/DirectDraw.h"
 #include "../drawing/Draw.h"
-#include "../core/Files.h"
 #include "../core/Errors.h"
+#include "../core/Files.h"
 #include "../Main.h"
 
 #include "Movie.hpp"
