@@ -47,6 +47,7 @@
 #include "game/interface/hud/Bubbles.h"
 #include "game/interface/hud/ObjInfo.h"
 #include "game/interface/Advisor.h"
+#include "game/interface/Encyclopedia.h"
 #include "game/interface/Interface.h"
 #include "game/interface/Panels.h"
 #include "game/interface/Pointers.h"
@@ -1921,6 +1922,31 @@ bool interop_hook_LegoRR_BezierCurve(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Encyclopedia(void)
+{
+	bool result = true;
+
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x0040e3c0, LegoRR::Encyclopedia_Initialise);
+
+	// used by: Lego_HandleWorld
+	result &= hook_write_jmpret(0x0040e630, LegoRR::Encyclopedia_SelectObject);
+
+	// used by: Interface_DoAction_FUN_0041dbd0, Interface_FUN_0041e9f0
+	result &= hook_write_jmpret(0x0040e710, LegoRR::Encyclopedia_ClearSelection);
+
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0040e720, LegoRR::Encyclopedia_Update);
+
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0040e800, LegoRR::Encyclopedia_DrawSelectBox);
+
+	// used by: LegoObject_Remove
+	result &= hook_write_jmpret(0x0040e840, LegoRR::Encyclopedia_RemoveCurrentReference);
+
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_FrontEnd(void)
 {
 	bool result = true;
@@ -3442,6 +3468,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Creature();
 	result &= interop_hook_LegoRR_Credits();
 	result &= interop_hook_LegoRR_ElectricFence();
+	result &= interop_hook_LegoRR_Encyclopedia();
 	result &= interop_hook_LegoRR_Game();
 	result &= interop_hook_LegoRR_Interface();
 	result &= interop_hook_LegoRR_LegoCamera();
