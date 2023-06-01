@@ -787,9 +787,9 @@ void __cdecl LegoRR::Lego_QuitLevel(void)
 		Lego_SetPaused(false, false);
 		Interface_BackToMain();
 
-		if (panelGlobs.panelTable[Panel_Radar].flags & PANELTYPE_FLAG_UNK_2) {
-			Panel_ChangeFlags_BasedOnState(Panel_Radar);
-			Panel_ChangeFlags_BasedOnState(Panel_RadarFill);
+		if (panelGlobs.panelTable[Panel_Radar].flags & PANEL_FLAG_OPEN) {
+			Panel_ToggleOpenClosed(Panel_Radar);
+			Panel_ToggleOpenClosed(Panel_RadarFill);
 		}
 	}
 }
@@ -2671,7 +2671,7 @@ const char* __cdecl LegoRR::Level_Free(void)
 		Lego_SetCallToArmsOn(false);
 
 		legoGlobs.flags1 &= ~GAME1_LASERTRACKER;
-		legoGlobs.flags2 &= ~(GAME2_ATTACKDEFER|GAME2_UNK_40|GAME2_UNK_80|GAME2_MENU_HASNEXT);
+		legoGlobs.flags2 &= ~(GAME2_ATTACKDEFER|GAME2_MESSAGE_HASNEXT|GAME2_MESSAGE_HASREPEAT|GAME2_MENU_HASNEXT);
 
 		_drainPowerBlockList.clear();
 		_poweredBlockList.clear();
@@ -2694,7 +2694,7 @@ const char* __cdecl LegoRR::Level_Free(void)
 		Water_RemoveAll();
 
 		Smoke_RemoveAll();
-		Lego_ClearSomeFlags3_FUN_00435950();
+		Lego_StopUserAction();
 
 		nextLevelName = level->nextLevelID;
 

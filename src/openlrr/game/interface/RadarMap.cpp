@@ -392,7 +392,7 @@ void __cdecl LegoRR::RadarMap_Draw(RadarMap* radarMap, const Point2F* centerPos)
 			blockCount++;
 
 			// This interface boolean is toggled on/off every 15-frames. So this is a flashing block.
-			if (Interface_GetBool_004ded1c() &&
+			if (Interface_GetFlashingState() &&
 				(bx == radarmapGlobs.highlightBlockPos.x && by == radarmapGlobs.highlightBlockPos.y))
 			{
 				drawRect->colour = ColourRGBF { 1.0f, 0.0f, 0.0f };

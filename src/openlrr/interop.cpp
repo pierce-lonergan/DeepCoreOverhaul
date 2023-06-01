@@ -300,7 +300,7 @@ bool interop_hook_calls_Gods98_AnimClone(void)
 	// THIS FUNCTION MUST BE HOOKED ON AN INDIVIDUAL BASIS
 	// There are 5 calls made to this:
 	//  type:Flic (Flic_GetWidth)  -> FUN_004120e0  <@004120f7>
-	//                                      Panel_FUN_0045a9f0  <@0045ab17>
+	//                                      Panel_Draw  <@0045ab17>
 	//                                      Pointer_DrawPointer  <@0045cfc8>
 	//  type:FlocksData (Flocks_???)     -> LegoObject_Flocks_FUN_0044bef0  <@0044bfc3>
 	//  type:AnimClone (AnimClone_IsLws) -> Container_FormatPartName  <@00473f60>
@@ -827,7 +827,7 @@ bool interop_hook_calls_Gods98_Flic(void)
 	// THIS FUNCTION MUST BE HOOKED ON AN INDIVIDUAL BASIS
 	// There are 5 calls made to this:
 	//  type:Flic (Flic_GetWidth)  -> FUN_004120e0  <@004120f7>
-	//                                      Panel_FUN_0045a9f0  <@0045ab17>
+	//                                      Panel_Draw  <@0045ab17>
 	//                                      Pointer_DrawPointer  <@0045cfc8>
 	//  type:FlocksData (Flocks_???)     -> LegoObject_Flocks_FUN_0044bef0  <@0044bfc3>
 	//  type:AnimClone (AnimClone_IsLws) -> Container_FormatPartName  <@00473f60>
@@ -855,7 +855,7 @@ bool interop_hook_Gods98_Flic(void)
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x00484220, Gods98::Flic_LoadHeader);
 
-	// used by: Front_Menu_UpdateOverlays, Panel_FUN_0045a9f0, Pointer_DrawPointer, Reward_DrawItem
+	// used by: Front_Menu_UpdateOverlays, Panel_Draw, Pointer_DrawPointer, Reward_DrawItem
 	result &= hook_write_jmpret(0x00484330, Gods98::Flic_AnimateMainDeltaTime);
 
 	// internal, no need to hook these
@@ -1006,7 +1006,7 @@ bool interop_hook_Gods98_Input(void)
 	// used by: WinMain, Main_LoopUpdate
 	//result &= hook_write_jmpret(0x0047f2d0, Gods98::Input_ReadMouse2);
 
-	// used by: Objective_DoHotkeyChecks, Panel_RotationControl_FUN_0045bf90,
+	// used by: Objective_DoHotkeyChecks, Panel_RotationControl_HandleRotation,
 	//           Priorities_MoveCursorToPriorityUpButton, Priorities_MoveCursorToPriorityImage
 	result &= hook_write_jmpret(0x0047f390, Gods98::Input_SetCursorPos);
 	return_interop(result);
@@ -2320,7 +2320,7 @@ bool interop_hook_LegoRR_NERPsFile(void)
 	// used by: Lego_Initialise
 	result &= hook_write_jmpret(0x00453bc0, LegoRR::NERPs_SetHasNextButton);
 	// used by: Lego_HandleWorld
-	result &= hook_write_jmpret(0x00453bd0, LegoRR::NERPs_PlayUnkSampleIndex_IfDat_004a773c);
+	result &= hook_write_jmpret(0x00453bd0, LegoRR::NERPsRuntime_RepeatMessage);
 	// used by: Lego_HandleWorld, NERPFunc__AdvanceMessage
 	result &= hook_write_jmpret(0x00453be0, LegoRR::NERPsRuntime_AdvanceMessage);
 	// used by: Lego_MainLoop
@@ -3001,7 +3001,7 @@ bool interop_hook_LegoRR_SelectPlace(void)
 	result &= hook_write_jmpret(0x004643d0, LegoRR::SelectPlace_TransformShapePoints);
 	// used by: LegoObject_UpdateBuildingPlacement
 	result &= hook_write_jmpret(0x00464480, LegoRR::SelectPlace_CheckAndUpdate);
-	// used by: Lego_Initialise, Lego_HandleKeys, Lego_HandleWorld, Lego_ClearSomeFlags3_FUN_00435950,
+	// used by: Lego_Initialise, Lego_HandleKeys, Lego_HandleWorld, Lego_StopUserAction,
 	//          LegoObject_UpdateBuildingPlacement
 	result &= hook_write_jmpret(0x004649e0, LegoRR::SelectPlace_Hide);
 	
@@ -3171,7 +3171,7 @@ bool interop_hook_LegoRR_ToolTip(void)
 	// used by: Interface_Initialise
 	result &= hook_write_jmpret(0x0046b9f0, LegoRR::ToolTip_SetRightAlign);
 	// used by: Front_Menu_Update, HelpWindow, Interface_DoSomethingWithRenameReplace, Lego,
-	//          Objective_HandleKeys, Panel_InputProc_FUN_0045b5d0, Priorities_HandleInput,
+	//          Objective_HandleKeys, Panel_CheckButtonCollision, Priorities_HandleInput,
 	//          Reward_HandleButtons
 	result &= hook_write_jmpret(0x0046ba30, LegoRR::ToolTip_Activate);
 	// used by: Interface_DoSomethingWithRenameReplace
