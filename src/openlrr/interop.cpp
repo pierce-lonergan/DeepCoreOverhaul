@@ -61,6 +61,7 @@
 #include "game/object/AITask.h"
 #include "game/object/BezierCurve.h"
 #include "game/object/Building.h"
+#include "game/object/Collision.h"
 #include "game/object/Creature.h"
 #include "game/object/MeshLOD.h"
 #include "game/object/Object.h"
@@ -1808,6 +1809,26 @@ bool interop_hook_LegoRR_Building(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Collision(void)
+{
+	bool result = true;
+	
+	// used by: Collision_DistanceToPolyOutline
+	result &= hook_write_jmpret(0x00408900, LegoRR::Collision_DistanceToLine);
+
+	// used by: LegoObject_CallbackCollisionRadius_FUN_004460b0,
+	//          LegoObject_CallbackCollisionBox_FUN_004463b0
+	result &= hook_write_jmpret(0x00408a30, LegoRR::Collision_DistanceToPolyOutline);
+
+	// used by: Weapon_LegoObject_CollisionRadius_FUN_00470800
+	result &= hook_write_jmpret(0x00408a90, LegoRR::Collision_PointOnLine);
+
+	// used by: Weapon_LegoObject_Callback_FUN_00471630
+	result &= hook_write_jmpret(0x00408b20, LegoRR::Collision_PointOnLineRay);
+	
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Construction(void)
 {
 	bool result = true;
@@ -3464,6 +3485,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_BezierCurve();
 	result &= interop_hook_LegoRR_Bubbles();
 	result &= interop_hook_LegoRR_Building();
+	result &= interop_hook_LegoRR_Collision();
 	result &= interop_hook_LegoRR_Construction();
 	result &= interop_hook_LegoRR_Creature();
 	result &= interop_hook_LegoRR_Credits();
