@@ -1972,18 +1972,374 @@ bool interop_hook_LegoRR_FrontEnd(void)
 {
 	bool result = true;
 
-	// Hook this function because we need to override level loading.
-	result &= hook_write_jmpret(0x00415150, LegoRR::Front_RestartLevel);
+	// used by: Front_Menu_Update, Front_LoadMenuTextWindow, Front_Initialise
+	result &= hook_write_jmpret(0x004101e0, LegoRR::Front_Util_ReplaceTextSpaces);
 
-	// QoL apply for always-skippable splash screens and movies
-	result &= hook_write_jmpret(0x00415630, LegoRR::Front_PlayMovie);
-	result &= hook_write_jmpret(0x004156f0, LegoRR::Front_PlayIntroSplash);
-	result &= hook_write_jmpret(0x00415840, LegoRR::Front_PlayIntroMovie);
-	result &= hook_write_jmpret(0x004158c0, LegoRR::Front_PlayLevelMovie);
+	// used by: Front_Menu_Update, Front_Callback_SelectMissionItem
+	result &= hook_write_jmpret(0x00410250, LegoRR::Front_LevelSelect_LevelNamePrintF);
+
+	// used by: Front_Initialise, Reward_Show
+	result &= hook_write_jmpret(0x00410300, LegoRR::Front_Callback_TriggerPlayCredits);
+
+	// used by: Front_ScreenMenuLoop
+	result &= hook_write_jmpret(0x00410320, LegoRR::Front_RockWipe_Play);
+
+	// used by: Front_Menu_Update, Front_ScreenMenuLoop
+	result &= hook_write_jmpret(0x00410370, LegoRR::Front_RockWipe_Stop);
+
+	// used by: Front_Cache_Create
+	result &= hook_write_jmpret(0x00410380, LegoRR::Front_Cache_FindByName);
+
+	// used by: Front_Cache_LoadImage, Front_Cache_LoadFont
+	result &= hook_write_jmpret(0x004103c0, LegoRR::Front_Cache_Create);
+
+	// used by: Front_MenuItem_AddSelectItem, Front_Menu_LoadMenuImage,
+	//          Front_Menu_LoadSliderImages
+	result &= hook_write_jmpret(0x00410450, LegoRR::Front_Cache_LoadImage);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00410490, LegoRR::Front_Cache_LoadFont);
+
+	// used by: Front_MenuItem_CreateSelect, Front_MenuItem_AddSelectItem,
+	//          Front_MenuItem_AddCycleName, Front_MenuItem_CreateBannerItem,
+	//          Front_MenuItem_CreateImageItem, Front_Menu_CreateMenu,
+	//          Front_Menu_CreateOverlay, Front_LoadLevelSet
+	result &= hook_write_jmpret(0x004104d0, LegoRR::Front_Util_StrCpy);
+
+	// used by: Front_LoadLevels, MainMenuFull_AddMissionsDisplay
+	result &= hook_write_jmpret(0x00410520, LegoRR::Front_MenuItem_CreateSelect);
+
+	// used by: Front_MenuItem_FreeMenuItem
+	result &= hook_write_jmpret(0x004105c0, LegoRR::Front_MenuItem_FreeSelect);
+
+	// used by: Front_LoadLevels, Front_LevelInfo_Callback_AddItem
+	result &= hook_write_jmpret(0x00410670, LegoRR::Front_MenuItem_AddSelectItem);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00410940, LegoRR::Front_MenuItem_CreateCycle);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x004109d0, LegoRR::Front_MenuItem_AddCycleName);
+
+	// used by: Front_MenuItem_CreateCycle, Front_MenuItem_FreeMenuItem
+	result &= hook_write_jmpret(0x00410a10, LegoRR::Front_MenuItem_FreeCycle);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00410a90, LegoRR::Front_MenuItem_CreateTrigger);
+
+	// used by: Front_MenuItem_FreeMenuItem
+	// merged with freeNonNull @ 0040f6e0
+	//result &= hook_write_jmpret(0x0040f6e0, LegoRR::Front_MenuItem_FreeTrigger);
+
+	// used by: Front_MenuItem_FreeMenuItem
+	// merged with freeNonNull @ 0040f6e0
+	//result &= hook_write_jmpret(0x0040f6e0, LegoRR::Front_MenuItem_FreeTextInput);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00410ac0, LegoRR::Front_MenuItem_CreateRealSlider);
+
+	// used by: Front_MenuItem_FreeMenuItem
+	// merged with freeNonNull @ 0040f6e0
+	//result &= hook_write_jmpret(0x0040f6e0, LegoRR::Front_MenuItem_FreeRealSlider);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00410b20, LegoRR::Front_MenuItem_CreateSlider);
+
+	// used by: Front_MenuItem_FreeMenuItem
+	// merged with freeNonNull @ 0040f6e0
+	//result &= hook_write_jmpret(0x0040f6e0, LegoRR::Front_MenuItem_FreeSlider);
+
+	// used by: Front_Menu_FreeMenu
+	result &= hook_write_jmpret(0x00410ba0, LegoRR::Front_MenuItem_FreeMenuItem);
+
+	// used by: Front_LoadMenuSet, Front_LoadLevels, MainMenuFull_AddMissionsDisplay
+	result &= hook_write_jmpret(0x00410c80, LegoRR::Front_MenuItem_CreateBannerItem);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00410d50, LegoRR::Front_MenuItem_CreateImageItem);
+
+	// used by: Front_Menu_CreateMenu
+	result &= hook_write_jmpret(0x00410e60, LegoRR::Front_Menu_FreeMenu);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00410ee0, LegoRR::Front_Menu_LoadMenuImage);
+
+	// ...
+
+	// used by: Front_LoadMenuSet, Front_LoadLevels, MainMenuFull_AddMissionsDisplay
+	result &= hook_write_jmpret(0x00411190, LegoRR::Front_Menu_AddMenuItem);
+
+	// ...
 
 	// used by: Front_Menu_UpdateOverlays
 	// Fix to stop menu overlays from playing incredibly often at faster framerates.
 	result &= hook_write_jmpret(0x004120c0, LegoRR::Front_Menu_ShouldRandomPlay);
+
+	// ...
+
+	// used by: Front_Menu_Update
+	result &= hook_write_jmpret(0x00412380, LegoRR::Front_MenuItem_DrawSelectItem);
+
+	// ...
+
+	// used by: Front_ScreenMenuLoop, Front_Options_Update
+	result &= hook_write_jmpret(0x00412b30, LegoRR::Front_Menu_Update);
+
+	// used by: Front_ScreenMenuLoop
+	result &= hook_write_jmpret(0x004138a0, LegoRR::Front_Menu_UpdateMousePosition);
+
+	// used by: Front_ScreenMenuLoop
+	result &= hook_write_jmpret(0x00413990, LegoRR::Front_LoadSaveSlotImages);
+
+	// used by: Front_ScreenMenuLoop
+	result &= hook_write_jmpret(0x00413a80, LegoRR::Front_FreeSaveSlotImages);
+
+	// ...
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00413d90, LegoRR::Front_MenuItem_ParseTypeString);
+
+	// used by: Front_LoadMenuSet, Front_LoadLevelSet, Front_LoadLevels,
+	//          Front_Callback_SelectMissionItem, Lego_Initialise, Reward_LoadItemText
+	result &= hook_write_jmpret(0x00413e30, LegoRR::Front_Util_StringReplaceChar);
+
+	// used by: Front_Menu_CreateOverlay
+	result &= hook_write_jmpret(0x00413e60, LegoRR::Front_Menu_GetOverlayType);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00413ec0, LegoRR::Front_Menu_CreateOverlay);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00413f40, LegoRR::Front_Menu_LoadSliderImages);
+
+	// used by: Front_LoadMenuSet
+	result &= hook_write_jmpret(0x00413fa0, LegoRR::Front_CreateMenuSet);
+
+	// ...
+
+	// used by: Front_LoadLevels
+	result &= hook_write_jmpret(0x00414bc0, LegoRR::Front_GetMenuIDByName);
+
+	// used by: Lego_Initialise
+	//result &= hook_write_jmpret(0x00414c10, LegoRR::Front_IsIntrosEnabled);
+
+	// used by: Front_UpdateOptionsSliders, Front_Initialise
+	result &= hook_write_jmpret(0x00414c60, LegoRR::Front_Callback_SliderBrightness);
+
+	// used by: Front_UpdateOptionsSliders, Front_Initialise
+	result &= hook_write_jmpret(0x00414d10, LegoRR::Front_Callback_SliderSoundVolume);
+
+	// used by: Front_UpdateOptionsSliders, Front_Initialise
+	result &= hook_write_jmpret(0x00414d20, LegoRR::Front_Callback_SliderMusicVolume);
+
+	// used by: Front_Initialise
+	result &= hook_write_jmpret(0x00414d40, LegoRR::Front_CalcSliderCDVolume);
+
+	// used by: Front_Initialise
+	result &= hook_write_jmpret(0x00414d80, LegoRR::Front_Callback_CycleWallDetail);
+
+	// used by: Front_Initialise
+	result &= hook_write_jmpret(0x00414db0, LegoRR::Front_Callback_CycleAutoGameSpeed);
+
+	// used by: Front_Initialise
+	result &= hook_write_jmpret(0x00414dd0, LegoRR::Front_Callback_CycleMusic);
+
+	// used by: Front_Initialise
+	result &= hook_write_jmpret(0x00414df0, LegoRR::Front_Callback_CycleSound);
+
+	// used by: Front_Initialise
+	result &= hook_write_jmpret(0x00414e10, LegoRR::Front_Callback_CycleHelpWindow);
+
+	// used by: Front_Initialise
+	result &= hook_write_jmpret(0x00414e40, LegoRR::Front_Callback_TriggerReplayObjective);
+
+	// used by: Front_Initialise
+	result &= hook_write_jmpret(0x00414e50, LegoRR::Front_Callback_SliderGameSpeed);
+
+	// used by: Lego_SetGameSpeed
+	result &= hook_write_jmpret(0x00414ec0, LegoRR::Front_UpdateSliderGameSpeed);
+
+	// used by: Front_UpdateGameSpeedSliderLevel, Front_Initialise
+	result &= hook_write_jmpret(0x00414f60, LegoRR::Front_CalcSliderGameSpeed);
+
+	// used by: Front_ScreenMenuLoop, Front_LoadLevels
+	result &= hook_write_jmpret(0x00414fe0, LegoRR::Front_Callback_SelectLoadSave);
+
+	// used by: Lego_LoadLevel
+	result &= hook_write_jmpret(0x00415080, LegoRR::Front_UpdateOptionsSliders);
+
+	// used by: Front_Initialise
+	result &= hook_write_jmpret(0x004150c0, LegoRR::Front_Callback_TriggerBackSave);
+
+	// used by: Lego_MainLoop
+	// Hook this function because we need to override level loading.
+	result &= hook_write_jmpret(0x00415150, LegoRR::Front_RestartLevel);
+
+	// used by: Front_LoadLevels
+	result &= hook_write_jmpret(0x004151f0, LegoRR::Front_Save_GetLevelCompleteWithPoints);
+
+	// used by: Front_Options_Update
+	result &= hook_write_jmpret(0x00415290, LegoRR::Front_UpdateGameSpeedSliderLevel);
+
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x004152a0, LegoRR::Front_Options_Update);
+
+	// ...
+
+	// QoL apply for always-skippable splash screens and movies
+	// used by: Front_PlayIntroMovie, Front_PlayLevelMovie, Reward_Show
+	result &= hook_write_jmpret(0x00415630, LegoRR::Front_PlayMovie);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x004156f0, LegoRR::Front_PlayIntroSplash);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x00415840, LegoRR::Front_PlayIntroMovie);
+	// used by: Lego_LoadLevel
+	result &= hook_write_jmpret(0x004158c0, LegoRR::Front_PlayLevelMovie);
+
+	// used by: Front_Initialise
+	result &= hook_write_jmpret(0x00415940, LegoRR::Front_LoadLevels);
+
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x00415c20, LegoRR::Front_ResetSaveNumber);
+
+	// ...
+
+	// used by: Front_Callback_SelectMissionItem
+	result &= hook_write_jmpret(0x00416080, LegoRR::Front_LevelSelect_PlayLevelNameSFX);
+
+	// used by: Front_Callback_SelectMissionItem, Front_Callback_SelectTutorialItem
+	result &= hook_write_jmpret(0x004160d0, LegoRR::Front_LevelSelect_PlayTutoLevelNameSFX);
+
+	// ...
+
+	// used by: Reward_GotoSaveMenu
+	result &= hook_write_jmpret(0x00416840, LegoRR::Front_SaveOptionParameters);
+
+	// used by: Front_PrepareScreenMenuType, Lego_Initialise, Lego_EndLevel
+	result &= hook_write_jmpret(0x00416870, LegoRR::Front_LoadOptionParameters);
+
+	// ...
+
+	// used by: Lego_Initialise, Lego_EndLevel, Reward_GotoSaveMenu
+	result &= hook_write_jmpret(0x00416bb0, LegoRR::Front_RunScreenMenuType);
+
+	// used by: Lego_Initialise, Lego_MainLoop, Lego_HandleKeys, Lego_EndLevel,
+	//          Reward_GotoSaveMenu
+	result &= hook_write_jmpret(0x00416c30, LegoRR::Front_IsFrontEndEnabled);
+
+	// used by: Front_GetSelectedLevel, Lego_EndLevel, Reward_GotoSaveMenu
+	result &= hook_write_jmpret(0x00416c80, LegoRR::Front_IsMissionSelected);
+
+	// used by: Front_GetSelectedLevel, Front_Levels_GetTutoOrMissions, Front_Save_SetLevelCompleted,
+	//          Lego_EndLevel, Reward_GotoSaveMenu
+	result &= hook_write_jmpret(0x00416c90, LegoRR::Front_IsTutorialSelected);
+
+	// used by: Lego_Initialise, Lego_EndLevel
+	result &= hook_write_jmpret(0x00416ca0, LegoRR::Front_GetSelectedLevel);
+
+	// used by: Lego_Initialise, Lego_EndLevel
+	result &= hook_write_jmpret(0x00416d00, LegoRR::Front_IsTriggerAppQuit);
+
+	// used by: Lego_MainLoop
+	//result &= hook_write_jmpret(0x00416d10, LegoRR::Front_IsTriggerMissionQuit);
+
+	// used by: Lego_MainLoop
+	//result &= hook_write_jmpret(0x00416d20, LegoRR::Front_IsTriggerMissionRestart);
+
+	// used by: Reward_GotoSaveMenu, Reward_GotoAdvance
+	result &= hook_write_jmpret(0x00416d30, LegoRR::Front_Levels_GetTutoOrMissions);
+
+	// used by: Front_LevelSet_LoadLevelLinks, Reward_GotoSaveMenu, Reward_GotoAdvance
+	result &= hook_write_jmpret(0x00416d50, LegoRR::Front_LevelSet_IndexOf);
+
+	// used by: Front_LoadLevels, Front_LevelLink_FindByLinkIndex, Front_Levels_UpdateAvailable,
+	//          MainMenuFull_AddMissionsDisplay, Front_Save_ReadSaveFile, Front_Save_WriteSaveFiles
+	result &= hook_write_jmpret(0x00416da0, LegoRR::Front_Levels_ResetVisited);
+
+	// used by: Front_LevelSet_LoadLevelLinks
+	result &= hook_write_jmpret(0x00416e00, LegoRR::Front_LevelSet_SetLinkVisited);
+
+	// used by: Front_LevelSet_LoadLevelLinks
+	result &= hook_write_jmpret(0x00416e70, LegoRR::Front_LevelSet_IsLinkVisited);
+
+	// used by: Front_LevelSet_LoadLevelLinks
+	result &= hook_write_jmpret(0x00416ee0, LegoRR::Front_LevelSet_SetLevelLink);
+
+	// used by: Front_LevelSet_LoadLevelLinks
+	result &= hook_write_jmpret(0x00416f50, LegoRR::Front_LevelSet_GetLevelLink);
+
+	// used by: Front_LoadLevels
+	result &= hook_write_jmpret(0x00416fc0, LegoRR::Front_LevelSet_LoadLevelLinks);
+
+	// used by: Front_LevelLink_FindByLinkIndex, MainMenuFull_AddMissionsDisplay,
+	//          Front_Save_ReadSaveFile, Front_Save_WriteSaveFiles
+	result &= hook_write_jmpret(0x004170f0, LegoRR::Front_LevelLink_RunThroughLinks);
+
+	// used by: MainMenuFull_AddMissionsDisplay, Front_Save_ReadSaveFile, Front_Save_WriteSaveFiles
+	result &= hook_write_jmpret(0x00417170, LegoRR::Front_LevelLink_Callback_IncCount);
+
+	// used by: Front_LevelLink_FindByLinkIndex
+	result &= hook_write_jmpret(0x00417180, LegoRR::Front_LevelLink_Callback_FindByLinkIndex);
+
+	// used by: Front_LevelLink_FindSetIndexOf, Front_Callback_SelectMissionItem,
+	//          Front_Callback_SelectTutorialItem
+	result &= hook_write_jmpret(0x004171b0, LegoRR::Front_LevelLink_FindByLinkIndex);
+
+	// used by: Front_GetSelectedLevel
+	result &= hook_write_jmpret(0x00417200, LegoRR::Front_LevelLink_FindSetIndexOf);
+
+	// used by: Front_Levels_UpdateAvailable
+	result &= hook_write_jmpret(0x00417220, LegoRR::Front_Levels_UpdateAvailable_Recursive);
+
+	// used by: Front_Callback_SelectLoadSave, Front_Callback_TriggerBackSave,
+	//          Front_PrepareScreenMenuType, Front_Save_Write_FUN_00417f30, Reward_GotoAdvance
+	result &= hook_write_jmpret(0x00417310, LegoRR::Front_Levels_UpdateAvailable);
+
+	// used by: Front_Save_GetLevelCompleteWithPoints, Front_Callback_SelectMissionItem
+	result &= hook_write_jmpret(0x00417360, LegoRR::Front_Save_GetLevelScore);
+
+	// used by: Front_LoadLevels
+	result &= hook_write_jmpret(0x00417390, LegoRR::Front_Callback_SelectMissionItem);
+
+	// ...
+
+	// used by: MainMenuFull_AddMissionsDisplay
+	result &= hook_write_jmpret(0x00417710, LegoRR::Front_LevelInfo_Callback_AddItem);
+
+	// ...
+
+	// used by: Front_UpdateOptionsSliders, Front_Save_GetCurrentSaveData, Reward_GotoAdvance
+	result &= hook_write_jmpret(0x00417d80, LegoRR::Front_Save_GetSaveDataAt);
+
+	// used by: FrontEnd, Lego_LoadLevel, Reward_GotoSaveMenu, Reward_GotoAdvance
+	result &= hook_write_jmpret(0x00417da0, LegoRR::Front_Save_GetCurrentSaveData);
+
+	// used by: Front_UpdateOptionsSliders, Front_Save_Write_FUN_00417f30, Lego_LoadLevel,
+	//          Reward_GotoSaveMenu, Reward_GotoAdvance
+	result &= hook_write_jmpret(0x00417dc0, LegoRR::Front_Save_GetSaveNumber);
+
+	// used by: Front_Callback_SelectLoadSave, Reward_GotoSaveMenu, Reward_GotoAdvance
+	result &= hook_write_jmpret(0x00417dd0, LegoRR::Front_Save_SetSaveNumber);
+
+	// ...
+
+	// used by: Reward_GotoSaveMenu
+	result &= hook_write_jmpret(0x00417ec0, LegoRR::Front_Save_GetRewardLevel);
+
+	// ...
+
+	// used by: Reward_GotoSaveMenu
+	result &= hook_write_jmpret(0x00417f10, LegoRR::Front_Save_GetBool_540);
+
+	// used by: Reward_GotoSaveMenu
+	result &= hook_write_jmpret(0x00417f20, LegoRR::Front_Save_SetBool_540);
+
+	// ...
+
+	// used by: Front_Initialise, Front_PrepareScreenMenuType, Reward_GotoAdvance
+	result &= hook_write_jmpret(0x00418040, LegoRR::Front_Save_SetBool_85c);
+
+	// ...
 
 	return_interop(result);
 }
@@ -3491,6 +3847,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Credits();
 	result &= interop_hook_LegoRR_ElectricFence();
 	result &= interop_hook_LegoRR_Encyclopedia();
+	result &= interop_hook_LegoRR_FrontEnd();
 	result &= interop_hook_LegoRR_Game();
 	result &= interop_hook_LegoRR_Interface();
 	result &= interop_hook_LegoRR_LegoCamera();
@@ -3514,10 +3871,6 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Vehicle();
 	result &= interop_hook_LegoRR_Water();
 	result &= interop_hook_LegoRR_Weapons();
-
-	// Only a few functions from each of these have been
-	// defined in order to fix certain original bugs.
-	result &= interop_hook_LegoRR_FrontEnd();
 	#pragma endregion
 
 

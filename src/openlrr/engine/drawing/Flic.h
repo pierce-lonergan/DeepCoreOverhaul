@@ -278,6 +278,7 @@ union Image_Flic
 {
 	/*0,4*/ Image* image;
 	/*0,4*/ Flic* flic;
+	/*0,4*/ void* data; // For clearer null checking.
 	/*4*/
 };
 assert_sizeof(Image_Flic, 0x4);
