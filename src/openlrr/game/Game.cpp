@@ -1156,6 +1156,7 @@ void LegoRR::Lego_BeginDrawSelectionBoxes()
 	if (!LEGO_DRAWFILL_SELECTIONBOXES || (Lego_IsTransparentMultiSelectBox() && (legoGlobs.flags1 & GAME1_MULTISELECTING))) {
 		if (!Gods98::Draw_IsLocked()) {
 			Gods98::Draw_Begin();
+			Error_Warn(!Gods98::Draw_IsLocked(), "Lego_BeginDrawSelectionBoxes: Draw_Begin() failed to lock the surface");
 		}
 	}
 	//#endif

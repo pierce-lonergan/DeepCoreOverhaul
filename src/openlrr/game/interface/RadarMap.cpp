@@ -157,6 +157,7 @@ void LegoRR::RadarMap_BeginDraw(RadarMap* radarMap)
 	}
 
 	Gods98::Draw_Begin(radarMap->renderTarget);
+	Error_Warn(!Gods98::Draw_IsLocked(), "RadarMap_BeginDraw: Draw_Begin() failed to lock the surface");
 
 	if (radarMap->renderTarget != nullptr) {
 		Gods98::Draw_SetTranslation(Point2F {
