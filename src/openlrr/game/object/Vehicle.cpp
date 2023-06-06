@@ -89,6 +89,18 @@ void LegoRR::_Vehicle_RemoveWheelNulls(VehicleModel* vehicle)
 	}
 }
 
+// <missing>
+uint32 __cdecl LegoRR::Vehicle_GetCameraNullFrames(VehicleModel* vehicle)
+{
+	return vehicle->cameraNullFrames;
+}
+
+// <missing>
+uint32 __cdecl LegoRR::Vehicle_GetWheelNullFrames(VehicleModel* vehicle)
+{
+	return vehicle->wheelNullFrames;
+}
+
 
 
 // <LegoRR.exe @0046c690>
@@ -185,7 +197,7 @@ void __cdecl LegoRR::Vehicle_SetUpgradeActivity(VehicleModel* vehicle, const cha
 			const uint32 i = vehicle->weapons.weaponCount;
 
 			Error_FatalF(i == WEAPON_MAXWEAPONS,
-						 "Building (ID %i) has too many upgrade parts with weapons", static_cast<sint32>(vehicle->objID));
+						 "Vehicle (ID %i) has too many upgrade parts with weapons", static_cast<sint32>(vehicle->objID));
 
 			vehicle->weapons.fireNullPairFrames[i] = 0;
 
@@ -318,10 +330,10 @@ void __cdecl LegoRR::Vehicle_SwapPolyMedium(VehicleModel* vehicle, bool32 swap)
 {
 	log_firstcall();
 
-	MeshLOD_SwapTarget(vehicle->polyMedium1, vehicle->contAct1, (swap == FALSE), 0);
+	MeshLOD_SwapTarget(vehicle->polyMedium1, vehicle->contAct1, !swap, 0);
 	if (vehicle->contAct2 != nullptr && vehicle->polyMedium2 != nullptr)
 	{
-		MeshLOD_SwapTarget(vehicle->polyMedium2, vehicle->contAct2, (swap == FALSE), 0);
+		MeshLOD_SwapTarget(vehicle->polyMedium2, vehicle->contAct2, !swap, 0);
 	}
 }
 
@@ -338,18 +350,14 @@ bool32 __cdecl LegoRR::Vehicle_CanUpgradeType(VehicleModel* vehicle, LegoObject_
 {
 	log_firstcall();
 
-	uint32 mask = 1 << upgradeType;
+	const LegoObject_UpgradeFlags mask = LegoObject_UpgradeToFlag(upgradeType);
 
-	if (current)
-	{
-		uint32 level = Vehicle_GetUpgradeLevel(vehicle);
-		if (mask & level)
-		{
-			return 0;
-		}
+	if (current && (Vehicle_GetUpgradeLevel(vehicle) & mask)) {
+		// This type is currently upgraded, can't upgrade again.
+		return false;
 	}
-
-	return vehicle->upgrades.levelFlags & mask;
+	// Fallback to checking upgrade capabilities, if not currently upgraded.
+	return (vehicle->upgrades.levelFlags & mask);
 }
 
 // <LegoRR.exe @0046d240>
@@ -470,14 +478,14 @@ void __cdecl LegoRR::Vehicle_SetOwnerObject(VehicleModel* vehicle, LegoObject* l
 	log_firstcall();
 
 	Gods98::Container_SetUserData(vehicle->contAct1, liveObj);
-	if (vehicle->contAct2)
+	if (vehicle->contAct2 != nullptr)
 	{
 		Gods98::Container_SetUserData(vehicle->contAct2, liveObj);
 	}
 
-	for (uint32 i = 0; i < vehicle->wheelNullFrames; ++i)
+	for (uint32 i = 0; i < vehicle->wheelNullFrames; i++)
 	{
-		if (vehicle->contWheels[i])
+		if (vehicle->contWheels[i] != nullptr)
 		{
 			Gods98::Container_SetUserData(vehicle->contWheels[i], liveObj);
 		}
@@ -493,29 +501,31 @@ real32 __cdecl LegoRR::Vehicle_GetAnimationTime(VehicleModel* vehicle)
 }
 
 // <LegoRR.exe @0046d480>
-real32 __cdecl LegoRR::Vehicle_MoveAnimation(VehicleModel* vehicle, real32 elapsed1, real32 elapsed2, uint32 unkFrameNo)
+real32 __cdecl LegoRR::Vehicle_MoveAnimation(VehicleModel* vehicle, real32 elapsed1, real32 elapsed2, uint32 repeatCount)
 {
 	log_firstcall();
 
-	real32 animationTime = 0.0;
+	real32 overrun = 0.0f;
 
 	if (!(vehicle->flags & VehicleFlags::VEHICLE_FLAG_NOACTIVITY1))
 	{
-		animationTime = Gods98::Container_MoveAnimation(vehicle->contAct1, elapsed1);
+		overrun = Gods98::Container_MoveAnimation(vehicle->contAct1, elapsed1);
 	}
 
 	if (vehicle->contAct2 != nullptr)
 	{
-		animationTime = Gods98::Container_MoveAnimation(vehicle->contAct2, elapsed2);
+		overrun = Gods98::Container_MoveAnimation(vehicle->contAct2, elapsed2);
 	}
 
-	if (unkFrameNo > 1 && animationTime != 0.0)
+	if (repeatCount > 1 && overrun != 0.0f)
 	{
-		uint32 animationFrames = Gods98::Container_GetAnimationFrames(vehicle->contAct1);
-		return animationTime - (animationFrames * (unkFrameNo - 1));
+		/// TODO: Should we only be getting the anim frame count from contAct1?
+		///       What if VEHICLE_FLAG_NOACTIVITY1 is set? 
+		const uint32 animFrames = Gods98::Container_GetAnimationFrames(vehicle->contAct1);
+		overrun -= static_cast<real32>(animFrames * (repeatCount - 1));
 	}
 
-	return animationTime;
+	return overrun;
 }
 
 // <LegoRR.exe @0046d520>
@@ -551,16 +561,16 @@ void __cdecl LegoRR::Vehicle_Hide(VehicleModel* vehicle, bool32 hide)
 	}
 
 	Gods98::Container_Hide(vehicle->contAct1, hide);
-	if (vehicle->contAct2)
+	if (vehicle->contAct2 != nullptr)
 	{
 		Gods98::Container_Hide(vehicle->contAct2, hide);
 	}
 
-	for (uint32 i = 0; i < vehicle->wheelNullFrames; ++i)
+	for (uint32 i = 0; i < vehicle->wheelNullFrames; i++)
 	{
-		if (vehicle->contWheels[i])
+		if (vehicle->contWheels[i] != nullptr)
 		{
-			Container_Hide(vehicle->contWheels[i], hide);
+			Gods98::Container_Hide(vehicle->contWheels[i], hide);
 		}
 	}
 }
@@ -570,7 +580,7 @@ bool32 __cdecl LegoRR::Vehicle_IsHidden(VehicleModel* vehicle)
 {
 	log_firstcall();
 
-	return (vehicle->flags & VehicleFlags::VEHICLE_FLAG_HIDDEN) != 0;
+	return (bool)(vehicle->flags & VehicleFlags::VEHICLE_FLAG_HIDDEN);
 }
 
 // <LegoRR.exe @0046d610>
@@ -578,7 +588,8 @@ void __cdecl LegoRR::Vehicle_SetOrientation(VehicleModel* vehicle, real32 xDir, 
 {
 	log_firstcall();
 
-	Gods98::Container_SetOrientation(vehicle->contAct1, nullptr, xDir, yDir, zDir, 0.0, 0.0, -1.0);
+	/// TODO: Should we be setting the up argument to negative wheelLastUp? (if wheelNullFrames != 0)
+	Gods98::Container_SetOrientation(vehicle->contAct1, nullptr, xDir, yDir, zDir, 0.0f, 0.0f, -1.0f);
 }
 
 // <LegoRR.exe @0046d640>
@@ -590,70 +601,93 @@ void __cdecl LegoRR::Vehicle_SetPosition(VehicleModel* vehicle, real32 xPos, rea
 
 	Vector3F direction;
 	Gods98::Container_GetOrientation(vehicle->contAct1, nullptr, &direction, nullptr);
-	Gods98::Container_SetOrientation(vehicle->contAct1, nullptr, direction.x, direction.y, direction.z, 0.0, 0.0, -1.0);
+	Gods98::Container_SetOrientation(vehicle->contAct1, nullptr, direction.x, direction.y, direction.z, 0.0f, 0.0f, -1.0f);
 
 	if (vehicle->wheelNullFrames == 0)
 	{
-		return;
+		return; // No wheels, no more positioning to do.
 	}
 
-	std::array<Vector3F, VEHICLE_MAXWHEELS> wheelPositions;
-	for (uint32 i = 0; i < vehicle->wheelNullFrames; ++i)
+	std::array<Vector3F, VEHICLE_MAXWHEELS> wheelPositions {}; // dummy init
+	for (uint32 i = 0; i < vehicle->wheelNullFrames; i++)
 	{
 		Gods98::Container_GetPosition(vehicle->wheelNulls[i], nullptr, &wheelPositions[i]);
 		wheelPositions[i].z = zCallback(wheelPositions[i].x, wheelPositions[i].y, map);
 	}
 
-	// TODO: Find out what is calculated here, and rename variables
-	Vector3F tempA, tempB, crossA, crossB, wheelVector;
-	Gods98::Maths_Vector3DSubtract(&tempA, &wheelPositions[1], &wheelPositions[0]);
-	Gods98::Maths_Vector3DSubtract(&tempB, &wheelPositions[1], &wheelPositions[2]);
-	Gods98::Maths_Vector3DCrossProduct(&crossA, &tempA, &tempB);
-	Gods98::Maths_Vector3DNormalize(&crossA);
-	Gods98::Maths_Vector3DSubtract(&tempB, &wheelPositions[3], &wheelPositions[0]);
-	Gods98::Maths_Vector3DSubtract(&tempA, &wheelPositions[3], &wheelPositions[2]);
-	Gods98::Maths_Vector3DCrossProduct(&crossB, &tempA, &tempB);
-	Gods98::Maths_Vector3DNormalize(&crossB);
-	Gods98::Maths_Vector3DAdd(&wheelVector, &crossA, &crossB);
-	Gods98::Maths_Vector3DNormalize(&wheelVector);
+	// Update vehicle upwards orientation based on wheel positions.
 
-	if (!std::isfinite(vehicle->wheelVector_5c.x) || !std::isfinite(vehicle->wheelVector_5c.y) || !std::isfinite(vehicle->wheelVector_5c.z))
+	/// TODO: Consider supporting vehicles with only 2 (or even 3?) wheels.
+	///       Currently the 4 outer wheels are required to calculate the new up orientation.
+
+	Vector3F planeA, planeB, up;
+	//Vector3F tempA, tempB;
+	//Gods98::Maths_Vector3DSubtract(&tempA, &wheelPositions[1], &wheelPositions[0]);
+	//Gods98::Maths_Vector3DSubtract(&tempB, &wheelPositions[1], &wheelPositions[2]);
+	//Gods98::Maths_Vector3DCrossProduct(&planeA, &tempA, &tempB);
+	//Gods98::Maths_Vector3DNormalize(&planeA);
+	//Gods98::Maths_Vector3DSubtract(&tempB, &wheelPositions[3], &wheelPositions[0]);
+	//Gods98::Maths_Vector3DSubtract(&tempA, &wheelPositions[3], &wheelPositions[2]);
+	//Gods98::Maths_Vector3DCrossProduct(&planeB, &tempA, &tempB);
+	//Gods98::Maths_Vector3DNormalize(&planeB);
+
+	// The above Vector3D calculations can be substituted with these PlaneNormal functions.
+	// Note that the above calculations perform subtraction like so:
+	//   Subtract(p2, p1)
+	//   Subtract(p2, p3)
+	// However PlaneNormal performs subtraction like so:
+	//   Subtract(p2, p1)
+	//   Subtract(p3, p2)
+	// Interestingly, all that needs to be changed for the function to give the same output
+	//  is to swap the p1 and p2 arguments. Note that this does cause a slight discrepancy
+	//  in the final floating point values, as is normal for floats.
+	Gods98::Maths_PlaneNormal(&planeA, &wheelPositions[1], &wheelPositions[0], &wheelPositions[2]);
+	Gods98::Maths_PlaneNormal(&planeB, &wheelPositions[3], &wheelPositions[2], &wheelPositions[0]);
+
+	Gods98::Maths_Vector3DAdd(&up, &planeA, &planeB);
+	Gods98::Maths_Vector3DNormalize(&up);
+
+	// Transition between the last up orientation (weight x0.4) and the new up orientation (weight x1.0).
+	if (!std::isfinite(vehicle->wheelLastUp.x) || !std::isfinite(vehicle->wheelLastUp.y) || !std::isfinite(vehicle->wheelLastUp.z))
 	{
-		vehicle->wheelVector_5c = wheelVector;
+		// Last wheel up orientation is invalid. Instantly change to new up orientation instead.
+		vehicle->wheelLastUp = up;
 	}
 
-	wheelVector.x += vehicle->wheelVector_5c.x * 0.4f;
-	wheelVector.y += vehicle->wheelVector_5c.y * 0.4f;
-	wheelVector.z += vehicle->wheelVector_5c.z * 0.4f;
+	Gods98::Maths_RayEndPoint(&up, &up, &vehicle->wheelLastUp, 0.4f);
 
-	Gods98::Maths_Vector3DNormalize(&wheelVector);
-	vehicle->wheelVector_5c = wheelVector;
+	Gods98::Maths_Vector3DNormalize(&up);
+	vehicle->wheelLastUp = up;
 
-	real32 dot = Gods98::Maths_Vector3DDotProduct(&direction, &wheelVector);
-	direction.x -= dot * wheelVector.x;
-	direction.y -= dot * wheelVector.y;
-	direction.z -= dot * wheelVector.z;
+	const real32 dot = Gods98::Maths_Vector3DDotProduct(&direction, &up);
+	Gods98::Maths_RayEndPoint(&direction, &direction, &up, -dot);
 
-	Gods98::Container_SetOrientation(vehicle->contAct1, nullptr, direction.x, direction.y, direction.z, -wheelVector.x, -wheelVector.y, -wheelVector.z);
+	Gods98::Container_SetOrientation(vehicle->contAct1, nullptr, direction.x, direction.y, direction.z, -up.x, -up.y, -up.z);
 
-	for (uint32 i = 0; i < vehicle->wheelNullFrames; ++i)
+
+	// Update wheel positions (suspension) and rotations (turning).
+	for (uint32 i = 0; i < vehicle->wheelNullFrames; i++)
 	{
 		if (vehicle->contWheels[i] != nullptr)
 		{
+			// Center the wheel's z position so that the bottom of the wheel is touching the ground.
 			Gods98::Container_GetPosition(vehicle->wheelNulls[i], nullptr, &wheelPositions[i]);
-			Gods98::Container_AddTranslation(vehicle->wheelNulls[i], Gods98::Container_Combine::After, 0.0, -(zCallback(wheelPositions[i].x, wheelPositions[i].y, map) - wheelPositions[i].z - vehicle->wheelRadius), 0.0);
-			Gods98::Container_SetPosition(vehicle->contWheels[i], vehicle->wheelNulls[i], 0.0, 0.0, 0.0);
-			
+			const real32 zWheel = zCallback(wheelPositions[i].x, wheelPositions[i].y, map);
+			const real32 yTranslate = -(zWheel - wheelPositions[i].z - vehicle->wheelRadius);
+			Gods98::Container_AddTranslation(vehicle->wheelNulls[i], Gods98::Container_Combine::After, 0.0f, yTranslate, 0.0f);
+			Gods98::Container_SetPosition(vehicle->contWheels[i], vehicle->wheelNulls[i], 0.0f, 0.0f, 0.0f);
+
+			// Calculate how much the wheel should turn based on the change from wheelLastPositions and wheelRadius.
 			Vector3F temp;
 			Gods98::Container_GetPosition(vehicle->contWheels[i], nullptr, &wheelPositions[i]);
-			Gods98::Maths_Vector3DSubtract(&temp, &wheelPositions[i], &vehicle->wheelNullPositions[i]);
+			Gods98::Maths_Vector3DSubtract(&temp, &wheelPositions[i], &vehicle->wheelLastPositions[i]);
 			real32 angle = Gods98::Maths_Vector3DModulus(&temp) / vehicle->wheelRadius;
-			if (Gods98::Maths_Vector3DDotProduct(&temp, &direction) < 0.0)
+			if (Gods98::Maths_Vector3DDotProduct(&temp, &direction) < 0.0f)
 			{
 				angle = -angle;
 			}
-			Gods98::Container_AddRotation(vehicle->contWheels[i], Gods98::Container_Combine::Before, 1.0, 0.0, 0.0, angle);
-			Gods98::Container_GetPosition(vehicle->contWheels[i], nullptr, &vehicle->wheelNullPositions[i]);
+			Gods98::Container_AddRotation(vehicle->contWheels[i], Gods98::Container_Combine::Before, 1.0f, 0.0f, 0.0f, angle);
+			Gods98::Container_GetPosition(vehicle->contWheels[i], nullptr, &vehicle->wheelLastPositions[i]);
 		}
 	}
 }
@@ -671,7 +705,7 @@ Gods98::Container* __cdecl LegoRR::Vehicle_FindNull(VehicleModel* vehicle, char*
 {
 	log_firstcall();
 
-	Gods98::Container* container {};
+	Gods98::Container* container = nullptr;
 	if (vehicle->contAct2 != nullptr)
 	{
 		char const *partName = Gods98::Container_FormatPartName(vehicle->contAct2, name, &frameNo);
@@ -692,19 +726,13 @@ Gods98::Container* __cdecl LegoRR::Vehicle_GetCameraNull(VehicleModel* vehicle, 
 {
 	log_firstcall();
 
-	if (vehicle->cameraNullName == nullptr)
-	{
-		return nullptr;
-	}
-
-	if (vehicle->cameraNulls[frameNo] != nullptr)
-	{
+	if (vehicle->cameraNullName != nullptr) {
+		if (vehicle->cameraNulls[frameNo] == nullptr) {
+			vehicle->cameraNulls[frameNo] = Vehicle_FindNull(vehicle, vehicle->cameraNullName, frameNo);
+		}
 		return vehicle->cameraNulls[frameNo];
 	}
-
-	Gods98::Container* container = Vehicle_FindNull(vehicle, vehicle->cameraNullName, frameNo);
-	vehicle->cameraNulls[frameNo] = container;
-	return container;
+	return nullptr;
 }
 
 // <LegoRR.exe @0046dd50>
@@ -712,19 +740,13 @@ Gods98::Container* __cdecl LegoRR::Vehicle_GetDrillNull(VehicleModel* vehicle)
 {
 	log_firstcall();
 
-	if (vehicle->drillNullName == nullptr)
-	{
-		return nullptr;
-	}
-
-	if (vehicle->drillNull != nullptr)
-	{
+	if (vehicle->drillNullName != nullptr) {
+		if (vehicle->drillNull == nullptr) {
+			vehicle->drillNull = Vehicle_FindNull(vehicle, vehicle->drillNullName, 0);
+		}
 		return vehicle->drillNull;
 	}
-
-	Gods98::Container* container = Vehicle_FindNull(vehicle, vehicle->drillNullName, 0);
-	vehicle->drillNull = container;
-	return container;
+	return nullptr;
 }
 
 // <LegoRR.exe @0046dd80>
@@ -732,19 +754,13 @@ Gods98::Container* __cdecl LegoRR::Vehicle_GetDepositNull(VehicleModel* vehicle)
 {
 	log_firstcall();
 
-	if (vehicle->depositNullName == nullptr)
-	{
-		return nullptr;
-	}
-
-	if (vehicle->depositNull != nullptr)
-	{
+	if (vehicle->depositNullName != nullptr) {
+		if (vehicle->depositNull == nullptr) {
+			vehicle->depositNull = Vehicle_FindNull(vehicle, vehicle->depositNullName, 0);
+		}
 		return vehicle->depositNull;
 	}
-
-	Gods98::Container* container = Vehicle_FindNull(vehicle, vehicle->depositNullName, 0);
-	vehicle->depositNull = container;
-	return container;
+	return nullptr;
 }
 
 // <LegoRR.exe @0046ddb0>
@@ -752,19 +768,13 @@ Gods98::Container* __cdecl LegoRR::Vehicle_GetDriverNull(VehicleModel* vehicle)
 {
 	log_firstcall();
 
-	if (vehicle->driverNullName == nullptr)
-	{
-		return nullptr;
-	}
-
-	if (vehicle->driverNull != nullptr)
-	{
+	if (vehicle->driverNullName != nullptr) {
+		if (vehicle->driverNull == nullptr) {
+			vehicle->driverNull = Vehicle_FindNull(vehicle, vehicle->driverNullName, 0);
+		}
 		return vehicle->driverNull;
 	}
-
-	Gods98::Container* container = Vehicle_FindNull(vehicle, vehicle->driverNullName, 0);
-	vehicle->driverNull= container;
-	return container;
+	return nullptr;
 }
 
 // <LegoRR.exe @0046dde0>
@@ -772,19 +782,13 @@ Gods98::Container* __cdecl LegoRR::Vehicle_GetCarryNull(VehicleModel* vehicle, u
 {
 	log_firstcall();
 
-	if (vehicle->carryNullName == nullptr)
-	{
-		return nullptr;
-	}
-
-	if (vehicle->carryNulls[frameNo] != nullptr)
-	{
+	if (vehicle->carryNullName != nullptr) {
+		if (vehicle->carryNulls[frameNo] == nullptr) {
+			vehicle->carryNulls[frameNo] = Vehicle_FindNull(vehicle, vehicle->carryNullName, frameNo);
+		}
 		return vehicle->carryNulls[frameNo];
 	}
-
-	Gods98::Container* container = Vehicle_FindNull(vehicle, vehicle->carryNullName, frameNo);
-	vehicle->carryNulls[frameNo] = container;
-	return container;
+	return nullptr;
 }
 
 // <LegoRR.exe @0046de20>

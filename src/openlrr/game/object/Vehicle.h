@@ -72,9 +72,9 @@ struct VehicleModel // [LegoRR/Vehicle.c|struct:0x1ec]
 	/*028,18*/	Gods98::Container* wheelNulls[VEHICLE_MAXWHEELS];// Root wheel nulls that are used to calculate terrain-relative positioning
 	/*040,4*/	uint32 wheelNullFrames;
 	/*044,18*/	undefined reserved1[0x18];
-	/*05c,c*/	Vector3F wheelVector_5c;	// another vector used in contWheels positioning
+	/*05c,c*/	Vector3F wheelLastUp;		// Last up orientation of vehicle with wheels.
 	/*068,4*/	real32 wheelRadius;			// (ae: WheelRadius)
-	/*06c,48*/	Vector3F wheelNullPositions[VEHICLE_MAXWHEELS];		// Live position of contWheels
+	/*06c,48*/	Vector3F wheelLastPositions[VEHICLE_MAXWHEELS];		// Last position of wheelNulls, used to calculate wheel turning.
 	/*0b4,4*/	char* drillNullName;		// (ae: DrillNullName)
 	/*0b8,4*/	char* depositNullName;		// (ae: DepositNullName)
 	/*0bc,4*/	char* fireNullName;			// (ae: FireNullName) "fire laser"
@@ -117,6 +117,12 @@ void _Vehicle_RemoveWeaponNulls(VehicleModel* vehicle);
 
 /// CUSTOM: Properly cleanup Container references to nulls.
 void _Vehicle_RemoveWheelNulls(VehicleModel* vehicle);
+
+// <missing>
+uint32 __cdecl Vehicle_GetCameraNullFrames(VehicleModel* vehicle);
+
+// <missing>
+uint32 __cdecl Vehicle_GetWheelNullFrames(VehicleModel* vehicle);
 
 
 
@@ -182,8 +188,8 @@ void __cdecl Vehicle_SetOwnerObject(VehicleModel* vehicle, LegoObject* liveObj);
 real32 __cdecl Vehicle_GetAnimationTime(VehicleModel* vehicle);
 
 // <LegoRR.exe @0046d480>
-//#define Vehicle_MoveAnimation ((real32 (__cdecl* )(VehicleModel* vehicle, real32 elapsed1, real32 elapsed2, uint32 unkFrameNo))0x0046d480)
-real32 __cdecl Vehicle_MoveAnimation(VehicleModel* vehicle, real32 elapsed1, real32 elapsed2, uint32 unkFrameNo);
+//#define Vehicle_MoveAnimation ((real32 (__cdecl* )(VehicleModel* vehicle, real32 elapsed1, real32 elapsed2, uint32 repeatCount))0x0046d480)
+real32 __cdecl Vehicle_MoveAnimation(VehicleModel* vehicle, real32 elapsed1, real32 elapsed2, uint32 repeatCount);
 
 // <LegoRR.exe @0046d520>
 //#define Vehicle_PopulateWheelNulls ((void (__cdecl* )(VehicleModel* vehicle))0x0046d520)
