@@ -153,7 +153,7 @@ uint32 Gods98::Flic_GetFrameCount(const Flic* fsp)
 }
 
 /// CUSTOM:
-uint32 Gods98::Flic_GetCurrentFrame(const Flic* fsp)
+uint32 Gods98::Flic_GetFramePosition(const Flic* fsp)
 {
 	// Frames are 1-indexed. Zero is reserved for 'not started',
 	//  and will always force a frame advance on the first call to Flic_Animate.
@@ -163,6 +163,12 @@ uint32 Gods98::Flic_GetCurrentFrame(const Flic* fsp)
 		return Flic_GetFrameCount(fsp);
 	else
 		return std::clamp(static_cast<uint32>(fsp->currentframe), 1u, Flic_GetFrameCount(fsp) + 1u) - 1u;
+}
+
+/// CUSTOM: Gets the actual value of the currentFrame field, where GetCurrentFrame has more involved logic.
+uint32 Gods98::Flic_GetCurrentFrame(const Flic* fsp)
+{
+	return static_cast<uint32>(fsp->currentframe);
 }
 
 /// CUSTOM:

@@ -12,6 +12,7 @@
 #include "../../engine/drawing/Images.h"
 #include "../../engine/input/Input.h"
 #include "../../engine/video/Movie.h"
+#include "../../engine/Graphics.h"
 #include "../../engine/Main.h"
 
 #include "../Game.h"
@@ -24,6 +25,7 @@
 #include "../interface/Pointers.h"
 #include "../interface/ToolTip.h"
 #include "../object/ObjectRecall.h"
+#include "../mission/NERPsFile.h"
 #include "../mission/Objective.h"
 
 
@@ -80,7 +82,7 @@ Gods98::Image* (& LegoRR::g_SaveSlotImages_TABLE)[5] = *(Gods98::Image*(*)[5])0x
 undefined4 & LegoRR::DAT_004dc8a4 = *(undefined4*)0x004dc8a4;
 
 // <LegoRR.exe @004dc8a8>
-uint32 (& LegoRR::g_SaveSlotPtrs_TABLE)[5] = *(uint32(*)[5])0x004dc8a8;
+uint32 (& LegoRR::g_SaveSlotCompletionPercents)[5] = *(uint32(*)[5])0x004dc8a8;
 
 // <LegoRR.exe @004dc8bc>
 bool32 & LegoRR::g_FrontBool_004dc8bc = *(bool32*)0x004dc8bc;
@@ -92,7 +94,7 @@ bool32 & LegoRR::g_FrontBool_004dc8c0 = *(bool32*)0x004dc8c0;
 bool32 & LegoRR::g_FrontBool_004dc8c4 = *(bool32*)0x004dc8c4;
 
 // <LegoRR.exe @004dc8c8>
-bool32 & LegoRR::g_FrontBool_004dc8c8 = *(bool32*)0x004dc8c8;
+LegoRR::Menu* (& LegoRR::g_FrontMenu_004dc8c8) = *(LegoRR::Menu**)0x004dc8c8;
 
 // <LegoRR.exe @004dc8cc>
 LegoRR::Front_Cache* (& LegoRR::g_ImageCache_NEXT) = *(LegoRR::Front_Cache**)0x004dc8cc;
@@ -101,7 +103,7 @@ LegoRR::Front_Cache* (& LegoRR::g_ImageCache_NEXT) = *(LegoRR::Front_Cache**)0x0
 uint32 & LegoRR::s_LevelSelectNameCount = *(uint32*)0x004dc8d0;
 
 // <LegoRR.exe @004dc8d4>
-bool32 & LegoRR::g_FrontBool_004dc8d4 = *(bool32*)0x004dc8d4;
+bool32 & LegoRR::s_FrontBool_004dc8d4 = *(bool32*)0x004dc8d4;
 
 
 // <LegoRR.exe @004dc8dc>
@@ -718,14 +720,15 @@ void __cdecl LegoRR::Front_Menu_FreeMenu(Menu* menu)
 			Gods98::Mem_Free(menu->fullName);
 		}
 
-		for (sint32 i = 0; i < menu->itemCount; i++) {
-			if (menu->items[i] != nullptr) {
-				Front_MenuItem_FreeMenuItem(menu->items[i]);
-			}
-		}
-
 		/// FIX APPLY: Move `Mem_Free(menu->items)` after freeing individual item elements.
+		/// SANITY: Null-check items before looping through them.
 		if (menu->items != nullptr) {
+			for (sint32 i = 0; i < menu->itemCount; i++) {
+				if (menu->items[i] != nullptr) {
+					Front_MenuItem_FreeMenuItem(menu->items[i]);
+				}
+			}
+
 			Gods98::Mem_Free(menu->items);
 		}
 
@@ -777,7 +780,59 @@ bool32 __cdecl LegoRR::Front_Menu_LoadMenuImage(Menu* menu, char* filename, bool
 }
 
 // <LegoRR.exe @00411030>
-//LegoRR::Menu* __cdecl LegoRR::Front_Menu_CreateMenu(char* title, char* fullName, Gods98::Font* menuFont, sint32 positionX, sint32 positionY, bool32 autoCenter, bool32 displayTitle, sint32 param_8, bool32 canScroll, char* anchored_str);
+LegoRR::Menu* __cdecl LegoRR::Front_Menu_CreateMenu(const char* title, const char* fullName, Gods98::Font* menuFont, sint32 positionX, sint32 positionY, bool32 autoCenter, bool32 displayTitle, sint32 centerX, bool32 canScroll, char* anchored_str)
+{
+	Menu* menu = (Menu*)Gods98::Mem_Alloc(sizeof(Menu));
+	if (menu == nullptr)
+		return nullptr;
+
+	std::memset(menu, 0, sizeof(Menu));
+
+	// Note the original Front_Menu_FreeMenu doesn't null-check items,
+	//  so this call relies on the changed functionality.
+
+	menu->title = Front_Util_StrCpy(title);
+	menu->fullName = Front_Util_StrCpy(fullName);
+
+	/// REFACTOR: Depend on FreeMenu because it already had to be fixed to support the next call to it if items fails to allocate.
+	if (menu->title == nullptr || menu->fullName == nullptr) {
+		Front_Menu_FreeMenu(menu);
+		return nullptr;
+	}
+
+	menu->titleLength = std::strlen(menu->title);
+
+	menu->itemCapacity = 15;
+	menu->itemCount = 0;
+	menu->itemFocus = 0;
+	menu->items = (MenuItem**)Gods98::Mem_Alloc(menu->itemCapacity * sizeof(MenuItem*));
+	if (menu->items == nullptr) {
+		/// FIX APPLY: The FreeMenu function now properly null-checks items to avoid access violations here.
+		Front_Menu_FreeMenu(menu);
+		return nullptr;
+	}
+
+	menu->menuFont = menuFont;
+	menu->position.x = positionX;
+	menu->position.y = positionY;
+	menu->centerX = centerX;
+	menu->autoCenter = autoCenter;
+	menu->displayTitle = displayTitle;
+	menu->closed = false;
+	menu->flags = (canScroll ? MENU_FLAG_CANSCROLL : MENU_FLAG_NONE);
+
+	if (anchored_str != nullptr) {
+		/// SANITY: Although we only need 2 parts, split up to 3 so that the original logic can still correctly parse the y position.
+		char* stringParts[3];// [100];
+
+		Gods98::Util_TokeniseSafe(anchored_str, stringParts, ":", _countof(stringParts));
+		menu->anchoredPosition.x = std::atoi(stringParts[0]);
+		menu->anchoredPosition.y = std::atoi(stringParts[1]);
+		menu->anchored = true;
+	}
+
+	return menu;
+}
 
 // <LegoRR.exe @00411190>
 bool32 __cdecl LegoRR::Front_Menu_AddMenuItem(Menu* menu, MenuItem* menuItem)
@@ -819,47 +874,689 @@ bool32 __cdecl LegoRR::Front_Menu_AddMenuItem(Menu* menu, MenuItem* menuItem)
 
 
 // <LegoRR.exe @00411210>
-//bool32 __cdecl LegoRR::Front_Maths_IsPointInsideRect(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight);
+bool32 __cdecl LegoRR::Front_Maths_IsPointInsideRect(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight)
+{
+	return (ptX >= rcX && ptX <= rcX + rcWidth) &&
+		   (ptY >= rcY && ptY <= rcY + rcHeight);
+}
 
 // <LegoRR.exe @00411250>
-//bool32 __cdecl LegoRR::Front_Maths_IsPointInsideRect_OptCenterX(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight, bool32 shouldCenterX);
+bool32 __cdecl LegoRR::Front_Maths_IsPointInsideRectCentered(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight, bool32 shouldCenterX)
+{
+	if (shouldCenterX) {
+		rcX -= rcWidth / 2;
+	}
+	return Front_Maths_IsPointInsideRect(ptX, ptY, rcX, rcY, rcWidth, rcHeight);
+}
 
 // <LegoRR.exe @00411290>
-//sint32 __cdecl LegoRR::Front_MenuItem_Select_CollisionCheck_FUN_00411290(Menu* menu, MenuItem* menuItem, MenuItem_SelectData* selectData);
+sint32 __cdecl LegoRR::Front_MenuItem_Select_TestStringCollision(Menu* menu, MenuItem* menuItem, MenuItem_SelectData* selectData)
+{
+	/// REFACTOR: Use Front_Maths_IsPointInsideRect instead of Front_Maths_IsPointInsideRectCentered
+	///           because the shouldCenterX argument is false.
+
+	// Note that even if width and/or height are zero, the IsPointInsideRect
+	//  functions will return true if ptX,ptY is exactly on rcX,rcY.
+
+	// Test string1:
+	sint32 height = 0;
+	sint32 width1 = 0;
+	if (menuItem->fontHi != nullptr) {
+		height = (sint32)Gods98::Font_GetHeight(menuItem->fontHi);
+		width1 = (sint32)Gods98::Font_GetStringWidth(menuItem->fontHi, selectData->string1);
+	}
+	if (Front_Maths_IsPointInsideRect(Gods98::msx(), Gods98::msy(),
+									  (selectData->xString1 + menu->position.x),
+									  (selectData->yString1 + menu->position.y), width1, height))
+	{
+		return -2; // Over string1.
+	}
+
+	// Test string2:
+	sint32 width2 = 0;
+	if (menuItem->fontHi != nullptr) {
+		width2 = (sint32)Gods98::Font_GetStringWidth(menuItem->fontHi, selectData->string2);
+	}
+	if (Front_Maths_IsPointInsideRect(Gods98::msx(), Gods98::msy(),
+									  (selectData->xString2 + menu->position.x),
+									  (selectData->yString2 + menu->position.y), width2, height))
+	{
+		return -3; // Over string2.
+	}
+
+	// Test selectItems:
+	for (sint32 i = 0; i < selectData->scrollCount; i++) {
+		const sint32 currIndex = selectData->scrollStart + i;
+		if ((sint32)currIndex >= (sint32)selectData->selItemCount) {
+			break;
+		}
+
+		const MenuItem_SelectItem* selectItem = &selectData->selItemList[currIndex];
+
+		if (selectItem->flags & SELECTITEM_FLAG_ENABLED) {
+
+			const sint32 selItemX = selectData->x2 + menuItem->x1 + menu->position.x +
+				selectItem->frontEndX + frontGlobs.scrollOffset.x;
+			const sint32 selItemY = selectData->y2 + menuItem->y1 + menu->position.y + (selectData->selItemHeight * i) +
+				selectItem->frontEndY + frontGlobs.scrollOffset.y;
+			const sint32 selItemWidth = (sint32)selectData->widths[MenuItem_SelectImage_Light][currIndex];
+			const sint32 selItemHeight = (sint32)selectData->heights[MenuItem_SelectImage_Light][currIndex];
+
+			if (Front_Maths_IsPointInsideRectCentered(Gods98::msx(), Gods98::msy(), selItemX, selItemY,
+													  selItemWidth, selItemHeight, menu->autoCenter))
+			{
+				return currIndex; // Over selectItem.
+			}
+		}
+	}
+
+	return -1; // Over nothing.
+}
 
 // <LegoRR.exe @00411420>
-//bool32 __cdecl LegoRR::Front_Menu_IsLevelItemUnderMouse(Menu* menu, sint32 itemIndex);
+bool32 __cdecl LegoRR::Front_Menu_IsLevelItemUnderMouse(Menu* menu, sint32 itemIndex)
+{
+	/// SANITY: Check lower bound.
+	if (itemIndex >= 0 && itemIndex < menu->itemCount) {
+		MenuItem* menuItem = menu->items[itemIndex];
+		if (menuItem->itemType == MenuItem_Type_Select) {
+			sint32 selIndex = Front_MenuItem_Select_TestStringCollision(menu, menuItem, menuItem->itemData.select);
+			return (selIndex != -1);
+		}
+	}
+	return false;
+}
 
 // <LegoRR.exe @00411460>
-//bool32 __cdecl LegoRR::Front_Menu_GetItemBounds(Menu* menu, sint32 itemIndex, OUT sint32* rcX, OUT sint32* rcY, OUT sint32* rcWidth, OUT sint32* rcHeight);
+bool32 __cdecl LegoRR::Front_Menu_GetItemBounds(Menu* menu, sint32 itemIndex, OUT sint32* rcX, OUT sint32* rcY, OUT sint32* rcWidth, OUT sint32* rcHeight)
+{
+	/// SANITY: Check lower bound.
+	if (itemIndex < 0 || itemIndex >= menu->itemCount) {
+		return false;
+	}
+
+	MenuItem* item = menu->items[itemIndex];
+	const bool isFocus = (menu->itemFocus == itemIndex);
+
+	switch (item->itemType) {
+	case MenuItem_Type_Slider:
+		{
+			MenuItem_SliderData* slider = item->itemData.slider;
+
+			Gods98::Font* font = (isFocus ? item->fontHi : item->fontLo);
+			const uint32 bannerWidth = Gods98::Font_GetStringWidth(font, item->banner);
+			const uint32 fontHeight = Gods98::Font_GetHeight(font);
+
+			const sint32 itemX = item->x1 + menu->position.x + item->centerOffHi;
+			const sint32 itemY = item->y1 + menu->position.y;
+
+			const sint32 sliderX = slider->x2 + item->x1 + menu->position.x;
+			const sint32 sliderY = slider->y2 + item->y1 + menu->position.y;
+
+			// I feel like this is supposed to be checking capLeft and capRight...
+			// Are the fields wrong? My suspicion is because each width is added at the opposite end of the fixed width.
+			const sint32 capWidth  = (slider->imageCapRight ? Gods98::Image_GetWidth(slider->imageCapRight) : 0);
+			const sint32 plusWidth = (slider->imagePlusLo   ? Gods98::Image_GetWidth(slider->imagePlusLo)   : 0);
+
+			*rcX = std::min(itemX, sliderX);
+
+			*rcY = std::min(itemY, sliderY);
+
+			// HARDCODED DIMENSIONS!!! See also: Front_MenuItem_SliderHandleInput, Front_MenuItem_DrawSlider
+			*rcWidth = std::max((itemX + (sint32)bannerWidth), (sliderX + plusWidth + 104 + capWidth));
+
+			*rcHeight = std::max((itemY + (sint32)fontHeight), (sliderY + 20));
+
+			// Convert endpoints to dimensions.
+			*rcWidth  -= *rcX;
+			*rcHeight -= *rcY;
+		}
+		return true; // Slider is supported by this function.
+
+	case MenuItem_Type_Select:
+		return false; // Select is not supported by this function.
+
+	default:
+		{
+			*rcX = item->x1 + menu->position.x + item->centerOffHi;
+			*rcY = item->y1 + menu->position.y;
+
+			if (item->isImageItem) {
+				Gods98::Image* image = (isFocus ? item->imageHi : item->imageLo);
+				*rcWidth = Gods98::Image_GetWidth(image);
+				*rcHeight = Gods98::Image_GetHeight(image);
+			}
+			else {
+				Gods98::Font* font = (isFocus ? item->fontHi : item->fontLo);
+
+				*rcWidth = (sint32)Gods98::Font_GetStringWidth(font, item->banner);
+				*rcHeight = (sint32)Gods98::Font_GetHeight(font);
+			}
+		}
+		return true; // All other types are supported by this function.
+	}
+}
 
 // itemIndex is not assigned on failure.
 // <LegoRR.exe @004116c0>
-//bool32 __cdecl LegoRR::Front_Menu_FindItemUnderMouse(Menu* menu, OUT sint32* itemIndex);
+bool32 __cdecl LegoRR::Front_Menu_FindItemUnderMouse(Menu* menu, OUT sint32* itemIndex)
+{
+	/// SANITY: Bounds check ourselves instead of relying on Front_Menu_GetItemBounds
+	///         and Front_Menu_IsLevelItemUnderMouse to do it for us.
+	for (sint32 i = 0; i < menu->itemCount; i++) {
+		sint32 rcX = 0, rcY = 0, rcWidth = 0, rcHeight = 0; // Dummy inits are in the vanilla code, but is it really necessary?
+
+		bool found = false;
+		if (Front_Menu_GetItemBounds(menu, i, &rcX, &rcY, &rcWidth, &rcHeight)) {
+			if (Front_Maths_IsPointInsideRect(Gods98::msx(), Gods98::msy(), rcX, rcY, rcWidth, rcHeight)) {
+				found = true;
+			}
+		}
+		else {
+			// This is a select menu item.
+			if (Front_Menu_IsLevelItemUnderMouse(menu, i)) {
+				found = true;
+			}
+			//else {
+				// Level select has some special handling I guess...?
+				// However this is also the only way the function returns false when reaching the end of the menu's items.
+				// So maybe this doesn't exist for special level select behaviour.
+			//	break;
+				//return false;
+			//}
+		}
+
+		if (found) {
+			if (itemIndex != nullptr) {
+				*itemIndex = i;
+			}
+			return true;
+		}
+	}
+
+	return false;
+}
 
 // <LegoRR.exe @00411770>
-//bool32 __cdecl LegoRR::Front_GetMousePressedState(void);
+bool32 __cdecl LegoRR::Front_GetMousePressedState(void)
+{
+	//static bool32 s_FrontBool_004dc8d4 = false;
+
+	const bool32 result = (!Gods98::mslb() && s_FrontBool_004dc8d4);
+
+	s_FrontBool_004dc8d4 = Gods98::mslb();
+
+	return result;
+}
 
 // <LegoRR.exe @004117a0>
-//bool32 __cdecl LegoRR::Front_MenuItem_SliderHandleInput(Menu* menu, MenuItem* menuItem, MenuItem_SliderData* sliderData);
+bool32 __cdecl LegoRR::Front_MenuItem_SliderHandleInput(Menu* menu, MenuItem* menuItem, MenuItem_SliderData* sliderData)
+{
+	// HARDCODED DIMENSIONS!!! See also: Front_Menu_GetItemBounds, Front_MenuItem_DrawSlider
+
+	const sint32 sliderX = sliderData->x2 + menuItem->x1 + menu->position.x;
+	const sint32 sliderY = sliderData->y2 + menuItem->y1 + menu->position.y;
+
+	// Check collisions with the slider bar.
+	if (Front_Maths_IsPointInsideRect(Gods98::msx(), Gods98::msy(), sliderX, sliderY, 100, 20)) {
+		// Convert range from pixel units to [min,max] range.
+		real32 value = (real32)(Gods98::msx() - sliderX) / 100.0f; // Same 100 as used in inside-rect test.
+		value = std::clamp(value, 0.0f, 1.0f);
+
+		/// FIX APPLY: Properly add valueMin as a base to valuePtr, so that the checks in the minus/plus block behave correctly.
+		// Don't use Math function since it's for floats.
+		//*sliderData->valuePtr = (sint32)Gods98::Maths_Interpolate(sliderData->valueMin, sliderData->valueMax, value);
+		*sliderData->valuePtr = (sint32)((sliderData->valueMax - sliderData->valueMin) * value) + sliderData->valueMin;
+
+		return true;
+	}
+
+	// Check collisions with the slider plus/minute buttons.
+	/// FIX APPLY: Also null-check imageCapRight.
+	if (sliderData->imageMinusLo != nullptr && sliderData->imagePlusLo != nullptr && sliderData->imageCapRight != nullptr) {
+
+		const sint32 minusX = (sliderX - Gods98::Image_GetWidth(sliderData->imageMinusLo)) - 4;
+		const sint32 plusX = Gods98::Image_GetWidth(sliderData->imageCapRight) + 104 + sliderX;
+
+		if (Front_Maths_IsPointInsideRect(Gods98::msx(), Gods98::msy(), minusX, sliderY,
+										  Gods98::Image_GetWidth(sliderData->imageMinusLo),
+										  Gods98::Image_GetHeight(sliderData->imageMinusLo)))
+		{
+			if (*sliderData->valuePtr > sliderData->valueMin) {
+				*sliderData->valuePtr -= 1;
+			}
+			return true;
+		}
+		else if (Front_Maths_IsPointInsideRect(Gods98::msx(), Gods98::msy(), plusX, sliderY,
+											   Gods98::Image_GetWidth(sliderData->imagePlusLo),
+											   Gods98::Image_GetHeight(sliderData->imagePlusLo)))
+		{
+			if (*sliderData->valuePtr < sliderData->valueMax) {
+				*sliderData->valuePtr += 1;
+			}
+			return true;
+		}
+	}
+
+	return false;
+}
 
 // <LegoRR.exe @00411900>
-//bool32 __cdecl LegoRR::Front_MenuItem_CheckNotInTutoAnyTutorialFlags(MenuItem* menuItem);
+bool32 __cdecl LegoRR::Front_MenuItem_CheckNotInTutoAnyTutorialFlags(MenuItem* menuItem)
+{
+	if (menuItem != nullptr && menuItem->notInTuto) {
+		return NERPs_AnyTutorialFlags();
+	}
+	return false;
+}
 
 // <LegoRR.exe @00411930>
-//LegoRR::Menu* __cdecl LegoRR::Front_Menu_UpdateMenuItemsInput(real32 elapsed, Menu* menu);
+LegoRR::Menu* __cdecl LegoRR::Front_Menu_UpdateMenuItemsInput(real32 elapsed, Menu* menu)
+{
+	if (frontGlobs.rockWipeFlags & ROCKWIPE_FLAG_NOINPUT) {
+		return menu;
+	}
+
+	MenuItem* menuItem = nullptr; // Focused item
+	if (menu->itemFocus >= 0) {
+		menuItem = menu->items[menu->itemFocus]; // Current focused item
+	}
+
+
+	// When should an item in menu->items ever be null!??
+	if (menuItem == nullptr && menu->itemFocus >= 0) {
+		menu->closed = true;
+	}
+
+	bool itemUnderMouse = false;
+	sint32 findIndex = -1;
+	if (Front_Menu_FindItemUnderMouse(menu, &findIndex)) {
+		// New focused item
+		menu->itemFocus = findIndex;
+		menuItem = menu->items[findIndex];
+		itemUnderMouse = true;
+	}
+
+	if (Front_MenuItem_CheckNotInTutoAnyTutorialFlags(menuItem)) {
+		return menu;
+	}
+
+	/// REFACTOR: No need to check Front_Menu_FindItemUnderMouse() again.
+	/// NOTE: Make sure Front_GetMousePressedState() is called because it also updates its state. Consider renaming that function.
+	bool isHandled = false;
+	//bool isPressed = true;
+	//if (!Front_GetMousePressedState() || !itemUnderMouse) {!Front_Menu_FindItemUnderMouse(menu, &findIndex)) {
+	//	isPressed = false;
+	//}
+	bool isPressed = (Front_GetMousePressedState() && itemUnderMouse);// Front_Menu_FindItemUnderMouse(menu, &findIndex));
+
+	// When should an item in menu->items ever be null!??
+	/// FIX APPLY: Always return if menuItem is null. Was previously an && operator.
+	if (menuItem == nullptr || menu->itemFocus < 0) {
+		return menu;
+	}
+
+	// Return may be called in this block for "select" menu item types.
+	if (isPressed || Input_IsKeyPressed(Gods98::Keys::KEY_CURSORRIGHT)) {
+		SFX_Random_PlaySoundNormal(SFX_Okay, false);
+
+		switch (menuItem->itemType) {
+		case MenuItem_Type_Cycle:
+			{
+				isHandled = isPressed;
+
+				MenuItem_CycleData* cycle = menuItem->itemData.cycle;
+
+				*cycle->valuePtr = (*cycle->valuePtr + 1) % cycle->nameCount;
+
+				if (cycle->callback != nullptr) {
+					cycle->callback(*cycle->valuePtr);
+				}
+			}
+			break;
+		case MenuItem_Type_TextInput:
+			{
+				isHandled = isPressed;
+
+				MenuItem_TextInputData* textInput = menuItem->itemData.textInput;
+
+				textInput->caretPos = std::min(textInput->caretPos + 1, textInput->length - 1);
+				//textInput->caretPos++;
+				//if (textInput->caretPos > textInput->length - 1) {
+				//	textInput->caretPos = textInput->length - 1;
+				//}
+			}
+			break;
+		case MenuItem_Type_Slider:
+			{
+				MenuItem_SliderData* slider = menuItem->itemData.slider;
+
+				if (isPressed) {
+					Front_MenuItem_SliderHandleInput(menu, menuItem, slider);
+
+				}
+				else {
+					*slider->valuePtr = std::min(*slider->valuePtr + 1, slider->valueMax);
+
+					isHandled = false; // ???
+				}
+				if (slider->callback != nullptr) {
+					slider->callback(*slider->valuePtr);
+				}
+			}
+			break;
+		case MenuItem_Type_RealSlider:
+			{
+				isHandled = isPressed;
+
+				MenuItem_RealSliderData* realSlider = menuItem->itemData.realSlider;
+
+				*realSlider->valuePtr = std::min(*realSlider->valuePtr + realSlider->valueStep, realSlider->valueMax);
+
+				if (realSlider->callback != nullptr) {
+					realSlider->callback(*realSlider->valuePtr);
+				}
+			}
+			break;
+		case MenuItem_Type_Select:
+			{
+				MenuItem_SelectData* select = menuItem->itemData.select;
+
+				const sint32 selIndex = Front_MenuItem_Select_TestStringCollision(menu, menuItem, select);
+
+				if (isPressed) {
+					if (selIndex == -3) {
+						// string2 is selected.
+						if (select->scrollStart > 0) {
+							select->scrollStart--;
+						}
+					}
+					else if (selIndex == -2) {
+						// string1 is selected.
+						if (select->scrollStart < (sint32)(select->selItemCount - select->scrollCount)) {
+							select->scrollStart++;
+						}
+					}
+					else if (selIndex != -1) {
+						// selectItem is selected.
+
+						*select->valuePtr = selIndex;
+						if (select->callback != nullptr) {
+							select->callback(elapsed, selIndex);
+						}
+
+						// Are we in the load/save menu?
+						if ((menu == frontGlobs.mainMenuSet->menus[3]) ||
+							(menu == frontGlobs.saveMenuSet->menus[0]))
+						{
+							g_SaveMenu_INT_004a2f4c = selIndex;
+							g_SaveMenu_OutNumber = selIndex;
+						}
+
+						if (select->nextMenu == nullptr) {
+							menu->closed = true;
+						}
+						else {
+							// Goto next menu.
+							return select->nextMenu;
+						}
+					}
+				}
+			}
+			break;
+		}
+	}
+
+	if (Input_IsKeyPressed(Gods98::Keys::KEY_CURSORLEFT)) {
+		/// POLISH: Play sfx sound when pressing left just like with pressing right.
+		if (!Input_IsKeyPressed(Gods98::Keys::KEY_CURSORRIGHT)) {
+			SFX_Random_PlaySoundNormal(SFX_Okay, false);
+		}
+
+		switch (menuItem->itemType) {
+		case MenuItem_Type_Cycle:
+			{
+				MenuItem_CycleData* cycle = menuItem->itemData.cycle;
+
+				//*cycle->valuePtr--;
+				//if (*cycle->valuePtr < 0) {
+				//	*cycle->valuePtr = cycle->nameCount;
+				//}
+				/// POLISH: Handle cycle value below 0 being decremented.
+				*cycle->valuePtr = (((*cycle->valuePtr - 1) % cycle->nameCount) + cycle->nameCount) % cycle->nameCount;
+
+				/// FIX APPLY: Run missing callback so settings update correctly.
+				if (cycle->callback != nullptr) {
+					cycle->callback(*cycle->valuePtr);
+				}
+			}
+			break;
+		case MenuItem_Type_TextInput:
+			{
+				MenuItem_TextInputData* textInput = menuItem->itemData.textInput;
+
+				textInput->caretPos = std::max(textInput->caretPos - 1, 0);
+				//textInput->caretPos--;
+				//if (textInput->caretPos < 0) {
+				//	textInput->caretPos = 0;
+				//}
+			}
+			break;
+		case MenuItem_Type_Slider:
+			{
+				MenuItem_SliderData* slider = menuItem->itemData.slider;
+
+				*slider->valuePtr = std::max(*slider->valuePtr - 1, slider->valueMin);
+
+				if (slider->callback != nullptr) {
+					slider->callback(*slider->valuePtr);
+				}
+			}
+			break;
+		case MenuItem_Type_RealSlider:
+			{
+				MenuItem_RealSliderData* realSlider = menuItem->itemData.realSlider;
+
+				*realSlider->valuePtr = std::max(*realSlider->valuePtr - realSlider->valueStep, realSlider->valueMin);
+
+				if (realSlider->callback != nullptr) {
+					realSlider->callback(*realSlider->valuePtr);
+				}
+			}
+			break;
+		}
+	}
+
+	// Return is called in this block for "next" menu item types.
+	if (isPressed && !isHandled) {
+		switch (menuItem->itemType) {
+		case MenuItem_Type_Cycle:
+			{
+				/// TODO: Unreachable code because condition is already handled in CursorRight-or-isPressed block.
+				MenuItem_CycleData* cycle = menuItem->itemData.cycle;
+
+				*cycle->valuePtr = (*cycle->valuePtr + 1) % cycle->nameCount;
+
+				/// FIXME: .... no callback???
+				//if (cycle->callback != nullptr) {
+				//	cycle->callback(*cycle->valuePtr);
+				//}
+			}
+			break;
+		case MenuItem_Type_Trigger:
+			{
+				MenuItem_TriggerData* trigger = menuItem->itemData.trigger;
+
+				if (trigger->callback != nullptr) {
+					trigger->callback();
+				}
+
+				if (trigger->end) {
+					menu->closed = true;
+					/// TODO: This is only supposed to be set to true on end?
+					*trigger->valuePtr = true;
+				}
+			}
+			break;
+		case MenuItem_Type_Next:
+			// Goto next menu.
+			return menuItem->itemData.next;
+		}
+	}
+
+	if (menuItem->itemType == MenuItem_Type_TextInput) {
+		MenuItem_TextInputData* textInput = menuItem->itemData.textInput;
+
+		for (uint32 i = 0; i < INPUT_MAXKEYS; i++) {
+			const Gods98::Keys key = static_cast<Gods98::Keys>(i);
+
+			// Handle backspace.
+			if (Input_IsKeyPressed(key)) {
+				if (key == Gods98::Keys::KEY_BACKSPACE && textInput->caretPos > 0) {
+					
+					// Shift all characters from caretPos down by one.
+					for (sint32 j = textInput->caretPos; j < textInput->length; j++) {
+						textInput->valuePtr[j - 1] = textInput->valuePtr[j];
+					}
+					textInput->caretPos--;
+					textInput->length--;
+				}
+			}
+
+			// Handle typing.
+			if (textInput->length != textInput->maxLength && textInput->caretPos < textInput->length - 1 &&
+				c_keyCharMap[key] != 0)
+			{
+				// Shift all characters to caretPos up by one.
+				for (sint32 j = textInput->length - 1; j >= textInput->caretPos; j--) {
+					textInput->valuePtr[j + 1] = textInput->valuePtr[j];
+				}
+
+				char newChar = static_cast<char>(c_keyCharMap[key]);
+				if (Input_IsKeyDown(Gods98::Keys::KEY_LEFTSHIFT) || Input_IsKeyDown(Gods98::Keys::KEY_RIGHTSHIFT)) {
+					// Characters stored in c_keyCharMap are lowercase, so capitalize the character if shift is down.
+					newChar = static_cast<char>(std::toupper(newChar));
+				}
+				textInput->valuePtr[textInput->caretPos] = newChar;
+
+				textInput->caretPos++;
+				textInput->length++;
+			}
+		}
+	}
+
+	// Menu has not changed.
+	return menu;
+}
 
 // See Keys enum
 // <LegoRR.exe @00411e30>
-//uint32 __cdecl LegoRR::Front_Input_GetKeyCharacter(Keys diKey);
+uint32 __cdecl LegoRR::Front_Input_GetKeyCharacter(uint32 diKey)
+{
+	return c_keyCharMap[diKey];
+}
 
 // valueIndex == (value - valueMin);
 // valueRange == (valueMax - valueMin);
 // <LegoRR.exe @00411e40>
-//void __cdecl LegoRR::Front_MenuItem_DrawSlider(MenuItem_SliderData* sliderData, uint32 x, uint32 y, sint32 valueIndex, uint32 valueRange);
+void __cdecl LegoRR::Front_MenuItem_DrawSlider(MenuItem_SliderData* sliderData, uint32 x, uint32 y, sint32 valueIndex, uint32 valueRange)
+{
+	// HARDCODED DIMENSIONS!!! See also: Front_Menu_GetItemBounds, Front_MenuItem_SliderHandleInput
+
+	const real32 fillWidth = (real32)((uint32)(valueIndex * 100) / valueRange);
+
+	// Draw bar fill images.
+	{
+		const Point2F destPos = {
+			(real32)x,
+			(real32)y,
+		};
+		const Area2F src = {
+			0.0f,
+			0.0f,
+			fillWidth,
+			20.0f,
+		};
+		Gods98::Image_DisplayScaled(sliderData->imageBarOn, &src, &destPos, nullptr);
+	}
+	{
+		const Point2F destPos = {
+			((real32)x + fillWidth),
+			(real32)y,
+		};
+		const Area2F src = {
+			fillWidth,
+			0.0f,
+			(100.0f - fillWidth),
+			20.0f,
+		};
+		Gods98::Image_DisplayScaled(sliderData->imageBarOff, &src, &destPos, nullptr);
+	}
+
+	// Draw cap images.
+	if (sliderData->imageCapLeft != nullptr) {
+		const Point2F destPos = {
+			(real32)x,
+			(real32)y,
+		};
+		Gods98::Image_Display(sliderData->imageCapLeft, &destPos);
+	}
+	if (sliderData->imageCapRight != nullptr) {
+		const Point2F destPos = {
+			((real32)x + 100.0f),
+			(real32)y,
+		};
+		Gods98::Image_Display(sliderData->imageCapRight, &destPos);
+	}
+
+	// Draw minus/plus images.
+	if (sliderData->imageMinusLo != nullptr && sliderData->imageMinusHi != nullptr) {
+		const Point2F destPos = {
+			((real32)x - (real32)(Gods98::Image_GetWidth(sliderData->imageMinusLo) + 4)),
+			(real32)y,
+		};
+
+		Gods98::Image* image;
+		if (Front_Maths_IsPointInsideRect(Gods98::msx(), Gods98::msy(), (sint32)destPos.x, (sint32)destPos.y,
+										  Gods98::Image_GetWidth(sliderData->imageMinusLo),
+										  Gods98::Image_GetHeight(sliderData->imageMinusLo)))
+		{
+			image = sliderData->imageMinusHi;
+		}
+		else {
+			image = sliderData->imageMinusLo;
+		}
+		Gods98::Image_Display(image, &destPos);
+	}
+	if (sliderData->imagePlusLo != nullptr && sliderData->imagePlusHi != nullptr) {
+		const Point2F destPos = {
+			(((real32)Gods98::Image_GetWidth(sliderData->imageCapRight) + (real32)x) + 104.0f),
+			(real32)y,
+		};
+
+		Gods98::Image* image;
+		if (Front_Maths_IsPointInsideRect(Gods98::msx(), Gods98::msy(), (sint32)destPos.x, (sint32)destPos.y,
+										  Gods98::Image_GetWidth(sliderData->imagePlusLo),
+										  Gods98::Image_GetHeight(sliderData->imagePlusLo)))
+		{
+			image = sliderData->imagePlusHi;
+		}
+		else {
+			image = sliderData->imagePlusLo;
+		}
+		Gods98::Image_Display(image, &destPos);
+	}
+}
 
 // <LegoRR.exe @004120a0>
-//uint32 __cdecl LegoRR::Front_Menu_GetOverlayCount(Menu* menu);
+uint32 __cdecl LegoRR::Front_Menu_GetOverlayCount(Menu* menu)
+{
+	uint32 count = 0;
+	for (MenuOverlay* overlay = menu->overlays; overlay != nullptr; overlay = overlay->previous) {
+		count++;
+	}
+	return count;
+}
 
 // <LegoRR.exe @004120c0>
 bool32 __cdecl LegoRR::Front_Menu_ShouldRandomPlay(void)
@@ -885,7 +1582,97 @@ bool32 __cdecl LegoRR::Front_Menu_ShouldRandomPlay(void)
 }
 
 // <LegoRR.exe @004120e0>
-//void __cdecl LegoRR::Front_Menu_UpdateOverlays(Menu* menu);
+void __cdecl LegoRR::Front_Menu_UpdateOverlays(Menu* menu)
+{
+	if (frontGlobs.overlayImageOrFlic.data == nullptr) {
+		if (menu->overlays != nullptr) {
+			if (menu->playRandom == BOOL3_TRUE) {
+				if (Front_Menu_ShouldRandomPlay()) {
+
+					const uint32 overlayCount = Front_Menu_GetOverlayCount(menu);
+					if (overlayCount > 0) {
+
+						MenuOverlay* overlay = menu->overlays;
+						const uint32 index = Gods98::Maths_Rand() % overlayCount;
+						for (uint32 i = 0; i < index; i++) {
+							overlay = overlay->previous;
+						}
+
+						if (Gods98::Flic_Setup(overlay->filename, &frontGlobs.overlayImageOrFlic.flic, Gods98::FlicUserFlags::FLICDISK)) {
+							SFX_AddToQueue(overlay->sfxType, Gods98::SoundMode::Once);
+							frontGlobs.overlayPosition = overlay->position;
+							frontGlobs.overlayStartTime = Gods98::Main_GetTime();
+							frontGlobs.overlayCurrTime = frontGlobs.overlayStartTime;
+						}
+
+					}
+				}
+			}
+			else {
+				if (g_SaveMenu_INDEX_004a2f50 >= 0) {
+
+					MenuOverlay* overlay = menu->overlays;
+					const sint32 index = (4 - g_SaveMenu_INDEX_004a2f50);
+					for (sint32 i = 0; i < index; i++) {
+						overlay = overlay->previous;
+					}
+
+					if (Gods98::Flic_Setup(overlay->filename, &frontGlobs.overlayImageOrFlic.flic, Gods98::FlicUserFlags::FLICDISK)) {
+						SFX_AddToQueue(overlay->sfxType, Gods98::SoundMode::Once);
+						frontGlobs.overlayPosition = overlay->position;
+						frontGlobs.overlayStartTime = Gods98::Main_GetTime();
+						frontGlobs.overlayCurrTime = frontGlobs.overlayStartTime;
+					}
+					g_SaveMenu_INT_004a2f4c = -1;
+					g_SaveMenu_INDEX_004a2f50 = -1;
+					g_FrontBool_004dc8c0 = true;
+				}
+				else if (g_SaveMenu_INT_004a2f4c >= 0) {
+					g_SaveMenu_INDEX_004a2f50 = g_SaveMenu_INT_004a2f4c;
+					g_FrontMenu_004dc8c8 = nullptr;
+				}
+			}
+		}
+	}
+	else {
+		const Area2F destArea = {
+			(real32)frontGlobs.overlayPosition.x,
+			(real32)frontGlobs.overlayPosition.y,
+			(real32)Gods98::Flic_GetWidth(frontGlobs.overlayImageOrFlic.flic),
+			(real32)Gods98::Flic_GetHeight(frontGlobs.overlayImageOrFlic.flic),
+		};
+
+		const uint32 time = Gods98::Main_GetTime();
+		
+		const uint32 oldTime = (uint32)((real32)(frontGlobs.overlayCurrTime - frontGlobs.overlayStartTime) / 1000.0f * STANDARD_FRAMERATE);
+		uint32 newTime = (uint32)((real32)(time - frontGlobs.overlayStartTime) / 1000.0f * STANDARD_FRAMERATE);
+
+		if (g_FrontBool_004dc8c0) {
+			/// TODO: Flic_GetFramePosition has lots of extra logic that may not
+			///       be expected in-place of getting the currentFrame field.
+			//if (frontGlobs.overlayImageOrFlic.flic->currentframe >= (sint32)Gods98::Flic_GetFrameCount(frontGlobs.overlayImageOrFlic.flic)) {
+			if (Gods98::Flic_GetCurrentFrame(frontGlobs.overlayImageOrFlic.flic) >= (sint32)Gods98::Flic_GetFrameCount(frontGlobs.overlayImageOrFlic.flic)) {
+			//if (Gods98::Flic_GetFramePosition(frontGlobs.overlayImageOrFlic.flic) >= Gods98::Flic_GetFrameCount(frontGlobs.overlayImageOrFlic.flic)) {
+				newTime = oldTime;
+				g_SaveMenu_INDEX_004a2f50 = -2;
+			}
+		}
+
+		frontGlobs.overlayCurrTime = time;
+		if (!Gods98::Flic_Animate(frontGlobs.overlayImageOrFlic.flic, &destArea, (newTime != oldTime), false)) {
+			Gods98::Flic_Close(frontGlobs.overlayImageOrFlic.flic);
+			Gods98::Mem_Free(frontGlobs.overlayImageOrFlic.flic);
+			frontGlobs.overlayImageOrFlic.data = nullptr;
+			frontGlobs.overlayStartTime = 0;
+			frontGlobs.overlayCurrTime = 0;
+			Gods98::Sound3D_Stream_Stop(false);
+		}
+		if (g_FrontBool_004dc8c0 && Gods98::mslb()) {
+			g_SaveMenu_INDEX_004a2f50 = -2;
+			g_FrontBool_004dc8c0 = false;
+		}
+	}
+}
 
 
 // <LegoRR.exe @00412380>
@@ -910,25 +1697,216 @@ void __cdecl LegoRR::Front_MenuItem_DrawSelectItem(sint32 x, sint32 y, Gods98::F
 			((y + Gods98::Image_GetHeight(image)) > 0 && y < 480))
 		{
 			Point2F destPos = { (real32)x, (real32)y };
-			Gods98::Image_DisplayScaled(image, nullptr, &destPos, nullptr);
+			Gods98::Image_Display(image, &destPos);
 		}
 	}
 }
 
 // <LegoRR.exe @00412420>
-//void __cdecl LegoRR::Front_MenuItem_DrawSaveImage(Menu* menu, sint32 selIndex, MenuItem_SelectData* selectData, bool32 bigSize);
+void __cdecl LegoRR::Front_MenuItem_DrawSaveImage(Menu* menu, sint32 selIndex, MenuItem_SelectData* selectData, bool32 bigSize)
+{
+	if ((menu == frontGlobs.mainMenuSet->menus[3]) || (menu == frontGlobs.saveMenuSet->menus[0])) {
+		Gods98::Image* image = g_SaveSlotImages_TABLE[selIndex];
+		if (image != nullptr) {
+
+			/// FIXME: Runtime config value lookup! Store this somewhere once and be done.
+
+			/// SANITY: Although we only need 2 parts, split up to 3 so that the original logic can still correctly parse the y position.
+			char* stringParts[3];// [5] ;
+			char buff[8];
+
+			std::sprintf(buff, "pos%d", (selIndex + 1)); // +1 since save numbers aren't 0-indexed.
+			char* str = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, "Menu::SaveImage", buff));
+			Gods98::Util_TokeniseSafe(str, stringParts, "|", _countof(stringParts));
+
+			Point2F destPos = {
+				(real32)std::atoi(stringParts[0]),
+				(real32)std::atoi(stringParts[1]),
+			};
+
+			/// FIX APPLY: Free config string after done with tokenise.
+			Gods98::Mem_Free(str);
+
+			Point2F destSize = {
+				(real32)Config_GetIntValue(legoGlobs.config, Config_ID(legoGlobs.gameName, "Menu::SaveImage", "Width")),
+				(real32)Config_GetIntValue(legoGlobs.config, Config_ID(legoGlobs.gameName, "Menu::SaveImage", "Height")),
+			};
+
+			if (bigSize) {
+				const real32 widthDiff  = ((real32)frontGlobs.saveImageBigSize.width  - destSize.x);
+				const real32 heightDiff = ((real32)frontGlobs.saveImageBigSize.height - destSize.y);
+
+				/// TODO: Why is this only scaling at half the determined size??
+				destPos.x -= widthDiff  * 0.25f;
+				destPos.y -= heightDiff * 0.25f;
+				destSize.x += widthDiff  * 0.5f;
+				destSize.y += heightDiff * 0.5f;
+			}
+
+			Gods98::Image_DisplayScaled(image, nullptr, &destPos, &destSize);
+		}
+	}
+}
 
 // <LegoRR.exe @00412680>
-//void __cdecl LegoRR::Front_Menu_DrawLoadSaveText(Menu** pMenu, IN OUT bool32* currBool, IN OUT bool32* nextBool);
+void __cdecl LegoRR::Front_Menu_DrawLoadSaveText(Menu** pMenu, IN OUT Menu** currMenu, IN OUT Menu** nextMenu)
+{
+	Menu* menu = *pMenu;
+
+	// Is this the Load Game or Save Game menu?
+	if ((menu == frontGlobs.mainMenuSet->menus[3]) || (menu == frontGlobs.saveMenuSet->menus[0])) {
+		// Is this the Load Game menu?
+		if ((menu == frontGlobs.saveMenuSet->menus[0]) && g_SaveMenu_INT_004a2f4c >= 0) {
+
+			// Are no levels complete?
+			if (g_SaveSlotCompletionPercents[g_SaveMenu_INT_004a2f4c] == 0) {
+				frontGlobs.saveBool_548 = false;
+				menu->closed = true;
+			}
+			else {
+				g_FrontBool_004dc8bc = true;
+			}
+		}
+
+		Gods98::TextWindow_Clear(frontGlobs.saveTextWnd->textWindow);
+		Gods98::TextWindow_PrintF(frontGlobs.saveTextWnd->textWindow, "\n");
+
+		if (g_SaveMenu_INDEX_004a2f50 == -2 || g_SaveMenu_INDEX_004a2f50 == -1) {
+
+			if (g_SaveMenu_INDEX_004a2f50 == -2) {
+				if (g_FrontMenu_004dc8c8 != nullptr) {
+					*currMenu = g_FrontMenu_004dc8c8;
+					g_FrontMenu_004dc8c8 = nullptr;
+				}
+				g_SaveMenu_INDEX_004a2f48 = -1;
+				g_SaveMenu_INDEX_004a2f54 = -1;
+			}
+
+			*nextMenu = nullptr;
+			g_SaveMenu_INT_004a2f4c = -1;
+
+			const char* format = frontGlobs.saveTextWnd->LoadText;
+			if (menu != frontGlobs.mainMenuSet->menus[3]) {
+				format = frontGlobs.saveTextWnd->SaveText;
+			}
+			Gods98::TextWindow_PrintF(frontGlobs.saveTextWnd->textWindow, format);
+		}
+		else {
+			g_FrontMenu_004dc8c8 = *currMenu;
+			*currMenu = *nextMenu;
+			g_SaveMenu_INDEX_004a2f54 = g_SaveMenu_INDEX_004a2f50;
+		}
+
+		if (g_SaveMenu_INDEX_004a2f54 >= 0) {
+			Gods98::TextWindow_Clear(frontGlobs.saveTextWnd->textWindow);
+			/* MainMenuFull::Menu4 "Load_Level_Save" */
+			if (menu == frontGlobs.mainMenuSet->menus[3]) {
+				/// TODO: This extra '0' at the end of the PrintF is in the Vanilla function call.
+				///       Should it be removed?
+				Gods98::TextWindow_PrintF(frontGlobs.saveTextWnd->textWindow, frontGlobs.saveTextWnd->LoadSelText,
+								  (g_SaveMenu_INDEX_004a2f54 + 1), 0);
+			}
+		}
+		else if (g_SaveMenu_INDEX_004a2f48 >= 0) {
+			// Print score.
+
+			/// TODO: Consider not casting score to a float at all, it would be cleaner.
+			real32 score = (real32)g_SaveSlotCompletionPercents[g_SaveMenu_INDEX_004a2f48];
+			if (score > 100.0f) score = 100.0f;
+
+			Gods98::TextWindow_PrintF(frontGlobs.saveTextWnd->textWindow, "\n");
+			Gods98::TextWindow_PrintF(frontGlobs.saveTextWnd->textWindow, frontGlobs.saveTextWnd->SlotText, (sint32)score);
+		}
+
+		/// TODO: This null check is pointless, because other functions using the text window don't check for null.
+		if (frontGlobs.saveTextWnd->textWindow != nullptr) {
+			Gods98::TextWindow_Update(frontGlobs.saveTextWnd->textWindow, 0, 1.0f, nullptr);
+		}
+	}
+
+	// Update Load Game save slot text strings.
+	if (menu == frontGlobs.mainMenuSet->menus[3]) {
+		for (sint32 i = 0; i < menu->itemCount; i++) {
+			MenuItem* item = menu->items[i];
+
+			if (item->itemType == MenuItem_Type_Select) {
+				MenuItem_SelectData* select = item->itemData.select;
+
+				for (sint32 j = 0; j < select->selItemCount; j++) {
+					std::sprintf(select->selItemList[j].banner, "%s %d", frontGlobs.langLoadGame, (j + 1));
+				}
+			}
+		}
+	}
+}
 
 // <LegoRR.exe @00412900>
-//void __cdecl LegoRR::Front_MenuItem_DrawSelectTextWindow(Menu** pMenu);
+void __cdecl LegoRR::Front_MenuItem_DrawSelectTextWindow(Menu** pMenu)
+{
+	Menu* menu = *pMenu;
+	MenuTextWindow* menuWnd = frontGlobs.saveLevelWnd;
+
+	// Are we in the Missions or Tutorial Missions select menu?
+	if ((menu == frontGlobs.mainMenuSet->menus[1]) || (menu == frontGlobs.mainMenuSet->menus[2])) {
+		if (menuWnd->PanelImage != nullptr) {
+			const Point2F destPos = {
+				menuWnd->PanelArea.x,
+				menuWnd->PanelArea.y,
+			};
+			const Point2F destSize = {
+				menuWnd->PanelArea.width,
+				menuWnd->PanelArea.height,
+			};
+			Gods98::Image_DisplayScaled(menuWnd->PanelImage, nullptr, &destPos, &destSize);
+		}
+
+		if (menuWnd->textWindow != nullptr) {
+			Gods98::TextWindow_Update(menuWnd->textWindow, 0, 1.0f, nullptr);
+
+			Gods98::TextWindow_Clear(menuWnd->textWindow);
+			Gods98::TextWindow_PrintF(menuWnd->textWindow, "\n");
+
+			// Are we in the Missions select menu?
+			// Or are we in the Tutorial Missions select menu?
+			if ((menu == frontGlobs.mainMenuSet->menus[1]) && (menuWnd->LevelText != nullptr)) {
+				Gods98::TextWindow_PrintF(menuWnd->textWindow, menuWnd->LevelText);
+				Gods98::TextWindow_PrintF(menuWnd->textWindow, "\n");
+			}
+			else if ((menu == frontGlobs.mainMenuSet->menus[2]) && (menuWnd->TutorialText != nullptr)) {
+				Gods98::TextWindow_PrintF(menuWnd->textWindow, menuWnd->TutorialText);
+				Gods98::TextWindow_PrintF(menuWnd->textWindow, "\n");
+			}
+
+			g_FrontBool_004dc8c4 = true;
+		}
+	}
+}
 
 // <LegoRR.exe @00412a20>
-//void __cdecl LegoRR::Front_Menu_DrawMenuImage(Menu* menu, bool32 light);
+void __cdecl LegoRR::Front_Menu_DrawMenuImage(Menu* menu, bool32 light)
+{
+	Gods98::Image* image = (light ? menu->menuImage : menu->menuImageDark);
+	if (image != nullptr) {
+
+		if (menu->flags & MENU_FLAG_HASPOSITION) {
+			Gods98::Image_Display(image, &menu->currPosition);
+		}
+		else {
+			// HARDCODED SCREEN RESOLUTION!!
+			const Area2F srcArea = {
+				-(real32)frontGlobs.scrollOffset.x,
+				-(real32)frontGlobs.scrollOffset.y,
+				640.0f,
+				480.0f,
+			};
+			const Point2F destPos = { 0.0f, 0.0f };
+			Gods98::Image_DisplayScaled(image, &srcArea, &destPos, nullptr);
+		}
+	}
+}
 
 // <LegoRR.exe @00412b30>
-LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT bool32* optout_bool)
+LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT bool32* menuTransition)
 {
 	/// REMOVE: This statement has no effect.
 	//Front_Save_GetCurrentSaveData();
@@ -942,16 +1920,18 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 	g_SaveMenu_INT_004a2f4c = -1;
 	menu->itemFocus = -1;
 
-	if (optout_bool != nullptr) {
-		*optout_bool = false;
+	if (menuTransition != nullptr) {
+		*menuTransition = false;
 	}
 
 	Menu* currMenu = menu;
 	Menu* nextMenu = menu;
-	if (!g_FrontBool_004dc8bc && !g_FrontBool_004dc8c8) {
+	if (!g_FrontBool_004dc8bc && g_FrontMenu_004dc8c8 == nullptr) {
 		currMenu = Front_Menu_UpdateMenuItemsInput(elapsed, menu);
 	}
-	if (menu == frontGlobs.saveMenuSet->menus[0] && (g_SaveMenu_INT_004a2f4c > -1) && (g_SaveMenu_INT_004a2f58 < 0)) {
+
+	// Are we in the Save Game menu?
+	if (menu == frontGlobs.saveMenuSet->menus[0] && (g_SaveMenu_INT_004a2f4c >= 0) && (g_SaveMenu_INT_004a2f58 < 0)) {
 		menu->closed = false;
 		currMenu->closed = false;
 	}
@@ -982,7 +1962,7 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 	}
 	// Something tells me these arguments aren't actually bools, and are really menus.
 	// These arguments are only checked for zero/non-zero.
-	Front_Menu_DrawLoadSaveText(&menu, (bool32*)&currMenu, (bool32*)&nextMenu);
+	Front_Menu_DrawLoadSaveText(&menu, &currMenu,&nextMenu);
 
 	const sint32 xPos = menu->position.x;
 	const sint32 yPos = menu->position.y;
@@ -1074,7 +2054,7 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 				{
 					MenuItem_SelectData* select = item->itemData.select;
 
-					const uint32 selIndex = Front_MenuItem_Select_CollisionCheck_FUN_00411290(menu, item, select);
+					const uint32 selIndex = Front_MenuItem_Select_TestStringCollision(menu, item, select);
 					g_SaveMenu_INDEX_004a2f48 = selIndex;
 
 					for (sint32 i = 0; i < select->scrollCount; i++) {
@@ -1257,7 +2237,7 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 						static_cast<real32>(item->x1 + menu->position.x),
 						static_cast<real32>(item->y1 + menu->position.y),
 					};
-					Gods98::Image_DisplayScaled(item->imageHi, nullptr, &destPos, nullptr);
+					Gods98::Image_Display(item->imageHi, &destPos);
 				}
 				ToolTip_Activate(item->toolTipType);
 			}
@@ -1267,7 +2247,7 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 						static_cast<real32>(item->x1 + menu->position.x),
 						static_cast<real32>(item->y1 + menu->position.y),
 					};
-					Gods98::Image_DisplayScaled(item->imageLo, nullptr, &destPos, nullptr);
+					Gods98::Image_Display(item->imageLo, &destPos);
 				}
 			}
 		}
@@ -1326,13 +2306,13 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 		if (frontGlobs.rockWipeTimer <= halfAnimFrames && frontGlobs.rockWipeTimer + delta >= halfAnimFrames) {
 			/// FIXME: It seems menu transition logic requires the rockWipe animation to exist.
 			///        This should be changed so transitions are instant otherwise.
-			if (optout_bool != nullptr) {
-				*optout_bool = true;
+			if (menuTransition != nullptr) {
+				*menuTransition = true;
 			}
 			g_SaveMenu_INDEX_004a2f50 = -1;
 			g_SaveMenu_INT_004a2f4c = -1;
-			g_FrontBool_004dc8c8 = 0;
-			g_FrontBool_004dc8c0 = 0;
+			g_FrontMenu_004dc8c8 = nullptr;
+			g_FrontBool_004dc8c0 = false;
 			if (frontGlobs.overlayImageOrFlic.data != nullptr) {
 				frontGlobs.overlayStartTime = 0;
 				frontGlobs.overlayCurrTime = 0;
@@ -1409,7 +2389,7 @@ void __cdecl LegoRR::Front_LoadSaveSlotImages(void)
 
 
 	// Functionally this entire block does nothing, it was likely some debug check at one point.
-	for (uint32 i = 0; i < _countof(g_SaveSlotPtrs_TABLE); i++) {
+	for (uint32 i = 0; i < _countof(g_SaveSlotCompletionPercents); i++) {
 
 		// For some reason the first field is zeroed out manually, this may actally be a substruct of size 0xb4...
 		SaveData saveData;
@@ -1422,11 +2402,13 @@ void __cdecl LegoRR::Front_LoadSaveSlotImages(void)
 
 		Front_Save_ReadSaveFile(i, &saveData, true);
 
-		g_SaveSlotPtrs_TABLE[i] = 0;
+		// Assign completion percentage based on number of completed levels.
+		g_SaveSlotCompletionPercents[i] = 0;
 		// Hardcoded tutorial count (8).
 		for (uint32 j = 0; j < (saveData.missionsCount - 8); j++) {
 			real32 scorePercent = saveData.missionsTable[8 + j].reward.items[Reward_Score].percentFloat;
-			g_SaveSlotPtrs_TABLE[i] += (scorePercent != 0.0f ? 4 : 0); // Yeah... no clue what's with the 4 -or- 0.
+			// HARDCODED LEVEL COUNT! This adds 4% for every completed level. So it's expected that there are 25 missions.
+			g_SaveSlotCompletionPercents[i] += (scorePercent != 0.0f ? 4 : 0);
 		}
 
 		// Free the missions table, as we only needed to load it for this loop.
@@ -1447,10 +2429,124 @@ void __cdecl LegoRR::Front_FreeSaveSlotImages(void)
 }
 
 // <LegoRR.exe @00413ab0>
-//void __cdecl LegoRR::Front_ScreenMenuLoop(Menu* menu);
+void __cdecl LegoRR::Front_ScreenMenuLoop(Menu* menu)
+{
+	Front_LoadSaveSlotImages();
+
+	g_FrontMenu_004dc8c8 = nullptr;
+	g_SaveMenu_INDEX_004a2f50 = -1;
+	g_SaveMenu_INT_004a2f4c = -1;
+	g_SaveMenu_INDEX_004a2f54 = -1;
+	g_SaveMenu_INT_004a2f58 = -1;
+	g_SaveMenu_OutNumber = -1;
+	g_FrontBool_004dc8c0 = false;
+	g_FrontBool_004dc8bc = false;
+	g_FrontBool_004dc8c4 = false;
+	frontGlobs.isLoadModeBool_544 = true;
+	frontGlobs.saveBool_548 = true;
+	frontGlobs.overlayImageOrFlic.data = nullptr;
+
+
+	uint32 lastTime = Gods98::Main_GetTime();
+	real32 elapsed = 1.0f;
+	bool menuChanged = false;
+	bool32 menuTransitioning = false;
+
+	Menu* nextMenu = menu; // This will always be assigned on the first loop, but assign here for clarity.
+
+	while (!menu->closed) {
+
+		if (menuChanged) {
+			Front_Menu_Update(elapsed, menu, &menuTransitioning);
+		}
+		else {
+			nextMenu = Front_Menu_Update(elapsed, menu, nullptr);
+		}
+		if ((menu == frontGlobs.mainMenuSet->menus[0]) && (nextMenu != menu)) {
+			frontGlobs.selectLoadSaveIndex = -1;
+			Front_Callback_SelectLoadSave(elapsed, -1);
+		}
+		Front_Menu_UpdateMousePosition(menu);
+		ToolTip_Update(Gods98::msx(), Gods98::msy(), elapsed);
+		SFX_Update(elapsed);
+
+		Gods98::Main_LoopUpdate(false);
+
+		/// TODO: Change this to handle fixed framerates like Main does.
+		const uint32 currTime = Gods98::Main_GetTime();
+		const uint32 timeDelta = currTime - lastTime;
+
+		lastTime = currTime;
+		elapsed = (real32)timeDelta / 1000.0f * STANDARD_FRAMERATE; // Milliseconds to standard units.
+
+		if (!menuChanged && (menu != nextMenu)) {
+			Front_RockWipe_Play();
+			menuChanged = true;
+
+			// If we failed to load the RockWipe animation, then transition instantly.
+			if (frontGlobs.rockWipeAnim == nullptr) {
+				menuTransitioning = true;
+			}
+		}
+
+		if (menuChanged && menuTransitioning) {
+
+			// End the current overlay if we're not in a similar menu. Same background means we keep the overlay running.
+			// You can see this for yourself by waiting for an overlay to run in the main menu, and then pressing QUIT GAME.
+			if ((menu->menuImage != nextMenu->menuImage) && frontGlobs.overlayImageOrFlic.flic != nullptr) {
+				Gods98::Flic_Close(frontGlobs.overlayImageOrFlic.flic);
+				Gods98::Mem_Free(frontGlobs.overlayImageOrFlic.flic);
+				Gods98::Sound3D_Stream_Stop(false);
+				frontGlobs.overlayImageOrFlic.flic = nullptr;
+				frontGlobs.overlayStartTime = 0;
+				frontGlobs.overlayCurrTime = 0;
+			}
+
+			frontGlobs.scrollOffset.y = 0;
+			frontGlobs.scrollOffset.x = 0;
+			menuChanged = false;
+			menuTransitioning = false;
+			menu = nextMenu;
+		}
+	}
+
+	Front_FreeSaveSlotImages();
+
+	if ((nextMenu == frontGlobs.saveMenuSet->menus[0]) && g_SaveMenu_OutNumber >= 0) {
+		RewardLevel* rewards = GetRewardLevel();
+		if (rewards != nullptr && rewards->saveHasCapture) {
+
+			/// FIXME: Runtime config value lookup! Store this somewhere once and be done.
+
+			char buff[128];
+
+			/// FIX APPLY: Remove yet another memory leak from using Config_GetStringValue and no Mem_Free...
+			const char* saveImagePath = Gods98::Config_GetTempStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, "Menu::SaveImage", "Path"));
+			std::sprintf(buff, "%s\\%d.dat", saveImagePath, g_SaveMenu_OutNumber);
+			Gods98::Image_SaveBMP(&rewards->saveCaptureImage, buff);
+		}
+	}
+
+	if (frontGlobs.overlayImageOrFlic.flic != nullptr) {
+		Gods98::Flic_Close(frontGlobs.overlayImageOrFlic.flic);
+		Gods98::Mem_Free(frontGlobs.overlayImageOrFlic.flic);
+		Gods98::Sound3D_Stream_Stop(false);
+		frontGlobs.overlayImageOrFlic.flic = nullptr;
+		frontGlobs.overlayStartTime = 0;
+		frontGlobs.overlayCurrTime = 0;
+	}
+
+	Front_RockWipe_Stop();
+}
 
 // <LegoRR.exe @00413d50>
-//void __cdecl LegoRR::Front_RunScreenMenu(MenuSet* menuSet, uint32 menuIndex);
+void __cdecl LegoRR::Front_RunScreenMenu(MenuSet* menuSet, uint32 menuIndex)
+{
+	for (uint32 i = 0; i < menuSet->menuCount; i++) {
+		menuSet->menus[i]->closed = false;
+	}
+	Front_ScreenMenuLoop(menuSet->menus[menuIndex]);
+}
 
 // <LegoRR.exe @00413d90>
 LegoRR::MenuItem_Type __cdecl LegoRR::Front_MenuItem_ParseTypeString(const char* itemTypeName)
@@ -1961,7 +3057,54 @@ bool32 __cdecl LegoRR::Front_Options_Update(real32 elapsed, Menu_ModalType modal
 
 // levelKey is either "StartLevel" or "TutorialStartLevel".
 // <LegoRR.exe @004153e0>
-//bool32 __cdecl LegoRR::Front_LoadLevelSet(const Gods98::Config* config, IN OUT LevelSet* levelSet, const char* levelKey);
+bool32 __cdecl LegoRR::Front_LoadLevelSet(const Gods98::Config* config, IN OUT LevelSet* levelSet, const char* levelKey)
+{
+	/// FIX APPLY: Remove yet another memory leak from using Config_GetStringValue and no Mem_Free...
+	const char* nextName = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, "Main", levelKey));
+	if (nextName == nullptr)
+		return false;
+
+	sint32 count = 0;
+	do {
+		count++;
+		nextName = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, nextName, "NextLevel"));
+	} while (nextName != nullptr);
+
+
+	levelSet->count = count;
+	levelSet->idNames = (char**)Gods98::Mem_Alloc(count * sizeof(char*));
+	levelSet->langNames = (char**)Gods98::Mem_Alloc(count * sizeof(char*));
+	levelSet->levels = (LevelLink**)Gods98::Mem_Alloc(count * sizeof(LevelLink*));
+	levelSet->visitedList = (bool32*)Gods98::Mem_Alloc(count * sizeof(bool32));
+
+	std::memset(levelSet->levels, 0, (count * sizeof(LevelLink*)));
+	std::memset(levelSet->visitedList, 0, (count * sizeof(bool32)));
+
+
+	if (levelSet->idNames != nullptr && levelSet->langNames != nullptr) {
+
+		char* nextNameStr = Gods98::Config_GetStringValue(config, Config_ID(legoGlobs.gameName, "Main", levelKey));
+		for (sint32 i = 0; i < levelSet->count; i++) {
+			levelSet->idNames[i] = nextNameStr;
+
+			levelSet->langNames[i] = Gods98::Config_GetStringValue(config, Config_ID(legoGlobs.gameName, nextNameStr, "FullName"));
+
+			if (levelSet->langNames[i] == nullptr) {
+				// Just use the id name as the language name.
+				levelSet->langNames[i] = Front_Util_StrCpy(levelSet->idNames[i]);
+			}
+			else {
+				// Don't use Front_Util_ReplaceTextSpaces because that returns a temporary buffer.
+				Front_Util_StringReplaceChar(levelSet->langNames[i], '_', ' ');
+			}
+
+			nextNameStr = Gods98::Config_GetStringValue(config, Config_ID(legoGlobs.gameName, nextNameStr, "NextLevel"));
+		}
+
+		return true;
+	}
+	return false;
+}
 
 // Plays an alread-loaded Movie_t from the G98CMovie C wrapper API.
 // Allows terminating the movie playback during runtime with isSkippable.
@@ -2143,13 +3286,13 @@ void __cdecl LegoRR::Front_LoadLevels(MenuSet* unused_mainMenuFull)
 
 	Front_Save_LoadAllSaveFiles();
 
-	/* 4 ->&frontGlobs.triggerCredits[4] ->&frontGlobs.selectMissionIndex */
+	// &frontGlobs.triggerCredits + 4 -> &frontGlobs.selectMissionIndex
 	MainMenuFull_AddMissionsDisplay(4, frontGlobs.startMissionLink, &frontGlobs.missionLevels,
 									frontGlobs.mainMenuSet->menus[menuIDLevels],
 									Front_Save_GetCurrentSaveData(), nullptr,
 									Front_Callback_SelectMissionItem);
 
-	/* 5 ->&frontGlobs.triggerCredits[5] ->&frontGlobs.selectTutorialIndex */
+	// &frontGlobs.triggerCredits + 5 -> &frontGlobs.selectTutorialIndex
 	MainMenuFull_AddMissionsDisplay(5, frontGlobs.startTutorialLink, &frontGlobs.tutorialLevels,
 									frontGlobs.mainMenuSet->menus[menuIDTuto],
 									Front_Save_GetCurrentSaveData(), nullptr,
@@ -2164,7 +3307,89 @@ void __cdecl LegoRR::Front_ResetSaveNumber(void)
 }
 
 // <LegoRR.exe @00415c30>
-//void __cdecl LegoRR::Front_LoadMenuTextWindow(const Gods98::Config* config, const char* gameName, MenuTextWindow* menuWnd);
+void __cdecl LegoRR::Front_LoadMenuTextWindow(const Gods98::Config* config, const char* configPath, MenuTextWindow* menuWnd)
+{
+	const char* str;
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, configPath, "Load"));
+	if (str != nullptr) {
+		std::strcpy(menuWnd->LoadText, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, configPath, "Save"));
+	if (str != nullptr) {
+		std::strcpy(menuWnd->SaveText, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, configPath, "Slot"));
+	if (str != nullptr) {
+		std::strcpy(menuWnd->SlotText, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, configPath, "SaveSel"));
+	if (str != nullptr) {
+		std::strcpy(menuWnd->SaveSelText, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, configPath, "LoadSel"));
+	if (str != nullptr) {
+		std::strcpy(menuWnd->LoadSelText, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, configPath, "Level"));
+	if (str != nullptr) {
+		std::strcpy(menuWnd->LevelText, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, configPath, "Tutorial"));
+	if (str != nullptr) {
+		std::strcpy(menuWnd->TutorialText, Front_Util_ReplaceTextSpaces(str));
+	}
+
+
+	char* value;
+
+	value = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, configPath, "Window"));
+	if (value != nullptr) {
+		char* stringParts[5];
+		const uint32 numParts = Gods98::Util_TokeniseSafe(value, stringParts, "|", _countof(stringParts));
+		if (numParts == 4) {
+			menuWnd->WindowArea = Area2F {
+				(real32)std::atoi(stringParts[0]),
+				(real32)std::atoi(stringParts[1]),
+				(real32)std::atoi(stringParts[2]),
+				(real32)std::atoi(stringParts[3]),
+			};
+			menuWnd->textWindow = Gods98::TextWindow_Create(legoGlobs.fontStandard, &menuWnd->WindowArea, 0x200);
+		}
+
+		/// FIX APPLY: Free memory allocated by Config_GetStringValue.
+		Gods98::Mem_Free(value);
+	}
+
+	value = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, configPath, "Panel"));
+	if (value != nullptr) {
+		char* stringParts[6];
+		const uint32 numParts = Gods98::Util_TokeniseSafe(value, stringParts, "|", _countof(stringParts));
+		if (numParts == 5 && stringParts[0] != nullptr) {
+
+			menuWnd->PanelImage = Gods98::Image_LoadBMP(stringParts[0]);
+			if (menuWnd->PanelImage != nullptr) {
+				Gods98::Image_SetupTransBlack(menuWnd->PanelImage);
+
+				menuWnd->PanelArea = Area2F {
+					(real32)std::atoi(stringParts[1]),
+					(real32)std::atoi(stringParts[2]),
+					(real32)std::atoi(stringParts[3]),
+					(real32)std::atoi(stringParts[4]),
+				};
+			}
+		}
+
+		/// FIX APPLY: Free memory allocated by Config_GetStringValue.
+		Gods98::Mem_Free(value);
+	}
+}
 
 // <LegoRR.exe @00416080>
 bool32 __cdecl LegoRR::Front_LevelSelect_PlayLevelNameSFX(sint32 levelNumber)
@@ -2188,7 +3413,148 @@ bool32 __cdecl LegoRR::Front_LevelSelect_PlayTutoLevelNameSFX(sint32 levelNumber
 
 // Load MenuSets and LevelSets
 // <LegoRR.exe @00416120>
-//void __cdecl LegoRR::Front_Initialise(const Gods98::Config* config);
+void __cdecl LegoRR::Front_Initialise(const Gods98::Config* config)
+{
+	// Load RockWipe animation.
+	/// REFACTOR: Use Config_GetTempStringValue, because the string doesn't need to be modified.
+	const char* rockWipeFileName = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, "Menu", "MenuWipe"));
+	if (rockWipeFileName == nullptr) {
+		// If the property isn't found, check if its listed with the reduce prefix: '!'
+		if (!Gods98::Graphics_IsReduceAnimation()) {
+			rockWipeFileName = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, "Menu", "!MenuWipe"));
+		}
+	}
+	/// FIXME: Okay... so don't use a filename that STARTS with "null"...?
+	if (rockWipeFileName != nullptr && ::_strnicmp(rockWipeFileName, "Null", 4) != 0) {
+
+		frontGlobs.rockWipeAnim = Gods98::Container_Load(nullptr, rockWipeFileName, "LWS", true);
+	}
+
+
+	// Load text windows.
+	frontGlobs.saveTextWnd = (MenuTextWindow*)Gods98::Mem_Alloc(sizeof(MenuTextWindow));
+	std::memset(frontGlobs.saveTextWnd, 0, sizeof(MenuTextWindow));
+	Front_LoadMenuTextWindow(config, "Menu::SaveText", frontGlobs.saveTextWnd);
+
+	frontGlobs.saveLevelWnd = (MenuTextWindow*)Gods98::Mem_Alloc(sizeof(MenuTextWindow));
+	std::memset(frontGlobs.saveLevelWnd, 0, sizeof(MenuTextWindow));
+	Front_LoadMenuTextWindow(config, "Menu::LevelText", frontGlobs.saveLevelWnd);
+
+
+	// Load language strings.
+	/// REFACTOR: Use Config_GetTempStringValue, because the string doesn't need to be modified.
+	const char* str;
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, "Menu", "Save_Game"));
+	if (str != nullptr) {
+		std::strcpy(frontGlobs.langSaveGame, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, "Menu", "Load_Game"));
+	if (str != nullptr) {
+		std::strcpy(frontGlobs.langLoadGame, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, "Menu::Overwrite", "Title"));
+	if (str != nullptr) {
+		std::strcpy(frontGlobs.langOverwriteTitle, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, "Menu::Overwrite", "Text"));
+	if (str != nullptr) {
+		std::strcpy(frontGlobs.langOverwriteMessage, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, "Menu::Overwrite", "Ok"));
+	if (str != nullptr) {
+		std::strcpy(frontGlobs.langOverwriteOK, Front_Util_ReplaceTextSpaces(str));
+	}
+
+	str = Gods98::Config_GetTempStringValue(config, Config_ID(legoGlobs.gameName, "Menu::Overwrite", "Cancel"));
+	if (str != nullptr) {
+		std::strcpy(frontGlobs.langOverwriteCancel, Front_Util_ReplaceTextSpaces(str));
+	}
+
+
+	frontGlobs.versionFont = legoGlobs.fontBriefingHi;
+	frontGlobs.versionString = Gods98::Config_GetStringValue(config, Config_ID(legoGlobs.gameName, "Main", "Version"));
+	frontGlobs.strDefaultLevelBMPS = Gods98::Config_GetStringValue(config, Config_ID(legoGlobs.gameName, "Menu", "DefaultLevelBMPS"));
+	
+	frontGlobs.rockWipeLight = Gods98::Container_MakeLight(legoGlobs.rootCont, Gods98::Container_Light::Directional, 0.8f, 0.8f, 0.8f);
+	Gods98::Container_Hide(frontGlobs.rockWipeLight, true);
+	
+
+	frontGlobs.mainMenuSet = Front_LoadMenuSet(config, "MainMenuFull",
+											   &frontGlobs.triggerCredits, Front_Callback_TriggerPlayCredits,	// "Main" Trigger "Credits"
+											   &frontGlobs.triggerQuitApp, nullptr,								// "ARE_YOU_SURE?" Trigger "Yes"
+											   -1); // end
+
+	frontGlobs.saveMenuSet = Front_LoadMenuSet(config, "SaveMenu",
+											   &frontGlobs.triggerBackSave, Front_Callback_TriggerBackSave,		// "Load_Level_Save" Trigger "Back"
+											   -1); // end
+
+
+	Front_LoadLevelSet(config, &frontGlobs.missionLevels, "StartLevel");
+	Front_LoadLevelSet(config, &frontGlobs.tutorialLevels, "TutorialStartLevel");
+
+	/// NOTE: Front_Levels_ResetVisited CANNOT be called between
+	///       Front_LevelSelect_LoadLevelSet and Front_LevelSelect_LoadLevels.
+	Front_LoadLevels(frontGlobs.mainMenuSet);
+
+
+	frontGlobs.pausedMenuSet = Front_LoadMenuSet(config, "PausedMenu",
+												 &frontGlobs.triggerContinueMission, nullptr,								// "Paused" Trigger "Continue_Game"
+												 &frontGlobs.sliderGameSpeed, Front_Callback_SliderGameSpeed,				// "Options" Trigger "Game_Speed"
+												 &frontGlobs.sliderSFXVolume, Front_Callback_SliderSoundVolume,				// "Options" Trigger "SFX_Volume"
+												 &frontGlobs.sliderMusicVolume, Front_Callback_SliderMusicVolume,			// "Options" Trigger "Music_Volume"
+												 &frontGlobs.sliderBrightness, Front_Callback_SliderBrightness,				// "Options" Trigger "Brightness"
+												 &frontGlobs.cycleHelpWindow, Front_Callback_CycleHelpWindow,				// "Options" Cycle "Help_Window"
+												 &frontGlobs.triggerReplayObjective, Front_Callback_TriggerReplayObjective,	// "Options" Trigger "Replay_Objective"
+												 &frontGlobs.triggerQuitMission, nullptr,									// "Quit?" Trigger "Yes_-_Quit"
+												 &frontGlobs.triggerRestartMission, nullptr,								// "Restart_Mission?" Trigger "Yes_-_Restart_Mission"
+												 &frontGlobs.cycleWallDetail, Front_Callback_CycleWallDetail,				// "Advanced_Options" Cycle "Wall_Detail"
+												 &frontGlobs.cycleMusicOn, Front_Callback_CycleMusic,						// "Advanced_Options" Cycle "Music"
+												 &frontGlobs.cycleSFXOn, Front_Callback_CycleSound,							// "Advanced_Options" Cycle "SFX"
+												 &frontGlobs.cycleAutoGameSpeed, Front_Callback_CycleAutoGameSpeed,			// "Advanced_Options" Cycle "Automatic_Game_Speed"
+												 -1); // end
+
+	frontGlobs.optionsMenuSet = Front_LoadMenuSet(config, "OptionsMenu",
+												  &frontGlobs.sliderGameSpeed, Front_Callback_SliderGameSpeed,				// "Options" Slider "Game_Speed"
+												  &frontGlobs.sliderSFXVolume, Front_Callback_SliderSoundVolume,			// "Options" Slider "SFX_Volume"
+												  &frontGlobs.sliderMusicVolume, Front_Callback_SliderMusicVolume,			// "Options" Slider "Music_Volume"
+												  &frontGlobs.sliderBrightness, Front_Callback_SliderBrightness,			// "Options" Slider "Brightness"
+												  &frontGlobs.cycleHelpWindow, Front_Callback_CycleHelpWindow,				// "Options" Cycle "Help_Window"
+												  &frontGlobs.triggerReplayObjective, Front_Callback_TriggerReplayObjective,// "Options" Trigger "Replay_Objective"
+												  &frontGlobs.triggerContinueMission, nullptr,								// "Options" Trigger "Continue_Game"
+												  -1); // end
+
+	frontGlobs.sliderGameSpeed = Front_CalcSliderGameSpeed();
+	frontGlobs.sliderMusicVolume = Front_CalcSliderCDVolume();
+	frontGlobs.sliderSFXVolume = 8;
+	frontGlobs.sliderBrightness = 5;
+	frontGlobs.cycleHelpWindow = 1;
+	frontGlobs.triggerReplayObjective = false;
+	frontGlobs.triggerContinueMission = false;
+	frontGlobs.saveBool_540 = false;
+
+
+	frontGlobs.maxLevelScreens = Config_GetIntValue(config, Config_ID(legoGlobs.gameName, "Menu", "MaxLevelScreens"));
+	if (frontGlobs.maxLevelScreens == 0)
+		frontGlobs.maxLevelScreens = 1;
+
+	frontGlobs.unused_zero_864 = 0;
+
+	frontGlobs.saveImageBigSize.width = Config_GetIntValue(config, Config_ID(legoGlobs.gameName, "SaveImage", "BigWidth"));
+	if (frontGlobs.saveImageBigSize.width == 0)
+		frontGlobs.saveImageBigSize.width = 80;
+
+	frontGlobs.saveImageBigSize.height = Config_GetIntValue(config, Config_ID(legoGlobs.gameName, "SaveImage", "BigHeight"));
+	if (frontGlobs.saveImageBigSize.height == 0)
+		frontGlobs.saveImageBigSize.height = 60;
+
+
+	Front_Save_SetBool_85c(true);
+}
 
 // <LegoRR.exe @00416840>
 void __cdecl LegoRR::Front_SaveOptionParameters(void)
@@ -2231,7 +3597,54 @@ void __cdecl LegoRR::Front_LoadOptionParameters(bool32 loadOptions, bool32 reset
 }
 
 // <LegoRR.exe @004168f0>
-//void __cdecl LegoRR::Front_PrepareScreenMenuType(Menu_ScreenType screenType);
+void __cdecl LegoRR::Front_PrepareScreenMenuType(Menu_ScreenType screenType)
+{
+	/// REFACTOR: Avoid a lot of code duplication by moving most logic below the switch statement.
+
+	switch (screenType) {
+	case Menu_Screen_Title:
+		frontGlobs.selectLoadSaveIndex = -1;
+		Front_LoadOptionParameters(true, true);
+		break;
+
+	case Menu_Screen_Missions:
+	case Menu_Screen_Training:
+		Front_LoadOptionParameters(true, true);
+		break;
+
+	case Menu_Screen_Load_unused:
+		Front_LoadOptionParameters(false, true);
+		Front_Save_SetBool_85c(true);
+		return; // Skip logic after switch statement.
+
+	case Menu_Screen_Save:
+		Front_LoadOptionParameters(false, true);
+		break;
+
+	default:
+		Front_Save_SetBool_85c(true);
+		return; // Skip logic after switch statement.
+	}
+
+	MenuItem_SelectData* missionSelect = frontGlobs.mainMenuSet->menus[1]->items[1]->itemData.select;
+	MenuItem_SelectData* tutorialSelect = frontGlobs.mainMenuSet->menus[2]->items[1]->itemData.select;
+
+	SaveData* currSave = Front_Save_GetCurrentSaveData();
+	if (currSave != nullptr) {
+		Front_Levels_UpdateAvailable(frontGlobs.startMissionLink, currSave->missionsTable, &frontGlobs.missionLevels, missionSelect, false);
+	}
+	else if (frontGlobs.saveBool_85c) {
+		Front_Levels_UpdateAvailable(frontGlobs.startMissionLink, nullptr, &frontGlobs.missionLevels, missionSelect, true);
+
+		if (screenType == Menu_Screen_Save) {
+			frontGlobs.saveBool_540 = true;
+		}
+	}
+
+	Front_Levels_UpdateAvailable(frontGlobs.startTutorialLink, nullptr, &frontGlobs.tutorialLevels, tutorialSelect, false);
+
+	Front_Save_SetBool_85c(true);
+}
 
 // <LegoRR.exe @00416bb0>
 bool32 __cdecl LegoRR::Front_RunScreenMenuType(Menu_ScreenType screenType)
@@ -2591,7 +4004,7 @@ void __cdecl LegoRR::Front_Levels_UpdateAvailable_Recursive(LevelLink* link, Sea
 void __cdecl LegoRR::Front_Levels_UpdateAvailable(LevelLink* startLink, OPTIONAL SaveReward* saveReward,
 															 LevelSet* levelSet, MenuItem_SelectData* selectData, bool32 keepLocked)
 {
-	SearchLevelSelectInfo_14 search;
+	SearchLevelSelectInfo_14 search = { 0 };
 
 	search.levelSet = levelSet;
 	search.selectData = selectData;
@@ -2643,10 +4056,10 @@ void __cdecl LegoRR::Front_Callback_SelectMissionItem(real32 elapsedAbs, sint32 
 		Front_LevelSelect_LevelNamePrintF(font, nameX, nameY, langName);
 	}
 	else if (g_FrontBool_004dc8c4) {
-		TextWindow_PrintF(menuTextWnd->textWindow, langName);
+		Gods98::TextWindow_PrintF(menuTextWnd->textWindow, langName);
 		
 		if (Gods98::Main_IsTesterCall()) {
-			TextWindow_PrintF(menuTextWnd->textWindow, buffLevel);
+			Gods98::TextWindow_PrintF(menuTextWnd->textWindow, buffLevel);
 		}
 	}
 
@@ -2670,7 +4083,7 @@ void __cdecl LegoRR::Front_Callback_SelectMissionItem(real32 elapsedAbs, sint32 
 	if (menuTextWnd->textWindow != nullptr && g_FrontBool_004dc8c4) {
 		/* Ahhh, lovely... nested printf calls without sanitization,
 			it may be possible to intentionally corrupt memory with this. */
-		TextWindow_PrintF(menuTextWnd->textWindow, buffMsg);
+		Gods98::TextWindow_PrintF(menuTextWnd->textWindow, buffMsg);
 		if (frontGlobs.levelSelectHoverNumber != frontGlobs.levelSelectLastNumber) {
 			frontGlobs.levelSelectSFXStopped = true;
 			frontGlobs.levelSelectSFXTimer = 0.0f;
@@ -2703,7 +4116,42 @@ void __cdecl LegoRR::Front_Callback_SelectMissionItem(real32 elapsedAbs, sint32 
 }
 
 // <LegoRR.exe @00417630>
-//void __cdecl LegoRR::Front_Callback_SelectTutorialItem(real32 elapsedAbs, sint32 selectIndex);
+void __cdecl LegoRR::Front_Callback_SelectTutorialItem(real32 elapsedAbs, sint32 selectIndex)
+{
+	const LevelLink* link = Front_LevelLink_FindByLinkIndex(frontGlobs.startTutorialLink, selectIndex);
+	const char* langLevelName = frontGlobs.tutorialLevels.langNames[link->setIndex];
+
+	frontGlobs.levelSelectLastNumber = frontGlobs.levelSelectHoverNumber;
+	frontGlobs.levelSelectHoverNumber = (link->setIndex + 1);
+
+	// Fallback to config level ID name if no language name is defined.
+	// Note that normally langName will be replaced with its idName if langName is null (but not empty).
+	if (langLevelName == nullptr || langLevelName[0] == '\0') {
+		langLevelName = frontGlobs.tutorialLevels.idNames[link->setIndex];
+	}
+
+	if (frontGlobs.saveLevelWnd->textWindow != nullptr && g_FrontBool_004dc8c4) {
+		TextWindow_PrintF(frontGlobs.saveLevelWnd->textWindow, langLevelName);
+
+		if (frontGlobs.levelSelectHoverNumber != frontGlobs.levelSelectLastNumber) {
+			frontGlobs.levelSelectSFXStopped = true;
+			frontGlobs.levelSelectSFXTimer = 0.0f;
+		}
+
+		// See if we've hovered long enough to play the level name SFX.
+		if (frontGlobs.levelSelectSFXStopped) {
+			frontGlobs.levelSelectSFXTimer += elapsedAbs;
+			if (frontGlobs.levelSelectSFXTimer * STANDARD_FRAMERATE > 500.0f) {
+
+				if (Front_LevelSelect_PlayTutoLevelNameSFX(frontGlobs.levelSelectHoverNumber)) {
+					frontGlobs.levelSelectSFXStopped = false;
+				}
+			}
+		}
+	}
+
+	g_FrontBool_004dc8c4 = false;
+}
 
 // <LegoRR.exe @00417710>
 bool32 __cdecl LegoRR::Front_LevelInfo_Callback_AddItem(LevelLink* link, void* data)
@@ -2746,8 +4194,33 @@ bool32 __cdecl LegoRR::Front_LevelInfo_Callback_AddItem(LevelLink* link, void* d
 
 
 // <LegoRR.exe @004178e0>
-//void __cdecl LegoRR::MainMenuFull_AddMissionsDisplay(sint32 valueOffset, LevelLink* startLink, LevelSet* levelSet, Menu* menu,
-//													 SaveData* saveData, OPTIONAL Menu* menu58, void* callback);
+void __cdecl LegoRR::MainMenuFull_AddMissionsDisplay(sint32 valueOffset, LevelLink* startLink, LevelSet* levelSet, Menu* menu,
+													 SaveData* saveData, OPTIONAL Menu* nextMenu, MenuItem_SelectCallback callback)
+{
+	uint32 count = 0;
+	Front_LevelLink_RunThroughLinks(startLink, Front_LevelLink_Callback_IncCount, &count);
+	Front_Levels_ResetVisited();
+
+	// &frontGlobs.triggerCredits + 4 -> &frontGlobs.selectMissionIndex
+	// &frontGlobs.triggerCredits + 5 -> &frontGlobs.selectTutorialIndex
+	// The way these values were originally stored in frontGlobs was probably an array of values.
+	/// TODO: Do something about the ugly valueOffset assignment and maybe switch to passing a value directly in the future.
+	sint32* selItemPtr = &((sint32*)&frontGlobs.triggerCredits)[valueOffset];
+
+	MenuItem_SelectData* select = Front_MenuItem_CreateSelect(selItemPtr, "", "", 0, 0, 0, count, 0, 0, 0, 0, 0, callback, nextMenu);
+	MenuItem* menuItem = Front_MenuItem_CreateBannerItem("Levels!!!", nullptr, nullptr, 0, 0, MenuItem_Type_Select, true, select, false);
+	Front_Menu_AddMenuItem(menu, menuItem);
+
+	SearchLevelSelectAdd search {};
+	search.levelSet = levelSet;
+	search.menu_4 = menu;
+	//search.itemData = nullptr;
+	search.saveData = saveData;
+	search.itemData = select;
+
+	Front_LevelLink_RunThroughLinks(startLink, Front_LevelInfo_Callback_AddItem, &search);
+	Front_Levels_ResetVisited();
+}
 
 // <LegoRR.exe @004179c0>
 //bool32 __cdecl LegoRR::Front_Save_ReadSaveFile(uint32 saveIndex, OUT SaveData* saveData, bool32 readOnly);

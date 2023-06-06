@@ -300,7 +300,10 @@ bool32 __cdecl Flic_Close(Flic* fsp);
 /// CUSTOM:
 uint32 Flic_GetFrameCount(const Flic* fsp);
 
-/// CUSTOM:
+/// CUSTOM: Gets what should be considered the current frame of the flic animation when looping and other factors are involved.
+uint32 Flic_GetFramePosition(const Flic* fsp);
+
+/// CUSTOM: Gets the actual value of the currentFrame field, where GetCurrentFrame has more involved logic.
 uint32 Flic_GetCurrentFrame(const Flic* fsp);
 
 /// CUSTOM:

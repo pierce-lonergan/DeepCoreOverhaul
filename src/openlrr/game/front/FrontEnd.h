@@ -6,6 +6,7 @@
 #include "../../common.h"
 
 #include "../../engine/drawing/Flic.h"
+#include "../../engine/input/Keys.h"
 #include "../../engine/video/Movie.h"
 
 #include "../GameCommon.h"
@@ -669,7 +670,7 @@ extern Gods98::Image* (& g_SaveSlotImages_TABLE)[5];
 extern undefined4 & DAT_004dc8a4;
 
 // <LegoRR.exe @004dc8a8>
-extern uint32 (& g_SaveSlotPtrs_TABLE)[5];
+extern uint32 (& g_SaveSlotCompletionPercents)[5];
 
 // <LegoRR.exe @004dc8bc>
 extern bool32 & g_FrontBool_004dc8bc;
@@ -681,7 +682,7 @@ extern bool32 & g_FrontBool_004dc8c0;
 extern bool32 & g_FrontBool_004dc8c4;
 
 // <LegoRR.exe @004dc8c8>
-extern bool32 & g_FrontBool_004dc8c8;
+extern Menu* (& g_FrontMenu_004dc8c8);
 
 // Linked list for commonly-loaded image files. Never cleaned up.
 // <LegoRR.exe @004dc8cc>
@@ -691,7 +692,7 @@ extern Front_Cache* (& g_ImageCache_NEXT);
 extern uint32 & s_LevelSelectNameCount;
 
 // <LegoRR.exe @004dc8d4>
-extern bool32 & g_FrontBool_004dc8d4;
+extern bool32 & s_FrontBool_004dc8d4;
 
 
 // <LegoRR.exe @004dc8dc>
@@ -812,99 +813,100 @@ void __cdecl Front_Menu_FreeMenu(Menu* menu);
 bool32 __cdecl Front_Menu_LoadMenuImage(Menu* menu, char* filename, bool32 light);
 
 // <LegoRR.exe @00411030>
-#define Front_Menu_CreateMenu ((Menu* (__cdecl* )(char* title, char* fullName, Gods98::Font* menuFont, sint32 positionX, sint32 positionY, bool32 autoCenter, bool32 displayTitle, sint32 centerX, bool32 canScroll, char* anchored_str))0x00411030)
-//Menu* __cdecl Front_Menu_CreateMenu(char* title, char* fullName, Gods98::Font* menuFont, sint32 positionX, sint32 positionY, bool32 autoCenter, bool32 displayTitle, sint32 centerX, bool32 canScroll, char* anchored_str);
+//#define Front_Menu_CreateMenu ((Menu* (__cdecl* )(const char* title, const char* fullName, Gods98::Font* menuFont, sint32 positionX, sint32 positionY, bool32 autoCenter, bool32 displayTitle, sint32 centerX, bool32 canScroll, char* anchored_str))0x00411030)
+Menu* __cdecl Front_Menu_CreateMenu(const char* title, const char* fullName, Gods98::Font* menuFont, sint32 positionX, sint32 positionY, bool32 autoCenter, bool32 displayTitle, sint32 centerX, bool32 canScroll, char* anchored_str);
 
 // <LegoRR.exe @00411190>
 bool32 __cdecl Front_Menu_AddMenuItem(Menu* menu, MenuItem* menuItem);
 
 // <LegoRR.exe @00411210>
-#define Front_Maths_IsPointInsideRect ((bool32 (__cdecl* )(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight))0x00411210)
-//bool32 __cdecl Front_Maths_IsPointInsideRect(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight);
+//#define Front_Maths_IsPointInsideRect ((bool32 (__cdecl* )(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight))0x00411210)
+bool32 __cdecl Front_Maths_IsPointInsideRect(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight);
 
 // <LegoRR.exe @00411250>
-#define Front_Maths_IsPointInsideRect_OptCenterX ((bool32 (__cdecl* )(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight, bool32 shouldCenterX))0x00411250)
-//bool32 __cdecl Front_Maths_IsPointInsideRect_OptCenterX(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight, bool32 shouldCenterX);
+//#define Front_Maths_IsPointInsideRectCentered ((bool32 (__cdecl* )(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight, bool32 shouldCenterX))0x00411250)
+bool32 __cdecl Front_Maths_IsPointInsideRectCentered(sint32 ptX, sint32 ptY, sint32 rcX, sint32 rcY, sint32 rcWidth, sint32 rcHeight, bool32 shouldCenterX);
 
+// Returns -2 if colliding with string1, -3 if colliding with string2, -1 if not colliding, or a positive value if colliding with a selectItem string.
 // <LegoRR.exe @00411290>
-#define Front_MenuItem_Select_CollisionCheck_FUN_00411290 ((sint32 (__cdecl* )(Menu* menu, MenuItem* menuItem, MenuItem_SelectData* selectData))0x00411290)
-//sint32 __cdecl Front_MenuItem_Select_CollisionCheck_FUN_00411290(Menu* menu, MenuItem* menuItem, MenuItem_SelectData* selectData);
+//#define Front_MenuItem_Select_TestStringCollision ((sint32 (__cdecl* )(Menu* menu, MenuItem* menuItem, MenuItem_SelectData* selectData))0x00411290)
+sint32 __cdecl Front_MenuItem_Select_TestStringCollision(Menu* menu, MenuItem* menuItem, MenuItem_SelectData* selectData);
 
 // <LegoRR.exe @00411420>
-#define Front_Menu_IsLevelItemUnderMouse ((bool32 (__cdecl* )(Menu* menu, sint32 itemIndex))0x00411420)
-//bool32 __cdecl Front_Menu_IsLevelItemUnderMouse(Menu* menu, sint32 itemIndex);
+//#define Front_Menu_IsLevelItemUnderMouse ((bool32 (__cdecl* )(Menu* menu, sint32 itemIndex))0x00411420)
+bool32 __cdecl Front_Menu_IsLevelItemUnderMouse(Menu* menu, sint32 itemIndex);
 
 // <LegoRR.exe @00411460>
-#define Front_Menu_GetItemBounds ((bool32 (__cdecl* )(Menu* menu, sint32 itemIndex, OUT sint32* rcX, OUT sint32* rcY, OUT sint32* rcWidth, OUT sint32* rcHeight))0x00411460)
-//bool32 __cdecl Front_Menu_GetItemBounds(Menu* menu, sint32 itemIndex, OUT sint32* rcX, OUT sint32* rcY, OUT sint32* rcWidth, OUT sint32* rcHeight);
+//#define Front_Menu_GetItemBounds ((bool32 (__cdecl* )(Menu* menu, sint32 itemIndex, OUT sint32* rcX, OUT sint32* rcY, OUT sint32* rcWidth, OUT sint32* rcHeight))0x00411460)
+bool32 __cdecl Front_Menu_GetItemBounds(Menu* menu, sint32 itemIndex, OUT sint32* rcX, OUT sint32* rcY, OUT sint32* rcWidth, OUT sint32* rcHeight);
 
 // itemIndex is not assigned on failure.
 // <LegoRR.exe @004116c0>
-#define Front_Menu_FindItemUnderMouse ((bool32 (__cdecl* )(Menu* menu, OUT sint32* itemIndex))0x004116c0)
-//bool32 __cdecl Front_Menu_FindItemUnderMouse(Menu* menu, OUT sint32* itemIndex);
+//#define Front_Menu_FindItemUnderMouse ((bool32 (__cdecl* )(Menu* menu, OUT sint32* itemIndex))0x004116c0)
+bool32 __cdecl Front_Menu_FindItemUnderMouse(Menu* menu, OUT sint32* itemIndex);
 
 // <LegoRR.exe @00411770>
-#define Front_GetMousePressedState ((bool32 (__cdecl* )(void))0x00411770)
-//bool32 __cdecl Front_GetMousePressedState(void);
+//#define Front_GetMousePressedState ((bool32 (__cdecl* )(void))0x00411770)
+bool32 __cdecl Front_GetMousePressedState(void);
 
 // <LegoRR.exe @004117a0>
-#define Front_MenuItem_SliderHandleInput ((bool32 (__cdecl* )(Menu* menu, MenuItem* menuItem, MenuItem_SliderData* sliderData))0x004117a0)
-//bool32 __cdecl Front_MenuItem_SliderHandleInput(Menu* menu, MenuItem* menuItem, MenuItem_SliderData* sliderData);
+//#define Front_MenuItem_SliderHandleInput ((bool32 (__cdecl* )(Menu* menu, MenuItem* menuItem, MenuItem_SliderData* sliderData))0x004117a0)
+bool32 __cdecl Front_MenuItem_SliderHandleInput(Menu* menu, MenuItem* menuItem, MenuItem_SliderData* sliderData);
 
 // <LegoRR.exe @00411900>
-#define Front_MenuItem_CheckNotInTutoAnyTutorialFlags ((bool32 (__cdecl* )(MenuItem* menuItem))0x00411900)
-//bool32 __cdecl Front_MenuItem_CheckNotInTutoAnyTutorialFlags(MenuItem* menuItem);
+//#define Front_MenuItem_CheckNotInTutoAnyTutorialFlags ((bool32 (__cdecl* )(MenuItem* menuItem))0x00411900)
+bool32 __cdecl Front_MenuItem_CheckNotInTutoAnyTutorialFlags(MenuItem* menuItem);
 
 // <LegoRR.exe @00411930>
-#define Front_Menu_UpdateMenuItemsInput ((Menu* (__cdecl* )(real32 elapsed, Menu* menu))0x00411930)
-//Menu* __cdecl Front_Menu_UpdateMenuItemsInput(real32 elapsed, Menu* menu);
+//#define Front_Menu_UpdateMenuItemsInput ((Menu* (__cdecl* )(real32 elapsed, Menu* menu))0x00411930)
+Menu* __cdecl Front_Menu_UpdateMenuItemsInput(real32 elapsed, Menu* menu);
 
 // See Keys enum
 // (can't use Keys enum as argument for define, Keys is uint8, so undefined data may be passed in higher bytes)
 // <LegoRR.exe @00411e30>
-#define Front_Input_GetKeyCharacter ((uint32 (__cdecl* )(uint32 diKey))0x00411e30)
-//uint32 __cdecl Front_Input_GetKeyCharacter(Keys diKey);
+//#define Front_Input_GetKeyCharacter ((uint32 (__cdecl* )(uint32 diKey))0x00411e30)
+uint32 __cdecl Front_Input_GetKeyCharacter(uint32 diKey);
 
 // valueIndex == (value - valueMin);
 // valueRange == (valueMax - valueMin);
 // <LegoRR.exe @00411e40>
-#define Front_MenuItem_DrawSlider ((void (__cdecl* )(MenuItem_SliderData* sliderData, uint32 x, uint32 y, sint32 valueIndex, uint32 valueRange))0x00411e40)
-//void __cdecl Front_MenuItem_DrawSlider(MenuItem_SliderData* sliderData, uint32 x, uint32 y, sint32 valueIndex, uint32 valueRange);
+//#define Front_MenuItem_DrawSlider ((void (__cdecl* )(MenuItem_SliderData* sliderData, uint32 x, uint32 y, sint32 valueIndex, uint32 valueRange))0x00411e40)
+void __cdecl Front_MenuItem_DrawSlider(MenuItem_SliderData* sliderData, uint32 x, uint32 y, sint32 valueIndex, uint32 valueRange);
 
 // <LegoRR.exe @004120a0>
-#define Front_Menu_GetOverlayCount ((uint32 (__cdecl* )(Menu* menu))0x004120a0)
-//uint32 __cdecl Front_Menu_GetOverlayCount(Menu* menu);
+//#define Front_Menu_GetOverlayCount ((uint32 (__cdecl* )(Menu* menu))0x004120a0)
+uint32 __cdecl Front_Menu_GetOverlayCount(Menu* menu);
 
 // <LegoRR.exe @004120c0>
 //#define Front_Menu_ShouldRandomPlay ((bool32 (__cdecl* )(void))0x004120c0)
 bool32 __cdecl Front_Menu_ShouldRandomPlay(void);
 
 // <LegoRR.exe @004120e0>
-#define Front_Menu_UpdateOverlays ((void (__cdecl* )(Menu* menu))0x004120e0)
-//void __cdecl Front_Menu_UpdateOverlays(Menu* menu);
+//#define Front_Menu_UpdateOverlays ((void (__cdecl* )(Menu* menu))0x004120e0)
+void __cdecl Front_Menu_UpdateOverlays(Menu* menu);
 
 // <LegoRR.exe @00412380>
 void __cdecl Front_MenuItem_DrawSelectItem(sint32 x, sint32 y, Gods98::Font* font, MenuItem_SelectData* selectData, uint32 selIndex, MenuItem_SelectImageType imageType);
 
 // <LegoRR.exe @00412420>
-#define Front_MenuItem_DrawSaveImage ((void (__cdecl* )(Menu* menu, sint32 selIndex, MenuItem_SelectData* selectData, bool32 bigSize))0x00412420)
-//void __cdecl Front_MenuItem_DrawSaveImage(Menu* menu, sint32 selIndex, MenuItem_SelectData* selectData, bool32 bigSize);
+//#define Front_MenuItem_DrawSaveImage ((void (__cdecl* )(Menu* menu, sint32 selIndex, MenuItem_SelectData* selectData, bool32 bigSize))0x00412420)
+void __cdecl Front_MenuItem_DrawSaveImage(Menu* menu, sint32 selIndex, MenuItem_SelectData* selectData, bool32 bigSize);
 
 // <LegoRR.exe @00412680>
-#define Front_Menu_DrawLoadSaveText ((void (__cdecl* )(Menu** pMenu, IN OUT bool32* currBool, IN OUT bool32* nextBool))0x00412680)
-//void __cdecl Front_Menu_DrawLoadSaveText(Menu** pMenu, IN OUT bool32* currBool, IN OUT bool32* nextBool);
+//#define Front_Menu_DrawLoadSaveText ((void (__cdecl* )(Menu** pMenu, IN OUT Menu** currMenu, IN OUT Menu** nextMenu))0x00412680)
+void __cdecl Front_Menu_DrawLoadSaveText(Menu** pMenu, IN OUT Menu** currMenu, IN OUT Menu** nextMenu);
 
 // <LegoRR.exe @00412900>
-#define Front_MenuItem_DrawSelectTextWindow ((void (__cdecl* )(Menu** pMenu))0x00412900)
-//void __cdecl Front_MenuItem_DrawSelectTextWindow(Menu** pMenu);
+//#define Front_MenuItem_DrawSelectTextWindow ((void (__cdecl* )(Menu** pMenu))0x00412900)
+void __cdecl Front_MenuItem_DrawSelectTextWindow(Menu** pMenu);
 
 // <LegoRR.exe @00412a20>
-#define Front_Menu_DrawMenuImage ((void (__cdecl* )(Menu* menu, bool32 light))0x00412a20)
-//void __cdecl Front_Menu_DrawMenuImage(Menu* menu, bool32 light);
+//#define Front_Menu_DrawMenuImage ((void (__cdecl* )(Menu* menu, bool32 light))0x00412a20)
+void __cdecl Front_Menu_DrawMenuImage(Menu* menu, bool32 light);
 
 // <LegoRR.exe @00412b30>
 //#define Front_Menu_Update ((Menu* (__cdecl* )(real32 elapsed, Menu* menu, bool32* optout_bool))0x00412b30)
-Menu* __cdecl Front_Menu_Update(real32 elapsed, Menu* menu, OUT bool32* optout_bool);
+Menu* __cdecl Front_Menu_Update(real32 elapsed, Menu* menu, OPTIONAL OUT bool32* menuTransition);
 
 // <LegoRR.exe @004138a0>
 void __cdecl Front_Menu_UpdateMousePosition(Menu* menu);
@@ -916,12 +918,12 @@ void __cdecl Front_LoadSaveSlotImages(void);
 void __cdecl Front_FreeSaveSlotImages(void);
 
 // <LegoRR.exe @00413ab0>
-#define Front_ScreenMenuLoop ((void (__cdecl* )(Menu* menu))0x00413ab0)
-//void __cdecl Front_ScreenMenuLoop(Menu* menu);
+//#define Front_ScreenMenuLoop ((void (__cdecl* )(Menu* menu))0x00413ab0)
+void __cdecl Front_ScreenMenuLoop(Menu* menu);
 
 // <LegoRR.exe @00413d50>
-#define Front_RunScreenMenu ((void (__cdecl* )(MenuSet* menuSet, uint32 menuIndex))0x00413d50)
-//void __cdecl Front_RunScreenMenu(MenuSet* menuSet, uint32 menuIndex);
+//#define Front_RunScreenMenu ((void (__cdecl* )(MenuSet* menuSet, uint32 menuIndex))0x00413d50)
+void __cdecl Front_RunScreenMenu(MenuSet* menuSet, uint32 menuIndex);
 
 // <LegoRR.exe @00413d90>
 MenuItem_Type __cdecl Front_MenuItem_ParseTypeString(const char* itemTypeName);
@@ -1022,8 +1024,8 @@ bool32 __cdecl Front_Options_Update(real32 elapsed, Menu_ModalType modalType);
 
 // levelKey is either "StartLevel" or "TutorialStartLevel".
 // <LegoRR.exe @004153e0>
-#define Front_LoadLevelSet ((bool32 (__cdecl* )(const Gods98::Config* config, IN OUT LevelSet* levelSet, const char* levelKey))0x004153e0)
-//bool32 __cdecl Front_LoadLevelSet(const Gods98::Config* config, IN OUT LevelSet* levelSet, const char* levelKey);
+//#define Front_LoadLevelSet ((bool32 (__cdecl* )(const Gods98::Config* config, IN OUT LevelSet* levelSet, const char* levelKey))0x004153e0)
+bool32 __cdecl Front_LoadLevelSet(const Gods98::Config* config, IN OUT LevelSet* levelSet, const char* levelKey);
 
 // Plays an alread-loaded Movie_t from the G98CMovie C wrapper API.
 // Allows terminating the movie playback during runtime with isSkippable.
@@ -1051,8 +1053,8 @@ void __cdecl Front_LoadLevels(MenuSet* unused_mainMenuFull);
 void __cdecl Front_ResetSaveNumber(void);
 
 // <LegoRR.exe @00415c30>
-#define Front_LoadMenuTextWindow ((void (__cdecl* )(const Gods98::Config* config, const char* gameName, MenuTextWindow* menuWnd))0x00415c30)
-//void __cdecl Front_LoadMenuTextWindow(const Gods98::Config* config, const char* gameName, MenuTextWindow* menuWnd);
+//#define Front_LoadMenuTextWindow ((void (__cdecl* )(const Gods98::Config* config, const char* configPath, MenuTextWindow* menuWnd))0x00415c30)
+void __cdecl Front_LoadMenuTextWindow(const Gods98::Config* config, const char* configPath, MenuTextWindow* menuWnd);
 
 // <LegoRR.exe @00416080>
 //#define Front_LevelSelect_PlayLevelNameSFX ((bool32 (__cdecl* )(sint32 levelNumber))0x00416080)
@@ -1064,8 +1066,8 @@ bool32 __cdecl Front_LevelSelect_PlayTutoLevelNameSFX(sint32 levelNumber);
 
 // Load MenuSets and LevelSets
 // <LegoRR.exe @00416120>
-#define Front_Initialise ((void (__cdecl* )(const Gods98::Config* config))0x00416120)
-//void __cdecl Front_Initialise(const Gods98::Config* config);
+//#define Front_Initialise ((void (__cdecl* )(const Gods98::Config* config))0x00416120)
+void __cdecl Front_Initialise(const Gods98::Config* config);
 
 // <LegoRR.exe @00416840>
 //#define Front_SaveOptionParameters ((void (__cdecl* )(void))0x00416840)
@@ -1076,8 +1078,8 @@ void __cdecl Front_SaveOptionParameters(void);
 void __cdecl Front_LoadOptionParameters(bool32 loadOptions, bool32 resetFront);
 
 // <LegoRR.exe @004168f0>
-#define Front_PrepareScreenMenuType ((void (__cdecl* )(Menu_ScreenType screenType))0x004168f0)
-//void __cdecl Front_PrepareScreenMenuType(Menu_ScreenType screenType);
+//#define Front_PrepareScreenMenuType ((void (__cdecl* )(Menu_ScreenType screenType))0x004168f0)
+void __cdecl Front_PrepareScreenMenuType(Menu_ScreenType screenType);
 
 // <LegoRR.exe @00416bb0>
 //#define Front_RunScreenMenuType ((void (__cdecl* )(Menu_ScreenType screenType))0x00416bb0)
@@ -1167,17 +1169,17 @@ sint32 __cdecl Front_Save_GetLevelScore(uint32 index, const SaveData* saveData);
 void __cdecl Front_Callback_SelectMissionItem(real32 elapsedAbs, sint32 selectIndex);
 
 // <LegoRR.exe @00417630>
-#define Front_Callback_SelectTutorialItem ((void (__cdecl* )(real32 elapsedAbs, sint32 selectIndex))0x00417630)
-//void __cdecl Front_Callback_SelectTutorialItem(real32 elapsedAbs, sint32 selectIndex);
+//#define Front_Callback_SelectTutorialItem ((void (__cdecl* )(real32 elapsedAbs, sint32 selectIndex))0x00417630)
+void __cdecl Front_Callback_SelectTutorialItem(real32 elapsedAbs, sint32 selectIndex);
 
 // DATA: SearchLevelSelectAdd* search;
 // <LegoRR.exe @00417710>
 bool32 __cdecl Front_LevelInfo_Callback_AddItem(LevelLink* link, void* data);
 
 // <LegoRR.exe @004178e0>
-#define MainMenuFull_AddMissionsDisplay ((void (__cdecl* )(sint32 valueOffset, LevelLink* startLink, LevelSet* levelSet, Menu* menu, SaveData* saveData, OPTIONAL Menu* menu58, void* callback))0x004178e0)
-//void __cdecl MainMenuFull_AddMissionsDisplay(sint32 valueOffset, LevelLink* startLink, LevelSet* levelSet, Menu* menu, SaveData* saveData,
-//											 OPTIONAL Menu* menu58, void* callback);
+//#define MainMenuFull_AddMissionsDisplay ((void (__cdecl* )(sint32 valueOffset, LevelLink* startLink, LevelSet* levelSet, Menu* menu, SaveData* saveData, OPTIONAL Menu* nextMenu, MenuItem_SelectCallback callback))0x004178e0)
+void __cdecl MainMenuFull_AddMissionsDisplay(sint32 valueOffset, LevelLink* startLink, LevelSet* levelSet, Menu* menu, SaveData* saveData,
+											 OPTIONAL Menu* nextMenu, MenuItem_SelectCallback callback);
 
 // <LegoRR.exe @004179c0>
 #define Front_Save_ReadSaveFile ((bool32 (__cdecl* )(uint32 saveIndex, OUT SaveData* saveData, bool32 readOnly))0x004179c0)
