@@ -503,6 +503,40 @@ void __cdecl LegoRR::Front_MenuItem_FreeTrigger(MenuItem_TriggerData* triggerDat
 	}
 }
 
+/// BETA:
+// <LegoStripped.exe @00418f9d>
+LegoRR::MenuItem_TextInputData* __cdecl LegoRR::Front_MenuItem_CreateTextInput(const char* initial, IN char* valuePtr, sint32 bufferLength, sint32 x2, sint32 y2)
+{
+	uint32 length = 0;
+	if (initial != nullptr) {
+		length = std::strlen(initial);
+		if ((bufferLength - 2) < (sint32)length) {
+			// Initial string can't fit in buffer.
+			return nullptr;
+		}
+	}
+
+	MenuItem_TextInputData* textInputData = (MenuItem_TextInputData*)Gods98::Mem_Alloc(sizeof(MenuItem_TextInputData));
+	if (textInputData == nullptr)
+		return nullptr;
+
+	std::memset(textInputData, 0, sizeof(MenuItem_TextInputData));
+
+	std::memset(valuePtr, 0, bufferLength);
+
+	if (initial != nullptr) {
+		std::strcpy(valuePtr, initial);
+	}
+
+	textInputData->valuePtr = valuePtr;
+	textInputData->length = (length + 1);
+	textInputData->caretPos = length;
+	textInputData->bufferLength = (bufferLength - 1);
+	textInputData->x2 = x2;
+	textInputData->y2 = y2;
+	return textInputData;
+}
+
 // <merged with freeNonNull @ 0040f6e0>
 void __cdecl LegoRR::Front_MenuItem_FreeTextInput(MenuItem_TextInputData* textInputData)
 {
@@ -1410,8 +1444,8 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_UpdateMenuItemsInput(real32 elapsed, Me
 		for (uint32 i = 0; i < INPUT_MAXKEYS; i++) {
 			const Gods98::Keys key = static_cast<Gods98::Keys>(i);
 
-			// Handle backspace.
 			if (Input_IsKeyPressed(key)) {
+				// Handle backspace.
 				if (key == Gods98::Keys::KEY_BACKSPACE && textInput->caretPos > 0) {
 					
 					// Shift all characters from caretPos down by one.
@@ -1421,26 +1455,26 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_UpdateMenuItemsInput(real32 elapsed, Me
 					textInput->caretPos--;
 					textInput->length--;
 				}
-			}
 
-			// Handle typing.
-			if (textInput->length != textInput->maxLength && textInput->caretPos < textInput->length - 1 &&
-				c_keyCharMap[key] != 0)
-			{
-				// Shift all characters to caretPos up by one.
-				for (sint32 j = textInput->length - 1; j >= textInput->caretPos; j--) {
-					textInput->valuePtr[j + 1] = textInput->valuePtr[j];
+				// Handle typing.
+				if (textInput->length != textInput->bufferLength && textInput->caretPos < textInput->length - 1 &&
+					c_keyCharMap[key] != 0)
+				{
+					// Shift all characters to caretPos up by one.
+					for (sint32 j = textInput->length - 1; j >= textInput->caretPos; j--) {
+						textInput->valuePtr[j + 1] = textInput->valuePtr[j];
+					}
+
+					char newChar = static_cast<char>(c_keyCharMap[key]);
+					if (Input_IsKeyDown(Gods98::Keys::KEY_LEFTSHIFT) || Input_IsKeyDown(Gods98::Keys::KEY_RIGHTSHIFT)) {
+						// Characters stored in c_keyCharMap are lowercase, so capitalize the character if shift is down.
+						newChar = static_cast<char>(std::toupper(newChar));
+					}
+					textInput->valuePtr[textInput->caretPos] = newChar;
+
+					textInput->caretPos++;
+					textInput->length++;
 				}
-
-				char newChar = static_cast<char>(c_keyCharMap[key]);
-				if (Input_IsKeyDown(Gods98::Keys::KEY_LEFTSHIFT) || Input_IsKeyDown(Gods98::Keys::KEY_RIGHTSHIFT)) {
-					// Characters stored in c_keyCharMap are lowercase, so capitalize the character if shift is down.
-					newChar = static_cast<char>(std::toupper(newChar));
-				}
-				textInput->valuePtr[textInput->caretPos] = newChar;
-
-				textInput->caretPos++;
-				textInput->length++;
 			}
 		}
 	}
@@ -2875,6 +2909,43 @@ LegoRR::MenuSet* __cdecl LegoRR::Front_LoadMenuSet(const Gods98::Config* config,
 					}
 				}
 				break;
+
+// Leave this commented out for now until we actually make use of the TextInput menu item.
+#if false
+			/// CUSTOM: Add TextInput support. Note that not even the RockFall beta has
+			///          code to load these menu items, so this is all custom.
+			case MenuItem_Type_TextInput:
+				{
+					// TextInput:x1:y1:x2:y2:banner:initial:bufferLength
+
+					if (numParts == 8) {
+						char* valuePtr = va_arg(args, char*);
+						/// TODO: There's no callback handling, should we read the unused argument, or skip the argument?
+						///       For now we'll read the argument.
+						void* unused_callback = va_arg(args, void*);
+
+						const sint32 x2 = std::atoi(stringParts[3]);
+						const sint32 y2 = std::atoi(stringParts[4]);
+						const sint32 bufferLength = std::atoi(stringParts[7]);
+
+						const char* initial = Front_Util_StringReplaceChar(stringParts[6], '_', ' ');
+
+						MenuItem_TextInputData* textInput = Front_MenuItem_CreateTextInput(initial, valuePtr, bufferLength, x2, y2);
+
+						const sint32 x1 = std::atoi(stringParts[1]);
+						const sint32 y1 = std::atoi(stringParts[2]);
+
+						const char* banner = Front_Util_StringReplaceChar(stringParts[5], '_', ' ');
+
+						MenuItem* menuItem = Front_MenuItem_CreateBannerItem(banner, loFont, hiFont, x1, y1, itemType, autoCenter, textInput, false);
+						Front_Menu_AddMenuItem(menuSet->menus[i], menuItem);
+					}
+					else {
+						Config_WarnLast(true, legoGlobs.config, "TextInput menu item type must have 8 parts.");
+					}
+				}
+				break;
+#endif
 
 			case MenuItem_Type_Slider:
 				{

@@ -381,14 +381,13 @@ struct MenuItem_SelectData // [LegoRR/FrontEnd.c|struct:0x5c]
 assert_sizeof(MenuItem_SelectData, 0x5c);
 
 
-// No information on this structure's allocation.
-//typedef void MenuItem_TextInputData;
+// Structure confirmed in RockFall beta.
 struct MenuItem_TextInputData // [LegoRR/FrontEnd.c|struct:0x18]
 {
 	/*00,4*/	char* valuePtr;
-	/*04,4*/	sint32 length;
+	/*04,4*/	sint32 length; // Length of the value buffer string +1 so that the cursor can occupy the final slot.
 	/*08,4*/	sint32 caretPos;  // Character index of cursor.
-	/*0c,4*/	sint32 maxLength; // Maximum length of value buffer.
+	/*0c,4*/	sint32 bufferLength; // Maximum length of value buffer.
 	/*10,4*/	sint32 x2;
 	/*14,4*/	sint32 y2;
 	/*18*/
@@ -775,6 +774,10 @@ MenuItem_TriggerData* __cdecl Front_MenuItem_CreateTrigger(IN bool32* valuePtr, 
 
 // <merged with freeNonNull @ 0040f6e0>
 void __cdecl Front_MenuItem_FreeTrigger(MenuItem_TriggerData* triggerData);
+
+/// BETA:
+// <LegoStripped.exe @00418f9d>
+MenuItem_TextInputData* __cdecl Front_MenuItem_CreateTextInput(const char* initial, IN char* valuePtr, sint32 maxLength, sint32 x2, sint32 y2);
 
 // <merged with freeNonNull @ 0040f6e0>
 void __cdecl Front_MenuItem_FreeTextInput(MenuItem_TextInputData* textInputData);
