@@ -656,8 +656,8 @@ LegoRR::MenuItem* __cdecl LegoRR::Front_MenuItem_CreateBannerItem(const char* ba
 }
 
 // <LegoRR.exe @00410d50>
-LegoRR::MenuItem* __cdecl LegoRR::Front_MenuItem_CreateImageItem(const char* banner, Gods98::Font* loFont, Gods98::Font* hiFont, char* loImageName, char* hiImageName,
-																 sint32 x1, sint32 y1, MenuItem_Type itemType, bool32 centered, char* toolTipName, void* itemData)
+LegoRR::MenuItem* __cdecl LegoRR::Front_MenuItem_CreateImageItem(const char* banner, Gods98::Font* loFont, Gods98::Font* hiFont, const char* loImageName, const char* hiImageName,
+																 sint32 x1, sint32 y1, MenuItem_Type itemType, bool32 centered, const char* toolTipName, void* itemData)
 {
 	if (banner == nullptr)
 		return nullptr;
@@ -741,7 +741,7 @@ void __cdecl LegoRR::Front_Menu_FreeMenu(Menu* menu)
 }
 
 // <LegoRR.exe @00410ee0>
-bool32 __cdecl LegoRR::Front_Menu_LoadMenuImage(Menu* menu, char* filename, bool32 light)
+bool32 __cdecl LegoRR::Front_Menu_LoadMenuImage(Menu* menu, const char* filename, bool32 light)
 {
 	char* stringParts[4] = { nullptr }; // For once, this is NOT a dummy init
 	char buff[1024];
@@ -2664,7 +2664,345 @@ LegoRR::MenuSet* __cdecl LegoRR::Front_CreateMenuSet(uint32 menuCount)
 }
 
 // <LegoRR.exe @00413ff0>
-//LegoRR::MenuSet* __cdecl LegoRR::Front_LoadMenuSet(const Gods98::Config* unused_config, const char* menuName, void* dst, void* callback, ...);
+LegoRR::MenuSet* __cdecl LegoRR::Front_LoadMenuSet(const Gods98::Config* config, const char* menuName, /*void* dst, void* callback,*/ ...)
+{
+	char menuSetPathBuff[1024];
+	char menuPathBuff[1024];
+	char* stringParts[100];
+
+
+	std::sprintf(menuSetPathBuff, "Menu::%s", menuName);
+
+	const sint32 menuCount = Config_GetIntValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuSetPathBuff, "MenuCount"));
+	MenuSet* menuSet = Front_CreateMenuSet((uint32)menuCount);
+
+	// Load basic information and allocate each menu.
+	for (sint32 i = 0; i < menuCount; i++) {
+
+		std::sprintf(menuPathBuff, "%s::Menu%i", menuSetPathBuff, (i + 1)); // +1 because Menus in config are 1-indexed.
+
+		char* titleStr = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "Title"));
+		char* fullNameStr = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "FullName"));
+
+		char* positionStr = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "Position"));
+		const uint32 argc = Gods98::Util_TokeniseSafe(positionStr, stringParts, ":", (2 + 1)); // +1 to safely parse malformed positions like in vanilla.
+		Config_WarnLast((argc != 2), legoGlobs.config, "Position should only have 2 parts.");
+		const sint32 xPos = std::atoi(stringParts[0]);
+		const sint32 yPos = std::atoi(stringParts[1]);
+
+		if (positionStr != nullptr) {
+			Gods98::Mem_Free(positionStr);
+		}
+
+		const char* menuFontName = Gods98::Config_GetTempStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "MenuFont"));
+		Gods98::Font* menuFont = Front_Cache_LoadFont(menuFontName);
+
+		const bool32 autoCenter = Config_GetBoolOrFalse(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "AutoCenter"));
+		const bool32 displayTitle = Config_GetBoolOrTrue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "DisplayTitle"));
+		const bool32 canScroll = Config_GetBoolOrFalse(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "CanScroll"));
+
+		sint32 centerX = 0;
+		if (autoCenter && titleStr != nullptr && titleStr[0] != '\0') {
+			const uint32 titleWidth = Gods98::Font_GetStringWidth(menuFont, titleStr);
+			centerX = -((sint32)titleWidth / 2);
+		}
+
+		/// TODO: In the future, refactor anchoredStr to be passed as a nullable Point2I.
+		char* anchoredStr = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "Anchored"));
+
+		const char* title = Front_Util_StringReplaceChar(titleStr, '_', ' ');
+		const char* fullName = Front_Util_StringReplaceChar(fullNameStr, '_', ' ');
+
+		menuSet->menus[i] = Front_Menu_CreateMenu(title, fullName, menuFont, xPos, yPos, autoCenter, displayTitle, centerX, canScroll, anchoredStr);
+		std::sprintf(menuSet->menus[i]->name, "%s", menuPathBuff);
+
+
+		const char* menuImageName = Gods98::Config_GetTempStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "MenuImage"));
+		Front_Menu_LoadMenuImage(menuSet->menus[i], menuImageName, true);
+
+		const char* menuImageDarkName = Gods98::Config_GetTempStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "MenuImageDark"));
+		Front_Menu_LoadMenuImage(menuSet->menus[i], menuImageDarkName, false);
+
+
+		menuSet->menus[i]->playRandom = Gods98::Config_GetBoolValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "PlayRandom"));
+
+
+		Gods98::Mem_Free(titleStr);
+		/// FIX APPLY: Free memory for fullNameStr and anchoredStr.
+		Gods98::Mem_Free(fullNameStr);
+		if (anchoredStr != nullptr) {
+			Gods98::Mem_Free(anchoredStr);
+		}
+	}
+	
+
+	std::va_list args;
+	va_start(args, menuName);
+
+	// Load overlays and menu items for each menu.
+	// Note: Menus MUST be allocated first so that Next menu item type can lookup menus by name that haven't been reached yet.
+	for (sint32 i = 0; i < menuCount; i++) {
+
+		std::sprintf(menuPathBuff, "%s::Menu%i", menuSetPathBuff, (i + 1));
+
+		const char* loFontName = Gods98::Config_GetTempStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "LoFont"));
+		Gods98::Font* loFont = Front_Cache_LoadFont(loFontName);
+
+		const char* hiFontName = Gods98::Config_GetTempStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "HiFont"));
+		Gods98::Font* hiFont = Front_Cache_LoadFont(hiFontName);
+
+		const bool32 autoCenter = menuSet->menus[i]->autoCenter;
+
+
+		// Load overlays for menu.
+		/// TODO: Consider changing logic so that the first '!' overlay won't prevent loading of all remaining overlays, when reduce flics is true.
+		uint32 overlayNumber = 1; // Start at 1 because overlays in config are 1-indexed.
+		while (true) {
+
+			char overlayBuff[1024];
+			std::sprintf(overlayBuff, "Overlay%i", overlayNumber);
+			char* overlayName = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, overlayBuff));
+
+			if (overlayName == nullptr && !Gods98::Graphics_IsReduceFlics()) {
+				std::sprintf(overlayBuff, "!Overlay%i", overlayNumber);
+				overlayName = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, overlayBuff));
+			}
+
+			if (overlayName == nullptr) {
+				break; // No more overlays.
+			}
+			else {
+				const uint32 argc = Gods98::Util_TokeniseSafe(overlayName, stringParts, ":", (4 + 1)); // +1 to safely parse malformed overlays like in vanilla.
+				Config_WarnLast((argc != 4), legoGlobs.config, "Overlay should only have 4 parts.");
+
+				SFX_ID sfxType;
+				if (!SFX_GetType(stringParts[1], &sfxType))
+					sfxType = SFX_NULL;
+
+				const sint32 xPos = std::atoi(stringParts[2]);
+				const sint32 yPos = std::atoi(stringParts[3]);
+
+				// Automatically adds the overlay to the link list.
+				Front_Menu_CreateOverlay(stringParts[0], &menuSet->menus[i]->overlays, xPos, yPos, sfxType);
+
+				Gods98::Mem_Free(overlayName);
+
+				overlayNumber++;
+			}
+		}
+
+		// Load menu items for menu.
+		const sint32 itemCount = Config_GetIntValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, "ItemCount"));
+		for (sint32 j = 0; j < itemCount; j++) {
+
+			char menuItemBuff[1024];
+			std::sprintf(menuItemBuff, "Item%i", (j + 1)); // +1 because menu items in config are 1-indexed.
+
+			char* str = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, menuPathBuff, menuItemBuff));
+			const uint32 numParts = Gods98::Util_TokeniseSafe(str, stringParts, ":", _countof(stringParts));
+			const MenuItem_Type itemType = Front_MenuItem_ParseTypeString(stringParts[0]);
+
+			switch (itemType) {
+			case MenuItem_Type_Cycle:
+				{
+					// Cycle:x1:y1:x2:y2:banner:nameCount:names:...:names
+
+					Config_WarnLast((numParts < 7), legoGlobs.config, "Cycle menu item type must have at least 7 parts.");
+
+					sint32* valuePtr = va_arg(args, sint32*);
+					MenuItem_CycleCallback callback = va_arg(args, MenuItem_CycleCallback);
+
+					const sint32 x2 = std::atoi(stringParts[3]);
+					const sint32 y2 = std::atoi(stringParts[4]);
+					const uint32 nameCount = (uint32)std::atoi(stringParts[6]);
+					MenuItem_CycleData* cycle = Front_MenuItem_CreateCycle(nameCount, valuePtr, x2, y2, callback);
+
+					const sint32 x1 = std::atoi(stringParts[1]);
+					const sint32 y1 = std::atoi(stringParts[2]);
+
+					const char* banner = Front_Util_StringReplaceChar(stringParts[5], '_', ' ');
+
+					MenuItem* menuItem = Front_MenuItem_CreateBannerItem(banner, loFont, hiFont, x1, y1, itemType, autoCenter, cycle, false);
+					Front_Menu_AddMenuItem(menuSet->menus[i], menuItem);
+
+					Config_WarnLast((numParts >= 7 && numParts < 7 + nameCount), legoGlobs.config,
+									"Cycle menu item type does not have enough parts for all its names.");
+
+					for (uint32 k = 0; k < nameCount; k++) {
+						const char* cycleName = Front_Util_StringReplaceChar(stringParts[7 + k], '_', ' ');
+						Front_MenuItem_AddCycleName(cycle, cycleName);
+					}
+				}
+				break;
+
+			case MenuItem_Type_Trigger:
+				{
+					if (numParts == 8) { // Trigger:x1:y1:loImage:hiImage:unusedImage:toolTip:end
+						bool32* valuePtr = va_arg(args, bool32*);
+						MenuItem_TriggerCallback callback = va_arg(args, MenuItem_TriggerCallback);
+
+						const bool32 end = (std::atoi(stringParts[7]) == 1); // Numeric boolean
+						MenuItem_TriggerData* trigger = Front_MenuItem_CreateTrigger(valuePtr, end, callback);
+
+						const char* loImageName = stringParts[3];
+						const char* hiImageName = stringParts[4];
+						// Image path at stringParts[5] seems to be unused.
+						const char* toolTipName = stringParts[6];
+						const sint32 x1 = std::atoi(stringParts[1]);
+						const sint32 y1 = std::atoi(stringParts[2]);
+
+						MenuItem* menuItem = Front_MenuItem_CreateImageItem("", loFont, hiFont, loImageName, hiImageName, x1, y1,
+																			itemType, autoCenter, toolTipName, trigger);
+						Front_Menu_AddMenuItem(menuSet->menus[i], menuItem);
+					}
+					else if (numParts == 5) { // Trigger:x1:y1:banner:end
+						bool32* valuePtr = va_arg(args, bool32*);
+						MenuItem_TriggerCallback callback = va_arg(args, MenuItem_TriggerCallback);
+
+						const bool32 end = (std::atoi(stringParts[4]) == 1); // Numeric boolean
+						MenuItem_TriggerData* trigger = Front_MenuItem_CreateTrigger(valuePtr, end, callback);
+
+						const sint32 x1 = std::atoi(stringParts[1]);
+						const sint32 y1 = std::atoi(stringParts[2]);
+						
+						const char* banner = Front_Util_StringReplaceChar(stringParts[3], '_', ' ');
+
+						MenuItem* menuItem = Front_MenuItem_CreateBannerItem(banner, loFont, hiFont, x1, y1, itemType, autoCenter, trigger, false);
+						Front_Menu_AddMenuItem(menuSet->menus[i], menuItem);
+					}
+					else {
+						Config_WarnLast(true, legoGlobs.config, "Trigger menu item type must have 5 or 8 parts.");
+					}
+				}
+				break;
+
+			case MenuItem_Type_Slider:
+				{
+					// Slider:x1:y1:x2:y2:banner:min:max[:offBarImage:onBarImage:leftCapImage:rightCapImage:loPlusImage:loMinusImage:hiPlusImage:hiMinusImage]
+
+					Config_WarnLast((numParts != 8 && numParts != 16), legoGlobs.config, "Slider menu item type must have 8 or 16 parts.");
+
+					sint32* valuePtr = va_arg(args, sint32*);
+					MenuItem_SliderCallback callback = va_arg(args, MenuItem_SliderCallback);
+
+					Gods98::Image* sliderImages[8];
+					Front_Menu_LoadSliderImages(numParts, stringParts, sliderImages);
+					Gods98::Image* offBarImage = sliderImages[0];
+					Gods98::Image* onBarImage = sliderImages[1];
+					Gods98::Image* leftCapImage = sliderImages[2];
+					Gods98::Image* rightCapImage = sliderImages[3];
+					Gods98::Image* loPlusImage = sliderImages[4];
+					Gods98::Image* loMinusImage = sliderImages[5];
+					Gods98::Image* hiPlusImage = sliderImages[6];
+					Gods98::Image* hiMinusImage = sliderImages[7];
+
+					const sint32 x2 = std::atoi(stringParts[3]);
+					const sint32 y2 = std::atoi(stringParts[4]);
+					const sint32 valueMin = std::atoi(stringParts[6]);
+					const sint32 valueMax = std::atoi(stringParts[7]);
+
+					MenuItem_SliderData* slider = Front_MenuItem_CreateSlider(valuePtr, valueMin, valueMax, x2, y2, callback,
+																			  offBarImage, onBarImage, leftCapImage, rightCapImage,
+																			  loPlusImage, loMinusImage, hiPlusImage, hiMinusImage);
+					
+					const sint32 x1 = std::atoi(stringParts[1]);
+					const sint32 y1 = std::atoi(stringParts[2]);
+
+					const char* banner = Front_Util_StringReplaceChar(stringParts[5], '_', ' ');
+
+					MenuItem* menuItem = Front_MenuItem_CreateBannerItem(banner, loFont, hiFont, x1, y1, itemType, autoCenter, slider, false);
+					Front_Menu_AddMenuItem(menuSet->menus[i], menuItem);
+				}
+				break;
+
+			case MenuItem_Type_RealSlider:
+				{
+					// RealSlider:x1:y1:x2:y2:banner:min:max:step
+
+					Config_WarnLast((numParts != 9), legoGlobs.config, "RealSlider menu item type must have 9 parts.");
+
+					real32* valuePtr = va_arg(args, real32*);
+					MenuItem_RealSliderCallback callback = va_arg(args, MenuItem_RealSliderCallback);
+
+					const sint32 x2 = std::atoi(stringParts[3]);
+					const sint32 y2 = std::atoi(stringParts[4]);
+					const real32 valueMin = (real32)std::atof(stringParts[6]);
+					const real32 valueMax = (real32)std::atof(stringParts[7]);
+					const real32 valueStep = (real32)std::atof(stringParts[8]);
+					MenuItem_RealSliderData* realSlider = (MenuItem_RealSliderData*)Front_MenuItem_CreateRealSlider(valuePtr, valueMin, valueMax, valueStep,
+																													x2, y2, callback);
+
+					const sint32 x1 = std::atoi(stringParts[1]);
+					const sint32 y1 = std::atoi(stringParts[2]);
+					const char* banner = Front_Util_StringReplaceChar(stringParts[5], '_', ' ');
+
+					MenuItem* menuItem = Front_MenuItem_CreateBannerItem(banner, loFont, hiFont, x1, y1, itemType, autoCenter, realSlider, false);
+					Front_Menu_AddMenuItem(menuSet->menus[i], menuItem);
+				}
+				break;
+
+			case MenuItem_Type_Next:
+				{
+					// MenuLink is expected to follow "Menu%i"
+
+					if (numParts == 8) { // Next:x1:y1:loImage:hiImage:unusedImage:toolTip:MenuLink
+						const sint32 nextMenuNumber = std::atoi(stringParts[7] + 4); // +4 to skip "Menu"
+
+						Menu* nextMenu = menuSet->menus[nextMenuNumber - 1]; // -1 because menu numbers are 1-indexed.
+
+						const char* loImageName = stringParts[3];
+						const char* hiImageName = stringParts[4];
+						// Image path at stringParts[5] seems to be unused.
+						const char* toolTipName = stringParts[6];
+						const sint32 x1 = std::atoi(stringParts[1]);
+						const sint32 y1 = std::atoi(stringParts[2]);
+
+						MenuItem* menuItem = Front_MenuItem_CreateImageItem("", loFont, hiFont, loImageName, hiImageName,
+																			x1, y1, itemType, autoCenter, toolTipName, nextMenu);
+						Front_Menu_AddMenuItem(menuSet->menus[i], menuItem);
+					}
+					else { // Next:x1:y1:banner:MenuLink[:NotInTuto]
+						Config_WarnLast((numParts != 5 && numParts != 6), legoGlobs.config, "Next menu item type must have 5, 6, or 8 parts.");
+
+						Menu* nextMenu;
+						bool32 notInTuto;
+
+						/// FIX APPLY: Handle empty menu name when numParts == 6.
+
+						//if (numParts == 6 || stringParts[4][0] != '\0') { // || numParts == 5
+						if (stringParts[4][0] != '\0') {
+							const sint32 nextMenuNumber = std::atoi(stringParts[4] + 4); // +4 to skip "Menu"
+
+							nextMenu = menuSet->menus[nextMenuNumber - 1]; // -1 because menu numbers are 1-indexed.
+
+							notInTuto = (numParts == 6); // This part simply needs to exist, usually the part string is "NotInTuto".
+						}
+						else { // Menu%i string is empty.
+							nextMenu = nullptr;
+
+							notInTuto = false;
+						}
+
+						const sint32 x1 = std::atoi(stringParts[1]);
+						const sint32 y1 = std::atoi(stringParts[2]);
+
+						const char* banner = Front_Util_StringReplaceChar(stringParts[3], '_', ' ');
+
+						MenuItem* menuItem = Front_MenuItem_CreateBannerItem(banner, loFont, hiFont, x1, y1, itemType, autoCenter, nextMenu, notInTuto);
+						Front_Menu_AddMenuItem(menuSet->menus[i], menuItem);
+					}
+				}
+				break;
+			}
+
+			Gods98::Mem_Free(str);
+		}
+	}
+
+	va_end(menuName);
+
+	return menuSet;
+}
 
 // <LegoRR.exe @00414bc0>
 sint32 __cdecl LegoRR::Front_GetMenuIDByName(MenuSet* menuSet, const char* name)

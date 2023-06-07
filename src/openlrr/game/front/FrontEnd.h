@@ -803,14 +803,14 @@ MenuItem* __cdecl Front_MenuItem_CreateBannerItem(const char* banner, Gods98::Fo
 												  MenuItem_Type itemType, bool32 centered, void* itemData, bool32 notInTuto);
 
 // <LegoRR.exe @00410d50>
-MenuItem* __cdecl Front_MenuItem_CreateImageItem(const char* banner, Gods98::Font* loFont, Gods98::Font* hiFont, char* loImageName, char* hiImageName,
-												 sint32 x1, sint32 y1, MenuItem_Type itemType, bool32 centered, char* toolTipName, void* itemData);
+MenuItem* __cdecl Front_MenuItem_CreateImageItem(const char* banner, Gods98::Font* loFont, Gods98::Font* hiFont, const char* loImageName, const char* hiImageName,
+												 sint32 x1, sint32 y1, MenuItem_Type itemType, bool32 centered, const char* toolTipName, void* itemData);
 
 // <LegoRR.exe @00410e60>
 void __cdecl Front_Menu_FreeMenu(Menu* menu);
 
 // <LegoRR.exe @00410ee0>
-bool32 __cdecl Front_Menu_LoadMenuImage(Menu* menu, char* filename, bool32 light);
+bool32 __cdecl Front_Menu_LoadMenuImage(Menu* menu, const char* filename, bool32 light);
 
 // <LegoRR.exe @00411030>
 //#define Front_Menu_CreateMenu ((Menu* (__cdecl* )(const char* title, const char* fullName, Gods98::Font* menuFont, sint32 positionX, sint32 positionY, bool32 autoCenter, bool32 displayTitle, sint32 centerX, bool32 canScroll, char* anchored_str))0x00411030)
@@ -946,8 +946,8 @@ void __cdecl Front_Menu_LoadSliderImages(sint32 numParts, IN char** stringParts,
 MenuSet* __cdecl Front_CreateMenuSet(uint32 menuCount);
 
 // <LegoRR.exe @00413ff0>
-#define Front_LoadMenuSet ((MenuSet* (__cdecl* )(const Gods98::Config* unused_config, const char* menuName, void* dst, void* callback, ...))0x00413ff0)
-//MenuSet* __cdecl Front_LoadMenuSet(const Gods98::Config* unused_config, const char* menuName, void* dst, void* callback, ...);
+//#define Front_LoadMenuSet ((MenuSet* (__cdecl* )(const Gods98::Config* unused_config, const char* menuName, void* dst, void* callback, ...))0x00413ff0)
+MenuSet* __cdecl Front_LoadMenuSet(const Gods98::Config* config, const char* menuName, /*void* dst, void* callback,*/ ...);
 
 // <LegoRR.exe @00414bc0>
 sint32 __cdecl Front_GetMenuIDByName(MenuSet* menuSet, const char* name);

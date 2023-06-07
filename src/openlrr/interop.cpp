@@ -2169,9 +2169,8 @@ bool interop_hook_LegoRR_FrontEnd(void)
 	// used by: Front_LoadMenuSet
 	result &= hook_write_jmpret(0x00413fa0, LegoRR::Front_CreateMenuSet);
 
-	// Not ready yet.
 	// used by: Front_Initialise
-	//result &= hook_write_jmpret(0x00413ff0, LegoRR::Front_LoadMenuSet);
+	result &= hook_write_jmpret(0x00413ff0, LegoRR::Front_LoadMenuSet);
 
 	// used by: Front_LoadLevels
 	result &= hook_write_jmpret(0x00414bc0, LegoRR::Front_GetMenuIDByName);
