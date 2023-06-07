@@ -3913,10 +3913,10 @@ void __cdecl LegoRR::Front_Initialise(const Gods98::Config* config)
 
 	frontGlobs.pausedMenuSet = Front_LoadMenuSet(config, "PausedMenu",
 												 &frontGlobs.triggerContinueMission, nullptr,								// "Paused" Trigger "Continue_Game"
-												 &frontGlobs.sliderGameSpeed, Front_Callback_SliderGameSpeed,				// "Options" Trigger "Game_Speed"
-												 &frontGlobs.sliderSFXVolume, Front_Callback_SliderSoundVolume,				// "Options" Trigger "SFX_Volume"
-												 &frontGlobs.sliderMusicVolume, Front_Callback_SliderMusicVolume,			// "Options" Trigger "Music_Volume"
-												 &frontGlobs.sliderBrightness, Front_Callback_SliderBrightness,				// "Options" Trigger "Brightness"
+												 &frontGlobs.sliderGameSpeed, Front_Callback_SliderGameSpeed,				// "Options" Slider "Game_Speed"
+												 &frontGlobs.sliderSFXVolume, Front_Callback_SliderSoundVolume,				// "Options" Slider "SFX_Volume"
+												 &frontGlobs.sliderMusicVolume, Front_Callback_SliderMusicVolume,			// "Options" Slider "Music_Volume"
+												 &frontGlobs.sliderBrightness, Front_Callback_SliderBrightness,				// "Options" Slider "Brightness"
 												 &frontGlobs.cycleHelpWindow, Front_Callback_CycleHelpWindow,				// "Options" Cycle "Help_Window"
 												 &frontGlobs.triggerReplayObjective, Front_Callback_TriggerReplayObjective,	// "Options" Trigger "Replay_Objective"
 												 &frontGlobs.triggerQuitMission, nullptr,									// "Quit?" Trigger "Yes_-_Quit"
@@ -4632,18 +4632,167 @@ void __cdecl LegoRR::MainMenuFull_AddMissionsDisplay(sint32 valueOffset, LevelLi
 }
 
 // <LegoRR.exe @004179c0>
-//bool32 __cdecl LegoRR::Front_Save_ReadSaveFile(uint32 saveIndex, OUT SaveData* saveData, bool32 readOnly);
+bool32 __cdecl LegoRR::Front_Save_ReadSaveFile(uint32 saveIndex, OUT SaveData* saveData, bool32 readOnly)
+{
+	if (saveIndex < _countof(frontGlobs.saveData)) {
+		char buff[100];
+		std::sprintf(buff, "%s\\%i.sav", "Saves", saveIndex);
+
+		Gods98::File* file = Gods98::File_Open(buff, "rb");
+		if (file != nullptr) {
+			// Count the actual number of missions.
+			uint32 missionsCount = 0;
+			Front_LevelLink_RunThroughLinks(frontGlobs.startMissionLink, Front_LevelLink_Callback_IncCount, &missionsCount);
+			Front_Levels_ResetVisited();
+
+			//uint32 tutorialCount = 0; // Counted, but unused.
+			//Front_LevelLink_RunThroughLinks(frontGlobs.startTutorialLink, Front_LevelLink_Callback_IncCount, &tutorialCount);
+			//Front_Levels_ResetVisited();
+
+			// Read the save header.
+			Gods98::File_Read(saveData, (sizeof(SaveData) - 0x8), 1, file);
+
+			// Check if the mission count is correct.
+			if (missionsCount != saveData->missionsCount && !readOnly) {
+				/// FIX APPLY: Close file on failure.
+				Gods98::File_Close(file);
+
+				// Mission count is invalid. The game considers this save corrupt, so write a blank save.
+				Front_Save_WriteSaveFiles(saveIndex, nullptr);
+
+				/// FIXME: Should we be freeing missionsTable before the memset?
+
+				// Clear the corrupt save data.
+				std::memset(saveData, 0, sizeof(SaveData));
+
+				return false;
+			}
+
+			/// NOTE: The only time readOnly is true is during a function that loads the save just to count mission completion.
+			///       So it's safe to read a mismatched mission count because it's not used anywhere else.
+
+			// Allocate and read the save missions table.
+			saveData->missionsTable = (SaveReward*)Gods98::Mem_Alloc(saveData->missionsCount * sizeof(SaveReward));
+			Gods98::File_Read(saveData->missionsTable, sizeof(SaveReward), saveData->missionsCount, file);
+
+			Gods98::File_Close(file);
+			return true;
+		}
+
+		// File doesn't exist, so write an empty save file.
+		if (!readOnly) {
+			Front_Save_WriteSaveFiles(saveIndex, nullptr);
+		}
+	}
+	return false;
+}
 
 // <LegoRR.exe @00417b00>
-//bool32 __cdecl LegoRR::Front_Save_WriteSaveFiles(uint32 saveNumber, OPTIONAL const SaveData* saveData);
+bool32 __cdecl LegoRR::Front_Save_WriteSaveFiles(uint32 saveIndex, OPTIONAL const SaveData* saveData)
+{
+	if (saveIndex < _countof(frontGlobs.saveData)) {
+		/// FIX APPLY: Also create directory when saveData != nullptr.
+		Gods98::File_MakeDir("Saves");
+
+		char buff[100];
+		std::sprintf(buff, "%s\\%i.sav", "Saves", saveIndex);
+
+		// Count the actual number of missions.
+		uint32 missionsCount = 0;
+		Front_LevelLink_RunThroughLinks(frontGlobs.startMissionLink, Front_LevelLink_Callback_IncCount, &missionsCount);
+		Front_Levels_ResetVisited();
+
+		if (saveData == nullptr) {
+			Gods98::File* file = Gods98::File_Open(buff, "wb");
+			if (file != nullptr) {
+
+				// For some reason the first field is zeroed out manually, this may actally be a substruct of size 0xb4...
+				// But ignore this for now.
+				SaveData save;
+				std::memset(&save, 0, sizeof(SaveData));
+
+				SaveReward mission;
+				std::memset(&mission, 0, sizeof(SaveReward));
+				mission.flags = SAVEREWARD_FLAG_NONE;
+
+				// Apply default settings.
+				// This is where we probably get most of our default settings from when starting the game(?)
+				save.SliderSoundVolume = 7;
+				save.SliderMusicVolume = 5;
+				save.SliderBrightness = 5;
+				save.SliderGameSpeed = 1;
+
+				save.missionsCount = missionsCount;
+
+				// Write the save header.
+				/// FIX APPLY: -0x4 was used here while -0x8 is used everywhere else.
+				Gods98::File_Write(&save, (sizeof(SaveData) - 0x8), 1, file);
+
+				// Write the blank save missions table.
+				for (uint32 i = 0; i < save.missionsCount; i++) {
+					Gods98::File_Write(&mission, sizeof(SaveReward), 1, file);
+				}
+
+				Gods98::File_Close(file);
+				return true;
+			}
+		}
+		else {
+			if (missionsCount != saveData->missionsCount) {
+				// Save is corrupt.
+				Front_Save_WriteSaveFiles(saveIndex, nullptr);
+				return true;
+			}
+
+			Gods98::File* file = Gods98::File_Open(buff, "wb");
+			if (file != nullptr) {
+				// Write the save header.
+				Gods98::File_Write(saveData, (sizeof(SaveData) - 0x8), 1, file);
+
+				// Write the save missions table.
+				if (saveData->missionsCount > 0) {
+					Gods98::File_Write(saveData->missionsTable, sizeof(SaveReward), saveData->missionsCount, file);
+				}
+
+				Gods98::File_Close(file);
+
+				// Write the ObjectRecall save file.
+				std::sprintf(buff, "%s\\%i.osf", "Saves", saveIndex);
+				ObjectRecall_SaveRROSFile(buff);
+
+				return true;
+			}
+		}
+	}
+	return false;
+}
 
 // <LegoRR.exe @00417d20>
-//void __cdecl LegoRR::Front_Save_LoadAllSaveFiles(void);
+void __cdecl LegoRR::Front_Save_LoadAllSaveFiles(void)
+{
+	for (uint32 i = 0; i < _countof(frontGlobs.saveData); i++) {
+
+		if (Gods98::Main_GetFlags() & Gods98::MainFlags::MAIN_FLAG_CLEANSAVES) {
+			// Overwrite the save file with an empty save.
+			Front_Save_WriteSaveFiles(i, nullptr);
+			// Read the empty save file into the save data table.
+			Front_Save_ReadSaveFile(i, &frontGlobs.saveData[i], false);
+		}
+		else {
+			// Read the save file into the save data table.
+			if (!Front_Save_ReadSaveFile(i, &frontGlobs.saveData[i], false)) {
+				// Calling the same function again may look dumb,
+				//  but Front_Save_ReadSaveFile will create a blank save file on failure if !readOnly.
+				Front_Save_ReadSaveFile(i, &frontGlobs.saveData[i], false);
+			}
+		}
+	}
+}
 
 // <LegoRR.exe @00417d80>
 LegoRR::SaveData* __cdecl LegoRR::Front_Save_GetSaveDataAt(sint32 saveIndex)
 {
-	if (saveIndex >= 0 && saveIndex < 6) {
+	if (saveIndex >= 0 && saveIndex < _countof(frontGlobs.saveData)) {
 		return &frontGlobs.saveData[saveIndex];
 	}
 	return nullptr;
@@ -4671,13 +4820,41 @@ void __cdecl LegoRR::Front_Save_SetSaveNumber(sint32 saveNumber)
 }
 
 // <LegoRR.exe @00417de0>
-//void __cdecl LegoRR::Front_Save_SetLevelCompleted(uint32 levelIndex);
+void __cdecl LegoRR::Front_Save_SetLevelCompleted(uint32 levelIndex)
+{
+	SaveData* currSave = Front_Save_GetCurrentSaveData();
+	/// FIX APPLY: Bounds check should not succeed when levelIndex == missionsCount.
+	/// SANITY: Bounds check level index even if it's a tutorial.
+	if (currSave != nullptr && levelIndex < currSave->missionsCount) {
+
+		if (!Front_IsTutorialSelected() && levelIndex >= 8) { // NUM_TUTORIALS
+			currSave->missionsTable[levelIndex].flags |= SAVEREWARD_FLAG_COMPLETED;
+		}
+		else if (levelIndex < 8) { // NUM_TUTORIALS
+			currSave->missionsTable[levelIndex].flags |= (SAVEREWARD_FLAG_COMPLETED|SAVEREWARD_FLAG_TUTORIAL);
+		}
+	}
+}
 
 // <LegoRR.exe @00417e50>
-//void __cdecl LegoRR::Front_Save_SetSaveStruct18(const SaveStruct_18* savestruct18);
+void __cdecl LegoRR::Front_Save_SetSaveStruct18(const SaveStruct_18* savestruct18)
+{
+	SaveData* currSave = Front_Save_GetCurrentSaveData();
+	if (currSave != nullptr) {
+		std::memcpy(&currSave->saveStruct18_1c, savestruct18, sizeof(SaveStruct_18));
+	}
+}
 
 // <LegoRR.exe @00417e70>
-//bool32 __cdecl LegoRR::Front_Save_SetRewardLevel(sint32 levelIndex, const RewardLevel* rewardLevel);
+bool32 __cdecl LegoRR::Front_Save_SetRewardLevel(sint32 levelIndex, const RewardLevel* rewardLevel)
+{
+	SaveData* currSave = Front_Save_GetCurrentSaveData();
+	if (currSave != nullptr && levelIndex < (sint32)currSave->missionsCount) {
+		std::memcpy(&currSave->missionsTable[levelIndex].reward, rewardLevel, sizeof(RewardLevel));
+		return true;
+	}
+	return false;
+}
 
 // <LegoRR.exe @00417ec0>
 LegoRR::RewardLevel* __cdecl LegoRR::Front_Save_GetRewardLevel(sint32 levelIndex)
@@ -4690,7 +4867,11 @@ LegoRR::RewardLevel* __cdecl LegoRR::Front_Save_GetRewardLevel(sint32 levelIndex
 }
 
 // <LegoRR.exe @00417ef0>
-//bool32 __cdecl LegoRR::Front_Save_WriteCurrentSaveFiles(void);
+bool32 __cdecl LegoRR::Front_Save_WriteCurrentSaveFiles(void)
+{
+	SaveData* currSave = Front_Save_GetCurrentSaveData();
+	return Front_Save_WriteSaveFiles(frontGlobs.saveNumber, currSave);
+}
 
 // <LegoRR.exe @00417f10>
 bool32 __cdecl LegoRR::Front_Save_GetBool_540(void)
@@ -4705,13 +4886,52 @@ void __cdecl LegoRR::Front_Save_SetBool_540(bool32 state)
 }
 
 // <LegoRR.exe @00417f30>
-//void __cdecl LegoRR::Front_Save_Write_FUN_00417f30(void);
+void __cdecl LegoRR::Front_Save_WriteCurrentAndUpdateUnlockedMissions(void)
+{
+	Front_Save_WriteSaveFiles(Front_Save_GetSaveNumber(), nullptr);
+
+	MenuItem_SelectData* select = frontGlobs.mainMenuSet->menus[1]->items[1]->itemData.select;
+	Front_Levels_UpdateAvailable(frontGlobs.startMissionLink, nullptr, &frontGlobs.missionLevels, select, true);
+}
 
 // <LegoRR.exe @00417f70>
-//void __cdecl LegoRR::Front_Save_CopySaveData(OUT SaveData* saveData);
+void __cdecl LegoRR::Front_Save_CopySaveData(OUT SaveData* saveData)
+{
+	SaveData* currSave = Front_Save_GetCurrentSaveData();
+	if (currSave != nullptr) {
+
+		// This function is only called on an empty SaveData struct, so we're not overwriting another allocation.
+		std::memcpy(saveData, currSave, sizeof(SaveData));
+
+		saveData->missionsTable = (SaveReward*)Gods98::Mem_Alloc(saveData->missionsCount * sizeof(SaveReward));
+		if (saveData->missionsTable != nullptr) {
+			std::memcpy(saveData->missionsTable, currSave->missionsTable, (saveData->missionsCount * sizeof(SaveReward)));
+		}
+	}
+}
 
 // <LegoRR.exe @00417ff0>
-//void __cdecl LegoRR::Front_Save_SetSaveData(const SaveData* saveData);
+void __cdecl LegoRR::Front_Save_SetSaveData(const SaveData* saveData)
+{
+	// Note that this function is only called together with CopySaveData and assigns to a local variable.
+	// SetSaveData is only called once during the function, so the ownership of currSave->missionsTable
+	//  won't be given to multiple saves.
+	
+	/// FIXME: The logic flow for that function does not guarantee that SetSaveData is called,
+	///         and missionsTable isn't cleaned up, so that's a memory leak.
+
+	SaveData* currSave = Front_Save_GetCurrentSaveData();
+	if (currSave != nullptr) {
+		if (currSave->missionsTable != nullptr) {
+			Gods98::Mem_Free(currSave->missionsTable);
+		}
+
+		std::memcpy(currSave, saveData, sizeof(SaveData));
+
+		/// REMOVE: Redundant statement after memcpy.
+		//currSave->missionsTable = saveData->missionsTable;
+	}
+}
 
 // <LegoRR.exe @00418040>
 void __cdecl LegoRR::Front_Save_SetBool_85c(bool32 state)
@@ -4720,6 +4940,21 @@ void __cdecl LegoRR::Front_Save_SetBool_85c(bool32 state)
 }
 
 // <LegoRR.exe @00418050>
-//bool32 __cdecl LegoRR::Front_Save_FUN_00418050(void);
+bool32 __cdecl LegoRR::Front_Save_IsGame100Percented(void)
+{
+	SaveData* currSave = Front_Save_GetCurrentSaveData();
+	if (currSave != nullptr) {
+		uint32 completion = 0;
+		// Start at NUM_TUTORIALS
+		for (uint32 i = 8; i < currSave->missionsCount; i++) {
+			completion += (sint32)currSave->missionsTable[i].reward.items[Reward_Score].percentFloat;
+		}
+
+		if ((completion / (currSave->missionsCount - 8)) >= 100) { // - NUM_TUTORIALS
+			return true;
+		}
+	}
+	return false;
+}
 
 #pragma endregion

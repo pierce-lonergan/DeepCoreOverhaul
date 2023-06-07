@@ -1185,16 +1185,16 @@ void __cdecl MainMenuFull_AddMissionsDisplay(sint32 valueOffset, LevelLink* star
 											 OPTIONAL Menu* nextMenu, MenuItem_SelectCallback callback);
 
 // <LegoRR.exe @004179c0>
-#define Front_Save_ReadSaveFile ((bool32 (__cdecl* )(uint32 saveIndex, OUT SaveData* saveData, bool32 readOnly))0x004179c0)
-//bool32 __cdecl Front_Save_ReadSaveFile(uint32 saveIndex, OUT SaveData* saveData, bool32 readOnly);
+//#define Front_Save_ReadSaveFile ((bool32 (__cdecl* )(uint32 saveIndex, OUT SaveData* saveData, bool32 readOnly))0x004179c0)
+bool32 __cdecl Front_Save_ReadSaveFile(uint32 saveIndex, OUT SaveData* saveData, bool32 readOnly);
 
 // <LegoRR.exe @00417b00>
-#define Front_Save_WriteSaveFiles ((bool32 (__cdecl* )(uint32 saveNumber, OPTIONAL SaveData* saveData))0x00417b00)
-//bool32 __cdecl Front_Save_WriteSaveFiles(uint32 saveNumber, OPTIONAL const SaveData* saveData);
+//#define Front_Save_WriteSaveFiles ((bool32 (__cdecl* )(uint32 saveIndex, OPTIONAL SaveData* saveData))0x00417b00)
+bool32 __cdecl Front_Save_WriteSaveFiles(uint32 saveIndex, OPTIONAL const SaveData* saveData);
 
 // <LegoRR.exe @00417d20>
-#define Front_Save_LoadAllSaveFiles ((void (__cdecl* )(void))0x00417d20)
-//void __cdecl Front_Save_LoadAllSaveFiles(void);
+//#define Front_Save_LoadAllSaveFiles ((void (__cdecl* )(void))0x00417d20)
+void __cdecl Front_Save_LoadAllSaveFiles(void);
 
 // <LegoRR.exe @00417d80>
 SaveData* __cdecl Front_Save_GetSaveDataAt(sint32 saveIndex);
@@ -1209,23 +1209,23 @@ sint32 __cdecl Front_Save_GetSaveNumber(void);
 void __cdecl Front_Save_SetSaveNumber(sint32 saveNumber);
 
 // <LegoRR.exe @00417de0>
-#define Front_Save_SetLevelCompleted ((void (__cdecl* )(uint32 levelIndex))0x00417de0)
-//void __cdecl Front_Save_SetLevelCompleted(uint32 levelIndex);
+//#define Front_Save_SetLevelCompleted ((void (__cdecl* )(uint32 levelIndex))0x00417de0)
+void __cdecl Front_Save_SetLevelCompleted(uint32 levelIndex);
 
 // <LegoRR.exe @00417e50>
-#define Front_Save_SetSaveStruct18 ((void (__cdecl* )(SaveStruct_18* savestruct18))0x00417e50)
-//void __cdecl Front_Save_SetSaveStruct18(const SaveStruct_18* savestruct18);
+//#define Front_Save_SetSaveStruct18 ((void (__cdecl* )(SaveStruct_18* savestruct18))0x00417e50)
+void __cdecl Front_Save_SetSaveStruct18(const SaveStruct_18* savestruct18);
 
 // <LegoRR.exe @00417e70>
-#define Front_Save_SetRewardLevel ((bool32 (__cdecl* )(sint32 levelIndex, RewardLevel* rewardLevel))0x00417e70)
-//bool32 __cdecl Front_Save_SetRewardLevel(sint32 levelIndex, const RewardLevel* rewardLevel);
+//#define Front_Save_SetRewardLevel ((bool32 (__cdecl* )(sint32 levelIndex, RewardLevel* rewardLevel))0x00417e70)
+bool32 __cdecl Front_Save_SetRewardLevel(sint32 levelIndex, const RewardLevel* rewardLevel);
 
 // <LegoRR.exe @00417ec0>
 RewardLevel* __cdecl Front_Save_GetRewardLevel(sint32 levelIndex);
 
 // <LegoRR.exe @00417ef0>
-#define Front_Save_WriteCurrentSaveFiles ((bool32 (__cdecl* )(void))0x00417ef0)
-//bool32 __cdecl Front_Save_WriteCurrentSaveFiles(void);
+//#define Front_Save_WriteCurrentSaveFiles ((bool32 (__cdecl* )(void))0x00417ef0)
+bool32 __cdecl Front_Save_WriteCurrentSaveFiles(void);
 
 // <LegoRR.exe @00417f10>
 bool32 __cdecl Front_Save_GetBool_540(void);
@@ -1234,23 +1234,24 @@ bool32 __cdecl Front_Save_GetBool_540(void);
 void __cdecl Front_Save_SetBool_540(bool32 state);
 
 // <LegoRR.exe @00417f30>
-#define Front_Save_Write_FUN_00417f30 ((void (__cdecl* )(void))0x00417f30)
-//void __cdecl Front_Save_Write_FUN_00417f30(void);
+//#define Front_Save_WriteCurrentAndUpdateUnlockedMissions ((void (__cdecl* )(void))0x00417f30)
+void __cdecl Front_Save_WriteCurrentAndUpdateUnlockedMissions(void);
 
 // <LegoRR.exe @00417f70>
-#define Front_Save_CopySaveData ((void (__cdecl* )(SaveData* out_saveData))0x00417f70)
-//void __cdecl Front_Save_CopySaveData(OUT SaveData* saveData);
+//#define Front_Save_CopySaveData ((void (__cdecl* )(SaveData* out_saveData))0x00417f70)
+void __cdecl Front_Save_CopySaveData(OUT SaveData* saveData);
 
 // <LegoRR.exe @00417ff0>
-#define Front_Save_SetSaveData ((void (__cdecl* )(SaveData* saveData))0x00417ff0)
-//void __cdecl Front_Save_SetSaveData(const SaveData* saveData);
+//#define Front_Save_SetSaveData ((void (__cdecl* )(SaveData* saveData))0x00417ff0)
+void __cdecl Front_Save_SetSaveData(const SaveData* saveData);
 
 // <LegoRR.exe @00418040>
 void __cdecl Front_Save_SetBool_85c(bool32 state);
 
+// Returns true if all non-tutorial levels have 100% score.
 // <LegoRR.exe @00418050>
-#define Front_Save_FUN_00418050 ((bool32 (__cdecl* )(void))0x00418050)
-//bool32 __cdecl Front_Save_FUN_00418050(void);
+//#define Front_Save_IsGame100Percented ((bool32 (__cdecl* )(void))0x00418050)
+bool32 __cdecl Front_Save_IsGame100Percented(void);
 
 #pragma endregion
 
