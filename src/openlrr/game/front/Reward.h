@@ -361,10 +361,12 @@ void __cdecl Reward_DrawItem(RewardLevelItem* rewardItem, RewardItemFlags flags,
 #define Reward_HandleButtons ((void (__cdecl* )(OUT RewardUIState* state, OUT bool32* saved))0x00462090)
 
 // <LegoRR.exe @004622f0>
-#define Reward_GotoSaveMenu ((void (__cdecl* )(void))0x004622f0)
+//#define Reward_GotoSaveMenu ((void (__cdecl* )(void))0x004622f0)
+void __cdecl Reward_GotoSaveMenu(void);
 
 // <LegoRR.exe @00462530>
-#define Reward_GotoAdvance ((void (__cdecl* )(void))0x00462530)
+//#define Reward_GotoAdvance ((void (__cdecl* )(void))0x00462530)
+void __cdecl Reward_GotoAdvance(void);
 
 // <LegoRR.exe @00462650>
 #define Reward_HandleDebugKeys ((void (__cdecl* )(IN OUT Reward_Type* rewardType, IN OUT RewardUIState* state, IN OUT bool32* finished, IN OUT real32* timer))0x00462650)

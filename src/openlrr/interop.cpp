@@ -2351,7 +2351,7 @@ bool interop_hook_LegoRR_FrontEnd(void)
 	result &= hook_write_jmpret(0x00417220, LegoRR::Front_Levels_UpdateAvailable_Recursive);
 
 	// used by: Front_Callback_SelectLoadSave, Front_Callback_TriggerBackSave,
-	//          Front_PrepareScreenMenuType, Front_Save_WriteCurrentAndUpdateUnlockedMissions, Reward_GotoAdvance
+	//          Front_PrepareScreenMenuType, Front_Save_WriteEmptySaveFiles, Reward_GotoAdvance
 	result &= hook_write_jmpret(0x00417310, LegoRR::Front_Levels_UpdateAvailable);
 
 	// used by: Front_Save_GetLevelCompleteWithPoints, Front_Callback_SelectMissionItem
@@ -2373,7 +2373,7 @@ bool interop_hook_LegoRR_FrontEnd(void)
 	result &= hook_write_jmpret(0x004179c0, LegoRR::Front_Save_ReadSaveFile);
 
 	// used by: Front_Save_ReadSaveFile, Front_Save_LoadAllSaveFiles, Front_Save_WriteCurrentSaveFiles,
-	//          Front_Save_WriteCurrentAndUpdateUnlockedMissions
+	//          Front_Save_WriteEmptySaveFiles
 	result &= hook_write_jmpret(0x00417b00, LegoRR::Front_Save_WriteSaveFiles);
 
 	// used by: Front_LoadLevels
@@ -2385,7 +2385,7 @@ bool interop_hook_LegoRR_FrontEnd(void)
 	// used by: FrontEnd, Lego_LoadLevel, Reward_GotoSaveMenu, Reward_GotoAdvance
 	result &= hook_write_jmpret(0x00417da0, LegoRR::Front_Save_GetCurrentSaveData);
 
-	// used by: Front_UpdateOptionsSliders, Front_Save_WriteCurrentAndUpdateUnlockedMissions, Lego_LoadLevel,
+	// used by: Front_UpdateOptionsSliders, Front_Save_WriteEmptySaveFiles, Lego_LoadLevel,
 	//          Reward_GotoSaveMenu, Reward_GotoAdvance
 	result &= hook_write_jmpret(0x00417dc0, LegoRR::Front_Save_GetSaveNumber);
 
@@ -2408,13 +2408,13 @@ bool interop_hook_LegoRR_FrontEnd(void)
 	result &= hook_write_jmpret(0x00417ef0, LegoRR::Front_Save_WriteCurrentSaveFiles);
 
 	// used by: Reward_GotoSaveMenu
-	result &= hook_write_jmpret(0x00417f10, LegoRR::Front_Save_GetBool_540);
+	result &= hook_write_jmpret(0x00417f10, LegoRR::Front_Save_GetHasNoSaveData);
 
 	// used by: Reward_GotoSaveMenu
-	result &= hook_write_jmpret(0x00417f20, LegoRR::Front_Save_SetBool_540);
+	result &= hook_write_jmpret(0x00417f20, LegoRR::Front_Save_SetHasNoSaveData);
 
 	// used by: Reward_GotoSaveMenu
-	result &= hook_write_jmpret(0x00417f30, LegoRR::Front_Save_WriteCurrentAndUpdateUnlockedMissions);
+	result &= hook_write_jmpret(0x00417f30, LegoRR::Front_Save_WriteEmptySaveFiles);
 
 	// used by: Reward_GotoSaveMenu
 	result &= hook_write_jmpret(0x00417f70, LegoRR::Front_Save_CopySaveData);
@@ -2423,7 +2423,7 @@ bool interop_hook_LegoRR_FrontEnd(void)
 	result &= hook_write_jmpret(0x00417ff0, LegoRR::Front_Save_SetSaveData);
 
 	// used by: Front_Initialise, Front_PrepareScreenMenuType, Reward_GotoAdvance
-	result &= hook_write_jmpret(0x00418040, LegoRR::Front_Save_SetBool_85c);
+	result &= hook_write_jmpret(0x00418040, LegoRR::Front_Save_SetShouldClearUnlockedLevels);
 
 	// used by: Reward_Show
 	result &= hook_write_jmpret(0x00418050, LegoRR::Front_Save_IsGame100Percented);
@@ -3472,6 +3472,12 @@ bool interop_hook_LegoRR_Reward(void)
 	
 	// used by: Reward_Show, Reward_DrawScore, Reward_DrawAllValues
 	result &= hook_write_jmpret(0x00461a50, LegoRR::Reward_DrawItem);
+
+	// used by: Reward_HandleButtons
+	result &= hook_write_jmpret(0x004622f0, LegoRR::Reward_GotoSaveMenu);
+
+	// used by: Reward_HandleButtons, Reward_LoopBegin
+	result &= hook_write_jmpret(0x00462530, LegoRR::Reward_GotoAdvance);
 
 	// used by: Reward_Show
 	result &= hook_write_jmpret(0x004629c0, LegoRR::Reward_LoopUpdate);

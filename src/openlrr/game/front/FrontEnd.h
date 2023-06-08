@@ -589,9 +589,9 @@ struct Front_Globs // [LegoRR/FrontEnd.c|struct:0x884|tags:GLOBS]
 	/*534,4*/	real32 rockWipeTimer; // RockWipe animation timer in animation frames units.
 	/*538,4*/	real32 rockWipeLastUpdateTime;
 	/*53c,4*/	Gods98::Container* rockWipeLight;
-	/*540,4*/	bool32 saveBool_540;
-	/*544,4*/	bool32 isLoadModeBool_544;
-	/*548,4*/	bool32 saveBool_548;
+	/*540,4*/	bool32 saveMenuHasNoData; // Set to true when shouldClearUnlockedLevels is true, and ensures unlocked levels are updated after opening the save menu.
+	/*544,4*/	bool32 saveMenuHasSaved; // True when leaving the save menu without using the back button.
+	/*548,4*/	bool32 saveMenuKeepOpen; // Used in a loop to continue showing the save menu.
 	/*54c,8*/	Size2I saveImageBigSize;
 	/*554,40*/	char langLoadGame[64];
 	/*594,40*/	char langSaveGame[64];
@@ -601,7 +601,7 @@ struct Front_Globs // [LegoRR/FrontEnd.c|struct:0x884|tags:GLOBS]
 	/*65c,100*/	char langOverwriteMessage[256];
 	/*75c,80*/	char langOverwriteOK[128];
 	/*7dc,80*/	char langOverwriteCancel[128];
-	/*85c,4*/	bool32 saveBool_85c;
+	/*85c,4*/	bool32 shouldClearUnlockedLevels; // When true, unlocked levels are cleared if there is no save data.
 	/*860,4*/	undefined4 reserved5;
 	/*864,4*/	undefined4 unused_zero_864; // (init: 0) Set to 0 and never touched?
 	/*868,4*/	sint32 maxLevelScreens;
@@ -623,22 +623,22 @@ assert_sizeof(Front_Globs, 0x884);
 #pragma region Globals
 
 // <LegoRR.exe @004a2f48>
-extern sint32 & g_SaveMenu_INDEX_004a2f48; // = -1;
+extern sint32 & g_frontSelectHoverIndex; // = -1;
 
 // <LegoRR.exe @004a2f4c>
-extern sint32 & g_SaveMenu_INT_004a2f4c; // = -1;
+extern sint32 & g_saveMenuSelectedIndex; // = -1;
 
 // <LegoRR.exe @004a2f50>
-extern sint32 & g_SaveMenu_INDEX_004a2f50; // = -1;
+extern sint32 & g_saveMenuOverlayState; // = -1;
 
 // <LegoRR.exe @004a2f54>
-extern sint32 & g_SaveMenu_INDEX_004a2f54; // = -1;
+extern sint32 & g_saveMenuSelectingIndex; // = -1;
 
 // <LegoRR.exe @004a2f58>
-extern sint32 & g_SaveMenu_INT_004a2f58; // = -1;
+extern sint32 & g_saveMenuOverwriteResult; // = -1;
 
 // <LegoRR.exe @004a2f5c>
-extern sint32 & g_SaveMenu_OutNumber; // = -1;
+extern sint32 & g_saveMenuOutputSelectedIndex; // = -1;
 
 // As a heads up, this IS NOT the array used in GODS98, and seems to exist solely for Rename Input in LRR.
 // <LegoRR.exe @004a2f60>
@@ -663,25 +663,25 @@ extern char (& s_FrontReplaceSpacesBuff)[256];
 extern sint32 (& s_LevelSelect_NameYs)[16];
 
 // <LegoRR.exe @004dc890>
-extern Gods98::Image* (& g_SaveSlotImages_TABLE)[5];
+extern Gods98::Image* (& g_saveMenuImages)[5];
 
 // <LegoRR.exe @004dc8a4>
-extern undefined4 & DAT_004dc8a4;
+//extern undefined4 & DAT_004dc8a4;
 
 // <LegoRR.exe @004dc8a8>
-extern uint32 (& g_SaveSlotCompletionPercents)[5];
+extern uint32 (& g_saveMenuCompletionPercents)[5];
 
 // <LegoRR.exe @004dc8bc>
-extern bool32 & g_FrontBool_004dc8bc;
+extern bool32 & g_saveMenuOverwriteShowing;
 
 // <LegoRR.exe @004dc8c0>
-extern bool32 & g_FrontBool_004dc8c0;
+extern bool32 & g_saveMenuOverlayPlaying;
 
 // <LegoRR.exe @004dc8c4>
-extern bool32 & g_FrontBool_004dc8c4;
+extern bool32 & g_levelSelectPrinting;
 
 // <LegoRR.exe @004dc8c8>
-extern Menu* (& g_FrontMenu_004dc8c8);
+extern Menu* (& g_saveMenu_UnkNextMenu);
 
 // Linked list for commonly-loaded image files. Never cleaned up.
 // <LegoRR.exe @004dc8cc>
@@ -691,7 +691,7 @@ extern Front_Cache* (& g_ImageCache_NEXT);
 extern uint32 & s_LevelSelectNameCount;
 
 // <LegoRR.exe @004dc8d4>
-extern bool32 & s_FrontBool_004dc8d4;
+extern bool32 & s_frontMousePressedState;
 
 
 // <LegoRR.exe @004dc8dc>
@@ -1228,14 +1228,14 @@ RewardLevel* __cdecl Front_Save_GetRewardLevel(sint32 levelIndex);
 bool32 __cdecl Front_Save_WriteCurrentSaveFiles(void);
 
 // <LegoRR.exe @00417f10>
-bool32 __cdecl Front_Save_GetBool_540(void);
+bool32 __cdecl Front_Save_GetHasNoSaveData(void);
 
 // <LegoRR.exe @00417f20>
-void __cdecl Front_Save_SetBool_540(bool32 state);
+void __cdecl Front_Save_SetHasNoSaveData(bool32 state);
 
 // <LegoRR.exe @00417f30>
-//#define Front_Save_WriteCurrentAndUpdateUnlockedMissions ((void (__cdecl* )(void))0x00417f30)
-void __cdecl Front_Save_WriteCurrentAndUpdateUnlockedMissions(void);
+//#define Front_Save_WriteEmptySaveFiles ((void (__cdecl* )(void))0x00417f30)
+void __cdecl Front_Save_WriteEmptySaveFiles(void);
 
 // <LegoRR.exe @00417f70>
 //#define Front_Save_CopySaveData ((void (__cdecl* )(SaveData* out_saveData))0x00417f70)
@@ -1245,8 +1245,11 @@ void __cdecl Front_Save_CopySaveData(OUT SaveData* saveData);
 //#define Front_Save_SetSaveData ((void (__cdecl* )(SaveData* saveData))0x00417ff0)
 void __cdecl Front_Save_SetSaveData(const SaveData* saveData);
 
+/// CUSTOM: SaveData cleanup after calling Front_Save_CopySaveData, but not Front_Save_SetSaveData.
+void Front_Save_FreeSaveData(SaveData* saveData);
+
 // <LegoRR.exe @00418040>
-void __cdecl Front_Save_SetBool_85c(bool32 state);
+void __cdecl Front_Save_SetShouldClearUnlockedLevels(bool32 state);
 
 // Returns true if all non-tutorial levels have 100% score.
 // <LegoRR.exe @00418050>

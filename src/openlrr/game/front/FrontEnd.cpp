@@ -36,22 +36,22 @@
 #pragma region Globals
 
 // <LegoRR.exe @004a2f48>
-sint32 & LegoRR::g_SaveMenu_INDEX_004a2f48 = *(sint32*)0x004a2f48; // = -1;
+sint32 & LegoRR::g_frontSelectHoverIndex = *(sint32*)0x004a2f48; // = -1;
 
 // <LegoRR.exe @004a2f4c>
-sint32 & LegoRR::g_SaveMenu_INT_004a2f4c = *(sint32*)0x004a2f4c; // = -1;
+sint32 & LegoRR::g_saveMenuSelectedIndex = *(sint32*)0x004a2f4c; // = -1;
 
 // <LegoRR.exe @004a2f50>
-sint32 & LegoRR::g_SaveMenu_INDEX_004a2f50 = *(sint32*)0x004a2f50; // = -1;
+sint32 & LegoRR::g_saveMenuOverlayState = *(sint32*)0x004a2f50; // = -1;
 
 // <LegoRR.exe @004a2f54>
-sint32 & LegoRR::g_SaveMenu_INDEX_004a2f54 = *(sint32*)0x004a2f54; // = -1;
+sint32 & LegoRR::g_saveMenuSelectingIndex = *(sint32*)0x004a2f54; // = -1;
 
 // <LegoRR.exe @004a2f58>
-sint32 & LegoRR::g_SaveMenu_INT_004a2f58 = *(sint32*)0x004a2f58; // = -1;
+sint32 & LegoRR::g_saveMenuOverwriteResult = *(sint32*)0x004a2f58; // = -1;
 
 // <LegoRR.exe @004a2f5c>
-sint32 & LegoRR::g_SaveMenu_OutNumber = *(sint32*)0x004a2f5c; // = -1;
+sint32 & LegoRR::g_saveMenuOutputSelectedIndex = *(sint32*)0x004a2f5c; // = -1;
 
 // As a heads up, this IS NOT the array used in GODS98, and seems to exist solely for Rename Input in LRR.
 // <LegoRR.exe @004a2f60>
@@ -76,25 +76,25 @@ char (& LegoRR::s_FrontReplaceSpacesBuff)[256] = *(char(*)[256])0x004dc748;
 sint32 (& LegoRR::s_LevelSelect_NameYs)[16] = *(sint32(*)[16])0x004dc850;
 
 // <LegoRR.exe @004dc890>
-Gods98::Image* (& LegoRR::g_SaveSlotImages_TABLE)[5] = *(Gods98::Image*(*)[5])0x004dc890;
+Gods98::Image* (& LegoRR::g_saveMenuImages)[5] = *(Gods98::Image*(*)[5])0x004dc890;
 
 // <LegoRR.exe @004dc8a4>
-undefined4 & LegoRR::DAT_004dc8a4 = *(undefined4*)0x004dc8a4;
+//undefined4 & LegoRR::DAT_004dc8a4 = *(undefined4*)0x004dc8a4;
 
 // <LegoRR.exe @004dc8a8>
-uint32 (& LegoRR::g_SaveSlotCompletionPercents)[5] = *(uint32(*)[5])0x004dc8a8;
+uint32 (& LegoRR::g_saveMenuCompletionPercents)[5] = *(uint32(*)[5])0x004dc8a8;
 
 // <LegoRR.exe @004dc8bc>
-bool32 & LegoRR::g_FrontBool_004dc8bc = *(bool32*)0x004dc8bc;
+bool32 & LegoRR::g_saveMenuOverwriteShowing = *(bool32*)0x004dc8bc;
 
 // <LegoRR.exe @004dc8c0>
-bool32 & LegoRR::g_FrontBool_004dc8c0 = *(bool32*)0x004dc8c0;
+bool32 & LegoRR::g_saveMenuOverlayPlaying = *(bool32*)0x004dc8c0;
 
 // <LegoRR.exe @004dc8c4>
-bool32 & LegoRR::g_FrontBool_004dc8c4 = *(bool32*)0x004dc8c4;
+bool32 & LegoRR::g_levelSelectPrinting = *(bool32*)0x004dc8c4;
 
 // <LegoRR.exe @004dc8c8>
-LegoRR::Menu* (& LegoRR::g_FrontMenu_004dc8c8) = *(LegoRR::Menu**)0x004dc8c8;
+LegoRR::Menu* (& LegoRR::g_saveMenu_UnkNextMenu) = *(LegoRR::Menu**)0x004dc8c8;
 
 // <LegoRR.exe @004dc8cc>
 LegoRR::Front_Cache* (& LegoRR::g_ImageCache_NEXT) = *(LegoRR::Front_Cache**)0x004dc8cc;
@@ -103,7 +103,7 @@ LegoRR::Front_Cache* (& LegoRR::g_ImageCache_NEXT) = *(LegoRR::Front_Cache**)0x0
 uint32 & LegoRR::s_LevelSelectNameCount = *(uint32*)0x004dc8d0;
 
 // <LegoRR.exe @004dc8d4>
-bool32 & LegoRR::s_FrontBool_004dc8d4 = *(bool32*)0x004dc8d4;
+bool32 & LegoRR::s_frontMousePressedState = *(bool32*)0x004dc8d4;
 
 
 // <LegoRR.exe @004dc8dc>
@@ -1114,11 +1114,11 @@ bool32 __cdecl LegoRR::Front_Menu_FindItemUnderMouse(Menu* menu, OUT sint32* ite
 // <LegoRR.exe @00411770>
 bool32 __cdecl LegoRR::Front_GetMousePressedState(void)
 {
-	//static bool32 s_FrontBool_004dc8d4 = false;
+	//static bool32 s_frontMousePressedState = false;
 
-	const bool32 result = (!Gods98::mslb() && s_FrontBool_004dc8d4);
+	const bool32 result = (!Gods98::mslb() && s_frontMousePressedState);
 
-	s_FrontBool_004dc8d4 = Gods98::mslb();
+	s_frontMousePressedState = Gods98::mslb();
 
 	return result;
 }
@@ -1323,8 +1323,8 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_UpdateMenuItemsInput(real32 elapsed, Me
 						if ((menu == frontGlobs.mainMenuSet->menus[3]) ||
 							(menu == frontGlobs.saveMenuSet->menus[0]))
 						{
-							g_SaveMenu_INT_004a2f4c = selIndex;
-							g_SaveMenu_OutNumber = selIndex;
+							g_saveMenuSelectedIndex = selIndex;
+							g_saveMenuOutputSelectedIndex = selIndex;
 						}
 
 						if (select->nextMenu == nullptr) {
@@ -1643,10 +1643,10 @@ void __cdecl LegoRR::Front_Menu_UpdateOverlays(Menu* menu)
 				}
 			}
 			else {
-				if (g_SaveMenu_INDEX_004a2f50 >= 0) {
+				if (g_saveMenuOverlayState >= 0) {
 
 					MenuOverlay* overlay = menu->overlays;
-					const sint32 index = (4 - g_SaveMenu_INDEX_004a2f50);
+					const sint32 index = (4 - g_saveMenuOverlayState);
 					for (sint32 i = 0; i < index; i++) {
 						overlay = overlay->previous;
 					}
@@ -1657,13 +1657,14 @@ void __cdecl LegoRR::Front_Menu_UpdateOverlays(Menu* menu)
 						frontGlobs.overlayStartTime = Gods98::Main_GetTime();
 						frontGlobs.overlayCurrTime = frontGlobs.overlayStartTime;
 					}
-					g_SaveMenu_INT_004a2f4c = -1;
-					g_SaveMenu_INDEX_004a2f50 = -1;
-					g_FrontBool_004dc8c0 = true;
+					g_saveMenuSelectedIndex = -1;
+					g_saveMenuOverlayState = -1;
+					g_saveMenuOverlayPlaying = true;
 				}
-				else if (g_SaveMenu_INT_004a2f4c >= 0) {
-					g_SaveMenu_INDEX_004a2f50 = g_SaveMenu_INT_004a2f4c;
-					g_FrontMenu_004dc8c8 = nullptr;
+				else if (g_saveMenuSelectedIndex >= 0) {
+					// On the next call to this function we'll load the overlay index.
+					g_saveMenuOverlayState = g_saveMenuSelectedIndex;
+					g_saveMenu_UnkNextMenu = nullptr;
 				}
 			}
 		}
@@ -1681,14 +1682,14 @@ void __cdecl LegoRR::Front_Menu_UpdateOverlays(Menu* menu)
 		const uint32 oldTime = (uint32)((real32)(frontGlobs.overlayCurrTime - frontGlobs.overlayStartTime) / 1000.0f * STANDARD_FRAMERATE);
 		uint32 newTime = (uint32)((real32)(time - frontGlobs.overlayStartTime) / 1000.0f * STANDARD_FRAMERATE);
 
-		if (g_FrontBool_004dc8c0) {
+		if (g_saveMenuOverlayPlaying) {
 			/// TODO: Flic_GetFramePosition has lots of extra logic that may not
 			///       be expected in-place of getting the currentFrame field.
 			//if (frontGlobs.overlayImageOrFlic.flic->currentframe >= (sint32)Gods98::Flic_GetFrameCount(frontGlobs.overlayImageOrFlic.flic)) {
 			if (Gods98::Flic_GetCurrentFrame(frontGlobs.overlayImageOrFlic.flic) >= (sint32)Gods98::Flic_GetFrameCount(frontGlobs.overlayImageOrFlic.flic)) {
 			//if (Gods98::Flic_GetFramePosition(frontGlobs.overlayImageOrFlic.flic) >= Gods98::Flic_GetFrameCount(frontGlobs.overlayImageOrFlic.flic)) {
 				newTime = oldTime;
-				g_SaveMenu_INDEX_004a2f50 = -2;
+				g_saveMenuOverlayState = -2;
 			}
 		}
 
@@ -1701,9 +1702,9 @@ void __cdecl LegoRR::Front_Menu_UpdateOverlays(Menu* menu)
 			frontGlobs.overlayCurrTime = 0;
 			Gods98::Sound3D_Stream_Stop(false);
 		}
-		if (g_FrontBool_004dc8c0 && Gods98::mslb()) {
-			g_SaveMenu_INDEX_004a2f50 = -2;
-			g_FrontBool_004dc8c0 = false;
+		if (g_saveMenuOverlayPlaying && Gods98::mslb()) {
+			g_saveMenuOverlayState = -2;
+			g_saveMenuOverlayPlaying = false;
 		}
 	}
 }
@@ -1740,7 +1741,7 @@ void __cdecl LegoRR::Front_MenuItem_DrawSelectItem(sint32 x, sint32 y, Gods98::F
 void __cdecl LegoRR::Front_MenuItem_DrawSaveImage(Menu* menu, sint32 selIndex, MenuItem_SelectData* selectData, bool32 bigSize)
 {
 	if ((menu == frontGlobs.mainMenuSet->menus[3]) || (menu == frontGlobs.saveMenuSet->menus[0])) {
-		Gods98::Image* image = g_SaveSlotImages_TABLE[selIndex];
+		Gods98::Image* image = g_saveMenuImages[selIndex];
 		if (image != nullptr) {
 
 			/// FIXME: Runtime config value lookup! Store this somewhere once and be done.
@@ -1790,34 +1791,34 @@ void __cdecl LegoRR::Front_Menu_DrawLoadSaveText(Menu** pMenu, IN OUT Menu** cur
 	// Is this the Load Game or Save Game menu?
 	if ((menu == frontGlobs.mainMenuSet->menus[3]) || (menu == frontGlobs.saveMenuSet->menus[0])) {
 		// Is this the Load Game menu?
-		if ((menu == frontGlobs.saveMenuSet->menus[0]) && g_SaveMenu_INT_004a2f4c >= 0) {
+		if ((menu == frontGlobs.saveMenuSet->menus[0]) && g_saveMenuSelectedIndex >= 0) {
 
 			// Are no levels complete?
-			if (g_SaveSlotCompletionPercents[g_SaveMenu_INT_004a2f4c] == 0) {
-				frontGlobs.saveBool_548 = false;
+			if (g_saveMenuCompletionPercents[g_saveMenuSelectedIndex] == 0) {
+				frontGlobs.saveMenuKeepOpen = false;
 				menu->closed = true;
 			}
 			else {
-				g_FrontBool_004dc8bc = true;
+				g_saveMenuOverwriteShowing = true;
 			}
 		}
 
 		Gods98::TextWindow_Clear(frontGlobs.saveTextWnd->textWindow);
 		Gods98::TextWindow_PrintF(frontGlobs.saveTextWnd->textWindow, "\n");
 
-		if (g_SaveMenu_INDEX_004a2f50 == -2 || g_SaveMenu_INDEX_004a2f50 == -1) {
+		if (g_saveMenuOverlayState == -2 || g_saveMenuOverlayState == -1) {
 
-			if (g_SaveMenu_INDEX_004a2f50 == -2) {
-				if (g_FrontMenu_004dc8c8 != nullptr) {
-					*currMenu = g_FrontMenu_004dc8c8;
-					g_FrontMenu_004dc8c8 = nullptr;
+			if (g_saveMenuOverlayState == -2) {
+				if (g_saveMenu_UnkNextMenu != nullptr) {
+					*currMenu = g_saveMenu_UnkNextMenu;
+					g_saveMenu_UnkNextMenu = nullptr;
 				}
-				g_SaveMenu_INDEX_004a2f48 = -1;
-				g_SaveMenu_INDEX_004a2f54 = -1;
+				g_frontSelectHoverIndex = -1;
+				g_saveMenuSelectingIndex = -1;
 			}
 
 			*nextMenu = nullptr;
-			g_SaveMenu_INT_004a2f4c = -1;
+			g_saveMenuSelectedIndex = -1;
 
 			const char* format = frontGlobs.saveTextWnd->LoadText;
 			if (menu != frontGlobs.mainMenuSet->menus[3]) {
@@ -1826,26 +1827,26 @@ void __cdecl LegoRR::Front_Menu_DrawLoadSaveText(Menu** pMenu, IN OUT Menu** cur
 			Gods98::TextWindow_PrintF(frontGlobs.saveTextWnd->textWindow, format);
 		}
 		else {
-			g_FrontMenu_004dc8c8 = *currMenu;
+			g_saveMenu_UnkNextMenu = *currMenu;
 			*currMenu = *nextMenu;
-			g_SaveMenu_INDEX_004a2f54 = g_SaveMenu_INDEX_004a2f50;
+			g_saveMenuSelectingIndex = g_saveMenuOverlayState;
 		}
 
-		if (g_SaveMenu_INDEX_004a2f54 >= 0) {
+		if (g_saveMenuSelectingIndex >= 0) {
 			Gods98::TextWindow_Clear(frontGlobs.saveTextWnd->textWindow);
 			/* MainMenuFull::Menu4 "Load_Level_Save" */
 			if (menu == frontGlobs.mainMenuSet->menus[3]) {
 				/// TODO: This extra '0' at the end of the PrintF is in the Vanilla function call.
 				///       Should it be removed?
 				Gods98::TextWindow_PrintF(frontGlobs.saveTextWnd->textWindow, frontGlobs.saveTextWnd->LoadSelText,
-								  (g_SaveMenu_INDEX_004a2f54 + 1), 0);
+								  (g_saveMenuSelectingIndex + 1), 0);
 			}
 		}
-		else if (g_SaveMenu_INDEX_004a2f48 >= 0) {
+		else if (g_frontSelectHoverIndex >= 0) {
 			// Print score.
 
 			/// TODO: Consider not casting score to a float at all, it would be cleaner.
-			real32 score = (real32)g_SaveSlotCompletionPercents[g_SaveMenu_INDEX_004a2f48];
+			real32 score = (real32)g_saveMenuCompletionPercents[g_frontSelectHoverIndex];
 			if (score > 100.0f) score = 100.0f;
 
 			Gods98::TextWindow_PrintF(frontGlobs.saveTextWnd->textWindow, "\n");
@@ -1911,7 +1912,7 @@ void __cdecl LegoRR::Front_MenuItem_DrawSelectTextWindow(Menu** pMenu)
 				Gods98::TextWindow_PrintF(menuWnd->textWindow, "\n");
 			}
 
-			g_FrontBool_004dc8c4 = true;
+			g_levelSelectPrinting = true;
 		}
 	}
 }
@@ -1951,7 +1952,7 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 	Gods98::Viewport* view = legoGlobs.viewMain;
 	Gods98::Container* contView = Gods98::Viewport_GetCamera(view);
 
-	g_SaveMenu_INT_004a2f4c = -1;
+	g_saveMenuSelectedIndex = -1;
 	menu->itemFocus = -1;
 
 	if (menuTransition != nullptr) {
@@ -1960,16 +1961,16 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 
 	Menu* currMenu = menu;
 	Menu* nextMenu = menu;
-	if (!g_FrontBool_004dc8bc && g_FrontMenu_004dc8c8 == nullptr) {
+	if (!g_saveMenuOverwriteShowing && g_saveMenu_UnkNextMenu == nullptr) {
 		currMenu = Front_Menu_UpdateMenuItemsInput(elapsed, menu);
 	}
 
 	// Are we in the Save Game menu?
-	if (menu == frontGlobs.saveMenuSet->menus[0] && (g_SaveMenu_INT_004a2f4c >= 0) && (g_SaveMenu_INT_004a2f58 < 0)) {
+	if (menu == frontGlobs.saveMenuSet->menus[0] && (g_saveMenuSelectedIndex >= 0) && (g_saveMenuOverwriteResult < 0)) {
 		menu->closed = false;
 		currMenu->closed = false;
 	}
-	if (g_SaveMenu_INDEX_004a2f50 > -1) {
+	if (g_saveMenuOverlayState >= 0) {
 		currMenu = nextMenu;
 	}
 
@@ -2012,14 +2013,14 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 	}
 
 	// Later changed by MenuItem_Type_Select switch cases.
-	g_SaveMenu_INDEX_004a2f48 = -1;
+	g_frontSelectHoverIndex = -1;
 
 	for (sint32 i = 0; i < menu->itemCount; i++) {
 		MenuItem* item = menu->items[i];
 		const sint32 y1 = item->y1;
 		const sint32 x1 = item->x1;
 
-		if (menu->itemFocus == i && !g_FrontBool_004dc8bc && !Front_MenuItem_CheckNotInTutoAnyTutorialFlags(item)) {
+		if (menu->itemFocus == i && !g_saveMenuOverwriteShowing && !Front_MenuItem_CheckNotInTutoAnyTutorialFlags(item)) {
 			const sint32 centerOffHi = item->centerOffHi;
 
 			if (item->fontHi != nullptr) {
@@ -2089,7 +2090,7 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 					MenuItem_SelectData* select = item->itemData.select;
 
 					const uint32 selIndex = Front_MenuItem_Select_TestStringCollision(menu, item, select);
-					g_SaveMenu_INDEX_004a2f48 = selIndex;
+					g_frontSelectHoverIndex = selIndex;
 
 					for (sint32 i = 0; i < select->scrollCount; i++) {
 						const sint32 currIndex = select->scrollStart + i;
@@ -2295,21 +2296,22 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 
 	Front_LevelSelect_LevelNamePrintF(nullptr, 0, 0, nullptr);
 
-	if (menu == frontGlobs.saveMenuSet->menus[0] && g_FrontBool_004dc8bc) {
+	if (menu == frontGlobs.saveMenuSet->menus[0] && g_saveMenuOverwriteShowing) {
 		char buff[2048];
-		std::sprintf(buff, frontGlobs.langOverwriteMessage, (g_SaveMenu_OutNumber + 1)); // +1 since save numbers aren't 0-indexed.
+		std::sprintf(buff, frontGlobs.langOverwriteMessage, (g_saveMenuOutputSelectedIndex + 1)); // +1 since save numbers aren't 0-indexed.
 
-		g_SaveMenu_INT_004a2f58 = Lego_SaveMenu_ConfirmMessage_FUN_004354f0(frontGlobs.langOverwriteTitle, buff, frontGlobs.langOverwriteOK, frontGlobs.langOverwriteCancel);
-		if (g_SaveMenu_INT_004a2f58 == 0) {
+		// Returns -1 when nothing is pressed, 0 on Cancel pressed, and 1 on OK pressed.
+		g_saveMenuOverwriteResult = Lego_SaveMenu_ConfirmMessage_FUN_004354f0(frontGlobs.langOverwriteTitle, buff, frontGlobs.langOverwriteOK, frontGlobs.langOverwriteCancel);
+		if (g_saveMenuOverwriteResult == 0) { // Save canceled.
 			menu->closed = true;
-			frontGlobs.saveBool_548 = true;
-			g_FrontBool_004dc8bc = false;
-			g_SaveMenu_OutNumber = -1;
+			frontGlobs.saveMenuKeepOpen = true; // Show the save menu again. Why does it need to be closed and re-opened? Who knows...
+			g_saveMenuOverwriteShowing = false;
+			g_saveMenuOutputSelectedIndex = -1;
 		}
-		else if (g_SaveMenu_INT_004a2f58 == 1) {
+		else if (g_saveMenuOverwriteResult == 1) { // Save confirmed.
 			menu->closed = true;
-			frontGlobs.saveBool_548 = false;
-			g_FrontBool_004dc8bc = false;
+			frontGlobs.saveMenuKeepOpen = false;
+			g_saveMenuOverwriteShowing = false;
 		}
 	}
 
@@ -2343,10 +2345,10 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_Update(real32 elapsed, Menu* menu, OUT 
 			if (menuTransition != nullptr) {
 				*menuTransition = true;
 			}
-			g_SaveMenu_INDEX_004a2f50 = -1;
-			g_SaveMenu_INT_004a2f4c = -1;
-			g_FrontMenu_004dc8c8 = nullptr;
-			g_FrontBool_004dc8c0 = false;
+			g_saveMenuOverlayState = -1;
+			g_saveMenuSelectedIndex = -1;
+			g_saveMenu_UnkNextMenu = nullptr;
+			g_saveMenuOverlayPlaying = false;
 			if (frontGlobs.overlayImageOrFlic.data != nullptr) {
 				frontGlobs.overlayStartTime = 0;
 				frontGlobs.overlayCurrTime = 0;
@@ -2414,35 +2416,31 @@ void __cdecl LegoRR::Front_LoadSaveSlotImages(void)
 	// Max valid size of SaveImage Path in game is 184, but only due to field reuse optimization, other areas use 128 buffer sizes.
 	char buff[128];
 
-	for (uint32 i = 0; i < _countof(g_SaveSlotImages_TABLE); i++) {
+	for (uint32 i = 0; i < _countof(g_saveMenuImages); i++) {
 		/// FIX APPLY: Remove yet another memory leak from using Config_GetStringValue and no Mem_Free...
 		const char* saveImagePath = Gods98::Config_GetTempStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, "Menu::SaveImage", "Path"));
 		std::sprintf(buff, "%s\\%d.dat", saveImagePath, i);
-		g_SaveSlotImages_TABLE[i] = Gods98::Image_LoadBMP(buff);
+		g_saveMenuImages[i] = Gods98::Image_LoadBMP(buff);
 	}
 
 
 	// Functionally this entire block does nothing, it was likely some debug check at one point.
-	for (uint32 i = 0; i < _countof(g_SaveSlotCompletionPercents); i++) {
+	for (uint32 i = 0; i < _countof(g_saveMenuCompletionPercents); i++) {
 
 		// For some reason the first field is zeroed out manually, this may actally be a substruct of size 0xb4...
+		// But ignore this for now.
 		SaveData saveData;
-		saveData.field_0x0 = 0;
-		std::memset((uint32*)&saveData + 1, 0, sizeof(saveData) - sizeof(uint32));
-
-		// If this isn't the case, just use this memset for the entire struct.
-		//std::memset(&saveData, 0, sizeof(saveData));
-
+		std::memset(&saveData, 0, sizeof(SaveData));
 
 		Front_Save_ReadSaveFile(i, &saveData, true);
 
 		// Assign completion percentage based on number of completed levels.
-		g_SaveSlotCompletionPercents[i] = 0;
+		g_saveMenuCompletionPercents[i] = 0;
 		// Hardcoded tutorial count (8).
 		for (uint32 j = 0; j < (saveData.missionsCount - 8); j++) {
 			real32 scorePercent = saveData.missionsTable[8 + j].reward.items[Reward_Score].percentFloat;
 			// HARDCODED LEVEL COUNT! This adds 4% for every completed level. So it's expected that there are 25 missions.
-			g_SaveSlotCompletionPercents[i] += (scorePercent != 0.0f ? 4 : 0);
+			g_saveMenuCompletionPercents[i] += (scorePercent != 0.0f ? 4 : 0);
 		}
 
 		// Free the missions table, as we only needed to load it for this loop.
@@ -2453,11 +2451,11 @@ void __cdecl LegoRR::Front_LoadSaveSlotImages(void)
 // <LegoRR.exe @00413a80>
 void __cdecl LegoRR::Front_FreeSaveSlotImages(void)
 {
-	for (uint32 i = 0; i < _countof(g_SaveSlotImages_TABLE); i++) {
-		if (g_SaveSlotImages_TABLE[i] != nullptr) {
-			Gods98::Image_Remove(g_SaveSlotImages_TABLE[i]);
+	for (uint32 i = 0; i < _countof(g_saveMenuImages); i++) {
+		if (g_saveMenuImages[i] != nullptr) {
+			Gods98::Image_Remove(g_saveMenuImages[i]);
 			/// FIX APPLY: Set to null.
-			g_SaveSlotImages_TABLE[i] = nullptr;
+			g_saveMenuImages[i] = nullptr;
 		}
 	}
 }
@@ -2467,17 +2465,17 @@ void __cdecl LegoRR::Front_ScreenMenuLoop(Menu* menu)
 {
 	Front_LoadSaveSlotImages();
 
-	g_FrontMenu_004dc8c8 = nullptr;
-	g_SaveMenu_INDEX_004a2f50 = -1;
-	g_SaveMenu_INT_004a2f4c = -1;
-	g_SaveMenu_INDEX_004a2f54 = -1;
-	g_SaveMenu_INT_004a2f58 = -1;
-	g_SaveMenu_OutNumber = -1;
-	g_FrontBool_004dc8c0 = false;
-	g_FrontBool_004dc8bc = false;
-	g_FrontBool_004dc8c4 = false;
-	frontGlobs.isLoadModeBool_544 = true;
-	frontGlobs.saveBool_548 = true;
+	g_saveMenu_UnkNextMenu = nullptr;
+	g_saveMenuOverlayState = -1;
+	g_saveMenuSelectedIndex = -1;
+	g_saveMenuSelectingIndex = -1;
+	g_saveMenuOverwriteResult = -1;
+	g_saveMenuOutputSelectedIndex = -1;
+	g_saveMenuOverlayPlaying = false;
+	g_saveMenuOverwriteShowing = false;
+	g_levelSelectPrinting = false;
+	frontGlobs.saveMenuHasSaved = true; // Set to false when the SaveMenu back button is pressed.
+	frontGlobs.saveMenuKeepOpen = true;
 	frontGlobs.overlayImageOrFlic.data = nullptr;
 
 
@@ -2498,6 +2496,8 @@ void __cdecl LegoRR::Front_ScreenMenuLoop(Menu* menu)
 		}
 		if ((menu == frontGlobs.mainMenuSet->menus[0]) && (nextMenu != menu)) {
 			frontGlobs.selectLoadSaveIndex = -1;
+			// When changing from the Title screen to another menu in the main menu set, we're clearing our current game progress.
+			// This is probably so that pressing START GAME will start a new game.
 			Front_Callback_SelectLoadSave(elapsed, -1);
 		}
 		Front_Menu_UpdateMousePosition(menu);
@@ -2546,7 +2546,7 @@ void __cdecl LegoRR::Front_ScreenMenuLoop(Menu* menu)
 
 	Front_FreeSaveSlotImages();
 
-	if ((nextMenu == frontGlobs.saveMenuSet->menus[0]) && g_SaveMenu_OutNumber >= 0) {
+	if ((nextMenu == frontGlobs.saveMenuSet->menus[0]) && g_saveMenuOutputSelectedIndex >= 0) {
 		RewardLevel* rewards = GetRewardLevel();
 		if (rewards != nullptr && rewards->saveHasCapture) {
 
@@ -2556,7 +2556,7 @@ void __cdecl LegoRR::Front_ScreenMenuLoop(Menu* menu)
 
 			/// FIX APPLY: Remove yet another memory leak from using Config_GetStringValue and no Mem_Free...
 			const char* saveImagePath = Gods98::Config_GetTempStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, "Menu::SaveImage", "Path"));
-			std::sprintf(buff, "%s\\%d.dat", saveImagePath, g_SaveMenu_OutNumber);
+			std::sprintf(buff, "%s\\%d.dat", saveImagePath, g_saveMenuOutputSelectedIndex);
 			Gods98::Image_SaveBMP(&rewards->saveCaptureImage, buff);
 		}
 	}
@@ -3266,6 +3266,7 @@ void __cdecl LegoRR::Front_Callback_SelectLoadSave(real32 elapsedAbs, sint32 sel
 		rewardsTable = Front_Save_GetCurrentSaveData()->missionsTable;
 	}
 	else {
+		// Reset all levels to their default locked state.
 		keepLocked = true;
 		rewardsTable = nullptr;
 	}
@@ -3296,9 +3297,9 @@ void __cdecl LegoRR::Front_UpdateOptionsSliders(void)
 // <LegoRR.exe @004150c0>
 void __cdecl LegoRR::Front_Callback_TriggerBackSave(void)
 {
-	frontGlobs.isLoadModeBool_544 = false;
-	frontGlobs.saveBool_548 = false;
-	g_SaveMenu_INT_004a2f4c = -1;
+	frontGlobs.saveMenuHasSaved = false;
+	frontGlobs.saveMenuKeepOpen = false;
+	g_saveMenuSelectedIndex = -1;
 
 	MenuItem_SelectData* selectData = frontGlobs.mainMenuSet->menus[1]->items[1]->itemData.select;
 
@@ -3309,6 +3310,7 @@ void __cdecl LegoRR::Front_Callback_TriggerBackSave(void)
 									 &frontGlobs.missionLevels, selectData, false);
 	}
 	else {
+		// No active save, so reset all levels to their default locked state.
 		Front_Levels_UpdateAvailable(frontGlobs.startMissionLink, nullptr,
 									 &frontGlobs.missionLevels, selectData, true);
 	}
@@ -3944,7 +3946,7 @@ void __cdecl LegoRR::Front_Initialise(const Gods98::Config* config)
 	frontGlobs.cycleHelpWindow = 1;
 	frontGlobs.triggerReplayObjective = false;
 	frontGlobs.triggerContinueMission = false;
-	frontGlobs.saveBool_540 = false;
+	frontGlobs.saveMenuHasNoData = false;
 
 
 	frontGlobs.maxLevelScreens = Config_GetIntValue(config, Config_ID(legoGlobs.gameName, "Menu", "MaxLevelScreens"));
@@ -3962,7 +3964,7 @@ void __cdecl LegoRR::Front_Initialise(const Gods98::Config* config)
 		frontGlobs.saveImageBigSize.height = 60;
 
 
-	Front_Save_SetBool_85c(true);
+	Front_Save_SetShouldClearUnlockedLevels(true);
 }
 
 // <LegoRR.exe @00416840>
@@ -3971,6 +3973,7 @@ void __cdecl LegoRR::Front_SaveOptionParameters(void)
 	SaveData* currSave = Front_Save_GetCurrentSaveData();
 	if (currSave != nullptr) {
 		currSave->SliderGameSpeed = frontGlobs.sliderGameSpeed;
+		//currSave->SliderMusicVolume = frontGlobs.sliderMusicVolume;
 		currSave->SliderSoundVolume = frontGlobs.sliderSFXVolume;
 		currSave->SliderBrightness = frontGlobs.sliderBrightness;
 	}
@@ -4023,7 +4026,7 @@ void __cdecl LegoRR::Front_PrepareScreenMenuType(Menu_ScreenType screenType)
 
 	case Menu_Screen_Load_unused:
 		Front_LoadOptionParameters(false, true);
-		Front_Save_SetBool_85c(true);
+		Front_Save_SetShouldClearUnlockedLevels(true);
 		return; // Skip logic after switch statement.
 
 	case Menu_Screen_Save:
@@ -4031,7 +4034,7 @@ void __cdecl LegoRR::Front_PrepareScreenMenuType(Menu_ScreenType screenType)
 		break;
 
 	default:
-		Front_Save_SetBool_85c(true);
+		Front_Save_SetShouldClearUnlockedLevels(true);
 		return; // Skip logic after switch statement.
 	}
 
@@ -4042,17 +4045,19 @@ void __cdecl LegoRR::Front_PrepareScreenMenuType(Menu_ScreenType screenType)
 	if (currSave != nullptr) {
 		Front_Levels_UpdateAvailable(frontGlobs.startMissionLink, currSave->missionsTable, &frontGlobs.missionLevels, missionSelect, false);
 	}
-	else if (frontGlobs.saveBool_85c) {
+	else if (frontGlobs.shouldClearUnlockedLevels) {
+		// No active save, so reset all levels to their default locked state.
 		Front_Levels_UpdateAvailable(frontGlobs.startMissionLink, nullptr, &frontGlobs.missionLevels, missionSelect, true);
 
 		if (screenType == Menu_Screen_Save) {
-			frontGlobs.saveBool_540 = true;
+			// We have no active save data. So if a save is selected, an empty save file will be written for it.
+			frontGlobs.saveMenuHasNoData = true;
 		}
 	}
 
 	Front_Levels_UpdateAvailable(frontGlobs.startTutorialLink, nullptr, &frontGlobs.tutorialLevels, tutorialSelect, false);
 
-	Front_Save_SetBool_85c(true);
+	Front_Save_SetShouldClearUnlockedLevels(true);
 }
 
 // <LegoRR.exe @00416bb0>
@@ -4464,7 +4469,7 @@ void __cdecl LegoRR::Front_Callback_SelectMissionItem(real32 elapsedAbs, sint32 
 
 		Front_LevelSelect_LevelNamePrintF(font, nameX, nameY, langName);
 	}
-	else if (g_FrontBool_004dc8c4) {
+	else if (g_levelSelectPrinting) {
 		Gods98::TextWindow_PrintF(menuTextWnd->textWindow, langName);
 		
 		if (Gods98::Main_IsTesterCall()) {
@@ -4489,7 +4494,7 @@ void __cdecl LegoRR::Front_Callback_SelectMissionItem(real32 elapsedAbs, sint32 
 		Front_Util_StringReplaceChar(buffMsg, '_', ' ');
 	}
 
-	if (menuTextWnd->textWindow != nullptr && g_FrontBool_004dc8c4) {
+	if (menuTextWnd->textWindow != nullptr && g_levelSelectPrinting) {
 		/* Ahhh, lovely... nested printf calls without sanitization,
 			it may be possible to intentionally corrupt memory with this. */
 		Gods98::TextWindow_PrintF(menuTextWnd->textWindow, buffMsg);
@@ -4521,7 +4526,7 @@ void __cdecl LegoRR::Front_Callback_SelectMissionItem(real32 elapsedAbs, sint32 
 		}
 	}
 
-	g_FrontBool_004dc8c4 = false;
+	g_levelSelectPrinting = false;
 }
 
 // <LegoRR.exe @00417630>
@@ -4539,7 +4544,7 @@ void __cdecl LegoRR::Front_Callback_SelectTutorialItem(real32 elapsedAbs, sint32
 		langLevelName = frontGlobs.tutorialLevels.idNames[link->setIndex];
 	}
 
-	if (frontGlobs.saveLevelWnd->textWindow != nullptr && g_FrontBool_004dc8c4) {
+	if (frontGlobs.saveLevelWnd->textWindow != nullptr && g_levelSelectPrinting) {
 		TextWindow_PrintF(frontGlobs.saveLevelWnd->textWindow, langLevelName);
 
 		if (frontGlobs.levelSelectHoverNumber != frontGlobs.levelSelectLastNumber) {
@@ -4559,7 +4564,7 @@ void __cdecl LegoRR::Front_Callback_SelectTutorialItem(real32 elapsedAbs, sint32
 		}
 	}
 
-	g_FrontBool_004dc8c4 = false;
+	g_levelSelectPrinting = false;
 }
 
 // <LegoRR.exe @00417710>
@@ -4874,22 +4879,24 @@ bool32 __cdecl LegoRR::Front_Save_WriteCurrentSaveFiles(void)
 }
 
 // <LegoRR.exe @00417f10>
-bool32 __cdecl LegoRR::Front_Save_GetBool_540(void)
+bool32 __cdecl LegoRR::Front_Save_GetHasNoSaveData(void)
 {
-	return frontGlobs.saveBool_540;
+	return frontGlobs.saveMenuHasNoData;
 }
 
 // <LegoRR.exe @00417f20>
-void __cdecl LegoRR::Front_Save_SetBool_540(bool32 state)
+void __cdecl LegoRR::Front_Save_SetHasNoSaveData(bool32 state)
 {
-	frontGlobs.saveBool_540 = state;
+	frontGlobs.saveMenuHasNoData = state;
 }
 
 // <LegoRR.exe @00417f30>
-void __cdecl LegoRR::Front_Save_WriteCurrentAndUpdateUnlockedMissions(void)
+void __cdecl LegoRR::Front_Save_WriteEmptySaveFiles(void)
 {
+	// Clear the current save file.
 	Front_Save_WriteSaveFiles(Front_Save_GetSaveNumber(), nullptr);
 
+	// Reset all levels to their default locked state.
 	MenuItem_SelectData* select = frontGlobs.mainMenuSet->menus[1]->items[1]->itemData.select;
 	Front_Levels_UpdateAvailable(frontGlobs.startMissionLink, nullptr, &frontGlobs.missionLevels, select, true);
 }
@@ -4933,10 +4940,21 @@ void __cdecl LegoRR::Front_Save_SetSaveData(const SaveData* saveData)
 	}
 }
 
-// <LegoRR.exe @00418040>
-void __cdecl LegoRR::Front_Save_SetBool_85c(bool32 state)
+/// CUSTOM: SaveData cleanup after calling Front_Save_CopySaveData, but not Front_Save_SetSaveData.
+void LegoRR::Front_Save_FreeSaveData(SaveData* saveData)
 {
-	frontGlobs.saveBool_85c = state;
+	if (saveData != nullptr) {
+		if (saveData->missionsTable != nullptr) {
+			Gods98::Mem_Free(saveData->missionsTable);
+			saveData->missionsTable = nullptr;
+		}
+	}
+}
+
+// <LegoRR.exe @00418040>
+void __cdecl LegoRR::Front_Save_SetShouldClearUnlockedLevels(bool32 state)
+{
+	frontGlobs.shouldClearUnlockedLevels = state;
 }
 
 // <LegoRR.exe @00418050>

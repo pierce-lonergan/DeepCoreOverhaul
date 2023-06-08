@@ -7,6 +7,7 @@
 #include "../audio/SFX.h"
 #include "../interface/Pointers.h"
 #include "../interface/ToolTip.h"
+#include "../mission/Objective.h"
 #include "../Game.h"
 
 #include "FrontEnd.h"
@@ -226,5 +227,140 @@ void __cdecl LegoRR::Reward_LoopUpdate(real32 elapsedSeconds)
 
 	Gods98::Main_LoopUpdate(true);
 }
+
+
+// <LegoRR.exe @004622f0>
+//#define Reward_GotoSaveMenu ((void (__cdecl* )(void))0x004622f0)
+void __cdecl LegoRR::Reward_GotoSaveMenu(void)
+{
+	/// REMOVE: Function call with no effect.
+	//Front_IsMissionSelected();
+
+	Front_SaveOptionParameters();
+
+	if (Front_IsFrontEndEnabled() && Objective_IsObjectiveAchieved() && !Front_IsTutorialSelected()) {
+		const sint32 levelIndex = Front_LevelSet_IndexOf(Front_Levels_GetTutoOrMissions(), Lego_GetLevel()->name);
+		/// REMOVE: Function call with no effect.
+		//Front_Save_GetRewardLevel(levelIndex);
+
+		const sint32 lastSaveNumber = Front_Save_GetSaveNumber();
+		SaveData* lastSave = Front_Save_GetCurrentSaveData();
+		SaveStruct_18 saveStruct18;
+		SaveData copySave;
+		// This allocates missionsTable, so we need to either call Front_Save_SetSaveData or Front_Save_FreeSaveData (but not both).
+		Front_Save_CopySaveData(&copySave);
+		RewardLevel* rewardLevel = GetRewardLevel();
+
+		do {
+			Front_RunScreenMenuType(Menu_Screen_Save);
+
+		} while (frontGlobs.saveMenuKeepOpen);
+
+		// True when leaving the save menu without using the back button.
+		if (frontGlobs.saveMenuHasSaved == TRUE) {
+			// This boolean is only ever true when running Menu_Screen_Save, and bool_85c was true.
+			// Solve bool_85c to solve bool_540.
+			if (Front_Save_GetHasNoSaveData()) {
+				Front_Save_WriteEmptySaveFiles();
+				Front_Save_SetHasNoSaveData(false);
+			}
+
+			SaveData* currSave = Front_Save_GetCurrentSaveData();
+			if (currSave != nullptr) {
+				if (currSave != lastSave && lastSave != nullptr) {
+					Front_Save_SetSaveData(&copySave);
+				}
+				else {
+					/// FIX APPLY: Free SaveData when Front_Save_SetSaveData is not called.
+					Front_Save_FreeSaveData(&copySave);
+				}
+
+				Front_Save_SetLevelCompleted(levelIndex);
+				Front_Save_SetRewardLevel(levelIndex, rewardLevel);
+
+				Object_Save_CopyStruct18(&saveStruct18);
+				Front_Save_SetSaveStruct18(&saveStruct18);
+
+				Front_Save_WriteCurrentSaveFiles();
+			}
+			else {
+				/// FIX APPLY: Free SaveData when Front_Save_SetSaveData is not called.
+				Front_Save_FreeSaveData(&copySave);
+
+				/// REMOVE: Level index lookup with no usage.
+			}
+		}
+		else {
+			/// FIX APPLY: Free SaveData when Front_Save_SetSaveData is not called.
+			Front_Save_FreeSaveData(&copySave);
+
+			Front_Save_SetSaveNumber(lastSaveNumber);
+
+			// This should be the same as lastSave.
+			SaveData* currSave = Front_Save_GetCurrentSaveData();
+			if (currSave != nullptr) {
+				Front_Save_SetLevelCompleted(levelIndex);
+				Front_Save_SetRewardLevel(levelIndex, rewardLevel);
+
+				Object_Save_CopyStruct18(&saveStruct18);
+				Front_Save_SetSaveStruct18(&saveStruct18);
+			}
+		}
+	}
+}
+
+// <LegoRR.exe @00462530>
+//#define Reward_GotoAdvance ((void (__cdecl* )(void))0x00462530)
+void __cdecl LegoRR::Reward_GotoAdvance(void)
+{
+	const sint32 levelIndex = Front_LevelSet_IndexOf(Front_Levels_GetTutoOrMissions(), Lego_GetLevel()->name);
+
+	const sint32 lastSaveNumber = Front_Save_GetSaveNumber();
+	if (lastSaveNumber == -1) {
+		// Change to the local save if no save is active.
+		Front_Save_SetSaveNumber(5);
+	}
+
+	if (Lego_GetLevel()->status == LEVELSTATUS_COMPLETE) {
+		Front_Save_SetLevelCompleted((uint32)levelIndex);
+	}
+	Front_Save_SetRewardLevel(levelIndex, GetRewardLevel());
+
+	if (lastSaveNumber == -1) {
+		// This is the first time the local save has been used (or after clearing). So clear all missions first.
+		SaveData* localSave = Front_Save_GetSaveDataAt(5);
+		if (localSave != nullptr) {
+			/// TODO: Why are we starting at one??? Does this have something to do
+			///        with that > count bounds check originally in Front_Save_SetLevelCompleted?
+			///       Or is this because the first tutorial mission is always unlocked?
+			std::memset(localSave->missionsTable + 1, 0, ((localSave->missionsCount - 1) * sizeof(SaveReward)));
+			//for (uint32 i = 1; i < localSave->missionsCount; i++) {
+			//
+			//}
+
+			// Apply the changes again because we just overwrote them with memset.
+			if (Lego_GetLevel()->status == LEVELSTATUS_COMPLETE) {
+				Front_Save_SetLevelCompleted((uint32)levelIndex);
+			}
+			Front_Save_SetRewardLevel(levelIndex, GetRewardLevel());
+		}
+
+		// Write the local save file.
+		Front_Save_WriteCurrentSaveFiles();
+
+		/// FIX APPLY: We need to free missionsTable before reading over it!
+		Front_Save_FreeSaveData(&frontGlobs.saveData[5]);
+
+		// Then reload the local save file for whatever reason (to confirm the save file is accurate maybe?)
+		Front_Save_ReadSaveFile(5, &frontGlobs.saveData[5], false);
+	}
+
+	MenuItem_SelectData* select = frontGlobs.mainMenuSet->menus[1]->items[1]->itemData.select;
+	SaveData* currSave = Front_Save_GetCurrentSaveData();
+	Front_Levels_UpdateAvailable(frontGlobs.startMissionLink, currSave->missionsTable, &frontGlobs.missionLevels, select, false);
+	
+	Front_Save_SetShouldClearUnlockedLevels(false);
+}
+
 
 #pragma endregion
