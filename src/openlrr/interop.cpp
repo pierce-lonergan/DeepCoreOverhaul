@@ -3676,10 +3676,8 @@ bool interop_hook_LegoRR_ToolTip(void)
 	result &= hook_write_jmpret(0x0046ba80, LegoRR::ToolTip_Update);
 	// used by: Reward_DrawItem, ToolTip_Draw
 	result &= hook_write_jmpret(0x0046bb70, LegoRR::ToolTip_DrawBox);
-	
-	// Not ready yet.
 	// used by: ToolTip_Update
-	//result &= hook_write_jmpret(0x0046bef0, LegoRR::ToolTip_Draw);
+	result &= hook_write_jmpret(0x0046bef0, LegoRR::ToolTip_Draw);
 	
 	return_interop(result);
 }

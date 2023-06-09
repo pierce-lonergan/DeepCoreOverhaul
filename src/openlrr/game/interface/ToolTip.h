@@ -83,7 +83,7 @@ struct ToolTip_Globs // [LegoRR/ToolTip.c|struct:0x61c4|tags:GLOBS]
 	/*0014,4*/	uint32 appHeight; // (init only)
 	/*0018,4*/	sint32 offsetY; // (init only) // Y offset from cursor?
 	/*001c,4*/	real32 hoverTime; // Duration before showing tooltip  (init only)
-	/*0020,24*/	real32 rgbFloats[9]; // [r:g:b(3)][norm:hi:lo(3)]  (init only)
+	/*0020,24*/	real32 rgbFloats[3][3]; // [r:g:b(3)][norm:hi:lo(3)]  (init only)
 	/*0044,9c*/	const char* toolTipName[ToolTip_Type_Count]; // (init only)
 	/*00e0,60e4*/	ToolTip toolTips[ToolTip_Type_Count];
 	/*61c4*/
@@ -156,8 +156,8 @@ void __cdecl ToolTip_Activate(ToolTip_Type toolTipType);
 void __cdecl ToolTip_ShowInstant(ToolTip_Type toolTipType);
 
 // <LegoRR.exe @0046ba80>
-//#define ToolTip_Update ((void (__cdecl* )(uint32 mouseX, uint32 mouseY, real32 elapsedAbs))0x0046ba80)
-void __cdecl ToolTip_Update(uint32 mouseX, uint32 mouseY, real32 elapsedAbs);
+//#define ToolTip_Update ((void (__cdecl* )(sint32 mouseX, sint32 mouseY, real32 elapsedAbs))0x0046ba80)
+void __cdecl ToolTip_Update(sint32 mouseX, sint32 mouseY, real32 elapsedAbs);
 
 // For some weird reason, Area2F is passed BY VALUE here.
 // The only reason this was even determined was due to the weird compiler behavior when calling this function.
@@ -166,8 +166,8 @@ void __cdecl ToolTip_Update(uint32 mouseX, uint32 mouseY, real32 elapsedAbs);
 void __cdecl ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGreen, real32 rcBlue, real32 ln1Red, real32 ln1Green, real32 ln1Blue, real32 ln2Red, real32 ln2Green, real32 ln2Blue, bool32 halfTrans);
 
 // <LegoRR.exe @0046bef0>
-#define ToolTip_Draw ((void (__cdecl* )(ToolTip* toolTip, uint32 x, uint32 y))0x0046bef0)
-//void __cdecl ToolTip_Draw(ToolTip* toolTip, uint32 x, uint32 y);
+//#define ToolTip_Draw ((void (__cdecl* )(ToolTip* toolTip, sint32 mouseX, sint32 mouseY))0x0046bef0)
+void __cdecl ToolTip_Draw(ToolTip* toolTip, sint32 mouseX, sint32 mouseY);
 
 #pragma endregion
 

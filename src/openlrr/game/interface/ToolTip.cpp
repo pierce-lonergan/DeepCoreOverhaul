@@ -115,22 +115,22 @@ void __cdecl LegoRR::ToolTip_Initialise(Gods98::Font* font, uint32 borderThickne
 	toolTipGlobs.appHeight = appHeight;
 
 	// The way these are stored is such a headache, since we try to use ColourRGBF structs when possible...
-	toolTipGlobs.rgbFloats[0] = red;
-	toolTipGlobs.rgbFloats[3] = green;
-	toolTipGlobs.rgbFloats[6] = blue;
+	toolTipGlobs.rgbFloats[0][0] = red;
+	toolTipGlobs.rgbFloats[1][0] = green;
+	toolTipGlobs.rgbFloats[2][0] = blue;
 
-	toolTipGlobs.rgbFloats[1] = red   + red   * 0.4f;
-	toolTipGlobs.rgbFloats[4] = green + green * 0.4f;
-	toolTipGlobs.rgbFloats[7] = blue  + blue  * 0.4f;
+	toolTipGlobs.rgbFloats[0][1] = red   + red   * 0.4f;
+	toolTipGlobs.rgbFloats[1][1] = green + green * 0.4f;
+	toolTipGlobs.rgbFloats[2][1] = blue  + blue  * 0.4f;
 
-	toolTipGlobs.rgbFloats[2] = red   - red   * 0.4f;
-	toolTipGlobs.rgbFloats[5] = green - green * 0.4f;
-	toolTipGlobs.rgbFloats[8] = blue  - blue  * 0.4f;
+	toolTipGlobs.rgbFloats[0][2] = red   - red   * 0.4f;
+	toolTipGlobs.rgbFloats[1][2] = green - green * 0.4f;
+	toolTipGlobs.rgbFloats[2][2] = blue  - blue  * 0.4f;
 
 	// Clamp rgb values to range [0.0,1.0].
 	for (uint32 i = 0; i < 3; i++) {
 		for (uint32 j = 0; j < 3; j++) {
-			toolTipGlobs.rgbFloats[i + (j*3)] = std::clamp(toolTipGlobs.rgbFloats[i + (j*3)], 0.0f, 1.0f);
+			toolTipGlobs.rgbFloats[i][j] = std::clamp(toolTipGlobs.rgbFloats[i][j], 0.0f, 1.0f);
 		}
 	}
 
@@ -278,7 +278,7 @@ void __cdecl LegoRR::ToolTip_ShowInstant(ToolTip_Type toolTipType)
 }
 
 // <LegoRR.exe @0046ba80>
-void __cdecl LegoRR::ToolTip_Update(uint32 mouseX, uint32 mouseY, real32 elapsedAbs)
+void __cdecl LegoRR::ToolTip_Update(sint32 mouseX, sint32 mouseY, real32 elapsedAbs)
 {
 	//static bool s_ToolTip_sfxStopped = true;
 
@@ -468,6 +468,153 @@ void __cdecl LegoRR::ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGr
 
 	if (prerendered != nullptr) {
 		Gods98::Image_Display(prerendered, &destPos);
+	}
+}
+
+// <LegoRR.exe @0046bef0>
+void __cdecl LegoRR::ToolTip_Draw(ToolTip* toolTip, sint32 mouseX, sint32 mouseY)
+{
+	/// SANITY: Used signed integers for mouse and ensure coordinates are greater than or equal to zero.
+	if (mouseX < 0) mouseX = 0;
+	if (mouseY < 0) mouseY = 0;
+
+	uint32 innerWidth, innerHeight;
+
+	if (!(toolTip->flags & TOOLTIP_FLAG_IMAGECONTENT)) {
+		innerWidth = std::max(toolTip->textWidth, (uint32)toolTip->iconsWidth);
+		innerHeight = (toolTip->textLineCount * toolTipGlobs.fontHeight) + toolTip->iconsHeight;
+	}
+	else {
+		innerWidth = (uint32)Gods98::Image_GetWidth(toolTip->image);
+		innerHeight = (uint32)Gods98::Image_GetHeight(toolTip->image);
+	}
+
+	const uint32 margin = (toolTipGlobs.paddingThickness + toolTipGlobs.borderThickness);
+
+	/// SANITY: Use signed integers everywhere, especially when casting to floats.
+	/// SANITY: Avoid using floats until needed. Many areas were casting to float and back to integer.
+	const sint32 totalWidth = (sint32)(innerWidth + (margin * 2));
+	const sint32 totalHeight = (sint32)(innerHeight + (margin * 2));
+
+	sint32 startX, startY;
+
+	if (!(toolTip->flags & TOOLTIP_FLAG_RIGHTALIGN)) {
+		// Draw tooltip starting from the left of the mouse.
+		//  __
+		//  \_|_________
+		// |            |
+		// |            |
+		// |____________|
+
+		if (mouseX + totalWidth <= (sint32)toolTipGlobs.appWidth) {
+			startX = mouseX;
+		}
+		else {
+			// Tooltip is too wide, push back to right edge of screen.
+			startX = ((sint32)toolTipGlobs.appWidth - totalWidth);
+		}
+	}
+	else {
+		// Draw tooltip ending at the right of the mouse.
+		//            __
+		//  __________\_|
+		// |            |
+		// |            |
+		// |____________|
+
+		// HARDCODED CURSOR WIDTH: mouseX + 32.0f
+		const sint32 xRight = (mouseX + 32);
+		if (xRight <= (sint32)toolTipGlobs.appWidth) {
+			startX = (xRight - totalWidth);
+		}
+		else {
+			// Mouse is partially past the edge of the screen, push back to right edge of screen.
+			startX = ((sint32)toolTipGlobs.appWidth - totalWidth);
+		}
+	}
+	
+	const sint32 yBottom = (mouseY + toolTipGlobs.offsetY);
+	if (yBottom + totalHeight <= (sint32)toolTipGlobs.appHeight) {
+		// Draw tooltip below the mouse.
+		//  __
+		//  \_|_________
+		// |            |
+		// |            |
+		// |____________|
+
+		startY = yBottom;
+	}
+	else {
+		// Tooltip is too tall, draw above the mouse.
+		//  ____________
+		// |            |
+		// |            |
+		// |__ _________|
+		//  \_|
+
+		startY = (mouseY - totalHeight - 1); // Not sure what the -1 is for...
+	}
+	
+	const Area2F area = {
+		(real32)startX,
+		(real32)startY,
+		(real32)totalWidth,
+		(real32)totalHeight,
+	};
+
+	// This is the one weird function where a medium-sized struct is passed by value.
+	ToolTip_DrawBox(area,
+					toolTipGlobs.rgbFloats[0][0], toolTipGlobs.rgbFloats[1][0], toolTipGlobs.rgbFloats[2][0],
+					toolTipGlobs.rgbFloats[0][1], toolTipGlobs.rgbFloats[1][1], toolTipGlobs.rgbFloats[2][1],
+					toolTipGlobs.rgbFloats[0][2], toolTipGlobs.rgbFloats[1][2], toolTipGlobs.rgbFloats[2][2],
+					false);
+
+	if (!(toolTip->flags & TOOLTIP_FLAG_IMAGECONTENT)) {
+		// Draw text followed by icons at the bottom (if any exist).
+
+		// Draw text.
+		const sint32 xPos = (sint32)area.x + (sint32)margin;
+		const sint32 yPos = (sint32)area.y + (sint32)margin;
+		Gods98::Font_PrintF(toolTipGlobs.font, xPos, yPos, "%s", toolTip->textBuffer);
+
+		uint32 xOffset = 0;
+		uint32 yOffset = (toolTip->textLineCount * toolTipGlobs.fontHeight);
+		uint32 rowHeight = 0;
+
+		// Draw all icon rows.
+		for (uint32 i = 0; i < toolTip->iconCount; i++) {
+			Gods98::Image* icon = toolTip->iconList[i];
+
+			if (icon == nullptr) {
+				// Null icon means the start of a new row.
+				xOffset = 0;
+				yOffset += rowHeight;
+				rowHeight = 0;
+			}
+			else {
+				// Draw an icon.
+				const Point2F destPos = {
+					area.x + (real32)(xOffset + margin),
+					area.y + (real32)(yOffset + margin),
+				};
+				Gods98::Image_Display(icon, &destPos);
+
+				xOffset += Gods98::Image_GetWidth(icon);
+				const uint32 iconHeight = (uint32)Gods98::Image_GetHeight(icon);
+				if (rowHeight < iconHeight) {
+					rowHeight = iconHeight;
+				}
+			}
+		}
+	}
+	else {
+		// Draw an image with no text or icons.
+
+		const Point2F destPos = {
+			area.x + (real32)margin,
+			area.y + (real32)margin,
+		};
+		Gods98::Image_Display(toolTip->image, &destPos);
 	}
 }
 
