@@ -205,18 +205,23 @@ void __cdecl AITask_Initialise(void);
 
 // <LegoRR.exe @00401f40>
 #define AITask_FUN_00401f40 ((void (__cdecl* )(AITask_Type taskType, LegoObject* liveObj, OPTIONAL const Point2I* blockPos))0x00401f40)
+//void __cdecl AITask_FUN_00401f40(AITask_Type taskType, LegoObject* liveObj, OPTIONAL const Point2I* blockPos);
 
 // <LegoRR.exe @00401fa0>
 #define AITask_SetPriorityType ((void (__cdecl* )(AITask* aiTask, AI_Priority priorityType))0x00401fa0)
+//void __cdecl AITask_SetPriorityType(AITask* aiTask, AI_Priority priorityType);
 
 // <LegoRR.exe @00401fd0>
 #define AITask_Game_SetPriorityValue ((void (__cdecl* )(AI_Priority priorityType, uint32 aiTaskValue))0x00401fd0)
+//void __cdecl AITask_Game_SetPriorityValue(AI_Priority priorityType, uint32 aiTaskValue);
 
 // <LegoRR.exe @00401fe0>
 #define AITask_Game_SetPriorityOff ((void (__cdecl* )(AI_Priority priorityType, bool32 off))0x00401fe0)
+//void __cdecl AITask_Game_SetPriorityOff(AI_Priority priorityType, bool32 off);
 
 // <LegoRR.exe @00401ff0>
 #define AITask_Game_IsPriorityOff ((bool32 (__cdecl* )(AI_Priority priorityType))0x00401ff0)
+//bool32 __cdecl AITask_Game_IsPriorityOff(AI_Priority priorityType);
 
 // <LegoRR.exe @00402000>
 //#define AITask_Shutdown ((void (__cdecl* )(void))0x00402000)
@@ -226,84 +231,107 @@ void __cdecl AITask_Shutdown(void);
 // Second call in Level_Free is true, which simply unsets this flag.
 // <LegoRR.exe @00402040>
 #define AITask_CleanupLevel ((void (__cdecl* )(bool32 end))0x00402040)
+//void __cdecl AITask_CleanupLevel(bool32 end);
 
 // <LegoRR.exe @004020b0>
 #define AITask_Game_SetNoGather ((void (__cdecl* )(bool32 noGather))0x004020b0)
+//void __cdecl AITask_Game_SetNoGather(bool32 noGather);
 
 // <LegoRR.exe @00402120>
 #define AITask_Callback_Remove ((bool32 (__cdecl* )(AITask* aiTask))0x00402120)
+//bool32 __cdecl AITask_Callback_Remove(AITask* aiTask);
 
 // <LegoRR.exe @00402150>
 #define AITask_UpdateAll ((void (__cdecl* )(real32 elapsedGame))0x00402150)
+//void __cdecl AITask_UpdateAll(real32 elapsedGame);
 
 // <LegoRR.exe @00402240>
 #define AITask_FUN_00402240 ((void (__cdecl* )(IN OUT AITask** aiTask))0x00402240)
+//void __cdecl AITask_FUN_00402240(IN OUT AITask** aiTask);
 
 // <LegoRR.exe @00402440>
 #define AITask_DoDig_AtBlockPos ((void (__cdecl* )(const Point2I* blockPos, bool32 param_2, bool32 param_3))0x00402440)
+//void __cdecl AITask_DoDig_AtBlockPos(const Point2I* blockPos, bool32 param_2, bool32 param_3);
 
 // <LegoRR.exe @00402530>
 #define AITask_UnkInitRouting_FUN_00402530 ((void (__cdecl* )(AITask* aiTask, bool32 dropCarried))0x00402530)
+//void __cdecl AITask_UnkInitRouting_FUN_00402530(AITask* aiTask, bool32 dropCarried);
 
 // <LegoRR.exe @004025a0>
 #define AITask_DoAttackRockMonster_Target ((void (__cdecl* )(LegoObject* targetObj))0x004025a0)
+//void __cdecl AITask_DoAttackRockMonster_Target(LegoObject* targetObj);
 
 // <LegoRR.exe @004025f0>
 #define AITask_LiveObject_FUN_004025f0 ((void (__cdecl* )(LegoObject* liveObj))0x004025f0)
+//void __cdecl AITask_LiveObject_FUN_004025f0(LegoObject* liveObj);
 
 // <LegoRR.exe @00402630>
 #define AITask_IsCollectAndSameTarget ((bool32 (__cdecl* )(AITask* aiTask, LegoObject* liveObj))0x00402630)
+//bool32 __cdecl AITask_IsCollectAndSameTarget(AITask* aiTask, LegoObject* liveObj);
 
 // <LegoRR.exe @00402650>
 #define AITask_DoCollect ((void (__cdecl* )(LegoObject* liveObj, real32 param_2))0x00402650)
+//void __cdecl AITask_DoCollect(LegoObject* liveObj, real32 param_2);
 
 // <LegoRR.exe @004026d0>
 #define AITask_DoBuildPath_AtPosition ((void (__cdecl* )(const Point2I* blockPos))0x004026d0)
+//void __cdecl AITask_DoBuildPath_AtPosition(const Point2I* blockPos);
 
 // <LegoRR.exe @00402730>
 #define AITask_DoGather_Count ((void (__cdecl* )(sint32 count))0x00402730)
+//void __cdecl AITask_DoGather_Count(sint32 count);
 
 // <LegoRR.exe @00402780>
 #define AITask_DoCollect_Target ((void (__cdecl* )(LegoObject* targetObj))0x00402780)
+//void __cdecl AITask_DoCollect_Target(LegoObject* targetObj);
 
 // <LegoRR.exe @004027c0>
 #define AITask_DoTrain_Target ((void (__cdecl* )(LegoObject* targetObj, LegoObject_AbilityFlags trainFlags, bool32 param_3))0x004027c0)
+//void __cdecl AITask_DoTrain_Target(LegoObject* targetObj, LegoObject_AbilityFlags trainFlags, bool32 param_3);
 
 // <LegoRR.exe @00402890>
 #define AITask_DoFindDriver_Target ((void (__cdecl* )(LegoObject* targetObj))0x00402890)
+//void __cdecl AITask_DoFindDriver_Target(LegoObject* targetObj);
 
 // <LegoRR.exe @00402970>
 #define AITask_RemoveAttackPathReferences ((bool32 (__cdecl* )(const Point2I* blockPos))0x00402970)
+//bool32 __cdecl AITask_RemoveAttackPathReferences(const Point2I* blockPos);
 
 // DATA: Point2I** (technically struct { Point2I*, undefined4 unused }). But the second field is never accessed.
 // <LegoRR.exe @004029a0>
 #define AITask_Callback_RemoveAttackPathReference ((bool32 (__cdecl* )(AITask* aiTask, void* pBlockPos))0x004029a0)
+//bool32 __cdecl AITask_Callback_RemoveAttackPathReference(AITask* aiTask, void* pBlockPos);
 
 // Removes all `AttackRockMonster` type tasks whose targetObject references match the specified object.
 // <LegoRR.exe @004029d0>
 #define AITask_RemoveAttackRockMonsterReferences ((void (__cdecl* )(LegoObject* targetObj))0x004029d0)
+//void __cdecl AITask_RemoveAttackRockMonsterReferences(LegoObject* targetObj);
 
 // Removes the `AttackRockMonster` type task if its targetObject reference match the specified object.
 // DATA: LegoObject* targetObj
 // <LegoRR.exe @004029f0>
 #define AITask_Callback_RemoveAttackRockMonsterReference ((bool32 (__cdecl* )(AITask* aiTask, void* targetObj))0x004029f0)
+//bool32 __cdecl AITask_Callback_RemoveAttackRockMonsterReference(AITask* aiTask, void* targetObj);
 
 // Removes references to task types: AITask_Type_Dig (if digConnection matches the task's flags), AITask_Type_Dynamite, AITask_Type_Reinforce
 // Marks the block as "not busy" for matched tasks.
 // Clears block highlight (always, regardless of match).
 // <LegoRR.exe @00402a10>
 #define AITask_RemoveWallReferences ((void (__cdecl* )(const Point2I* blockPos, bool32 digConnection))0x00402a10)
+//void __cdecl AITask_RemoveWallReferences(const Point2I* blockPos, bool32 digConnection);
 
 // Removes references to task types: AITask_Type_Reinforce
 // Clears block highlight (if matched).
 // <LegoRR.exe @00402a60>
 #define AITask_RemoveReinforceReferences ((bool32 (__cdecl* )(const Point2I* blockPos))0x00402a60)
+//bool32 __cdecl AITask_RemoveReinforceReferences(const Point2I* blockPos);
 
 // Matches references to task types: AITask_Type_Clear
 // If delay is true, then matched tasks will have their timer reset to 500.0f (20 seconds)?
 // If delay is false, all task references will be removed.
 // <LegoRR.exe @00402a90>
 #define AITask_DelayOrRemoveClearReferences ((bool32 (__cdecl* )(const Point2I* blockPos, bool32 delay))0x00402a90)
+//bool32 __cdecl AITask_DelayOrRemoveClearReferences(const Point2I* blockPos, bool32 delay);
 
 // DATA: SearchAITaskDeselect_8*
 // struct SearchAITaskDeselect_8 {
@@ -312,19 +340,23 @@ void __cdecl AITask_Shutdown(void);
 // };
 // <LegoRR.exe @00402ae0>
 #define AITask_Callback_RemoveWallReference ((bool32 (__cdecl* )(AITask* aiTask, void* search))0x00402ae0)
+//bool32 __cdecl AITask_Callback_RemoveWallReference(AITask* aiTask, void* search);
 
 // DATA: Point2I**
 // <LegoRR.exe @00402b50>
 #define AITask_Callback_RemoveReinforceReference ((bool32 (__cdecl* )(AITask* aiTask, void* search))0x00402b50)
+//bool32 __cdecl AITask_Callback_RemoveReinforceReference(AITask* aiTask, void* search);
 
 // DATA: Point2I** pBlockPos (really struct with second unused field)
 // <LegoRR.exe @00402ba0>
 #define AITask_Callback_RemoveClearReference ((bool32 (__cdecl* )(AITask* aiTask, void* pBlockPos))0x00402ba0)
+//bool32 __cdecl AITask_Callback_RemoveClearReference(AITask* aiTask, void* pBlockPos);
 
 // Resets the float_18 timer on the task to 500.0f (20 seconds)?
 // DATA: Point2I** pBlockPos (really struct with second unused field)
 // <LegoRR.exe @00402bd0>
 #define AITask_Callback_DelayClearReference ((bool32 (__cdecl* )(AITask* aiTask, void* pBlockPos))0x00402bd0)
+//bool32 __cdecl AITask_Callback_DelayClearReference(AITask* aiTask, void* pBlockPos);
 
 // <LegoRR.exe @00402c00>
 //#define AITask_RemoveGetToolReferences ((void (__cdecl* )(AITask* aiTask))0x00402c00)
@@ -334,107 +366,141 @@ void __cdecl AITask_RemoveGetToolReferences(AITask* aiTask);
 // DATA: AITask* otherTask
 // <LegoRR.exe @00402c60>
 #define AITask_Callback_FindGetToolReference ((bool32 (__cdecl* )(AITask* aiTask, void* otherTask))0x00402c60)
+//bool32 __cdecl AITask_Callback_FindGetToolReference(AITask* aiTask, void* otherTask);
 
 // <LegoRR.exe @00402c80>
 #define AITask_DoDynamite_AtBlockPos ((bool32 (__cdecl* )(const Point2I* blockPos, bool32 noRoutingUnk))0x00402c80)
+//bool32 __cdecl AITask_DoDynamite_AtBlockPos(const Point2I* blockPos, bool32 noRoutingUnk);
 
 // <LegoRR.exe @00402d70>
 #define AITask_DoBirdScarer_AtPosition ((void (__cdecl* )(const Point2I* blockPos))0x00402d70)
+//void __cdecl AITask_DoBirdScarer_AtPosition(const Point2I* blockPos);
 
 // <LegoRR.exe @00402df0>
 #define AITask_DoFindLoad ((void (__cdecl* )(LegoObject* targetObj))0x00402df0)
+//void __cdecl AITask_DoFindLoad(LegoObject* targetObj);
 
 // <LegoRR.exe @00402e60>
 #define AITask_DoRepair_Target ((void (__cdecl* )(LegoObject* targetObj, bool32 condition))0x00402e60)
+//void __cdecl AITask_DoRepair_Target(LegoObject* targetObj, bool32 condition);
 
 // <LegoRR.exe @00402ea0>
 #define AITask_QueueGotoEat_Target ((void (__cdecl* )(LegoObject* liveObj, LegoObject* targetObj))0x00402ea0)
+//void __cdecl AITask_QueueGotoEat_Target(LegoObject* liveObj, LegoObject* targetObj);
 
 // <LegoRR.exe @00402ee0>
 #define AITask_DoElecFence ((void (__cdecl* )(const Point2I* blockPos))0x00402ee0)
+//void __cdecl AITask_DoElecFence(const Point2I* blockPos);
 
 // <LegoRR.exe @00402f60>
 #define AITask_DoReinforce_AtBlockPos ((void (__cdecl* )(const Point2I* blockPos))0x00402f60)
+//void __cdecl AITask_DoReinforce_AtBlockPos(const Point2I* blockPos);
 
 // <LegoRR.exe @00402fe0>
 #define AITask_DoClear_AtPosition ((void (__cdecl* )(const Point2I* blockPos, Message_Type completeAction))0x00402fe0)
+//void __cdecl AITask_DoClear_AtPosition(const Point2I* blockPos, Message_Type completeAction);
 
 // <LegoRR.exe @00403010>
 #define AITask_DoGetTool_FromTask ((void (__cdecl* )(AITask* aiTask))0x00403010)
+//void __cdecl AITask_DoGetTool_FromTask(AITask* aiTask);
 
 // <LegoRR.exe @004030c0>
 #define AITask_DoGetTool ((bool32 (__cdecl* )(LegoObject_ToolType toolType))0x004030c0)
+//bool32 __cdecl AITask_DoGetTool(LegoObject_ToolType toolType);
 
 // <LegoRR.exe @00403110>
 #define AITask_Game_SelectedUnits_UnkEquippedTool_FUN_00403110 ((bool32 (__cdecl* )(LegoObject_ToolType toolType))0x00403110)
+//bool32 __cdecl AITask_Game_SelectedUnits_UnkEquippedTool_FUN_00403110(LegoObject_ToolType toolType);
 
 // If reevalTasks is true, then `AITask_ReevaluateObjectTasks` is called,
 // <LegoRR.exe @004031a0>
 #define AITask_QueueGotoBlock_Group ((void (__cdecl* )(LegoObject** unitList, uint32 unitCount, const Point2I* blockPos, bool32 reevalTasks))0x004031a0)
+//void __cdecl AITask_QueueGotoBlock_Group(LegoObject** unitList, uint32 unitCount, const Point2I* blockPos, bool32 reevalTasks);
 
 // <LegoRR.exe @00403250>
 #define AITask_DoUpgrade ((void (__cdecl* )(LegoObject* liveObj, sint32 newObjLevel))0x00403250)
+//void __cdecl AITask_DoUpgrade(LegoObject* liveObj, sint32 newObjLevel);
 
 // <LegoRR.exe @004032f0>
 #define AITask_DoDock ((void (__cdecl* )(LegoObject* liveObj))0x004032f0)
+//void __cdecl AITask_DoDock(LegoObject* liveObj);
 
 // <LegoRR.exe @00403320>
 #define AITask_DoGoto_Congregate ((void (__cdecl* )(const Point2I* blockPos))0x00403320)
+//void __cdecl AITask_DoGoto_Congregate(const Point2I* blockPos);
 
 // <LegoRR.exe @00403360>
 #define AITask_StopGoto_Congregate ((void (__cdecl* )(const Point2I* blockPos))0x00403360)
+//void __cdecl AITask_StopGoto_Congregate(const Point2I* blockPos);
 
 // <LegoRR.exe @004033d0>
 #define AITask_DoAttackObject ((void (__cdecl* )(LegoObject* liveObj))0x004033d0)
+//void __cdecl AITask_DoAttackObject(LegoObject* liveObj);
 
 // <LegoRR.exe @00403410>
 #define AITask_DoAttackPath ((void (__cdecl* )(Point2I* blockPos))0x00403410)
+//void __cdecl AITask_DoAttackPath(Point2I* blockPos);
 
 // <LegoRR.exe @00403450>
 #define AITask_DoRepair ((void (__cdecl* )(LegoObject* liveObj))0x00403450)
+//void __cdecl AITask_DoRepair(LegoObject* liveObj);
 
 // <LegoRR.exe @00403490>
 #define AITask_StopRepairForObject ((void (__cdecl* )(LegoObject* liveObj))0x00403490)
+//void __cdecl AITask_StopRepairForObject(LegoObject* liveObj);
 
 // <LegoRR.exe @004034f0>
 #define AITask_Game_PTL_GotoOrRMGoto ((void (__cdecl* )(LegoObject* liveObj, const Point2I* blockPos, OPTIONAL AITask* referrerTask))0x004034f0)
+//void __cdecl AITask_Game_PTL_GotoOrRMGoto(LegoObject* liveObj, const Point2I* blockPos, OPTIONAL AITask* referrerTask);
 
 // <LegoRR.exe @00403540>
 #define AITask_QueueDepositInObject ((void (__cdecl* )(LegoObject* liveObj, LegoObject* targetObj))0x00403540)
+//void __cdecl AITask_QueueDepositInObject(LegoObject* liveObj, LegoObject* targetObj);
 
 // <LegoRR.exe @00403580>
 #define AITask_PushFollowObject_Group ((void (__cdecl* )(LegoObject** unitList, uint32 unitCount, LegoObject* targetObj))0x00403580)
+//void __cdecl AITask_PushFollowObject_Group(LegoObject** unitList, uint32 unitCount, LegoObject* targetObj);
 
 // <LegoRR.exe @004035f0>
 #define AITask_Game_PTL_FollowAttack ((void (__cdecl* )(LegoObject* liveObj, LegoObject* targetObj))0x004035f0)
+//void __cdecl AITask_Game_PTL_FollowAttack(LegoObject* liveObj, LegoObject* targetObj);
 
 // Sets flags 0x20 for all aiTasks with the same constructionHandle and meeting object requirements (or checkObjType is false).
 // <LegoRR.exe @00403630>
 #define AITask_Construction_FUN_00403630 ((void (__cdecl* )(uint32 constructHandle, bool32 checkObjType, LegoObject_Type objType, LegoObject_ID objID))0x00403630)
+//void __cdecl AITask_Construction_FUN_00403630(uint32 constructHandle, bool32 checkObjType, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @00403680>
 #define AITask_DoRequest_ObjectType ((void (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel, const Point2I* blockPos, undefined4 param_5, Point2F* pointFloat, bool32 param_7))0x00403680)
+//void __cdecl AITask_DoRequest_ObjectType(LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel, const Point2I* blockPos, undefined4 param_5, Point2F* pointFloat, bool32 param_7);
 
 // <LegoRR.exe @00403740>
 #define AITask_PlaceRequestObject ((void (__cdecl* )(const Point2I* blockPos, LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel))0x00403740)
+//void __cdecl AITask_PlaceRequestObject(const Point2I* blockPos, LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel);
 
 // <LegoRR.exe @004037f0>
 #define AITask_DoDeposit_ObjectType ((AITask* (__cdecl* )(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel))0x004037f0)
+//AITask* __cdecl AITask_DoDeposit_ObjectType(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel);
 
 // <LegoRR.exe @00403840>
 #define AITask_DoRequestObjectCallbacks ((void (__cdecl* )(LegoObject* liveObj))0x00403840)
+//void __cdecl AITask_DoRequestObjectCallbacks(LegoObject* liveObj);
 
 // <LegoRR.exe @004038d0>
 #define AITask_LiveObject_FUN_004038d0 ((void (__cdecl* )(LegoObject* liveObj))0x004038d0)
+//void __cdecl AITask_LiveObject_FUN_004038d0(LegoObject* liveObj);
 
 // <LegoRR.exe @00403900>
 #define AITask_DoGotoEat ((void (__cdecl* )(LegoObject* liveObj))0x00403900)
+//void __cdecl AITask_DoGotoEat(LegoObject* liveObj);
 
 // <LegoRR.exe @00403940>
 #define AITask_LiveObject_FUN_00403940 ((bool32 (__cdecl* )(LegoObject* liveObj))0x00403940)
+//bool32 __cdecl AITask_LiveObject_FUN_00403940(LegoObject* liveObj);
 
 // <LegoRR.exe @00403960>
 #define AITask_Callback_FUN_00403960 ((bool32 (__cdecl* )(AITask* aiTask, LegoObject* liveObj))0x00403960)
+//bool32 __cdecl AITask_Callback_FUN_00403960(AITask* aiTask, LegoObject* liveObj);
 
 // Removes all tasks whose targetObject references match the specified object.
 //  (marks for removal)
@@ -452,44 +518,57 @@ void __cdecl AITask_RemoveGetToolReferences(AITask* aiTask);
 // Called by `LegoObject_Route_End` when existing routeBlocks were present.
 // <LegoRR.exe @00403a20>
 #define AITask_Route_End ((void (__cdecl* )(LegoObject* liveObj, bool32 completed))0x00403a20)
+//void __cdecl AITask_Route_End(LegoObject* liveObj, bool32 completed);
 
 // <LegoRR.exe @00403a70>
 #define AITask_LiveObject_FUN_00403a70 ((void (__cdecl* )(LegoObject* liveObj))0x00403a70)
+//void __cdecl AITask_LiveObject_FUN_00403a70(LegoObject* liveObj);
 
 // <LegoRR.exe @00403a90>
 #define AITask_VariousGatherTasks_FUN_00403a90 ((void (__cdecl* )(LegoObject* liveObj))0x00403a90)
+//void __cdecl AITask_VariousGatherTasks_FUN_00403a90(LegoObject* liveObj);
 
 // <LegoRR.exe @00403b30>
 #define AITask_LiveObject_FUN_00403b30 ((void (__cdecl* )(LegoObject* holderObj, AITask_Type taskType, LegoObject* carriedObj))0x00403b30)
+//void __cdecl AITask_LiveObject_FUN_00403b30(LegoObject* holderObj, AITask_Type taskType, LegoObject* carriedObj);
 
 // <LegoRR.exe @00403c40>
 #define AITask_LiveObject_SetAITaskUnk ((void (__cdecl* )(LegoObject* liveObj1, AITask_Type taskType, LegoObject* liveObj2, bool32 param_4))0x00403c40)
+//void __cdecl AITask_LiveObject_SetAITaskUnk(LegoObject* liveObj1, AITask_Type taskType, LegoObject* liveObj2, bool32 param_4);
 
 // <LegoRR.exe @00403e20>
 #define AITask_RemoveCollectReferences ((bool32 (__cdecl* )(LegoObject* targetObj))0x00403e20)
+//bool32 __cdecl AITask_RemoveCollectReferences(LegoObject* targetObj);
 
 // DATA: LegoObject* targetObj
 // <LegoRR.exe @00403e40>
 #define AITask_Callback_RemoveCollectReference ((bool32 (__cdecl* )(AITask* aiTask, void* targetObj))0x00403e40)
+//bool32 __cdecl AITask_Callback_RemoveCollectReference(AITask* aiTask, void* targetObj);
 
 // <LegoRR.exe @00403e60>
 #define AITask_DoAnimationWait ((void (__cdecl* )(LegoObject* liveObj))0x00403e60)
+//void __cdecl AITask_DoAnimationWait(LegoObject* liveObj);
 
 // <LegoRR.exe @00403e90>
 #define AITask_LiveObject_Unk_UpdateAITask_AnimationWait ((void (__cdecl* )(LegoObject* liveObj))0x00403e90)
+//void __cdecl AITask_LiveObject_Unk_UpdateAITask_AnimationWait(LegoObject* liveObj);
 
 // DATA: AITask**
 // <LegoRR.exe @00403eb0>
 #define AITask_QSortCompare ((sint32 (__cdecl* )(const void* task_a, const void* task_b))0x00403eb0)
+//sint32 __cdecl AITask_QSortCompare(const void* task_a, const void* task_b);
 
 // <LegoRR.exe @00403f60>
 #define AITask_InitTask_1 ((AITask* (__cdecl* )(AITask* aiTask, AI_Priority priorityType))0x00403f60)
+//AITask* __cdecl AITask_InitTask_1(AITask* aiTask, AI_Priority priorityType);
 
 // <LegoRR.exe @00403fa0>
 #define AITask_Init_2_NoPriority ((void (__cdecl* )(AITask* aiTask))0x00403fa0)
+//void __cdecl AITask_Init_2_NoPriority(AITask* aiTask);
 
 // <LegoRR.exe @00403fd0>
 #define AITask_Game_UnkLiveObjectHandleDynamite ((void (__cdecl* )(LegoObject* liveObj))0x00403fd0)
+//void __cdecl AITask_Game_UnkLiveObjectHandleDynamite(LegoObject* liveObj);
 
 // Seems to clean up existing tasks with certain flags, in the object's task list.
 // <LegoRR.exe @00404030>
@@ -500,9 +579,11 @@ void __cdecl AITask_RemoveGetToolReferences(AITask* aiTask);
 // Or null if the object has no tasks.
 // <LegoRR.exe @004040c0>
 #define AITask_GetObjectTaskListTail ((AITask* (__cdecl* )(LegoObject* liveObj))0x004040c0)
+//AITask* __cdecl AITask_GetObjectTaskListTail(LegoObject* liveObj);
 
 // <LegoRR.exe @004040e0>
 #define AITask_LiveObject_IsCurrentTaskType ((bool32 (__cdecl* )(LegoObject* liveObj, AITask_Type taskType))0x004040e0)
+//bool32 __cdecl AITask_LiveObject_IsCurrentTaskType(LegoObject* liveObj, AITask_Type taskType);
 
 // <LegoRR.exe @00404110>
 #define AITask_LiveObject_FUN_00404110 ((void (__cdecl* )(LegoObject* liveObj))0x00404110)
@@ -512,38 +593,49 @@ void __cdecl AITask_RemoveGetToolReferences(AITask* aiTask);
 // DATA: real32* pElapsedGame
 // <LegoRR.exe @00404180>
 #define AITask_Callback_UpdateTask ((bool32 (__cdecl* )(AITask* aiTask, void* pElapsedGame))0x00404180)
+//bool32 __cdecl AITask_Callback_UpdateTask(AITask* aiTask, void* pElapsedGame);
 
 // DATA: real32* pElapsedGame
 // <LegoRR.exe @004041b0>
 #define AITask_Callback_UpdateObject ((bool32 (__cdecl* )(LegoObject* liveObj, void* pElapsedGame))0x004041b0)
+//bool32 __cdecl AITask_Callback_UpdateObject(LegoObject* liveObj, void* pElapsedGame);
 
 // <LegoRR.exe @00404d30>
 #define AITask_LiveObject_FUN_00404d30 ((bool32 (__cdecl* )(LegoObject* liveObj, const Point2I* blockPos2, real32* param_3))0x00404d30)
+//bool32 __cdecl AITask_LiveObject_FUN_00404d30(LegoObject* liveObj, const Point2I* blockPos2, real32* param_3);
 
 // <LegoRR.exe @00404e00>
 #define AITask_LiveObject_FUN_00404e00 ((bool32 (__cdecl* )(LegoObject* liveObj))0x00404e00)
+//bool32 __cdecl AITask_LiveObject_FUN_00404e00(LegoObject* liveObj);
 
 // <LegoRR.exe @00404e40>
 #define AITask_FUN_00404e40 ((bool32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel))0x00404e40)
+//bool32 __cdecl AITask_FUN_00404e40(LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel);
 
 // <LegoRR.exe @00404e80>
 #define AITask_Callback_FUN_00404e80 ((bool32 (__cdecl* )(AITask* aiTask, sint32* param_2))0x00404e80)
+//bool32 __cdecl AITask_Callback_FUN_00404e80(AITask* aiTask, sint32* param_2);
 
 // <LegoRR.exe @00404ef0>
 #define AITask_FUN_00404ef0 ((bool32 (__cdecl* )(AITask* aiTask, LegoObject* liveObj_2, real32* param_3, real32* param_4, undefined4* param_5, sint32 param_6, sint32 param_7))0x00404ef0)
+//bool32 __cdecl AITask_FUN_00404ef0(AITask* aiTask, LegoObject* liveObj_2, real32* param_3, real32* param_4, undefined4* param_5, sint32 param_6, sint32 param_7);
 
 // <LegoRR.exe @00405880>
 #define AITask_FUN_00405880 ((void (__cdecl* )(void))0x00405880)
+//void __cdecl AITask_FUN_00405880(void);
 
 // <LegoRR.exe @00405b40>
 #define AITask_FUN_00405b40 ((void (__cdecl* )(void))0x00405b40)
+//void __cdecl AITask_FUN_00405b40(void);
 
 // <LegoRR.exe @00406290>
 #define AITask_FUN_00406290 ((void (__cdecl* )(AITask* aiTask1, AITask* aiTask2, LegoObject* liveObj))0x00406290)
+//void __cdecl AITask_FUN_00406290(AITask* aiTask1, AITask* aiTask2, LegoObject* liveObj);
 
 // Removes references to assignedToObject. But only from the `aiGlobs.pendingTaskList` linked list.
 // <LegoRR.exe @00406310>
 #define AITask_RemoveAssignedToObjectReferences ((void (__cdecl* )(LegoObject* assignedToObj))0x00406310)
+//void __cdecl AITask_RemoveAssignedToObjectReferences(LegoObject* assignedToObj);
 
 // <LegoRR.exe @00406330>
 //#define AITask_Clone ((AITask* (__cdecl* )(AITask* aiTask))0x00406330)
