@@ -1054,9 +1054,11 @@ bool32 __cdecl Lego_Initialise(void);
 
 // <LegoRR.exe @00422780>
 #define Lego_LoadMiscObjects ((void (__cdecl* )(const Gods98::Config* config))0x00422780)
+//void __cdecl Lego_LoadMiscObjects(const Gods98::Config* config);
 
 // <LegoRR.exe @00422fb0>
 #define Lego_GetCurrentCamera_Container ((Gods98::Container* (__cdecl* )(void))0x00422fb0)
+//Gods98::Container* __cdecl Lego_GetCurrentCamera_Container(void);
 
 // <LegoRR.exe @00422fe0>
 //#define Lego_GetElapsedAbs ((real32 (__cdecl* )(void))0x00422fe0)
@@ -1064,6 +1066,7 @@ __inline real32 __cdecl Lego_GetElapsedAbs(void) { return legoGlobs.elapsedAbs; 
 
 // <LegoRR.exe @00422ff0>
 #define Lego_DrawRenameInput ((void (__cdecl* )(real32 elapsedAbs))0x00422ff0)
+//void __cdecl Lego_DrawRenameInput(real32 elapsedAbs);
 
 // This function also has the essential behaviour of clearing INPUT.Key_Map.
 // Which prevents any functions called after this during the main loop from
@@ -1078,9 +1081,11 @@ bool32 __cdecl Lego_MainLoop(real32 elapsed);
 
 // <LegoRR.exe @00424490>
 #define Level_ConsumeObjectOxygen ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x00424490)
+//void __cdecl Level_ConsumeObjectOxygen(LegoObject* liveObj, real32 elapsed);
 
 // <LegoRR.exe @00424530>
 #define Level_UpdateEffects ((void (__cdecl* )(Lego_Level* level, real32 elapsedGame))0x00424530)
+//void __cdecl Level_UpdateEffects(Lego_Level* level, real32 elapsedGame);
 
 // <LegoRR.exe @00424660>
 //#define Lego_UpdateSceneFog ((void (__cdecl* )(bool32 fogEnabled, real32 elapsed))0x00424660)
@@ -1180,6 +1185,7 @@ __inline void __cdecl Lego_LockGameSpeed(bool32 locked) { gamectrlGlobs.isGameSp
 
 // <LegoRR.exe @00425c80>
 #define Lego_TrackObjectInRadar ((void (__cdecl* )(LegoObject* liveObj))0x00425c80)
+//void __cdecl Lego_TrackObjectInRadar(LegoObject* liveObj);
 
 // <LegoRR.exe @00425cb0>
 //#define Lego_IsFirstPersonView ((bool32 (__cdecl* )(void))0x00425cb0)
@@ -1191,6 +1197,7 @@ __inline bool32 __cdecl Lego_IsFirstPersonView() { return (legoGlobs.viewMode ==
 
 // <LegoRR.exe @004260f0>
 #define Lego_UpdateSlug_FUN_004260f0 ((void (__cdecl* )(real32 elapsedGame))0x004260f0)
+//void __cdecl Lego_UpdateSlug_FUN_004260f0(real32 elapsedGame);
 
 // <LegoRR.exe @00426160>
 //#define Lego_GetMouseWorldPosition ((void (__cdecl* )(OUT Vector3F* vector))0x00426160)
@@ -1203,21 +1210,27 @@ void __cdecl Lego_DrawRadarMap(void);
 
 // <LegoRR.exe @00426210>
 #define Lego_SetMenuNextPosition ((void (__cdecl* )(OPTIONAL const Point2F* position))0x00426210)
+//void __cdecl Lego_SetMenuNextPosition(OPTIONAL const Point2F* position);
 
 // <LegoRR.exe @00426250>
 #define Lego_SetMenuPreviousPosition ((void (__cdecl* )(OPTIONAL const Point2F* position))0x00426250)
+//void __cdecl Lego_SetMenuPreviousPosition(OPTIONAL const Point2F* position);
 
 // <LegoRR.exe @00426290>
 #define Lego_SetFlags2_40_And_2_unkCamera ((void (__cdecl* )(bool32 onFlag40, bool32 onFlag2))0x00426290)
+//void __cdecl Lego_SetFlags2_40_And_2_unkCamera(bool32 onFlag40, bool32 onFlag2);
 
 // <LegoRR.exe @004262d0>
 #define Lego_SetFlags2_80 ((void (__cdecl* )(bool32 state))0x004262d0)
+//void __cdecl Lego_SetFlags2_80(bool32 state);
 
 // <LegoRR.exe @004262f0>
 #define Lego_UnkObjective_CompleteSub_FUN_004262f0 ((void (__cdecl* )(void))0x004262f0)
+//void __cdecl Lego_UnkObjective_CompleteSub_FUN_004262f0(void);
 
 // <LegoRR.exe @00426350>
 #define Lego_UpdateTopdownCamera ((void (__cdecl* )(real32 elapsedAbs))0x00426350)
+//void __cdecl Lego_UpdateTopdownCamera(real32 elapsedAbs);
 
 // <LegoRR.exe @00426450>
 #define Lego_HandleWorld ((void (__cdecl* )(real32 elapsedGame, real32 elapsedAbs, bool32 keyDownT, bool32 keyDownR, bool32 keyDownAddSelection))0x00426450)
@@ -1225,9 +1238,11 @@ void __cdecl Lego_DrawRadarMap(void);
 
 // <LegoRR.exe @00427d30>
 #define Lego_LoadToolTipInfos ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x00427d30)
+//void __cdecl Lego_LoadToolTipInfos(const Gods98::Config* config, const char* gameName);
 
 // <LegoRR.exe @00427eb0>
 #define Lego_LoadUpgradeNames ((void (__cdecl* )(const Gods98::Config* config))0x00427eb0)
+//void __cdecl Lego_LoadUpgradeNames(const Gods98::Config* config);
 
 
 /// CUSTOM: Subfunction of Lego_ShowBlockToolTip.
@@ -1255,9 +1270,11 @@ void __cdecl Lego_ShowBlockToolTip(const Point2I* blockPos, bool32 showConstruct
 
 // <LegoRR.exe @004286b0>
 #define Level_BlockPointerCheck ((bool32 (__cdecl* )(const Point2I* blockPos))0x004286b0)
+//bool32 __cdecl Level_BlockPointerCheck(const Point2I* blockPos);
 
 // <LegoRR.exe @00428730>
 #define Lego_SetPointerSFX ((void (__cdecl* )(PointerSFX_Type pointerSFXType))0x00428730)
+//void __cdecl Lego_SetPointerSFX(PointerSFX_Type pointerSFXType);
 
 // bx,by : mouse-over block position.
 // mouseOverObj: mouse-over object.
@@ -1267,9 +1284,11 @@ void __cdecl Lego_HandleWorldDebugKeys(sint32 bx, sint32 by, LegoObject* mouseOv
 
 // <LegoRR.exe @00429040>
 #define Lego_XYCallback_AddVisibleSmoke ((void (__cdecl* )(sint32 bx, sint32 by))0x00429040)
+//void __cdecl Lego_XYCallback_AddVisibleSmoke(sint32 bx, sint32 by);
 
 // <LegoRR.exe @00429090>
-#define Lego_GetBlockDetail_ContainerTexture ((Container_Texture* (__cdecl* )(const Point2I* blockPos))0x00429090)
+#define Lego_GetBlockDetail_ContainerTexture ((Gods98::Container_Texture* (__cdecl* )(const Point2I* blockPos))0x00429090)
+//Gods98::Container_Texture* __cdecl Lego_GetBlockDetail_ContainerTexture(const Point2I* blockPos);
 
 // <LegoRR.exe @004290d0>
 #define Lego_UnkUpdateMapsWorldUnk_FUN_004290d0 ((void (__cdecl* )(real32 elapsedAbs, bool32 pass2))0x004290d0)
@@ -1282,6 +1301,7 @@ void __cdecl Lego_DrawDragSelectionBox(Lego_Level* level);
 
 // <LegoRR.exe @004293a0>
 #define Lego_MainView_MouseTransform ((void (__cdecl* )(uint32 mouseX, uint32 mouseY, OUT real32* xPos, OUT real32* yPos))0x004293a0)
+//void __cdecl Lego_MainView_MouseTransform(uint32 mouseX, uint32 mouseY, OUT real32* xPos, OUT real32* yPos);
 
 // <LegoRR.exe @004294d0>
 //#define Lego_GetCurrentViewLight ((Gods98::Container* (__cdecl* )(void))0x004294d0)
@@ -1330,6 +1350,7 @@ __inline real32 __cdecl Lego_GetTrainTime(void) { return legoGlobs.currLevel->Tr
 
 // <LegoRR.exe @004297c0>
 #define Lego_LoadLevel ((bool32 (__cdecl* )(char* levelName))0x004297c0)
+//bool32 __cdecl Lego_LoadLevel(char* levelName);
 
 // Move functionality from here into Lego_LoadLevel once that's implemented.
 /// CUSTOM: Extended version of `Lego_LoadLevel` that also handles storing the SeeThroughWalls property.
@@ -1338,12 +1359,15 @@ bool32 __cdecl Lego_LoadLevel2(const char* tempLevelName);
 
 // <LegoRR.exe @0042b220>
 #define Level_AddCryOreToToolStore ((bool32 (__cdecl* )(LegoObject* liveObj, SearchAddCryOre_c* search))0x0042b220)
+//bool32 __cdecl Level_AddCryOreToToolStore(LegoObject* liveObj, SearchAddCryOre_c* search);
 
 // <LegoRR.exe @0042b260>
 #define Lego_LoadDetailMeshes ((bool32 (__cdecl* )(Lego_Level* level, const char* meshBaseName))0x0042b260)
+//bool32 __cdecl Lego_LoadDetailMeshes(Lego_Level* level, const char* meshBaseName);
 
 // <LegoRR.exe @0042b3b0>
 #define Lego_FreeDetailMeshes ((void (__cdecl* )(Lego_Level* level))0x0042b3b0)
+//void __cdecl Lego_FreeDetailMeshes(Lego_Level* level);
 
 // <LegoRR.exe @0042b430>
 //#define Lego_GetRadarMap ((RadarMap* (__cdecl* )(void))0x0042b430)
@@ -1351,6 +1375,7 @@ __inline RadarMap* __cdecl Lego_GetRadarMap(void) { return legoGlobs.currLevel->
 
 // <LegoRR.exe @0042b440>
 #define Lego_LoadMapSet ((bool32 (__cdecl* )(Lego_Level* level, const char* surfaceMap, const char* predugMap, sint32 predugParam, const char* terrainMap, sint32 terrainParam, const char* blockPointersMap, sint32 blockPointersParam, const char* cryOreMap, sint8 cryOreParam, const char* erodeMap, const char* pathMap, sint32 pathParam, const char* textureSet, const char* emergeMap, const char* aiMap, const char* fallinMap))0x0042b440)
+//bool32 __cdecl Lego_LoadMapSet(Lego_Level* level, const char* surfaceMap, const char* predugMap, sint32 predugParam, const char* terrainMap, sint32 terrainParam, const char* blockPointersMap, sint32 blockPointersParam, const char* cryOreMap, sint8 cryOreParam, const char* erodeMap, const char* pathMap, sint32 pathParam, const char* textureSet, const char* emergeMap, const char* aiMap, const char* fallinMap);
 
 // <LegoRR.exe @0042b780>
 #define Lego_InitTextureMappings ((void (__cdecl* )(Map3D* map))0x0042b780)
@@ -1358,18 +1383,23 @@ __inline RadarMap* __cdecl Lego_GetRadarMap(void) { return legoGlobs.currLevel->
 
 // <LegoRR.exe @0042ba90>
 #define Lego_LoadTextureSet ((bool32 (__cdecl* )(Lego_Level* level, const char* keyTexturePath))0x0042ba90)
+//bool32 __cdecl Lego_LoadTextureSet(Lego_Level* level, const char* keyTexturePath);
 
 // <LegoRR.exe @0042bc50>
 #define Lego_LoadPreDugMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename, sint32 modifier))0x0042bc50)
+//bool32 __cdecl Lego_LoadPreDugMap(Lego_Level* level, const char* filename, sint32 modifier);
 
 // <LegoRR.exe @0042be70>
 #define Lego_LoadErodeMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename))0x0042be70)
+//bool32 __cdecl Lego_LoadErodeMap(Lego_Level* level, const char* filename);
 
 // <LegoRR.exe @0042bf90>
 #define Lego_LoadAIMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename))0x0042bf90)
+//bool32 __cdecl Lego_LoadAIMap(Lego_Level* level, const char* filename);
 
 // <LegoRR.exe @0042c050>
 #define Lego_LoadEmergeMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename))0x0042c050)
+//bool32 __cdecl Lego_LoadEmergeMap(Lego_Level* level, const char* filename);
 
 // <LegoRR.exe @0042c260>
 //#define Level_HandleEmergeTriggers ((bool32 (__cdecl* )(Lego_Level* level, const Point2I* blockPos, OUT Point2I* emergeBlockPos))0x0042c260)
@@ -1377,64 +1407,84 @@ bool32 __cdecl Level_HandleEmergeTriggers(Lego_Level* level, const Point2I* bloc
 
 // <LegoRR.exe @0042c370>
 #define Level_Emerge_FUN_0042c370 ((void (__cdecl* )(Lego_Level* level, real32 elapsedAbs))0x0042c370)
+//void __cdecl Level_Emerge_FUN_0042c370(Lego_Level* level, real32 elapsedAbs);
 
 // <LegoRR.exe @0042c3b0>
 #define Lego_LoadTerrainMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename, sint32 modifier))0x0042c3b0)
+//bool32 __cdecl Lego_LoadTerrainMap(Lego_Level* level, const char* filename, sint32 modifier);
 
 // <LegoRR.exe @0042c4e0>
 #define Lego_GetBlockCryOre ((bool32 (__cdecl* )(const Point2I* blockPos, OUT uint32* crystalLv0, OUT uint32* crystalLv1, OUT uint32* oreLv0, OUT uint32* oreLv1))0x0042c4e0)
+//bool32 __cdecl Lego_GetBlockCryOre(const Point2I* blockPos, OUT uint32* crystalLv0, OUT uint32* crystalLv1, OUT uint32* oreLv0, OUT uint32* oreLv1);
 
 // <LegoRR.exe @0042c5d0>
 #define Lego_LoadCryOreMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename, sint8 modifier))0x0042c5d0)
+//bool32 __cdecl Lego_LoadCryOreMap(Lego_Level* level, const char* filename, sint8 modifier);
 
 // <LegoRR.exe @0042c690>
 #define Lego_LoadPathMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename, sint32 modifier))0x0042c690)
+//bool32 __cdecl Lego_LoadPathMap(Lego_Level* level, const char* filename, sint32 modifier);
 
 // <LegoRR.exe @0042c900>
 #define Lego_LoadFallinMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename))0x0042c900)
+//bool32 __cdecl Lego_LoadFallinMap(Lego_Level* level, const char* filename);
 
 // <LegoRR.exe @0042caa0>
 #define Lego_UpdateFallins ((void (__cdecl* )(real32 elapsedGame))0x0042caa0)
+//void __cdecl Lego_UpdateFallins(real32 elapsedGame);
 
 // <LegoRR.exe @0042cbc0>
 #define Lego_LoadBlockPointersMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename, sint32 modifier))0x0042cbc0)
+//bool32 __cdecl Lego_LoadBlockPointersMap(Lego_Level* level, const char* filename, sint32 modifier);
 
 // <LegoRR.exe @0042cc80>
 #define Lego_GetUpgradePartModel ((Upgrade_PartModel* (__cdecl* )(const char* upgradeName))0x0042cc80)
+//Upgrade_PartModel* __cdecl Lego_GetUpgradePartModel(const char* upgradeName);
 
 // <LegoRR.exe @0042ccd0>
 #define Lego_LoadVehicleTypes ((bool32 (__cdecl* )(void))0x0042ccd0)
+//bool32 __cdecl Lego_LoadVehicleTypes(void);
 
 // <LegoRR.exe @0042ce80>
 #define Lego_LoadMiniFigureTypes ((bool32 (__cdecl* )(void))0x0042ce80)
+//bool32 __cdecl Lego_LoadMiniFigureTypes(void);
 
 // <LegoRR.exe @0042d030>
 #define Lego_LoadRockMonsterTypes ((bool32 (__cdecl* )(void))0x0042d030)
+//bool32 __cdecl Lego_LoadRockMonsterTypes(void);
 
 // <LegoRR.exe @0042d1e0>
 #define Lego_LoadBuildingTypes ((bool32 (__cdecl* )(void))0x0042d1e0)
+//bool32 __cdecl Lego_LoadBuildingTypes(void);
 
 // <LegoRR.exe @0042d390>
 #define Lego_LoadUpgradeTypes ((bool32 (__cdecl* )(void))0x0042d390)
+//bool32 __cdecl Lego_LoadUpgradeTypes(void);
 
 // <LegoRR.exe @0042d530>
 #define Lego_LoadObjectNames ((void (__cdecl* )(const Gods98::Config* config))0x0042d530)
+//void __cdecl Lego_LoadObjectNames(const Gods98::Config* config);
 
 // <LegoRR.exe @0042d950>
 #define Lego_LoadObjectTheNames ((void (__cdecl* )(const Gods98::Config* config))0x0042d950)
+//void __cdecl Lego_LoadObjectTheNames(const Gods98::Config* config);
 
 // liveObj or blockPos must be non-NULL.
 // <LegoRR.exe @0042dd70>
 #define Lego_Goto ((void (__cdecl* )(OPTIONAL LegoObject* liveObj, OPTIONAL const Point2I* blockPos, bool32 smooth))0x0042dd70)
+//void __cdecl Lego_Goto(OPTIONAL LegoObject* liveObj, OPTIONAL const Point2I* blockPos, bool32 smooth);
 
 // <LegoRR.exe @0042def0>
 #define Lego_RemoveRecordObject ((void (__cdecl* )(LegoObject* liveObj))0x0042def0)
+//void __cdecl Lego_RemoveRecordObject(LegoObject* liveObj);
 
 // <LegoRR.exe @0042df20>
 #define Lego_GetRecordObject ((bool32 (__cdecl* )(uint32 recordObjPtr, OUT LegoObject** liveObj))0x0042df20)
+//bool32 __cdecl Lego_GetRecordObject(uint32 recordObjPtr, OUT LegoObject** liveObj);
 
 // <LegoRR.exe @0042df50>
 #define Lego_LoadOLObjectList ((bool32 (__cdecl* )(Lego_Level* level, const char* filename))0x0042df50)
+//bool32 __cdecl Lego_LoadOLObjectList(Lego_Level* level, const char* filename);
 
 // <LegoRR.exe @0042e7e0>
 #define Lego_GetObjectByName ((bool32 (__cdecl* )(const char* objName, OUT LegoObject_Type* objType, OUT LegoObject_ID* objID, OUT ObjectModel** objModel))0x0042e7e0)
@@ -1446,6 +1496,7 @@ bool32 __cdecl Level_HandleEmergeTriggers(Lego_Level* level, const Point2I* bloc
 
 // <LegoRR.exe @0042ee70>
 #define Lego_GetObjectTypeIDCount ((uint32 (__cdecl* )(LegoObject_Type objType))0x0042ee70)
+//uint32 __cdecl Lego_GetObjectTypeIDCount(LegoObject_Type objType);
 
 // This is an old method for playing movies.
 //  It supports playing a movie that isn't just in the center of the screen
@@ -1454,6 +1505,7 @@ bool32 __cdecl Level_HandleEmergeTriggers(Lego_Level* level, const Point2I* bloc
 //  skipping, and scales to screen, but not playing at a specified position).
 // <LegoRR.exe @0042eef0>
 #define Lego_PlayMovie_old ((void (__cdecl* )(const char* fName, OPTIONAL const Point2F* screenPt))0x0042eef0)
+//void __cdecl Lego_PlayMovie_old(const char* fName, OPTIONAL const Point2F* screenPt);
 
 // <LegoRR.exe @0042eff0>
 //#define Level_Free ((char* (__cdecl* )(void))0x0042eff0)
@@ -1461,37 +1513,48 @@ const char* __cdecl Level_Free(void);
 
 // <LegoRR.exe @0042f210>
 #define Level_Block_SetNotHot ((void (__cdecl* )(Lego_Level* level, uint32 bx, uint32 by, bool32 notHot))0x0042f210)
+//void __cdecl Level_Block_SetNotHot(Lego_Level* level, uint32 bx, uint32 by, bool32 notHot);
 
 // <LegoRR.exe @0042f280>
 #define Level_Block_ChoosePathTexture ((SurfaceTexture (__cdecl* )(sint32 bx, sint32 by, IN OUT uint8* direction, bool32 powered))0x0042f280)
+//SurfaceTexture __cdecl Level_Block_ChoosePathTexture(sint32 bx, sint32 by, IN OUT uint8* direction, bool32 powered);
 
 // Reserved field is always 0, and never used.
 // <LegoRR.exe @0042f620>
 #define Level_BlockUpdateSurface ((void (__cdecl* )(LegoRR::Lego_Level* level, sint32 bx, sint32 by, bool32 reserved))0x0042f620)
+//void __cdecl Level_BlockUpdateSurface(LegoRR::Lego_Level* level, sint32 bx, sint32 by, bool32 reserved);
 
 // <LegoRR.exe @004301e0>
 #define Level_Block_Proc_FUN_004301e0 ((void (__cdecl* )(const Point2I* blockPos))0x004301e0)
+//void __cdecl Level_Block_Proc_FUN_004301e0(const Point2I* blockPos);
 
 // <LegoRR.exe @00430250>
 #define AITask_DoClearTypeAction ((void (__cdecl* )(const Point2I* blockPos, Message_Type completeAction))0x00430250)
+//void __cdecl AITask_DoClearTypeAction(const Point2I* blockPos, Message_Type completeAction);
 
 // <LegoRR.exe @004303a0>
 #define Level_Debug_WKey_NeedsBlockFlags1_8_FUN_004303a0 ((void (__cdecl* )(Lego_Level* level, bool32 unused, uint32 bx, uint32 by))0x004303a0)
+//void __cdecl Level_Debug_WKey_NeedsBlockFlags1_8_FUN_004303a0(Lego_Level* level, bool32 unused, uint32 bx, uint32 by);
 
 // <LegoRR.exe @00430460>
 #define Level_DestroyWall ((bool32 (__cdecl* )(Lego_Level* level, uint32 bx, uint32 by, bool32 isHiddenCavern))0x00430460)
+//bool32 __cdecl Level_DestroyWall(Lego_Level* level, uint32 bx, uint32 by, bool32 isHiddenCavern);
 
 // <LegoRR.exe @00430d20>
 #define Level_Block_FUN_00430d20 ((void (__cdecl* )(const Point2I* blockPos))0x00430d20)
+//void __cdecl Level_Block_FUN_00430d20(const Point2I* blockPos);
 
 // <LegoRR.exe @00430e10>
 #define Level_DestroyWallConnection ((bool32 (__cdecl* )(Lego_Level* level, uint32 bx, uint32 by))0x00430e10)
+//bool32 __cdecl Level_DestroyWallConnection(Lego_Level* level, uint32 bx, uint32 by);
 
 // <LegoRR.exe @00431020>
 #define Level_Block_RemoveReinforcement ((void (__cdecl* )(const Point2I* blockPos))0x00431020)
+//void __cdecl Level_Block_RemoveReinforcement(const Point2I* blockPos);
 
 // <LegoRR.exe @00431070>
 #define Level_Block_Reinforce ((void (__cdecl* )(sint32 bx, sint32 by))0x00431070)
+//void __cdecl Level_Block_Reinforce(sint32 bx, sint32 by);
 
 // staticEffect states that the block does not perform specific activities, but simply exists with
 //  the block. When false, the block will use Build/Stand/Destroy activities.
@@ -1526,21 +1589,27 @@ __inline Map3D* Lego_GetMap(void) { return Lego_GetLevel()->map; }
 
 // <LegoRR.exe @004314b0>
 #define Level_UncoverHiddenCavern ((void (__cdecl* )(uint32 bx, uint32 by))0x004314b0)
+//void __cdecl Level_UncoverHiddenCavern(uint32 bx, uint32 by);
 
 // <LegoRR.exe @004316b0>
 #define Lego_PTL_RockFall ((void (__cdecl* )(uint32 bx, uint32 by, Direction direction, bool32 isBlockVertexPos))0x004316b0)
+//void __cdecl Lego_PTL_RockFall(uint32 bx, uint32 by, Direction direction, bool32 isBlockVertexPos);
 
 // <LegoRR.exe @004318e0>
 #define Lego_GetBlockTerrain ((Lego_SurfaceType (__cdecl* )(sint32 bx, sint32 by))0x004318e0)
+//Lego_SurfaceType __cdecl Lego_GetBlockTerrain(sint32 bx, sint32 by);
 
 // <LegoRR.exe @00431910>
 #define MapShared_GetBlock ((uint32 (__cdecl* )(uint32 memHandle, sint32 bx, sint32 by))0x00431910)
+//uint32 __cdecl MapShared_GetBlock(uint32 memHandle, sint32 bx, sint32 by);
 
 // <LegoRR.exe @00431960>
 #define Level_FindSelectedUnit_BlockCheck_FUN_00431960 ((bool32 (__cdecl* )(uint32 bx, uint32 by, bool32 param_3))0x00431960)
+//bool32 __cdecl Level_FindSelectedUnit_BlockCheck_FUN_00431960(uint32 bx, uint32 by, bool32 param_3);
 
 // <LegoRR.exe @004319e0>
 #define Level_FindSelectedLiveObject_BlockReinforce_FUN_004319e0 ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x004319e0)
+//bool32 __cdecl Level_FindSelectedLiveObject_BlockReinforce_FUN_004319e0(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00431a50>
 //#define Level_CanBuildOnBlock ((bool32 (__cdecl* )(sint32 bx, sint32 by, bool32 param_3, bool32 param_4))0x00431a50)
@@ -1548,9 +1617,11 @@ bool32 __cdecl Level_CanBuildOnBlock(sint32 bx, sint32 by, bool32 param_3, bool3
 
 // <LegoRR.exe @00431ba0>
 #define LiveObject_FUN_00431ba0 ((bool32 (__cdecl* )(LegoObject* liveObj, const Point2I* blockPos, OUT Point2I* blockOffPos, bool32 param_4))0x00431ba0)
+//bool32 __cdecl LiveObject_FUN_00431ba0(LegoObject* liveObj, const Point2I* blockPos, OUT Point2I* blockOffPos, bool32 param_4);
 
 // <LegoRR.exe @00431cd0>
 #define Lego_GetCrossTerrainType ((sint32 (__cdecl* )(LegoObject* liveObj, sint32 bx1, sint32 by1, sint32 bx2, sint32 by2, bool32 param_6))0x00431cd0)
+//sint32 __cdecl Lego_GetCrossTerrainType(LegoObject* liveObj, sint32 bx1, sint32 by1, sint32 bx2, sint32 by2, bool32 param_6);
 
 // <LegoRR.exe @00432030>
 //#define Level_PowerGrid_AddPoweredBlock ((void (__cdecl* )(const Point2I* blockPos))0x00432030)
@@ -1582,162 +1653,215 @@ void __cdecl Level_PowerGrid_ClearDrainPowerBlocks(void);
 
 // <LegoRR.exe @00432290>
 #define Level_Block_UnsetBuildingTile ((void (__cdecl* )(const Point2I* blockPos))0x00432290)
+//void __cdecl Level_Block_UnsetBuildingTile(const Point2I* blockPos);
 
 // <LegoRR.exe @004322f0>
 #define Level_Block_UnsetGeneratePower ((void (__cdecl* )(const Point2I* blockPos))0x004322f0)
+//void __cdecl Level_Block_UnsetGeneratePower(const Point2I* blockPos);
 
 // <LegoRR.exe @00432320>
 #define Level_Block_SetToolStoreBuilding ((void (__cdecl* )(const Point2I* blockPos))0x00432320)
+//void __cdecl Level_Block_SetToolStoreBuilding(const Point2I* blockPos);
 
 // <LegoRR.exe @00432380>
 #define Level_Block_SetSolidBuilding ((void (__cdecl* )(sint32 bx, sint32 by))0x00432380)
+//void __cdecl Level_Block_SetSolidBuilding(sint32 bx, sint32 by);
 
 // <LegoRR.exe @004323c0>
 #define Level_Block_SetPathBuilding ((void (__cdecl* )(sint32 bx, sint32 by))0x004323c0)
+//void __cdecl Level_Block_SetPathBuilding(sint32 bx, sint32 by);
 
 // <LegoRR.exe @00432400>
 #define Level_Block_SetFenceRequest ((void (__cdecl* )(sint32 bx, sint32 by, bool32 state))0x00432400)
+//void __cdecl Level_Block_SetFenceRequest(sint32 bx, sint32 by, bool32 state);
 
 // <LegoRR.exe @00432450>
 #define Level_Block_IsFenceRequest ((bool32 (__cdecl* )(sint32 bx, sint32 by))0x00432450)
+//bool32 __cdecl Level_Block_IsFenceRequest(sint32 bx, sint32 by);
 
 // <LegoRR.exe @00432480>
 #define Level_IsBuildPathBoolUnk_true ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432480)
+//bool32 __cdecl Level_IsBuildPathBoolUnk_true(const Point2I* blockPos);
 
 // <LegoRR.exe @00432490>
 #define Level_Block_SetLayedPath ((void (__cdecl* )(const Point2I* blockPos, bool32 state))0x00432490)
+//void __cdecl Level_Block_SetLayedPath(const Point2I* blockPos, bool32 state);
 
 // <LegoRR.exe @00432500>
 #define Level_Block_SetGeneratePower ((void (__cdecl* )(const Point2I* blockPos))0x00432500)
+//void __cdecl Level_Block_SetGeneratePower(const Point2I* blockPos);
 
 // <LegoRR.exe @00432530>
 #define Level_Block_SetPath ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432530)
+//bool32 __cdecl Level_Block_SetPath(const Point2I* blockPos);
 
 // <LegoRR.exe @00432640>
 #define Level_Block_SetBusyFloor ((void (__cdecl* )(const Point2I* blockPos, bool32 busyFloor))0x00432640)
+//void __cdecl Level_Block_SetBusyFloor(const Point2I* blockPos, bool32 busyFloor);
 
 // <LegoRR.exe @004326a0>
 #define LiveObject_BlockCheck_FUN_004326a0 ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by, bool32 param_4, bool32 param_5))0x004326a0)
+//bool32 __cdecl LiveObject_BlockCheck_FUN_004326a0(LegoObject* liveObj, uint32 bx, uint32 by, bool32 param_4, bool32 param_5);
 
 // <LegoRR.exe @00432880>
 #define LiveObject_CanDynamiteBlockPos ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by))0x00432880)
+//bool32 __cdecl LiveObject_CanDynamiteBlockPos(LegoObject* liveObj, uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432900>
 #define Level_Block_IsGround_alt ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by))0x00432900)
+//bool32 __cdecl Level_Block_IsGround_alt(LegoObject* liveObj, uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432950>
 #define LiveObject_CanReinforceBlock ((bool32 (__cdecl* )(OPTIONAL LegoObject* liveObj, uint32 bx, uint32 by))0x00432950)
+//bool32 __cdecl LiveObject_CanReinforceBlock(OPTIONAL LegoObject* liveObj, uint32 bx, uint32 by);
 
 // <LegoRR.exe @004329d0>
 #define Level_Block_IsSolidBuilding ((bool32 (__cdecl* )(uint32 bx, uint32 by, bool32 includeToolStore))0x004329d0)
+//bool32 __cdecl Level_Block_IsSolidBuilding(uint32 bx, uint32 by, bool32 includeToolStore);
 
 // <LegoRR.exe @00432a30>
 #define Level_Block_IsRockFallFX ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432a30)
+//bool32 __cdecl Level_Block_IsRockFallFX(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432a80>
 #define Level_Block_IsGround ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432a80)
+//bool32 __cdecl Level_Block_IsGround(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432ac0>
 #define Level_Block_IsSeamWall ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432ac0)
+//bool32 __cdecl Level_Block_IsSeamWall(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432b00>
 #define Level_Block_IsWall ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432b00)
+//bool32 __cdecl Level_Block_IsWall(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432b50>
 #define Level_Block_IsDestroyedConnection ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432b50)
+//bool32 __cdecl Level_Block_IsDestroyedConnection(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432b80>
 #define Level_Block_GetRubbleLayers ((uint32 (__cdecl* )(const Point2I* blockPos))0x00432b80)
+//uint32 __cdecl Level_Block_GetRubbleLayers(const Point2I* blockPos);
 
 // <LegoRR.exe @00432bc0>
 #define Level_Block_ClearRubbleLayer ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432bc0)
+//bool32 __cdecl Level_Block_ClearRubbleLayer(const Point2I* blockPos);
 
 // <LegoRR.exe @00432cc0>
 #define Level_Block_IsReinforced ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432cc0)
+//bool32 __cdecl Level_Block_IsReinforced(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432d00>
 #define Level_Block_IsBusy ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432d00)
+//bool32 __cdecl Level_Block_IsBusy(const Point2I* blockPos);
 
 // <LegoRR.exe @00432d30>
 #define Level_Block_SetBusy ((void (__cdecl* )(const Point2I* blockPos, bool32 state))0x00432d30)
+//void __cdecl Level_Block_SetBusy(const Point2I* blockPos, bool32 state);
 
 // <LegoRR.exe @00432d90>
 #define Level_Block_IsCorner ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432d90)
+//bool32 __cdecl Level_Block_IsCorner(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432dc0>
 #define Level_Block_IsExposed ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432dc0)
+//bool32 __cdecl Level_Block_IsExposed(const Point2I* blockPos);
 
 // <LegoRR.exe @00432df0>
 #define Level_Block_IsImmovable ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432df0)
+//bool32 __cdecl Level_Block_IsImmovable(const Point2I* blockPos);
 
 // <LegoRR.exe @00432e30>
 #define Level_Block_IsLava ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432e30)
+//bool32 __cdecl Level_Block_IsLava(const Point2I* blockPos);
 
 // <LegoRR.exe @00432e70>
 #define Level_Block_IsNotWallOrGround ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432e70)
+//bool32 __cdecl Level_Block_IsNotWallOrGround(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432ec0>
 #define Level_Block_IsSurveyed ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432ec0)
+//bool32 __cdecl Level_Block_IsSurveyed(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432f00>
 #define Level_Block_IsGap ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432f00)
+//bool32 __cdecl Level_Block_IsGap(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432f30>
 #define Level_Block_IsCornerInner ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432f30)
+//bool32 __cdecl Level_Block_IsCornerInner(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432f60>
 #define Level_Block_IsPathBuilding ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432f60)
+//bool32 __cdecl Level_Block_IsPathBuilding(const Point2I* blockPos);
 
 // <LegoRR.exe @00432f90>
 #define Level_Block_IsGeneratePower ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432f90)
+//bool32 __cdecl Level_Block_IsGeneratePower(const Point2I* blockPos);
 
 // <LegoRR.exe @00432fc0>
 #define Level_Block_IsPath ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432fc0)
+//bool32 __cdecl Level_Block_IsPath(const Point2I* blockPos);
 
 // <LegoRR.exe @00433010>
 #define Level_Block_IsFoundationOrBusyFloor ((bool32 (__cdecl* )(const Point2I* blockPos))0x00433010)
+//bool32 __cdecl Level_Block_IsFoundationOrBusyFloor(const Point2I* blockPos);
 
 // <LegoRR.exe @00433050>
 #define Level_Block_SetDozerClearing ((void (__cdecl* )(const Point2I* blockPos, bool32 state))0x00433050)
+//void __cdecl Level_Block_SetDozerClearing(const Point2I* blockPos, bool32 state);
 
 // <LegoRR.exe @004330b0>
 #define Level_GetObjectDamageFromSurface ((bool32 (__cdecl* )(LegoObject* liveObj, sint32 bx, sint32 by, real32 elapsedGame, OPTIONAL OUT real32* damage))0x004330b0)
+//bool32 __cdecl Level_GetObjectDamageFromSurface(LegoObject* liveObj, sint32 bx, sint32 by, real32 elapsedGame, OPTIONAL OUT real32* damage);
 
 // <LegoRR.exe @004331f0>
 #define Level_Block_GetDirection ((uint32 (__cdecl* )(uint32 bx, uint32 by))0x004331f0)
+//uint32 __cdecl Level_Block_GetDirection(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00433220>
 #define Level_Block_SetSurveyed ((void (__cdecl* )(uint32 bx, uint32 by))0x00433220)
+//void __cdecl Level_Block_SetSurveyed(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00433260>
 #define Level_Block_GetSurfaceType ((bool32 (__cdecl* )(uint32 bx, uint32 by, OUT Lego_SurfaceType* surfaceType))0x00433260)
+//bool32 __cdecl Level_Block_GetSurfaceType(uint32 bx, uint32 by, OUT Lego_SurfaceType* surfaceType);
 
 // <LegoRR.exe @004332b0>
 #define Level_Block_LowerRoofVertices ((void (__cdecl* )(Lego_Level* level, uint32 bx, uint32 by))0x004332b0)
+//void __cdecl Level_Block_LowerRoofVertices(Lego_Level* level, uint32 bx, uint32 by);
 
 // <LegoRR.exe @004333f0>
 #define MapShared_GetDimensions ((void (__cdecl* )(uint32 memHandle, OUT uint32* width, OUT uint32* height))0x004333f0)
+//void __cdecl MapShared_GetDimensions(uint32 memHandle, OUT uint32* width, OUT uint32* height);
 
 // <LegoRR.exe @00433420>
 #define Lego_LoadGraphicsSettings ((bool32 (__cdecl* )(void))0x00433420)
+//bool32 __cdecl Lego_LoadGraphicsSettings(void);
 
 // <LegoRR.exe @004336a0>
 #define Lego_LoadLighting ((bool32 (__cdecl* )(void))0x004336a0)
+//bool32 __cdecl Lego_LoadLighting(void);
 
 // <LegoRR.exe @00433b10>
 #define Lego_WorldToBlockPos_NoZ ((bool32 (__cdecl* )(real32 xPos, real32 yPos, OUT sint32* bx, OUT sint32* by))0x00433b10)
+//bool32 __cdecl Lego_WorldToBlockPos_NoZ(real32 xPos, real32 yPos, OUT sint32* bx, OUT sint32* by);
 
 // <LegoRR.exe @00433b40>
 #define LiveObject_FUN_00433b40 ((bool32 (__cdecl* )(LegoObject* liveObj, real32 param_2, bool32 param_3))0x00433b40)
+//bool32 __cdecl LiveObject_FUN_00433b40(LegoObject* liveObj, real32 param_2, bool32 param_3);
 
 // <LegoRR.exe @00433d60>
 #define Level_Block_IsMeshHidden ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00433d60)
+//bool32 __cdecl Level_Block_IsMeshHidden(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00433db0>
 #define Lego_FPHighPolyBlocks_FUN_00433db0 ((void (__cdecl* )(Gods98::Container* contCamera, Gods98::Viewport* view, real32 fpClipBlocksMult, real32 highPolyBlocksMult))0x00433db0)
+//void __cdecl Lego_FPHighPolyBlocks_FUN_00433db0(Gods98::Container* contCamera, Gods98::Viewport* view, real32 fpClipBlocksMult, real32 highPolyBlocksMult);
 
 // <LegoRR.exe @00434380>
 #define Lego_QsortCompareUnk_FUN_00434380 ((sint32 (__cdecl* )(sint32 param_1, sint32 param_2))0x00434380)
+//sint32 __cdecl Lego_QsortCompareUnk_FUN_00434380(sint32 param_1, sint32 param_2);
 
 // <LegoRR.exe @004343b0>
 #define Level_Block_Detail_FUN_004343b0 ((bool32 (__cdecl* )(Lego_Level* level, uint32 bx, uint32 by, real32 scaleZ, real32 brightness))0x004343b0)
@@ -1745,40 +1869,52 @@ void __cdecl Level_PowerGrid_ClearDrainPowerBlocks(void);
 
 // <LegoRR.exe @00434460>
 #define Level_RemoveAll_ProMeshes ((void (__cdecl* )(void))0x00434460)
+//void __cdecl Level_RemoveAll_ProMeshes(void);
 
 // destroyTime can also be drillTime.
 // <LegoRR.exe @004344a0>
 #define Level_Block_Damage ((bool32 (__cdecl* )(uint32 bx, uint32 by, real32 destroyTime, real32 elapsed))0x004344a0)
+//bool32 __cdecl Level_Block_Damage(uint32 bx, uint32 by, real32 destroyTime, real32 elapsed);
 
 // <LegoRR.exe @00434520>
 #define Lego_LoadPanels ((void (__cdecl* )(const Gods98::Config* config, uint32 screenWidth, uint32 screenHeight))0x00434520)
+//void __cdecl Lego_LoadPanels(const Gods98::Config* config, uint32 screenWidth, uint32 screenHeight);
 
 // <LegoRR.exe @00434640>
 #define Lego_LoadPanelButtons ((void (__cdecl* )(const Gods98::Config* config, uint32 screenWidth, uint32 screenHeight))0x00434640)
+//void __cdecl Lego_LoadPanelButtons(const Gods98::Config* config, uint32 screenWidth, uint32 screenHeight);
 
 // <LegoRR.exe @00434930>
 #define Lego_LoadTutorialIcon ((void (__cdecl* )(const Gods98::Config* config))0x00434930)
+//void __cdecl Lego_LoadTutorialIcon(const Gods98::Config* config);
 
 // <LegoRR.exe @00434980>
 #define Lego_LoadSamples ((void (__cdecl* )(const Gods98::Config* config, bool32 noReduceSamples))0x00434980)
+//void __cdecl Lego_LoadSamples(const Gods98::Config* config, bool32 noReduceSamples);
 
 // <LegoRR.exe @00434a20>
 #define Lego_LoadTextMessages ((void (__cdecl* )(const Gods98::Config* config))0x00434a20)
+//void __cdecl Lego_LoadTextMessages(const Gods98::Config* config);
 
 // <LegoRR.exe @00434b40>
 #define Lego_LoadInfoMessages ((void (__cdecl* )(const Gods98::Config* config))0x00434b40)
+//void __cdecl Lego_LoadInfoMessages(const Gods98::Config* config);
 
 // <LegoRR.exe @00434cd0>
 #define Lego_LoadToolTips ((void (__cdecl* )(const Gods98::Config* config))0x00434cd0)
+//void __cdecl Lego_LoadToolTips(const Gods98::Config* config);
 
 // <LegoRR.exe @00434db0>
 #define Lego_TryTeleportObject ((bool32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID))0x00434db0)
+//bool32 __cdecl Lego_TryTeleportObject(LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @00434f40>
 #define Level_Block_UpdateSurveyRadius_FUN_00434f40 ((void (__cdecl* )(const Point2I* blockPos, sint32 surveyRadius))0x00434f40)
+//void __cdecl Level_Block_UpdateSurveyRadius_FUN_00434f40(const Point2I* blockPos, sint32 surveyRadius);
 
 // <LegoRR.exe @00434fd0>
 #define Lego_LoadSurfaceTypeDescriptions_sound ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x00434fd0)
+//void __cdecl Lego_LoadSurfaceTypeDescriptions_sound(const Gods98::Config* config, const char* gameName);
 
 // <LegoRR.exe @004350a0>
 //#define Lego_GetSurfaceTypeDescription ((const char* (__cdecl* )(Lego_SurfaceType surfaceType))0x004350a0)
@@ -1790,21 +1926,27 @@ __inline SFX_ID __cdecl Lego_GetSurfaceTypeSFX(Lego_SurfaceType surfaceType) { r
 
 // <LegoRR.exe @004350d0>
 #define Level_SetPointer_FromSurfaceType ((void (__cdecl* )(Lego_SurfaceType surfaceType))0x004350d0)
+//void __cdecl Level_SetPointer_FromSurfaceType(Lego_SurfaceType surfaceType);
 
 // <LegoRR.exe @00435160>
 #define Level_GenerateFallin_InRadius ((void (__cdecl* )(const Point2I* blockPos, sint32 radius, bool32 param_3))0x00435160)
+//void __cdecl Level_GenerateFallin_InRadius(const Point2I* blockPos, sint32 radius, bool32 param_3);
 
 // <LegoRR.exe @00435230>
 #define Level_UpdateTutorialBlockFlashing ((void (__cdecl* )(Lego_Level* level, Gods98::Viewport* viewMain, real32 elapsedGame, real32 elapsedAbs))0x00435230)
+//void __cdecl Level_UpdateTutorialBlockFlashing(Lego_Level* level, Gods98::Viewport* viewMain, real32 elapsedGame, real32 elapsedAbs);
 
 // <LegoRR.exe @00435480>
 #define Lego_UpdateGameCtrlLeftButtonLast ((bool32 (__cdecl* )(void))0x00435480)
+//bool32 __cdecl Lego_UpdateGameCtrlLeftButtonLast(void);
 
 // <LegoRR.exe @004354b0>
 #define Lego_DrawDialogContrastOverlay ((bool32 (__cdecl* )(void))0x004354b0)
+//bool32 __cdecl Lego_DrawDialogContrastOverlay(void);
 
 // <LegoRR.exe @004354f0>
 #define Lego_SaveMenu_ConfirmMessage_FUN_004354f0 ((sint32 (__cdecl* )(const char* titleText, const char* message, const char* okText, const char* cancelText))0x004354f0)
+//sint32 __cdecl Lego_SaveMenu_ConfirmMessage_FUN_004354f0(const char* titleText, const char* message, const char* okText, const char* cancelText);
 
 // <LegoRR.exe @00435870>
 //#define Lego_EndLevel ((bool32 (__cdecl* )(void))0x00435870)
@@ -1812,15 +1954,19 @@ bool32 __cdecl Lego_EndLevel(void);
 
 // <LegoRR.exe @00435950>
 #define Lego_StopUserAction ((void (__cdecl* )(void))0x00435950)
+//void __cdecl Lego_StopUserAction(void);
 
 // <LegoRR.exe @00435980>
 #define Lego_UnkTeleporterInit_FUN_00435980 ((void (__cdecl* )(void))0x00435980)
+//void __cdecl Lego_UnkTeleporterInit_FUN_00435980(void);
 
 // <LegoRR.exe @004359b0>
 #define Lego_SetAttackDefer ((void (__cdecl* )(bool32 defer))0x004359b0)
+//void __cdecl Lego_SetAttackDefer(bool32 defer);
 
 // <LegoRR.exe @004359d0>
 #define Lego_SetCallToArmsOn ((void (__cdecl* )(bool32 callToArms))0x004359d0)
+//void __cdecl Lego_SetCallToArmsOn(bool32 callToArms);
 
 #pragma endregion
 
