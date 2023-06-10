@@ -86,30 +86,39 @@ extern Erode_Globs & erodeGlobs;
 
 // <LegoRR.exe @0040e860>
 #define Erode_Initialise ((void (__cdecl* )(real32 triggerTime, real32 erodeTime, real32 lockTime))0x0040e860)
+//void __cdecl Erode_Initialise(real32 triggerTime, real32 erodeTime, real32 lockTime);
 
 // <LegoRR.exe @0040e8c0>
 #define Erode_GetFreeActiveIndex ((bool32 (__cdecl* )(OUT sint32* index))0x0040e8c0)
+//bool32 __cdecl Erode_GetFreeActiveIndex(OUT sint32* index);
 
 // <LegoRR.exe @0040e8f0>
 #define Erode_GetBlockErodeRate ((real32 (__cdecl* )(const Point2I* blockPos))0x0040e8f0)
+//real32 __cdecl Erode_GetBlockErodeRate(const Point2I* blockPos);
 
 // <LegoRR.exe @0040e940>
 #define Erode_AddActiveBlock ((void (__cdecl* )(const Point2I* blockPos, sint32 unkModulusNum))0x0040e940)
+//void __cdecl Erode_AddActiveBlock(const Point2I* blockPos, sint32 unkModulusNum);
 
 // <LegoRR.exe @0040e9e0>
 #define Erode_Update ((void (__cdecl* )(real32 elapsedGame))0x0040e9e0)
+//void __cdecl Erode_Update(real32 elapsedGame);
 
 // <LegoRR.exe @0040ed30>
 #define Erode_AddLockedBlock ((void (__cdecl* )(const Point2I* blockPos))0x0040ed30)
+//void __cdecl Erode_AddLockedBlock(const Point2I* blockPos);
 
 // <LegoRR.exe @0040ed80>
 #define Erode_Block_FUN_0040ed80 ((void (__cdecl* )(const Point2I* blockPos, bool32 doState2_else_add3))0x0040ed80)
+//void __cdecl Erode_Block_FUN_0040ed80(const Point2I* blockPos, bool32 doState2_else_add3);
 
 // <LegoRR.exe @0040eee0>
 #define Erode_IsBlockLocked ((bool32 (__cdecl* )(const Point2I* blockPos))0x0040eee0)
+//bool32 __cdecl Erode_IsBlockLocked(const Point2I* blockPos);
 
 // <LegoRR.exe @0040ef30>
 #define Erode_FindAdjacentBlockPos ((bool32 (__cdecl* )(const Point2I* blockPos, OUT Point2I* adjacentblockPos))0x0040ef30)
+//bool32 __cdecl Erode_FindAdjacentBlockPos(const Point2I* blockPos, OUT Point2I* adjacentblockPos);
 
 #pragma endregion
 

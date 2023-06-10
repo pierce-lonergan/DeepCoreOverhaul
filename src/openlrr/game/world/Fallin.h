@@ -78,21 +78,27 @@ extern real32 & s_Fallin_ElapsedTimer;
 
 // <LegoRR.exe @0040f010>
 #define Fallin_Update ((void (__cdecl* )(real32 elapsedGame))0x0040f010)
+//void __cdecl Fallin_Update(real32 elapsedGame);
 
 // <LegoRR.exe @0040f0c0>
 #define Fallin_Block_FUN_0040f0c0 ((bool32 (__cdecl* )(const Point2I* blockPos, bool32 allowCaveIn))0x0040f0c0)
+//bool32 __cdecl Fallin_Block_FUN_0040f0c0(const Point2I* blockPos, bool32 allowCaveIn);
 
 // <LegoRR.exe @0040f1e0>
 #define Fallin_Block_UpdateFallinsUnk1 ((bool32 (__cdecl* )(const Point2I* blockPos))0x0040f1e0)
+//bool32 __cdecl Fallin_Block_UpdateFallinsUnk1(const Point2I* blockPos);
 
 // <LegoRR.exe @0040f260>
 #define Fallin_Block_FUN_0040f260 ((void (__cdecl* )(const Point2I* blockPos, DirectionFlags fallinDirs, bool32 allowCaveIn))0x0040f260)
+//void __cdecl Fallin_Block_FUN_0040f260(const Point2I* blockPos, DirectionFlags fallinDirs, bool32 allowCaveIn);
 
 // <LegoRR.exe @0040f510>
 #define Fallin_Initialise ((void (__cdecl* )(sint32 numLandSlidesTillCaveIn))0x0040f510)
+//void __cdecl Fallin_Initialise(sint32 numLandSlidesTillCaveIn);
 
 // <LegoRR.exe @0040f520>
 #define Fallin_LandSlideDoCaveIn ((void (__cdecl* )(const Point2I* blockPos, DirectionFlags fallinDirs))0x0040f520)
+//void __cdecl Fallin_LandSlideDoCaveIn(const Point2I* blockPos, DirectionFlags fallinDirs);
 
 #pragma endregion
 

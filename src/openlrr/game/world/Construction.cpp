@@ -175,6 +175,9 @@ uint32 __cdecl LegoRR::Construction_GetBuildingBase(const char* baseName)
 	return constructionGlobs.buildingBaseCount; // Return count on failure.
 }
 
+// <LegoRR.exe @00408c10>
+//void __cdecl LegoRR::Construction_Zone_PlaceResource(uint32 constructHandle, OPTIONAL LegoObject* placedObj);
+
 // <LegoRR.exe @00408ca0>
 bool32 __cdecl LegoRR::Construction_Zone_NeedsMoreOfResource(uint32 constructHandle, LegoObject_Type objType, LegoObject_ID objID)
 {
@@ -212,6 +215,26 @@ bool32 __cdecl LegoRR::Construction_Zone_NeedsMoreOfResource(uint32 constructHan
 	return false;
 }
 
+// <LegoRR.exe @00408d40>
+//uint32 __cdecl LegoRR::Construction_Zone_CountOfResourcePlaced(Construction_Zone* construct, LegoObject_Type objType, LegoObject_ID objID);
+
+// <LegoRR.exe @00408d80>
+//void __cdecl LegoRR::Construction_Zone_RequestResource(const Point2I* originBlockPos, LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, uint32 count);
+
+// <LegoRR.exe @00408df0>
+//void __cdecl LegoRR::Construction_Zone_RequestBarriers(const Point2I* originBlockPos, const Point2I* shapeBlocks, uint32 shapeCount);
+
+// <LegoRR.exe @00408fd0>
+//bool32 __cdecl LegoRR::Construction_Zone_ExistsAtBlock(const Point2I* originBlockPos);
+
+// <LegoRR.exe @00408ff0>
+//LegoRR::Construction_Zone* __cdecl LegoRR::Construction_Zone_FindByHandleOrAtBlock(OPTIONAL const Point2I* originBlockPos, OPTIONAL const uint32* constructHandle);
+
+// <LegoRR.exe @00409040>
+//void __cdecl LegoRR::Construction_Zone_CompletePath(const Point2I* originBlockPos);
+
+// <LegoRR.exe @00409080>
+//void __cdecl LegoRR::Construction_Zone_CancelPath(const Point2I* originBlockPos);
 
 // <LegoRR.exe @00409110>
 void __cdecl LegoRR::Construction_UpdateAll(real32 elapsedGame)
@@ -245,6 +268,17 @@ void __cdecl LegoRR::Construction_UpdateAll(real32 elapsedGame)
 	}
 }
 
+// <LegoRR.exe @004091a0>
+//bool32 __cdecl LegoRR::Construction_Zone_NoForeignObjectsInside(Construction_Zone* construct);
+
+// <LegoRR.exe @004091c0>
+//bool32 __cdecl LegoRR::Construction_Zone_ObjectCallback_IsForeignObjectInside(LegoObject* liveObj, void* data);
+
+// <LegoRR.exe @00409230>
+//bool32 __cdecl LegoRR::Construction_Zone_StartPath(const Point2I* originBlockPos);
+
+// <LegoRR.exe @00409280>
+//LegoRR::Construction_Zone* __cdecl LegoRR::Construction_Zone_Create(const Point2I* originBlockPos);
 
 // <LegoRR.exe @004092e0>
 void __cdecl LegoRR::Construction_PowerGrid_PowerAdjacentBlocks(const Point2I* blockPos)
@@ -396,5 +430,43 @@ void __cdecl LegoRR::Construction_Zone_RequestPathResources(Construction_Zone* c
 	}
 }
 
+// <LegoRR.exe @00409530>
+//void __cdecl LegoRR::Construction_Zone_CancelBuilding(const Point2I* originBlockPos);
+
+// <LegoRR.exe @004096c0>
+//uint32 __cdecl LegoRR::Construction_Zone_StartBuilding(LegoObject_ID buildingObjID, const Point2I* originBlockPos, Direction direction, const Point2I* shapeBlocks, uint32 count);
+
+// <LegoRR.exe @00409870>
+//void __cdecl LegoRR::Construction_FlattenGround(const Point2I* blockPos);
+
+// <LegoRR.exe @00409900>
+//void __cdecl LegoRR::Construction_RemoveAll(void);
+
+// <LegoRR.exe @00409920>
+//void __cdecl LegoRR::Construction_Zone_Free(Construction_Zone* construct);
+
+// <LegoRR.exe @00409970>
+//void __cdecl LegoRR::Construction_Zone_ConsumePlacedResources(Construction_Zone* construct);
+
+// <LegoRR.exe @004099c0>
+//LegoRR::LegoObject* __cdecl LegoRR::Construction_SpawnBuilding(LegoObject_ID objID, const Point2I* originBlockPos, Direction direction, const Point2I* shapeBlocks, uint32 shapeCount, bool32 teleportDown);
+
+// <LegoRR.exe @00409a60>
+//LegoRR::LegoObject* __cdecl LegoRR::Construction_Zone_CompleteBuilding(Construction_Zone* construct, bool32 teleportDown);
+
+// <LegoRR.exe @00409c00>
+//void __cdecl LegoRR::Construction_DeselectAdjacentDig(const Point2I* blockPos);
+
+// <LegoRR.exe @00409c70>
+//void __cdecl LegoRR::Construction_DisableCryOreDrop(bool32 disabled);
+
+// <LegoRR.exe @00409c80>
+//void __cdecl LegoRR::Construction_CleanupBuildingFoundation(LegoObject* liveObj);
+
+// <LegoRR.exe @00409e50>
+//void __cdecl LegoRR::Construction_GenerateCryOreDrop(LegoObject* liveObj);
+
+// <LegoRR.exe @00409f20>
+//void __cdecl LegoRR::Construction_RemoveBuildingObject(LegoObject* liveObj);
 
 #pragma endregion
