@@ -140,60 +140,79 @@ extern HelpWindow_Globs & helpwindowGlobs;
 
 // <LegoRR.exe @004180c0>
 #define HelpWindow_SetFont ((void (__cdecl* )(Gods98::Font* font))0x004180c0)
+//void __cdecl HelpWindow_SetFont(Gods98::Font* font);
 
 // <LegoRR.exe @004180d0>
 #define HelpWindow_ClearFlag1 ((void (__cdecl* )(void))0x004180d0)
+//void __cdecl HelpWindow_ClearFlag1(void);
 
 // <LegoRR.exe @004180e0>
 #define HelpWindow_Initialise ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x004180e0)
+//void __cdecl HelpWindow_Initialise(const Gods98::Config* config, const char* gameName);
 
 // <LegoRR.exe @00418380>
 #define HelpWindow_LoadLevelsInfo ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x00418380)
+//void __cdecl HelpWindow_LoadLevelsInfo(const Gods98::Config* config, const char* gameName);
 
 // <LegoRR.exe @00418520>
 #define HelpWindow_LoadButtons ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x00418520)
+//void __cdecl HelpWindow_LoadButtons(const Gods98::Config* config, const char* gameName);
 
 // <LegoRR.exe @00418730>
 #define HelpWindow_IfFlag4_AndParam_Clear1_Set2_Else_Clear3 ((void (__cdecl* )(bool32 state))0x00418730)
+//void __cdecl HelpWindow_IfFlag4_AndParam_Clear1_Set2_Else_Clear3(bool32 state);
 
 // <LegoRR.exe @00418760>
 #define HelpWindow_RecallDependencies ((void (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, bool32 noHelpWindow))0x00418760)
+//void __cdecl HelpWindow_RecallDependencies(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, bool32 noHelpWindow);
 
 // <LegoRR.exe @00418850>
 #define HelpWindow_Object_Unlock ((void (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel))0x00418850)
+//void __cdecl HelpWindow_Object_Unlock(LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel);
 
 // <LegoRR.exe @00418900>
 #define HelpWindow_Close_FUN_00418900 ((void (__cdecl* )(void))0x00418900)
+//void __cdecl HelpWindow_Close_FUN_00418900(void);
 
 // <LegoRR.exe @00418930>
 #define HelpWindow_FUN_00418930 ((void (__cdecl* )(void))0x00418930)
+//void __cdecl HelpWindow_FUN_00418930(void);
 
 // <LegoRR.exe @00418cd0>
 #define HelpWindow_FUN_00418cd0 ((bool32 (__cdecl* )(uint32 mouseX, uint32 mouseY, bool32 leftButton, bool32 leftLast, bool32 leftReleased, real32 elapsed))0x00418cd0)
+//bool32 __cdecl HelpWindow_FUN_00418cd0(uint32 mouseX, uint32 mouseY, bool32 leftButton, bool32 leftLast, bool32 leftReleased, real32 elapsed);
 
 // <LegoRR.exe @00418eb0>
 #define HelpWindow_ToolTip_FUN_00418eb0 ((void (__cdecl* )(sint32 param_1))0x00418eb0)
+//void __cdecl HelpWindow_ToolTip_FUN_00418eb0(sint32 param_1);
 
 // <LegoRR.exe @00418ef0>
 #define HelpWindow_FUN_00418ef0 ((bool32 (__cdecl* )(sint32 param_1, sint32 param_2, sint32 param_3))0x00418ef0)
+//bool32 __cdecl HelpWindow_FUN_00418ef0(sint32 param_1, sint32 param_2, sint32 param_3);
 
 // <LegoRR.exe @00418f60>
 #define HelpWindow_FUN_00418f60 ((void (__cdecl* )(undefined4 param_1, real32 elapsed))0x00418f60)
+//void __cdecl HelpWindow_FUN_00418f60(undefined4 param_1, real32 elapsed);
 
 // <LegoRR.exe @00419030>
 #define HelpWindow_DrawButtons ((void (__cdecl* )(void))0x00419030)
+//void __cdecl HelpWindow_DrawButtons(void);
 
 // <LegoRR.exe @00419080>
 #define HelpWindow_GetButtonImage ((Gods98::Image* (__cdecl* )(sint32 buttonIndex))0x00419080)
+//Gods98::Image* __cdecl HelpWindow_GetButtonImage(sint32 buttonIndex);
 
 // <LegoRR.exe @004190d0>
 #define HelpWindow_IsEnabled_AndFlags_3_AndNoTutorialFlags ((bool32 (__cdecl* )(void))0x004190d0)
+//bool32 __cdecl HelpWindow_IsEnabled_AndFlags_3_AndNoTutorialFlags(void);
 
 // <LegoRR.exe @00419120>
 #define HelpWindow_IsEnabled ((bool32 (__cdecl* )(void))0x00419120)
+//bool32 __cdecl HelpWindow_IsEnabled(void);
 
 // <LegoRR.exe @00419130>
 #define HelpWindow_SetEnabled ((void (__cdecl* )(bool32 toggle, bool32 enable))0x00419130)
+//void __cdecl HelpWindow_SetEnabled(bool32 toggle, bool32 enable);
 
 #pragma endregion
 

@@ -53,6 +53,87 @@ void LegoRR::Reward_HandleItemToolTip(const Area2F* box, RewardLevelItem* reward
 }
 
 
+// <LegoRR.exe @0045f2f0>
+//bool32 __cdecl LegoRR::Reward_Initialise(void);
+
+// <LegoRR.exe @0045f4b0>
+//void __cdecl LegoRR::Reward_LoadItemSounds(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @0045f4f0>
+//void __cdecl LegoRR::Reward_LoadItemFonts(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @0045f550>
+//void __cdecl LegoRR::Reward_LoadItemBoxImages(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @0045f6a0>
+//void __cdecl LegoRR::Reward_LoadItemImages(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @0045f7f0>
+//void __cdecl LegoRR::Reward_LoadItemText(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @0045f8b0>
+//void __cdecl LegoRR::Reward_LoadItemFlics(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @0045fa10>
+//void __cdecl LegoRR::Reward_Shutdown(void);
+
+// <LegoRR.exe @0045fa70>
+//void __cdecl LegoRR::Reward_FreeItemImage(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @0045fa90>
+//void __cdecl LegoRR::Reward_FreeItemFont(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @0045fab0>
+//bool32 __cdecl LegoRR::Reward_LoadGraphics(const Gods98::Config* config, const char* gameName);
+
+// <LegoRR.exe @0045fdb0>
+//bool32 __cdecl LegoRR::Reward_LoadButtons(const Gods98::Config* config, const char* gameName);
+
+// <LegoRR.exe @00460060>
+//bool32 __cdecl LegoRR::Reward_CreateLevel(void);
+
+// <LegoRR.exe @00460360>
+//void __cdecl LegoRR::Reward_LoadLevelItemImportance(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @00460400>
+//void __cdecl LegoRR::Reward_LoadLevelItemQuota(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @004604a0>
+//void __cdecl LegoRR::Reward_FreeLevel(void);
+
+// <LegoRR.exe @004604b0>
+//LegoRR::RewardLevel* __cdecl LegoRR::GetRewardLevel2(undefined4 unused_rewardID);
+
+// <LegoRR.exe @004604c0>
+//LegoRR::RewardLevel* __cdecl LegoRR::GetRewardLevel(void);
+
+// <LegoRR.exe @004604e0>
+//void __cdecl LegoRR::RewardQuota_CountUnits(void);
+
+// <LegoRR.exe @00460550>
+//LegoRR::RewardBuildingCounts* __cdecl LegoRR::RewardQuota_CountBuildings(OUT RewardBuildingCounts* buildingCounts);
+
+// <LegoRR.exe @004605d0>
+//bool32 __cdecl LegoRR::RewardQuota_LiveObjectCallback_CountBuildings(LegoObject* liveObj, void* search);
+
+// <LegoRR.exe @00460620>
+//bool32 __cdecl LegoRR::Reward_Prepare(void);
+
+// <LegoRR.exe @00460bd0>
+//uint32 __cdecl LegoRR::Reward_GetLevelObjectsBuilt(const char* objName, sint32 objLevel, bool32 currentLevel);
+
+// <LegoRR.exe @00460c10>
+//bool32 __cdecl LegoRR::Reward_PrepareCalculate(void);
+
+// <LegoRR.exe @004611c0>
+//bool32 __cdecl LegoRR::Reward_PrepareScroll(void);
+
+// <LegoRR.exe @00461330>
+//bool32 __cdecl LegoRR::Reward_PrepareValueText(void);
+
+// <LegoRR.exe @004616d0>
+//bool32 __cdecl LegoRR::Reward_Show(void);
+
 // <LegoRR.exe @00461a50>
 void __cdecl LegoRR::Reward_DrawItem(RewardLevelItem* rewardItem, RewardItemFlags flags, Reward_Type rewardType)
 {
@@ -205,29 +286,11 @@ void __cdecl LegoRR::Reward_DrawItem(RewardLevelItem* rewardItem, RewardItemFlag
 	}
 }
 
+// <LegoRR.exe @00461f50>
+//void __cdecl LegoRR::Reward_DrawScore(Reward_Type rewardType);
 
-// <LegoRR.exe @004629c0>
-void __cdecl LegoRR::Reward_LoopUpdate(real32 elapsedSeconds)
-{
-	/// FIX APPLY: Seconds to standard framerate.
-	const real32 elapsed = (elapsedSeconds * STANDARD_FRAMERATE);
-
-	/// FIX APPLY: Properly pass elapsed time to Pointer_Update
-	Pointer_Update(elapsed);
-	Pointer_SetCurrent_IfTimerFinished(Pointer_Standard);
-	Pointer_DrawPointer(Gods98::msx(), Gods98::msy());
-
-	Lego_UpdateGameCtrlLeftButtonLast();
-	Gods98::INPUT.lClicked = false;
-
-	SFX_Update(elapsed);
-
-	// Why is it that ToolTips are the biggest thing NOT using standard framerate internally??
-	ToolTip_Update(Gods98::msx(), Gods98::msy(), elapsed);
-
-	Gods98::Main_LoopUpdate(true);
-}
-
+// <LegoRR.exe @00462090>
+//void __cdecl LegoRR::Reward_HandleButtons(OUT RewardUIState* state, OUT bool32* saved);
 
 // <LegoRR.exe @004622f0>
 //#define Reward_GotoSaveMenu ((void (__cdecl* )(void))0x004622f0)
@@ -362,5 +425,83 @@ void __cdecl LegoRR::Reward_GotoAdvance(void)
 	Front_Save_SetShouldClearUnlockedLevels(false);
 }
 
+// <LegoRR.exe @00462650>
+//void __cdecl LegoRR::Reward_HandleDebugKeys(IN OUT Reward_Type* rewardType, IN OUT RewardUIState* state, IN OUT bool32* finished, IN OUT real32* timer);
+
+// <LegoRR.exe @00462720>
+//void __cdecl LegoRR::Reward_PlayFlic(RewardLevelItem* rewardItem);
+
+// <LegoRR.exe @00462760>
+//void __cdecl LegoRR::Reward_UpdateState(IN OUT Reward_Type* rewardType, IN OUT RewardUIState* state, IN OUT real32* timer);
+
+// <LegoRR.exe @004628c0>
+//void __cdecl LegoRR::Reward_DrawAllValues(IN Reward_Type* rewardType, OUT bool32* finished);
+
+// <LegoRR.exe @004629c0>
+void __cdecl LegoRR::Reward_LoopUpdate(real32 elapsedSeconds)
+{
+	/// FIX APPLY: Seconds to standard framerate.
+	const real32 elapsed = (elapsedSeconds * STANDARD_FRAMERATE);
+
+	/// FIX APPLY: Properly pass elapsed time to Pointer_Update
+	Pointer_Update(elapsed);
+	Pointer_SetCurrent_IfTimerFinished(Pointer_Standard);
+	Pointer_DrawPointer(Gods98::msx(), Gods98::msy());
+
+	Lego_UpdateGameCtrlLeftButtonLast();
+	Gods98::INPUT.lClicked = false;
+
+	SFX_Update(elapsed);
+
+	// Why is it that ToolTips are the biggest thing NOT using standard framerate internally??
+	ToolTip_Update(Gods98::msx(), Gods98::msy(), elapsed);
+
+	Gods98::Main_LoopUpdate(true);
+}
+
+// <LegoRR.exe @00462a40>
+//bool32 __cdecl LegoRR::Reward_LoopBegin(void);
+
+// <LegoRR.exe @00462ac0>
+//void __cdecl LegoRR::RewardQuota_UpdateTimers(real32 elapsedGame);
+
+// <LegoRR.exe @00462af0>
+//void __cdecl LegoRR::RewardQuota_WallDestroyed(void);
+
+// <LegoRR.exe @00462b10>
+//void __cdecl LegoRR::RewardQuota_CavernDiscovered(void);
+
+// <LegoRR.exe @00462b30>
+//void __cdecl LegoRR::RewardQuota_RockMonsterGenerated(void);
+
+// <LegoRR.exe @00462b40>
+//void __cdecl LegoRR::RewardQuota_RockMonsterDestroyed(void);
+
+// <LegoRR.exe @00462b50>
+//void __cdecl LegoRR::RewardQuota_RockMonsterAttacked(void);
+
+// <LegoRR.exe @00462b60>
+//void __cdecl LegoRR::RewardQuota_RockMonsterDamageDealt(real32 damage);
+
+// <LegoRR.exe @00462b80>
+//void __cdecl LegoRR::RewardQuota_MiniFigureDamageTaken(real32 damage);
+
+// <LegoRR.exe @00462ba0>
+//LegoRR::RewardScroll* __cdecl LegoRR::RewardScroll_Create(OUT RewardScroll** scroll, real32 zero, real32 heightDiv20, real32 width, real32 bottomSubDiv3pt5, real32 scrollSpeed);
+
+// <LegoRR.exe @00462c20>
+//bool32 __cdecl LegoRR::RewardScroll_Free(IN OUT RewardScroll** scroll);
+
+// <LegoRR.exe @00462c90>
+//LegoRR::RewardScrollLabel* __cdecl LegoRR::RewardScroll_AddLabel(RewardScroll* scroll, const char* text, Gods98::Font* font, real32 xPos, real32 yPos, RewardScrollLabelFlags labelFlags);
+
+// <LegoRR.exe @00462d70>
+//void __cdecl LegoRR::RewardScroll_SetDelay_Unk(RewardScroll* scroll, real32 curScrollY);
+
+// <LegoRR.exe @00462d80>
+//void __cdecl LegoRR::RewardScroll_AddFlags(RewardScroll* scroll, RewardScrollFlags flags);
+
+// <LegoRR.exe @00462d90>
+//bool32 __cdecl LegoRR::RewardScroll_DrawLabels(RewardScroll* scroll);
 
 #pragma endregion

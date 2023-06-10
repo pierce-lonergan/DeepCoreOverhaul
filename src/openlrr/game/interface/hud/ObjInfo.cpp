@@ -68,6 +68,21 @@ void LegoRR::ObjInfo_TryEndDraw()
 }
 
 
+// <LegoRR.exe @004597f0>
+//void __cdecl LegoRR::ObjInfo_Initialise(const Gods98::Config* config, const char* gameName);
+
+// <LegoRR.exe @00459820>
+//bool32 __cdecl LegoRR::ObjInfo_LoadHealthBar(const Gods98::Config* config, const char* gameName);
+
+// <LegoRR.exe @00459bc0>
+//bool32 __cdecl LegoRR::ObjInfo_LoadHunger(const Gods98::Config* config, const char* gameName);
+
+// <LegoRR.exe @00459c80>
+//void __cdecl LegoRR::ObjInfo_LoadHungerImages(const Gods98::Config* config, const char* gameName);
+
+// <LegoRR.exe @00459d10>
+//bool32 __cdecl LegoRR::ObjInfo_LoadBubble(const Gods98::Config* config, const char* gameName);
+
 // DRAW MODE: Only Draw API drawing calls can be used within this function.
 // <LegoRR.exe @00459dc0>
 void __cdecl LegoRR::ObjInfo_DrawHealthBar(LegoObject* liveObj, sint32 screenX, sint32 screenY)

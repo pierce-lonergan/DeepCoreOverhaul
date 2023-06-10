@@ -38,6 +38,11 @@ LegoRR::Objective_Globs & LegoRR::objectiveGlobs = *(LegoRR::Objective_Globs*)0x
 
 #pragma region Functions
 
+// <LegoRR.exe @004577a0>
+//void __cdecl LegoRR::Objective_LoadObjectiveText(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, const char* filename);
+
+// <LegoRR.exe @00458000>
+//void __cdecl LegoRR::Objective_LoadLevel(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, uint32 screenWidth, uint32 screenHeight);
 
 // <LegoRR.exe @00458840>
 void __cdecl LegoRR::Objective_SetCryOreObjectives(Lego_Level* level, uint32 crystals, uint32 ore)

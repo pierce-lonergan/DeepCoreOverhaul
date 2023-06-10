@@ -155,84 +155,111 @@ extern Effect_Globs & effectGlobs;
 
 // <LegoRR.exe @0040bcf0>
 #define Effect_StopAll ((void (__cdecl* )(void))0x0040bcf0)
+//void __cdecl Effect_StopAll(void);
 
 // <LegoRR.exe @0040bd10>
 #define Effect_Spawn_BoulderExplode_AtObjectOther ((void (__cdecl* )(LegoObject* liveObj))0x0040bd10)
+//void __cdecl Effect_Spawn_BoulderExplode_AtObjectOther(LegoObject* liveObj);
 
 // <LegoRR.exe @0040bd40>
 #define Effect_Spawn_BoulderExplode ((void (__cdecl* )(const Vector3F* position))0x0040bd40)
+//void __cdecl Effect_Spawn_BoulderExplode(const Vector3F* position);
 
 // <LegoRR.exe @0040bde0>
 #define Effect_Spawn_SmashPath ((void (__cdecl* )(OPTIONAL LegoObject* liveObj, OPTIONAL const Vector3F* position))0x0040bde0)
+//void __cdecl Effect_Spawn_SmashPath(OPTIONAL LegoObject* liveObj, OPTIONAL const Vector3F* position);
 
 // <LegoRR.exe @0040bea0>
 #define Effect_GetRockFallStyle ((bool32 (__cdecl* )(const char* name, OUT uint32* index))0x0040bea0)
+//bool32 __cdecl Effect_GetRockFallStyle(const char* name, OUT uint32* index);
 
 // <LegoRR.exe @0040bef0>
 #define Effect_SetRockFallStyle ((void (__cdecl* )(sint32 rockFallStyleIndex))0x0040bef0)
+//void __cdecl Effect_SetRockFallStyle(sint32 rockFallStyleIndex);
 
 // <LegoRR.exe @0040bf00>
 #define Effect_Load_RockFallStylesAll ((void (__cdecl* )(const Gods98::Config* config, const char* gameName, Gods98::Container* contRoot))0x0040bf00)
+//void __cdecl Effect_Load_RockFallStylesAll(const Gods98::Config* config, const char* gameName, Gods98::Container* contRoot);
 
 // <LegoRR.exe @0040c000>
 #define Effect_Load_RockFallStyle ((bool32 (__cdecl* )(Gods98::Container* contRoot, const char* filename, sint32 rockFallStyle, sint32 rockFallType, const char* itemName))0x0040c000)
+//bool32 __cdecl Effect_Load_RockFallStyle(Gods98::Container* contRoot, const char* filename, sint32 rockFallStyle, sint32 rockFallType, const char* itemName);
 
 // <LegoRR.exe @0040c0e0>
 #define Effect_Load_ElectricFenceBeam ((bool32 (__cdecl* )(Gods98::Container* contRoot, const char* filename, bool32 longBeam))0x0040c0e0)
+//bool32 __cdecl Effect_Load_ElectricFenceBeam(Gods98::Container* contRoot, const char* filename, bool32 longBeam);
 
 // <LegoRR.exe @0040c160>
 #define Effect_Spawn_RockFall ((bool32 (__cdecl* )(RockFallType rockFallType, sint32 bx, sint32 by, real32 xPos, real32 yPos, real32 zPos, real32 xDir, real32 yDir))0x0040c160)
+//bool32 __cdecl Effect_Spawn_RockFall(RockFallType rockFallType, sint32 bx, sint32 by, real32 xPos, real32 yPos, real32 zPos, real32 xDir, real32 yDir);
 
 // <LegoRR.exe @0040c220>
 #define Effect_Spawn_ElectricFenceBeam ((bool32 (__cdecl* )(bool32 longBeam, real32 xPos, real32 yPos, real32 zPos, real32 xDir, real32 yDir, real32 zDir))0x0040c220)
+//bool32 __cdecl Effect_Spawn_ElectricFenceBeam(bool32 longBeam, real32 xPos, real32 yPos, real32 zPos, real32 xDir, real32 yDir, real32 zDir);
 
 // <LegoRR.exe @0040c2d0>
 #define Effect_UpdateAll ((uint32 (__cdecl* )(real32 elapsedGame, OUT uint32** rockFallTypes, OUT uint32** rockFallSubtypes))0x0040c2d0)
+//uint32 __cdecl Effect_UpdateAll(real32 elapsedGame, OUT uint32** rockFallTypes, OUT uint32** rockFallSubtypes);
 
 // <LegoRR.exe @0040c400>
 #define Effect_Update_BoulderExplode ((void (__cdecl* )(real32 elapsedGame))0x0040c400)
+//void __cdecl Effect_Update_BoulderExplode(real32 elapsedGame);
 
 // <LegoRR.exe @0040c450>
 #define Effect_Update_SmashPath ((void (__cdecl* )(real32 elapsedGame))0x0040c450)
+//void __cdecl Effect_Update_SmashPath(real32 elapsedGame);
 
 // <LegoRR.exe @0040c4a0>
 #define Effect_GetBlockPos_RockFall ((void (__cdecl* )(RockFallType rockFallType, sint32 index, OUT uint32* bx, OUT uint32* by))0x0040c4a0)
+//void __cdecl Effect_GetBlockPos_RockFall(RockFallType rockFallType, sint32 index, OUT uint32* bx, OUT uint32* by);
 
 // <LegoRR.exe @0040c4e0>
 #define Effect_Unk_RockFall_FUN_0040c4e0 ((Gods98::Container* (__cdecl* )(uint32 bx, uint32 by))0x0040c4e0)
+//Gods98::Container* __cdecl Effect_Unk_RockFall_FUN_0040c4e0(uint32 bx, uint32 by);
 
 // <LegoRR.exe @0040c5c0>
 #define Effect_RemoveAll_BoulderExplode ((void (__cdecl* )(void))0x0040c5c0)
+//void __cdecl Effect_RemoveAll_BoulderExplode(void);
 
 // <LegoRR.exe @0040c5f0>
 #define Effect_RemoveAll_RockFall ((void (__cdecl* )(void))0x0040c5f0)
+//void __cdecl Effect_RemoveAll_RockFall(void);
 
 // <LegoRR.exe @0040c650>
 #define Effect_Load_Explosion ((void (__cdecl* )(Gods98::Container* contRoot, const char* filename))0x0040c650)
+//void __cdecl Effect_Load_Explosion(Gods98::Container* contRoot, const char* filename);
 
 // <LegoRR.exe @0040c680>
 #define Effect_Spawn_Explosion ((void (__cdecl* )(OPTIONAL LegoObject* liveObj, OPTIONAL const Point2F* position))0x0040c680)
+//void __cdecl Effect_Spawn_Explosion(OPTIONAL LegoObject* liveObj, OPTIONAL const Point2F* position);
 
 // <LegoRR.exe @0040c760>
 #define Effect_Update_Explosion ((void (__cdecl* )(real32 elapsedGame))0x0040c760)
+//void __cdecl Effect_Update_Explosion(real32 elapsedGame);
 
 // <LegoRR.exe @0040c7d0>
 #define Effect_GetMiscEffectData ((EffectMisc* (__cdecl* )(MiscEffectType miscEffectType))0x0040c7d0)
+//EffectMisc* __cdecl Effect_GetMiscEffectData(MiscEffectType miscEffectType);
 
 // <LegoRR.exe @0040c850>
 #define Effect_Load_Misc ((bool32 (__cdecl* )(EffectMisc* effectMisc, Gods98::Container* contRoot, const char* filename))0x0040c850)
+//bool32 __cdecl Effect_Load_Misc(EffectMisc* effectMisc, Gods98::Container* contRoot, const char* filename);
 
 // <LegoRR.exe @0040c8c0>
 #define Effect_Initialise ((void (__cdecl* )(const Gods98::Config* config, const char* gameName, Gods98::Container* cont))0x0040c8c0)
+//void __cdecl Effect_Initialise(const Gods98::Config* config, const char* gameName, Gods98::Container* cont);
 
 // <LegoRR.exe @0040caa0>
 #define Effect_Update_MiscEffect ((void (__cdecl* )(EffectMisc* miscEffect, real32 elapsedGame))0x0040caa0)
+//void __cdecl Effect_Update_MiscEffect(EffectMisc* miscEffect, real32 elapsedGame);
 
 // <LegoRR.exe @0040cb70>
 #define Effect_Update_MiscEffectsAll ((void (__cdecl* )(real32 elapsedGame))0x0040cb70)
+//void __cdecl Effect_Update_MiscEffectsAll(real32 elapsedGame);
 
 // <LegoRR.exe @0040cc10>
 #define Effect_Spawn_Particle ((bool32 (__cdecl* )(MiscEffectType miscEffectType, const Vector3F* position, OPTIONAL const Vector3F* dir))0x0040cc10)
+//bool32 __cdecl Effect_Spawn_Particle(MiscEffectType miscEffectType, const Vector3F* position, OPTIONAL const Vector3F* dir);
 
 #pragma endregion
 

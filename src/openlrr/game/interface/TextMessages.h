@@ -111,33 +111,43 @@ extern Text_Globs & textGlobs;
 
 // <LegoRR.exe @0046aab0>
 #define Text_Load ((void (__cdecl* )(Gods98::TextWindow* textOnlyWindow, Gods98::TextWindow* textImageWindow, sint32 imageX, sint32 imageY, real32 pauseTime))0x0046aab0)
+//void __cdecl Text_Load(Gods98::TextWindow* textOnlyWindow, Gods98::TextWindow* textImageWindow, sint32 imageX, sint32 imageY, real32 pauseTime);
 
 // <LegoRR.exe @0046ac10>
 #define Text_Initialise ((void (__cdecl* )(const char* filename, uint32 param_2, uint32 param_3, uint32 unused_int, const Area2F* param_5, const Area2F* unused_rect, real32 param_7))0x0046ac10)
+//void __cdecl Text_Initialise(const char* filename, uint32 param_2, uint32 param_3, uint32 unused_int, const Area2F* param_5, const Area2F* unused_rect, real32 param_7);
 
 // <LegoRR.exe @0046aca0>
 #define Text_UpdatePositionAndSize ((void (__cdecl* )(void))0x0046aca0)
+//void __cdecl Text_UpdatePositionAndSize(void);
 
 // <LegoRR.exe @0046ad50>
 #define Text_Clear ((void (__cdecl* )(void))0x0046ad50)
+//void __cdecl Text_Clear(void);
 
 // <LegoRR.exe @0046ad90>
 #define Text_GetTextType ((bool32 (__cdecl* )(const char* textName, OUT Text_Type* textType))0x0046ad90)
+//bool32 __cdecl Text_GetTextType(const char* textName, OUT Text_Type* textType);
 
 // <LegoRR.exe @0046add0>
 #define Text_SetMessage ((void (__cdecl* )(Text_Type textType, const char* textMessage))0x0046add0)
+//void __cdecl Text_SetMessage(Text_Type textType, const char* textMessage);
 
 // <LegoRR.exe @0046ae70>
 #define Text_SetMessageWithImage ((void (__cdecl* )(Text_Type textType, const char* message, const char* filename, const char* sfxName))0x0046ae70)
+//void __cdecl Text_SetMessageWithImage(Text_Type textType, const char* message, const char* filename, const char* sfxName);
 
 // <LegoRR.exe @0046aee0>
 #define Text_SetNERPsMessage ((void (__cdecl* )(const char* text, uint32 unusedCounter))0x0046aee0)
+//void __cdecl Text_SetNERPsMessage(const char* text, uint32 unusedCounter);
 
 // <LegoRR.exe @0046af20>
 #define Text_DisplayMessage ((void (__cdecl* )(Text_Type textType, bool32 changeTiming, bool32 setFlag4))0x0046af20)
+//void __cdecl Text_DisplayMessage(Text_Type textType, bool32 changeTiming, bool32 setFlag4);
 
 // <LegoRR.exe @0046afc0>
 #define Text_Update ((void (__cdecl* )(real32 elapsedAbs))0x0046afc0)
+//void __cdecl Text_Update(real32 elapsedAbs);
 
 #pragma endregion
 

@@ -837,6 +837,10 @@ void __cdecl LegoRR::NERPsRuntime_EndExecute(real32 elapsedAbs)
 }
 
 
+// <LegoRR.exe @004542e0>
+//bool32 __cdecl LegoRR::NERPsRuntime_LiveObject_GetIfRockMonsterAnd_FUN_004542e0(LegoObject* liveObj, void* pOutLiveObj);
+
+
 // DATA: SearchNERPsSetMonsterAttack* search
 // <LegoRR.exe @004545c0>
 bool32 __cdecl LegoRR::NERPs_LegoObject_Callback_SetMonsterAttack(LegoObject* liveObj, void* pSearch)
@@ -876,6 +880,28 @@ bool32 __cdecl LegoRR::NERPs_LegoObject_Callback_SetMonsterAttack(LegoObject* li
 }
 
 
+// <LegoRR.exe @004546d0>
+//void __cdecl LegoRR::NERPs_SetObjectsLevel(const char* objName, uint32 objLevel);
+
+// <LegoRR.exe @00454740>
+//bool32 __cdecl LegoRR::NERPs_LiveObject_Callback_SetLevelOfObjects(LegoObject* liveObj, void* pSearch);
+
+// <LegoRR.exe @00454780>
+//bool32 __cdecl LegoRR::NERPs_LiveObject_Callback_CountRecordObjectsAtBlock(BlockPointer* blockPointer, uint32 bx, uint32 by, void* search);
+
+// <LegoRR.exe @004548c0>
+//void __cdecl LegoRR::NERPsRuntime_DrawTutorialIcon(Lego_Level* level, Gods98::Viewport* viewMain, real32 elapsedGame, real32 elapsedAbs);
+
+// <LegoRR.exe @004549d0>
+//sint32 __cdecl LegoRR::NERPs_GetIconClicked(Interface_MenuItemType* pMenuIcon);
+
+// <LegoRR.exe @00454b40>
+//void __cdecl LegoRR::NERPsRuntime_IncHiddenObjectsFound(LegoObject_Type unused_objType);
+
+// <LegoRR.exe @00454b50>
+//void __cdecl LegoRR::NERPsRuntime_ClearHiddenObjectsFound(void);
+
+
 // DATA: SearchNERPsSetObjectHealthPain* search
 // <LegoRR.exe @00454c70>
 bool32 __cdecl LegoRR::NERPs_LiveObject_Callback_SetRockMonsterHealthType(LegoObject* liveObj, void* pSearch)
@@ -911,6 +937,61 @@ bool32 __cdecl LegoRR::NERPs_LiveObject_Callback_SetRockMonsterHealthType(LegoOb
 	}
 	return false;
 }
+
+
+// <LegoRR.exe @00454e90>
+//sint32 __cdecl LegoRR::NERPsRuntime_SetSubmenuIconClicked(const char* itemName, sint32 clickedCount);
+
+// <LegoRR.exe @00454ed0>
+//sint32 __cdecl LegoRR::NERPsRuntime_FlashSubmenuIcon(const char* objName, bool32 flash);
+
+// <LegoRR.exe @00454f10>
+//bool32 __cdecl LegoRR::NERPsRuntime_Enumerate_SetTutorialBlockClicks(BlockPointer* blockPointer, uint32 bx, uint32 by, void* pClickCount);
+
+// <LegoRR.exe @00454f60>
+//bool32 __cdecl LegoRR::NERPsRuntime_Enumerate_SetTutorialCrystals(BlockPointer* blockPointer, uint32 bx, uint32 by, void* pCrystalCount);
+
+// <LegoRR.exe @00454ff0>
+//bool32 __cdecl LegoRR::NERPs_SetOreAtBlock(BlockPointer* blockPointer, uint32 bx, uint32 by, void* pGenerateOre);
+
+// <LegoRR.exe @00455070>
+//sint32 __cdecl LegoRR::NERPsRuntime_CountSelectedUnits_ByObjectName(const char* objName);
+
+// <LegoRR.exe @00455320>
+//bool32 __cdecl LegoRR::NERPs_Game_DoCallbacks_ByObjectName(const char* objName);
+
+// <LegoRR.exe @00455360>
+//bool32 __cdecl LegoRR::NERPs_LiveObject_Callback_ByObjectTypeIndex_IsDriving(LegoObject* liveObj1, LegoObject* liveObj_template);
+
+// <LegoRR.exe @004553f0>
+//bool32 __cdecl LegoRR::NERPsRuntime_Callback_GetTutorialCrystals(BlockPointer* blockPointer, uint32 bx, uint32 by, OUT void* pTutorialCrystals);
+
+// <LegoRR.exe @00455450>
+//bool32 __cdecl LegoRR::NERPsRuntime_Callback_GetTutorialBlockClicks(BlockPointer* blockPointer, uint32 bx, uint32 by, OUT void* pClicks);
+
+// <LegoRR.exe @004554b0>
+//sint32 __cdecl LegoRR::NERPsRuntime_GetLevelObjectsBuilt(const char* objName, sint32 objLevel);
+
+// <LegoRR.exe @00455580>
+//bool32 __cdecl LegoRR::NERPsRuntime_LiveObjectCallback_GetPoweredObjectsBuilt(LegoObject* liveObj, void* search);
+
+// <LegoRR.exe @004555c0>
+//uint32 __cdecl LegoRR::NERPsRuntime_GetPreviousLevelObjectsBuilt(const char* objName, sint32 objLevel);
+
+// <LegoRR.exe @00455600>
+//sint32 __cdecl LegoRR::NERPs_SubMenu_GetBuildingVehicleIcon_ByObjectName(const char* objName);
+
+// <LegoRR.exe @00455630>
+//bool32 __cdecl LegoRR::NERPsRuntime_FlashIcon(Interface_MenuItemType menuIcon, bool32 flash);
+
+// <LegoRR.exe @00456900>
+//bool32 __cdecl LegoRR::NERPsRuntime_IsMessagePermit(void);
+
+// <LegoRR.exe @00456910>
+//bool32 __cdecl LegoRR::NERPsRuntime_GetMessageWait(void);
+
+// <LegoRR.exe @00456ad0>
+//void __cdecl LegoRR::NERPs_RestartMessageSample(void);
 
 
 // <LegoRR.exe @00456af0>
@@ -1049,6 +1130,19 @@ void __cdecl LegoRR::NERPs_Level_NERPMessage_Parse(const char* text, OPTIONAL OU
 }
 
 
+// <LegoRR.exe @00456e40>
+//void __cdecl LegoRR::NERPs_InitBlockPointersTable(Lego_Level* level);
+
+// <LegoRR.exe @00456ef0>
+//BlockPointer* __cdecl LegoRR::NERPs_GetBlockPointer(Lego_Level* level, sint32 blockPointerID);
+
+// <LegoRR.exe @00456f20>
+//void __cdecl LegoRR::NERPs_FreeBlockPointers(void);
+
+// <LegoRR.exe @00456f70>
+//void __cdecl LegoRR::NERPsRuntime_EnumerateBlockPointers(sint32 blockPointerID, NERPsBlockPointerCallback callback, void* data);
+
+
 // DATA: SearchNERPsTutorialAction* search
 // <LegoRR.exe @00456fc0>
 bool32 __cdecl LegoRR::NERPsRuntime_TutorialActionCallback(BlockPointer* unused, uint32 bx, uint32 by, void* pSearch)
@@ -1180,5 +1274,14 @@ bool32 __cdecl LegoRR::NERPsRuntime_TutorialActionCallback(BlockPointer* unused,
 	return true;
 }
 
+
+// <LegoRR.exe @00457320>
+//bool32 __cdecl LegoRR::NERPs_LiveObject_CallbackCheck_FUN_00457320(LegoObject* liveObj, void* pSearch);
+
+// <LegoRR.exe @00457390>
+//bool32 __cdecl LegoRR::NERPs_LiveObject_Callback_SetBool3f8IfAtBlockPos_FUN_00457390(LegoObject* liveObj, void* pSearch);
+
+// <LegoRR.exe @00457430>
+//void __cdecl LegoRR::NERPsRuntime_SetTutorialPointer(sint32 blockPointerIdx, sint32 unkMode0_1);
 
 #pragma endregion

@@ -167,6 +167,10 @@ extern real32 & g_Interface_TIMER_004a3b58;
 // <LegoRR.exe @004a3b5c>
 extern uint32 & g_Interface_UINT_004a3b5c;
 
+// used by: Interface_FUN_0041ebd0
+// <LegoRR.exe @004ddd50>
+extern LegoObject_ID & s_interfaceObjID;
+
 // <LegoRR.exe @004ddd58>
 extern Interface_Globs & interfaceGlobs;
 
@@ -190,91 +194,120 @@ extern Interface_Globs & interfaceGlobs;
 
 // <LegoRR.exe @0041a220>
 #define Interface_GetFont ((Gods98::Font* (__cdecl* )(void))0x0041a220)
+//Gods98::Font* __cdecl Interface_GetFont(void);
 
 // <LegoRR.exe @0041a230>
 #define Interface_Initialise ((void (__cdecl* )(uint32 x_565, uint32 y_18, Gods98::Font* font))0x0041a230)
+//void __cdecl Interface_Initialise(uint32 x_565, uint32 y_18, Gods98::Font* font);
 
 // <LegoRR.exe @0041a590>
 #define Interface_AddAllMenuItems ((void (__cdecl* )(void))0x0041a590)
+//void __cdecl Interface_AddAllMenuItems(void);
 
 // <LegoRR.exe @0041a700>
 #define Interface_AddMenuItems ((void (__cdecl* )(Interface_MenuType menuType, uint32 numItems, ...))0x0041a700)
+//void __cdecl Interface_AddMenuItems(Interface_MenuType menuType, uint32 numItems, ...);
 
 // <LegoRR.exe @0041a780>
 #define Interface_Shutdown ((void (__cdecl* )(void))0x0041a780)
+//void __cdecl Interface_Shutdown(void);
 
 // <LegoRR.exe @0041a850>
 #define Interface_ClearStates ((void (__cdecl* )(void))0x0041a850)
+//void __cdecl Interface_ClearStates(void);
 
 // <LegoRR.exe @0041a8c0>
 #define Interface_ResetMenu ((void (__cdecl* )(void))0x0041a8c0)
+//void __cdecl Interface_ResetMenu(void);
 
 // <LegoRR.exe @0041a8f0>
 #define Interface_GetMenuItemType ((bool32 (__cdecl* )(const char* menuItemName, OUT Interface_MenuItemType* menuItemType))0x0041a8f0)
+//bool32 __cdecl Interface_GetMenuItemType(const char* menuItemName, OUT Interface_MenuItemType* menuItemType);
 
 // <LegoRR.exe @0041a930>
 #define Interface_InitBuildItems ((void (__cdecl* )(void))0x0041a930)
+//void __cdecl Interface_InitBuildItems(void);
 
 // <LegoRR.exe @0041aa30>
 #define Interface_LoadBuildItems ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x0041aa30)
+//void __cdecl Interface_LoadBuildItems(const Gods98::Config* config, const char* gameName);
 
 // <LegoRR.exe @0041acd0>
 #define Interface_LoadMenuItems ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x0041acd0)
+//void __cdecl Interface_LoadMenuItems(const Gods98::Config* config, const char* gameName);
 
 // <LegoRR.exe @0041af00>
 #define Interface_LoadItemPanels ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x0041af00)
+//void __cdecl Interface_LoadItemPanels(const Gods98::Config* config, const char* gameName);
 
 // <LegoRR.exe @0041b0e0>
 #define Interface_LoadBackButton ((void (__cdecl* )(const Gods98::Config* config, const char* gameName))0x0041b0e0)
+//void __cdecl Interface_LoadBackButton(const Gods98::Config* config, const char* gameName);
 
 // <LegoRR.exe @0041b1a0>
 #define Interface_LoadPlusMinusImages ((void (__cdecl* )(const char* plusName, const char* minusName))0x0041b1a0)
+//void __cdecl Interface_LoadPlusMinusImages(const char* plusName, const char* minusName);
 
 // <LegoRR.exe @0041b200>
 #define Interface_OpenMenu ((void (__cdecl* )(Interface_MenuType menuType, const Point2I* blockPos))0x0041b200)
+//void __cdecl Interface_OpenMenu(Interface_MenuType menuType, const Point2I* blockPos);
 
 // <LegoRR.exe @0041b230>
 #define _Interface_OpenMenu_SelectBlock ((void (__cdecl* )(Interface_MenuType menuType, const Point2I* blockPos))0x0041b230)
+//void __cdecl _Interface_OpenMenu_SelectBlock(Interface_MenuType menuType, const Point2I* blockPos);
 
 // <LegoRR.exe @0041b2f0>
 #define Interface_FUN_0041b2f0 ((sint32 (__cdecl* )(Interface_MenuType interfaceMenuType))0x0041b2f0)
+//sint32 __cdecl Interface_FUN_0041b2f0(Interface_MenuType interfaceMenuType);
 
 // <LegoRR.exe @0041b3a0>
 #define Interface_MenuTypeHasBackButton ((bool32 (__cdecl* )(Interface_MenuType interfaceMenuType))0x0041b3a0)
+//bool32 __cdecl Interface_MenuTypeHasBackButton(Interface_MenuType interfaceMenuType);
 
 // <LegoRR.exe @0041b3c0>
 #define Interface_FUN_0041b3c0 ((void (__cdecl* )(void))0x0041b3c0)
+//void __cdecl Interface_FUN_0041b3c0(void);
 
 // <LegoRR.exe @0041b5b0>
 #define Interface_FUN_0041b5b0 ((bool32 (__cdecl* )(Interface_MenuType menuIcon, void* callback, void* context))0x0041b5b0)
+//bool32 __cdecl Interface_FUN_0041b5b0(Interface_MenuType menuIcon, void* callback, void* context);
 
 // <LegoRR.exe @0041b730>
 #define Interface_Callback_FUN_0041b730 ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon, uint32 param_2, sint32 param_3, real32* param_4))0x0041b730)
+//bool32 __cdecl Interface_Callback_FUN_0041b730(Interface_MenuItemType menuIcon, uint32 param_2, sint32 param_3, real32* param_4);
 
 // <LegoRR.exe @0041b860>
 #define Interface_FUN_0041b860 ((void (__cdecl* )(real32 elapsedAbs))0x0041b860)
+//void __cdecl Interface_FUN_0041b860(real32 elapsedAbs);
 
 // This interface boolean is toggled on/off every 15-frames. Probably used for flashing.
 // <LegoRR.exe @0041b8e0>
 #define Interface_GetFlashingState ((bool32 (__cdecl* )(void))0x0041b8e0)
+//bool32 __cdecl Interface_GetFlashingState(void);
 
 // <LegoRR.exe @0041b8f0>
 #define Interface_GetPrimaryUnit_PowerIcon ((Interface_MenuItemType (__cdecl* )(IN OUT Interface_MenuItemType* menuIcon))0x0041b8f0)
+//Interface_MenuItemType __cdecl Interface_GetPrimaryUnit_PowerIcon(IN OUT Interface_MenuItemType* menuIcon);
 
 // <LegoRR.exe @0041b940>
 #define Interface_FUN_0041b940 ((void (__cdecl* )(real32 elapsedAbs))0x0041b940)
+//void __cdecl Interface_FUN_0041b940(real32 elapsedAbs);
 
 // <LegoRR.exe @0041b9c0>
 #define Interface_SetSFX_004df1f4 ((void (__cdecl* )(SFX_ID sfxType))0x0041b9c0)
+//void __cdecl Interface_SetSFX_004df1f4(SFX_ID sfxType);
 
 // <LegoRR.exe @0041b9d0>
 #define Interface_DoSomethingWithRenameReplace ((bool32 (__cdecl* )(uint32 param_1, uint32 param_2, sint32 param_3, sint32 param_4, sint32 param_5))0x0041b9d0)
+//bool32 __cdecl Interface_DoSomethingWithRenameReplace(uint32 param_1, uint32 param_2, sint32 param_3, sint32 param_4, sint32 param_5);
 
 // <LegoRR.exe @0041c0f0>
 #define Interface_FUN_0041c0f0 ((bool32 (__cdecl* )(uint32 param_1, uint32 param_2, OUT undefined4* param_3, OUT undefined4* param_4, OUT undefined4* param_5))0x0041c0f0)
+//bool32 __cdecl Interface_FUN_0041c0f0(uint32 param_1, uint32 param_2, OUT undefined4* param_3, OUT undefined4* param_4, OUT undefined4* param_5);
 
 // <LegoRR.exe @0041c240>
 #define Interface_Callback_FUN_0041c240 ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID, uint32* param_4))0x0041c240)
+//bool32 __cdecl Interface_Callback_FUN_0041c240(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID, uint32* param_4);
 
 // <LegoRR.exe @0041c370>
 //#define Interface_DoF2InterfaceKeyAction ((void (__cdecl* )(void))0x0041c370)
@@ -286,48 +319,63 @@ bool32 __cdecl Interface_CallbackDoMenuIconKeyAction(Interface_MenuItemType menu
 
 // <LegoRR.exe @0041c420>
 #define Interface_FUN_0041c420 ((void (__cdecl* )(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID, real32* param_4))0x0041c420)
+//void __cdecl Interface_FUN_0041c420(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID, real32* param_4);
 
 // <LegoRR.exe @0041c610>
 #define Interface_FUN_0041c610 ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon, sint32 param_2, sint32 param_3, bool32 param_4, bool32 param_5))0x0041c610)
+//bool32 __cdecl Interface_FUN_0041c610(Interface_MenuItemType menuIcon, sint32 param_2, sint32 param_3, bool32 param_4, bool32 param_5);
 
 // <LegoRR.exe @0041c6e0>
 #define Interface_FUN_0041c6e0 ((void (__cdecl* )(Interface_MenuItemType menuIcon))0x0041c6e0)
+//void __cdecl Interface_FUN_0041c6e0(Interface_MenuItemType menuIcon);
 
 // <LegoRR.exe @0041c730>
 #define Interface_FUN_0041c730 ((void (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID))0x0041c730)
+//void __cdecl Interface_FUN_0041c730(LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @0041c820>
 #define Interface_FUN_0041c820 ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon, bool32 param_2))0x0041c820)
+//bool32 __cdecl Interface_FUN_0041c820(Interface_MenuItemType menuIcon, bool32 param_2);
 
 // <LegoRR.exe @0041c880>
 #define Interface_FUN_0041c880 ((bool32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, bool32 param_3))0x0041c880)
+//bool32 __cdecl Interface_FUN_0041c880(LegoObject_Type objType, LegoObject_ID objID, bool32 param_3);
 
 // <LegoRR.exe @0041c920>
 #define Interface_FUN_0041c920 ((void (__cdecl* )(Interface_MenuItemType menuIcon, bool32 setFlag8))0x0041c920)
+//void __cdecl Interface_FUN_0041c920(Interface_MenuItemType menuIcon, bool32 setFlag8);
 
 // <LegoRR.exe @0041c950>
 #define Interface_FUN_0041c950 ((void (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, bool32 param_3))0x0041c950)
+//void __cdecl Interface_FUN_0041c950(LegoObject_Type objType, LegoObject_ID objID, bool32 param_3);
 
 // <LegoRR.exe @0041c990>
 #define Interface_FUN_0041c990 ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon))0x0041c990)
+//bool32 __cdecl Interface_FUN_0041c990(Interface_MenuItemType menuIcon);
 
 // <LegoRR.exe @0041c9a0>
 #define Interface_FUN_0041c9a0 ((bool32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID))0x0041c9a0)
+//bool32 __cdecl Interface_FUN_0041c9a0(LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @0041c9e0>
 #define Interface_FUN_0041c9e0 ((Gods98::Image* (__cdecl* )(Interface_MenuItemType menuIcon))0x0041c9e0)
+//Gods98::Image* __cdecl Interface_FUN_0041c9e0(Interface_MenuItemType menuIcon);
 
 // <LegoRR.exe @0041ca20>
 #define Interface_GetBuildImageByObjectType ((Gods98::Image* (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID))0x0041ca20)
+//Gods98::Image* __cdecl Interface_GetBuildImageByObjectType(LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @0041cac0>
 #define Interface_GetObjectBuildImage ((Gods98::Image* (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, bool32 param_3))0x0041cac0)
+//Gods98::Image* __cdecl Interface_GetObjectBuildImage(LegoObject_Type objType, LegoObject_ID objID, bool32 param_3);
 
 // <LegoRR.exe @0041cbb0>
 #define Interface_SetDat_004decd8_004decdc ((void (__cdecl* )(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID))0x0041cbb0)
+//void __cdecl Interface_SetDat_004decd8_004decdc(Interface_MenuItemType menuIcon, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @0041cc10>
 #define Interface_FUN_0041cc10 ((void (__cdecl* )(const Point2F* point, uint32 unkWidth, uint32 unkHeight))0x0041cc10)
+//void __cdecl Interface_FUN_0041cc10(const Point2F* point, uint32 unkWidth, uint32 unkHeight);
 
 // <LegoRR.exe @0041cc60>
 //#define Interface_DrawHoverOutline ((void (__cdecl* )(const Area2F* area))0x0041cc60)
@@ -335,160 +383,212 @@ void __cdecl Interface_DrawHoverOutline(const Area2F* area);
 
 // <LegoRR.exe @0041cdd0>
 #define Interface_ChangeMenu_IfVehicleMounted_IsLiveObject ((void (__cdecl* )(LegoObject* liveObj))0x0041cdd0)
+//void __cdecl Interface_ChangeMenu_IfVehicleMounted_IsLiveObject(LegoObject* liveObj);
 
 // <LegoRR.exe @0041ce50>
 #define Interface_ChangeMenu_IfPrimarySelectedVehicle_IsLiveObject ((void (__cdecl* )(LegoObject* liveObj))0x0041ce50)
+//void __cdecl Interface_ChangeMenu_IfPrimarySelectedVehicle_IsLiveObject(LegoObject* liveObj);
 
 // <LegoRR.exe @0041ceb0>
 #define Interface_BackToMain_IfSelectedWall_IsBlockPos ((void (__cdecl* )(const Point2I* blockPos))0x0041ceb0)
+//void __cdecl Interface_BackToMain_IfSelectedWall_IsBlockPos(const Point2I* blockPos);
 
 // <LegoRR.exe @0041cee0>
 #define Interface_BackToMain_IfSelectedGroundOrConstruction_IsBlockPos ((void (__cdecl* )(const Point2I* blockPos))0x0041cee0)
+//void __cdecl Interface_BackToMain_IfSelectedGroundOrConstruction_IsBlockPos(const Point2I* blockPos);
 
 // <LegoRR.exe @0041cf10>
 #define Interface_BackToMain_IfSelectedRubble_IsBlockPos ((void (__cdecl* )(const Point2I* blockPos))0x0041cf10)
+//void __cdecl Interface_BackToMain_IfSelectedRubble_IsBlockPos(const Point2I* blockPos);
 
 // <LegoRR.exe @0041cf40>
 #define Interface_BackToMain_IfUnitIsSelected ((void (__cdecl* )(LegoObject* liveObj))0x0041cf40)
+//void __cdecl Interface_BackToMain_IfUnitIsSelected(LegoObject* liveObj);
 
 // <LegoRR.exe @0041cf70>
 #define Interface_HandleMenuItem ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon))0x0041cf70)
+//bool32 __cdecl Interface_HandleMenuItem(Interface_MenuItemType menuIcon);
 
 // <LegoRR.exe @0041dbd0>
 #define Interface_DoAction_FUN_0041dbd0 ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon))0x0041dbd0)
+//bool32 __cdecl Interface_DoAction_FUN_0041dbd0(Interface_MenuItemType menuIcon);
 
 // <LegoRR.exe @0041e680>
 #define Interface_BackToMain ((void (__cdecl* )(void))0x0041e680)
+//void __cdecl Interface_BackToMain(void);
 
 // <LegoRR.exe @0041e6a0>
 #define Interface_SetIconFlash ((void (__cdecl* )(Interface_MenuItemType menuIcon, bool32 flash))0x0041e6a0)
+//void __cdecl Interface_SetIconFlash(Interface_MenuItemType menuIcon, bool32 flash);
 
 // <LegoRR.exe @0041e6d0>
 #define Interface_SetSubmenuIconFlash ((void (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, bool32 flash))0x0041e6d0)
+//void __cdecl Interface_SetSubmenuIconFlash(LegoObject_Type objType, LegoObject_ID objID, bool32 flash);
 
 // <LegoRR.exe @0041e710>
 #define Interface_GetPrimarySelectedUnit ((LegoObject* (__cdecl* )(void))0x0041e710)
+//LegoObject* __cdecl Interface_GetPrimarySelectedUnit(void);
 
 // <LegoRR.exe @0041e720>
 #define Interface_SetIconClicked ((sint32 (__cdecl* )(Interface_MenuItemType menuIcon, sint32 clickedCount))0x0041e720)
+//sint32 __cdecl Interface_SetIconClicked(Interface_MenuItemType menuIcon, sint32 clickedCount);
 
 // <LegoRR.exe @0041e740>
 #define Interface_GetIconClicked ((sint32 (__cdecl* )(Interface_MenuItemType menuIcon))0x0041e740)
+//sint32 __cdecl Interface_GetIconClicked(Interface_MenuItemType menuIcon);
 
 // <LegoRR.exe @0041e750>
 #define Interface_SetSubmenuIconClicked ((sint32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, sint32 clickedCount))0x0041e750)
+//sint32 __cdecl Interface_SetSubmenuIconClicked(LegoObject_Type objType, LegoObject_ID objID, sint32 clickedCount);
 
 // <LegoRR.exe @0041e790>
 #define Interface_GetSubmenuIconClicked ((sint32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID))0x0041e790)
+//sint32 __cdecl Interface_GetSubmenuIconClicked(LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @0041e7c0>
 #define Interface_SetAdvisorPointToFashingIcon ((bool32 (__cdecl* )(Interface_MenuItemType menuIcon, bool32 setFlag40))0x0041e7c0)
+//bool32 __cdecl Interface_SetAdvisorPointToFashingIcon(Interface_MenuItemType menuIcon, bool32 setFlag40);
 
 // <LegoRR.exe @0041e800>
 #define Interface_GetAdvisorType_FromIcon ((Advisor_Type (__cdecl* )(Interface_MenuItemType menuIcon))0x0041e800)
+//Advisor_Type __cdecl Interface_GetAdvisorType_FromIcon(Interface_MenuItemType menuIcon);
 
 // <LegoRR.exe @0041e8c0>
 #define Interface_GetObjectBool_FUN_0041e8c0 ((bool32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID))0x0041e8c0)
+//bool32 __cdecl Interface_GetObjectBool_FUN_0041e8c0(LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @0041e900>
 #define Interface_SetScrollParameters ((void (__cdecl* )(uint32 xEnd, uint32 yEnd, uint32 xStart, uint32 yStart, real32 timerFloat_750))0x0041e900)
+//void __cdecl Interface_SetScrollParameters(uint32 xEnd, uint32 yEnd, uint32 xStart, uint32 yStart, real32 timerFloat_750);
 
 // <LegoRR.exe @0041e980>
 #define _Interface_OpenMenu_SetNext ((void (__cdecl* )(Interface_MenuType menuType, OPTIONAL const Point2I* blockPos))0x0041e980)
+//void __cdecl _Interface_OpenMenu_SetNext(Interface_MenuType menuType, OPTIONAL const Point2I* blockPos);
 
 // <LegoRR.exe @0041e9f0>
 #define Interface_FUN_0041e9f0 ((void (__cdecl* )(real32 elapsedAbs))0x0041e9f0)
+//void __cdecl Interface_FUN_0041e9f0(real32 elapsedAbs);
 
 // <LegoRR.exe @0041eb60>
 #define Interface_DrawTeleportQueueNumber ((void (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, const Point2F* screenPt))0x0041eb60)
+//void __cdecl Interface_DrawTeleportQueueNumber(LegoObject_Type objType, LegoObject_ID objID, const Point2F* screenPt);
 
 // <LegoRR.exe @0041ebd0>
 #define Interface_FUN_0041ebd0 ((void (__cdecl* )(real32 xScreen, real32 yScreen))0x0041ebd0)
+//void __cdecl Interface_FUN_0041ebd0(real32 xScreen, real32 yScreen);
 
 // <LegoRR.exe @0041ed90>
 #define Interface_SetFloatTo25_004df1ec_AndUnsetFlags800_004df1f8 ((void (__cdecl* )(void))0x0041ed90)
+//void __cdecl Interface_SetFloatTo25_004df1ec_AndUnsetFlags800_004df1f8(void);
 
 // <LegoRR.exe @0041edb0>
 #define Interface_FUN_0041edb0 ((bool32 (__cdecl* )(uint32 param_1, uint32 param_2, real32 x, real32 y, OUT LegoObject_Type* objType, OUT LegoObject_ID* objID, OUT uint32* objLevel))0x0041edb0)
+//bool32 __cdecl Interface_FUN_0041edb0(uint32 param_1, uint32 param_2, real32 x, real32 y, OUT LegoObject_Type* objType, OUT LegoObject_ID* objID, OUT uint32* objLevel);
 
 // <LegoRR.exe @0041f030>
 #define Interface_HasTeleporterForObject ((bool32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID))0x0041f030)
+//bool32 __cdecl Interface_HasTeleporterForObject(LegoObject_Type objType, LegoObject_ID objID);
 
 // DATA: SearchInterfaceFindObject*
 // <LegoRR.exe @0041f0c0>
 #define Interface_Callback_HasObject ((bool32 (__cdecl* )(LegoObject* liveObj, void* search))0x0041f0c0)
+//bool32 __cdecl Interface_Callback_HasObject(LegoObject* liveObj, void* search);
 
 // <LegoRR.exe @0041f160>
 #define Interface_HasUpgradeStation ((bool32 (__cdecl* )(void))0x0041f160)
+//bool32 __cdecl Interface_HasUpgradeStation(void);
 
 // <LegoRR.exe @0041f1a0>
 #define Interface_HasStatsFlags2 ((bool32 (__cdecl* )(StatsFlags2 statsFlags2))0x0041f1a0)
+//bool32 __cdecl Interface_HasStatsFlags2(StatsFlags2 statsFlags2);
 
 // <LegoRR.exe @0041f1e0>
 #define Interface_HasToolStore ((bool32 (__cdecl* )(void))0x0041f1e0)
+//bool32 __cdecl Interface_HasToolStore(void);
 
 // <LegoRR.exe @0041f220>
 #define Interface_HasObjectOfTypeID ((bool32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID))0x0041f220)
+//bool32 __cdecl Interface_HasObjectOfTypeID(LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @0041f270>
 #define Interface_HasObjectWithAbilities ((bool32 (__cdecl* )(LegoObject_AbilityFlags abilityFlags))0x0041f270)
+//bool32 __cdecl Interface_HasObjectWithAbilities(LegoObject_AbilityFlags abilityFlags);
 
 // <LegoRR.exe @0041f2c0>
 #define Interface_Callback_ReqestDigBlock ((bool32 (__cdecl* )(LegoObject* liveObj, const Point2I* blockPos))0x0041f2c0)
+//bool32 __cdecl Interface_Callback_ReqestDigBlock(LegoObject* liveObj, const Point2I* blockPos);
 
 // <LegoRR.exe @0041f2f0>
 #define Interface_ReqestDigBlock ((bool32 (__cdecl* )(const Point2I* blockPos))0x0041f2f0)
+//bool32 __cdecl Interface_ReqestDigBlock(const Point2I* blockPos);
 
 // <LegoRR.exe @0041f310>
 #define Interface_Callback_RequestReinforceBlock ((bool32 (__cdecl* )(LegoObject* liveObj, const Point2I* blockPos))0x0041f310)
+//bool32 __cdecl Interface_Callback_RequestReinforceBlock(LegoObject* liveObj, const Point2I* blockPos);
 
 // <LegoRR.exe @0041f330>
 #define Interface_RequestReinforceBlock ((bool32 (__cdecl* )(const Point2I* blockPos))0x0041f330)
+//bool32 __cdecl Interface_RequestReinforceBlock(const Point2I* blockPos);
 
 // <LegoRR.exe @0041f350>
 #define Interface_DoSelectedUnits_Callback ((bool32 (__cdecl* )(LegoObject_RunThroughListsCallback callback, void* data))0x0041f350)
+//bool32 __cdecl Interface_DoSelectedUnits_Callback(LegoObject_RunThroughListsCallback callback, void* data);
 
 // <LegoRR.exe @0041f3a0>
 #define Interface_ObjectCallback_IsCarryingButNotStoring ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0041f3a0)
+//bool32 __cdecl Interface_ObjectCallback_IsCarryingButNotStoring(LegoObject* liveObj, void* unused);
 
 // <LegoRR.exe @0041f3c0>
 #define Interface_ObjectCallback_IsEnergyBelowMax ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0041f3c0)
+//bool32 __cdecl Interface_ObjectCallback_IsEnergyBelowMax(LegoObject* liveObj, void* unused);
 
 // <LegoRR.exe @0041f3e0>
 #define Interface_ObjectCallback_IsHealthBelowMax ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0041f3e0)
+//bool32 __cdecl Interface_ObjectCallback_IsHealthBelowMax(LegoObject* liveObj, void* unused);
 
 // <LegoRR.exe @0041f400>
 #define Interface_ObjectCallback_FUN_0041f400 ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0041f400)
+//bool32 __cdecl Interface_ObjectCallback_FUN_0041f400(LegoObject* liveObj, void* unused);
 
 // <LegoRR.exe @0041f520>
 #define Interface_ObjectCallback_SetFlags4_8_HealthM1 ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0041f520)
+//bool32 __cdecl Interface_ObjectCallback_SetFlags4_8_HealthM1(LegoObject* liveObj, void* unused);
 
 // <LegoRR.exe @0041f540>
 #define Interface_ObjectCallback_GoEatIfEnergyBelowMax ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0041f540)
+//bool32 __cdecl Interface_ObjectCallback_GoEatIfEnergyBelowMax(LegoObject* liveObj, void* unused);
 
 // <LegoRR.exe @0041f570>
 #define Interface_ObjectCallback_RequestRepairIfHealthBelowMax ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0041f570)
+//bool32 __cdecl Interface_ObjectCallback_RequestRepairIfHealthBelowMax(LegoObject* liveObj, void* unused);
 
 // <LegoRR.exe @0041f5a0>
 #define Interface_ObjectCallback_DoesNotHaveToolEquipped ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject_ToolType toolType))0x0041f5a0)
+//bool32 __cdecl Interface_ObjectCallback_DoesNotHaveToolEquipped(LegoObject* liveObj, LegoObject_ToolType toolType);
 
 // <LegoRR.exe @0041f5c0>
 #define Interface_ObjectCallback_GoGetToolIfNotEquipped ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject_ToolType toolType))0x0041f5c0)
+//bool32 __cdecl Interface_ObjectCallback_GoGetToolIfNotEquipped(LegoObject* liveObj, LegoObject_ToolType toolType);
 
 // <LegoRR.exe @0041f5f0>
 #define Interface_ObjectCallback_FUN_0041f5f0 ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0041f5f0)
+//bool32 __cdecl Interface_ObjectCallback_FUN_0041f5f0(LegoObject* liveObj, void* unused);
 
 // <LegoRR.exe @0041f650>
 #define Interface_CheckPrimaryUnitHasAbility ((bool32 (__cdecl* )(LegoObject_AbilityFlags abilityFlag))0x0041f650)
+//bool32 __cdecl Interface_CheckPrimaryUnitHasAbility(LegoObject_AbilityFlags abilityFlag);
 
 // <LegoRR.exe @0041f670>
 #define Interface_Block_FUN_0041f670 ((bool32 (__cdecl* )(const Point2I* blockPos))0x0041f670)
+//bool32 __cdecl Interface_Block_FUN_0041f670(const Point2I* blockPos);
 
 // <LegoRR.exe @0041f750>
 #define Interface_ObjectCallback_HasToolEquipped_2 ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject_ToolType toolType))0x0041f750)
+//bool32 __cdecl Interface_ObjectCallback_HasToolEquipped_2(LegoObject* liveObj, LegoObject_ToolType toolType);
 
 // <LegoRR.exe @0041f770>
 #define Interface_ObjectCallback_PlaceBirdScarerIfEquipped ((bool32 (__cdecl* )(LegoObject* liveObj, void* unused))0x0041f770)
+//bool32 __cdecl Interface_ObjectCallback_PlaceBirdScarerIfEquipped(LegoObject* liveObj, void* unused);
 
 #pragma endregion
 

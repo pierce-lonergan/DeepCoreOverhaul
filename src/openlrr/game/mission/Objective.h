@@ -114,9 +114,11 @@ extern Objective_Globs & objectiveGlobs;
 
 // <LegoRR.exe @004577a0>
 #define Objective_LoadObjectiveText ((void (__cdecl* )(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, const char* filename))0x004577a0)
+//void __cdecl Objective_LoadObjectiveText(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, const char* filename);
 
 // <LegoRR.exe @00458000>
 #define Objective_LoadLevel ((void (__cdecl* )(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, uint32 screenWidth, uint32 screenHeight))0x00458000)
+//void __cdecl Objective_LoadLevel(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, uint32 screenWidth, uint32 screenHeight);
 
 // <LegoRR.exe @00458840>
 //#define Objective_SetCryOreObjectives ((void (__cdecl* )(Lego_Level* level, uint32 crystals, uint32 ore))0x00458840)
