@@ -1,6 +1,10 @@
 // Building.cpp : 
 //
 
+#include "../../engine/core/Config.h"
+#include "../../engine/core/Utils.h"
+#include "../../engine/gfx/Activities.h"
+#include "../world/SelectPlace.h"
 #include "Object.h"
 #include "Upgrade.h"
 #include "Weapons.h"
@@ -105,7 +109,153 @@ bool32 __cdecl LegoRR::Building_IsHidden(BuildingModel* building)
 
 
 // <LegoRR.exe @00407c90>
-//bool32 __cdecl LegoRR::Building_Load(OUT BuildingModel* building, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName);
+bool32 __cdecl LegoRR::Building_Load(OUT BuildingModel* building, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName)
+{
+	std::memset(building, 0, sizeof(BuildingModel));
+
+	//char* pathParts[100];
+	//char baseDir[1024];
+	char fullNameBuff[1024];
+
+	building->contAct = Gods98::Container_Load(root, filename, "ACT", true);
+	if (building->contAct != nullptr) {
+		// Get the filename from the path so we can build our desired path: e.g. "path\to\myObject\myObject.ae"
+		// Note that Container_Load already does this for "ACT" type files,
+		//  but we need the path for things not handled by Container.
+		const char* name = filename;
+		for (const char* s = name; *s != '\0'; s++) {
+			if (*s == '\\') name = s + 1;
+		}
+		std::sprintf(fullNameBuff, "%s\\%s.%s", filename, name, ACTIVITY_FILESUFFIX);
+		/// REFACTOR: We don't need all this extra logic just to find the filename.
+		//std::strcpy(baseDir, filename);
+		//numParts = Gods98::Util_TokeniseSafe(baseDir, pathParts, "\\", _countof(pathParts));
+		//for (uint32 i = 1; i < numParts; i++) {
+		//	pathParts[i][-1] = '\\'; // Restore separator between parts
+		//}
+		//std::sprintf(fullNameBuff, "%s\\%s.%s", baseDir, pathParts[numParts - 1], ACTIVITY_FILESUFFIX);
+
+		Gods98::Config* config = Gods98::Config_Load(fullNameBuff);
+		if (config != nullptr) {
+
+			building->cameraNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "CameraNullName"));
+			if (building->cameraNullName == nullptr) {
+				building->cameraNullFrames = 0;
+			}
+			else {
+				building->cameraNullFrames = Config_GetIntValue(config, Config_ID(gameName, "CameraNullFrames"));
+			}
+
+			building->carryNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "CarryNullName"));
+			if (building->carryNullName == nullptr) {
+				building->carryNullFrames = 0;
+			}
+			else {
+				building->carryNullFrames = Config_GetIntValue(config, Config_ID(gameName, "CarryNullFrames"));
+			}
+
+			building->toolNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "ToolNullName"));
+			if (building->toolNullName == nullptr) {
+				building->toolNullFrames = 0;
+			}
+			else {
+				building->toolNullFrames = Config_GetIntValue(config, Config_ID(gameName, "ToolNullFrames"));
+			}
+
+			building->depositNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "DepositNullName"));
+			building->fireNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "FireNullName"));
+			building->entranceNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "EntranceNullName"));
+
+			building->yPivot = Gods98::Config_GetStringValue(config, Config_ID(gameName, "yPivot"));
+			building->xPivot = Gods98::Config_GetStringValue(config, Config_ID(gameName, "xPivot"));
+
+			if (Gods98::Config_GetTempStringValue(config, Config_ID(gameName, "PivotMaxZ")) == nullptr) {
+				// 0.0f is a valid value, so we need to properly check for the property's existence.
+				building->weapons.pivotMaxZ = 1.0f;
+			}
+			else {
+				building->weapons.pivotMaxZ = Config_GetRealValue(config, Config_ID(gameName, "PivotMaxZ"));
+			}
+			if (Gods98::Config_GetTempStringValue(config, Config_ID(gameName, "PivotMinZ")) == nullptr) {
+				// 0.0f is a valid value, so we need to properly check for the property's existence.
+				building->weapons.pivotMinZ = -1.0f;
+			}
+			else {
+				building->weapons.pivotMinZ = Config_GetRealValue(config, Config_ID(gameName, "PivotMinZ"));
+			}
+
+
+			Upgrade_Load(&building->upgrades, config, gameName);
+
+
+			/// FIXME: SelectPlace supports up to 20 points, but building only supports 10.
+			building->shapePoints = (Point2I*)Gods98::Mem_Alloc(10 * sizeof(Point2I));
+			/// SANITY: Memzero shapePoints.
+			std::memset(building->shapePoints, 0, (10 * sizeof(Point2I)));
+
+			// First point is implicitly defined at the origin.
+			building->shapeCount = 1;
+			building->shapePoints[0] = Point2I { 0, 0 };
+
+			char* shapeStr = Gods98::Config_GetStringValue(config, Config_ID(gameName, "Shape"));
+			if (shapeStr != nullptr) {
+				// 9 is max because first point is implicitly defined.
+				char* shapeParts[9 + 1]; // +1 for proper error handling of more than the expected amount.
+				uint32 numParts = Gods98::Util_TokeniseSafe(shapeStr, shapeParts, ":", _countof(shapeParts));
+				if (numParts > 9) {
+					numParts = 9;
+					Config_WarnLast(true, config, "Shape can only support up to 9 points. Too many points!");
+				}
+
+				for (uint32 i = 0; i < numParts; i++) {
+					char* part = shapeParts[i];
+					char* comma = std::strstr(part, ",");
+					if (comma == nullptr) {
+						/// FIX APPLY: Report missing comma instead of accessing address 0x0+1.
+						Config_WarnLastF(true, config, "Shape point at index %i is missing a comma!", i);
+
+						building->shapePoints[building->shapeCount] = Point2I { 0, 0 };
+					}
+					else {
+						const bool hasMoreCommas = (std::strstr(comma + 1, ",") != nullptr);
+						Config_WarnLastF(hasMoreCommas, config, "Shape point at index %i has more than one comma!", i);
+
+						/// REFACTOR: Although atoi will just stop at the comma, zero out the comma so that replacing atoi
+						//             with something more strict in the future won't have any complications.
+						*comma = '\0';
+						building->shapePoints[building->shapeCount] = Point2I {
+							std::atoi(part),
+							std::atoi(comma + 1),
+						};
+					}
+					building->shapeCount++;
+				}
+
+				Gods98::Mem_Free(shapeStr);
+			}
+
+			const char* powerLevelName = Gods98::Config_GetTempStringValue(config, Config_ID(gameName, "PowerLevelScene"));
+			if (powerLevelName != nullptr) {
+				std::sprintf(fullNameBuff, "%s\\%s", filename, powerLevelName);
+
+				building->contPowerLevel = Gods98::Container_Load(root, fullNameBuff, "LWS", true);
+				/// TODO: Should we also be hiding the power level scene??
+			}
+
+			Gods98::Config_Free(config);
+		}
+
+		// Unlike with Vehicle_Load, failure conditions are less strict (missing config file is allowed).
+		// Also Vehicle_Load doesn't hide any containers like here.
+		Gods98::Container_Hide(building->contAct, true);
+
+		/// FIX APPLY: Properly set building source flag.
+		building->flags = BUILDING_FLAG_SOURCE;
+		building->objID = objID;
+		return true;
+	}
+	return false;
+}
 
 // <LegoRR.exe @00408210>
 void __cdecl LegoRR::Building_ChangePowerLevel(BuildingModel* building, bool32 increment)

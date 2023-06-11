@@ -130,8 +130,8 @@ bool32 __cdecl Building_IsHidden(BuildingModel* building);
 
 
 // <LegoRR.exe @00407c90>
-#define Building_Load ((bool32 (__cdecl* )(OUT BuildingModel* building, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName))0x00407c90)
-//bool32 __cdecl Building_Load(OUT BuildingModel* building, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName);
+//#define Building_Load ((bool32 (__cdecl* )(OUT BuildingModel* building, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName))0x00407c90)
+bool32 __cdecl Building_Load(OUT BuildingModel* building, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName);
 
 // <LegoRR.exe @00408210>
 //#define Building_ChangePowerLevel ((void (__cdecl* )(BuildingModel* building, bool32 increment))0x00408210)

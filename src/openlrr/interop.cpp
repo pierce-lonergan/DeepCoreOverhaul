@@ -1757,10 +1757,8 @@ bool interop_hook_LegoRR_Building(void)
 
 	// All functions not listed are merged functions, and are best left unhooked.
 
-	// Not ready yet.
 	// used by: Lego_LoadBuildingTypes
-	//result &= hook_write_jmpret(0x00407c90, LegoRR::Building_Load);
-
+	result &= hook_write_jmpret(0x00407c90, LegoRR::Building_Load);
 	// used by: LegoObject_ProcCarriedObjects_FUN_0043f160
 	result &= hook_write_jmpret(0x00408210, LegoRR::Building_ChangePowerLevel);
 	// used by: Construction_CleanupBuildingFoundation, ElectricFence_Callback_FUN_0040d510,
