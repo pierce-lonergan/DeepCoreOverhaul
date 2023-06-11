@@ -139,8 +139,8 @@ bool32 __cdecl Vehicle_SetActivity(VehicleModel* vehicle, const char* activityNa
 void __cdecl Vehicle_SetUpgradeActivity(VehicleModel* vehicle, const char* activityName);
 
 // <LegoRR.exe @0046c9b0>
-#define Vehicle_Load ((bool32 (__cdecl* )(OUT VehicleModel* vehicle, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName))0x0046c9b0)
-//bool32 __cdecl Vehicle_Load(OUT VehicleModel* vehicle, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName);
+//#define Vehicle_Load ((bool32 (__cdecl* )(OUT VehicleModel* vehicle, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName))0x0046c9b0)
+bool32 __cdecl Vehicle_Load(OUT VehicleModel* vehicle, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName);
 
 // Similar to `Vehicle_Load`, this does not free the passed pointer.
 // <LegoRR.exe @0046d0d0>

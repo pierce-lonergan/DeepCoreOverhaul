@@ -3692,7 +3692,8 @@ bool interop_hook_LegoRR_Vehicle(void)
 	result &= hook_write_jmpret(0x0046c6b0, LegoRR::Vehicle_SetActivity);
 	// used by: Vehicle_SetActivity, Vehicle_SetUpgradeLevel
 	result &= hook_write_jmpret(0x0046c7d0, LegoRR::Vehicle_SetUpgradeActivity);
-
+	// used by: Lego_LoadVehicleTypes
+	result &= hook_write_jmpret(0x0046c9b0, LegoRR::Vehicle_Load);
 	// used by: Lego_Shutdown_Full, LegoObject_Remove
 	result &= hook_write_jmpret(0x0046d0d0, LegoRR::Vehicle_Remove);
 	// used by: Vehicle_SwapPolyHigh, LegoObject_FP_Callback_SwapPolyMeshParts

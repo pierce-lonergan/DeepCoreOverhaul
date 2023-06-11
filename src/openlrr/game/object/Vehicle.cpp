@@ -1,11 +1,14 @@
 // Vehicle.cpp : 
 //
 
+#include "../../engine/core/Config.h"
+#include "../../engine/core/Maths.h"
+#include "../../engine/core/Utils.h"
+#include "../../engine/gfx/Activities.h"
 #include "MeshLOD.h"
 #include "Object.h"
 #include "Upgrade.h"
 #include "Weapons.h"
-#include "../../engine/core/Maths.h"
 
 #include "Vehicle.h"
 
@@ -230,6 +233,176 @@ void __cdecl LegoRR::Vehicle_SetUpgradeActivity(VehicleModel* vehicle, const cha
 	}
 }
 
+// <LegoRR.exe @0046c9b0>
+bool32 __cdecl LegoRR::Vehicle_Load(OUT VehicleModel* vehicle, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName)
+{
+	std::memset(vehicle, 0, sizeof(VehicleModel));
+
+	//char* pathParts[100];
+	//char baseDir[1024];
+	char fullNameBuff[1024];
+
+	char* actFileNames[2 + 1]; // +1 for proper error handling of more than the expected amount of commas.
+	char inputBuff[1024];
+	std::strcpy(inputBuff, filename); // Copy filename to a buffer so we can modify the string.
+	uint32 numParts = Gods98::Util_TokeniseSafe(inputBuff, actFileNames, ",", _countof(actFileNames));
+
+	vehicle->contAct1 = Gods98::Container_Load(root, actFileNames[0], "ACT", true);
+	if (vehicle->contAct1 != nullptr) {
+		if (numParts == 2) {
+			vehicle->contAct2 = Gods98::Container_Load(vehicle->contAct1, actFileNames[1], "ACT", true);
+		}
+		else {
+			vehicle->contAct2 = nullptr;
+			Error_Warn((numParts != 1), "Vehicle definition must have either 0 or 1 commas!");
+		}
+
+		// Get the filename from the path so we can build our desired path: e.g. "path\to\myObject\myObject.ae"
+		// Note that Container_Load already does this for "ACT" type files,
+		//  but we need the path for things not handled by Container.
+		const char* name = actFileNames[0];
+		for (const char* s = name; *s != '\0'; s++) {
+			if (*s == '\\') name = s + 1;
+		}
+		std::sprintf(fullNameBuff, "%s\\%s.%s", actFileNames[0], name, ACTIVITY_FILESUFFIX);
+		/// REFACTOR: We don't need all this extra logic just to find the filename.
+		//std::strcpy(baseDir, actFileNames[0]);
+		//numParts = Gods98::Util_TokeniseSafe(baseDir, pathParts, "\\", _countof(pathParts));
+		//for (uint32 i = 1; i < numParts; i++) {
+		//	pathParts[i][-1] = '\\'; // Restore separator between parts
+		//}
+		//std::sprintf(fullNameBuff, "%s\\%s.%s", baseDir, pathParts[numParts - 1], ACTIVITY_FILESUFFIX);
+
+		Gods98::Config* config1 = Gods98::Config_Load(fullNameBuff);
+		if (config1 != nullptr) {
+
+			vehicle->cameraNullName = Gods98::Config_GetStringValue(config1, Config_ID(gameName, "CameraNullName"));
+			if (vehicle->cameraNullName == nullptr) {
+				vehicle->cameraNullFrames = 0;
+			}
+			else {
+				vehicle->cameraNullFrames = Config_GetIntValue(config1, Config_ID(gameName, "CameraNullFrames"));
+				vehicle->cameraFlipDir = Gods98::Config_GetBoolValue(config1, Config_ID(gameName, "CameraFlipDir"));
+			}
+
+			vehicle->carryNullName = Gods98::Config_GetStringValue(config1, Config_ID(gameName, "CarryNullName"));
+			if (vehicle->carryNullName == nullptr) {
+				vehicle->carryNullFrames = 0;
+			}
+			else {
+				vehicle->carryNullFrames = Config_GetIntValue(config1, Config_ID(gameName, "CarryNullFrames"));
+			}
+
+			vehicle->drillNullName = Gods98::Config_GetStringValue(config1, Config_ID(gameName, "DrillNullName"));
+			vehicle->depositNullName = Gods98::Config_GetStringValue(config1, Config_ID(gameName, "DepositNullName"));
+			vehicle->driverNullName = Gods98::Config_GetStringValue(config1, Config_ID(gameName, "DriverNullName"));
+			vehicle->fireNullName = Gods98::Config_GetStringValue(config1, Config_ID(gameName, "FireNullName"));
+
+			vehicle->yPivot = Gods98::Config_GetStringValue(config1, Config_ID(gameName, "yPivot"));
+			vehicle->xPivot = Gods98::Config_GetStringValue(config1, Config_ID(gameName, "xPivot"));
+
+			if (Gods98::Config_GetTempStringValue(config1, Config_ID(gameName, "PivotMaxZ")) == nullptr) {
+				// 0.0f is a valid value, so we need to properly check for the property's existence.
+				vehicle->weapons.pivotMaxZ = 1.0f;
+			}
+			else {
+				vehicle->weapons.pivotMaxZ = Config_GetRealValue(config1, Config_ID(gameName, "PivotMaxZ"));
+			}
+			if (Gods98::Config_GetTempStringValue(config1, Config_ID(gameName, "PivotMinZ")) == nullptr) {
+				// 0.0f is a valid value, so we need to properly check for the property's existence.
+				vehicle->weapons.pivotMinZ = -1.0f;
+			}
+			else {
+				vehicle->weapons.pivotMinZ = Config_GetRealValue(config1, Config_ID(gameName, "PivotMinZ"));
+			}
+			
+			Upgrade_Load(&vehicle->upgrades, config1, gameName);
+
+			// The game expects all vehicles to have wheels defined for them, even if none are visible.
+			const char* wheelMeshName = Gods98::Config_GetTempStringValue(config1, Config_ID(gameName, "WheelMesh"));
+			if (wheelMeshName != nullptr) {
+				std::sprintf(fullNameBuff, "%s\\%s", actFileNames[0], wheelMeshName);
+				//std::sprintf(fullNameBuff, "%s\\%s", baseDir, wheelMeshName);
+
+				vehicle->wheelNullName = Gods98::Config_GetStringValue(config1, Config_ID(gameName, "WheelNullName"));
+				if (vehicle->wheelNullName != nullptr) {
+					for (uint32 i = 0; i < VEHICLE_MAXWHEELS; i++) {
+						vehicle->contWheels[i] = nullptr;
+						vehicle->wheelNulls[i] = nullptr;
+					}
+
+					vehicle->wheelNullFrames = 1;
+					vehicle->contWheels[0] = Gods98::Container_Load(vehicle->contAct1, fullNameBuff, "LWO", false);
+					if (vehicle->contWheels[0] == nullptr) {
+						vehicle->wheelRadius = 0.0f;
+					}
+					else {
+						vehicle->wheelRadius = Config_GetRealValue(config1, Config_ID(gameName, "WheelRadius"));
+						if (vehicle->wheelRadius == 0.0f) {
+							if (Gods98::Container_GetType(vehicle->contWheels[0]) == Gods98::Container_Type::Mesh) {
+								// Calculate wheel radius using the mesh.
+								Box3F box = {}; // dummy init
+								Gods98::Container_Mesh_GetBox(vehicle->contWheels[0], &box);
+								vehicle->wheelRadius = (box.max.y - box.min.y) / 2.0f; // Divide by 2 since radius is half of diameter.
+
+								/// TODO: Should SetQuality really only be called when WheelRadius isn't defined???
+								Gods98::Container_Mesh_SetQuality(vehicle->contWheels[0], 0, Gods98::Container_Quality::Gouraud);
+							}
+							else {
+								// Use a default wheel radius value.
+								vehicle->wheelRadius = 3.0f;
+							}
+						}
+					}
+
+					vehicle->polyMedium1 = LegoObject_LoadMeshLOD(config1, gameName, actFileNames[0], LOD_MediumPoly, 1);
+
+					if (vehicle->contAct2 != nullptr) {
+						// Get the filename from the path so we can build our desired path: e.g. "path\to\myObject\myObject.ae"
+						// Note that Container_Load already does this for "ACT" type files,
+						//  but we need the path for things not handled by Container.
+						name = actFileNames[1];
+						for (const char* s = name; *s != '\0'; s++) {
+							if (*s == '\\') name = s + 1;
+						}
+						std::sprintf(fullNameBuff, "%s\\%s.%s", actFileNames[1], name, ACTIVITY_FILESUFFIX);
+						/// REFACTOR: We don't need all this extra logic just to find the filename.
+						//std::strcpy(baseDir, actFileNames[1]);
+						//numParts = Gods98::Util_TokeniseSafe(baseDir, pathParts, "\\", _countof(pathParts));
+						//for (uint32 i = 1; i < numParts; i++) {
+						//	pathParts[i][-1] = '\\'; // Restore separator between parts
+						//}
+						//std::sprintf(fullNameBuff, "%s\\%s.%s", baseDir, pathParts[numParts - 1], ACTIVITY_FILESUFFIX);
+
+						Gods98::Config* config2 = Gods98::Config_Load(fullNameBuff);
+						if (config2 != nullptr) {
+							vehicle->polyMedium2 = LegoObject_LoadMeshLOD(config2, gameName, actFileNames[1], LOD_MediumPoly, 1);
+
+							/// FIX APPLY: Free activity2 config file!!!
+							Gods98::Config_Free(config2);
+						}
+					}
+
+					vehicle->flags = VEHICLE_FLAG_SOURCE;
+					if (Config_GetBoolOrFalse(config1, Config_ID(gameName, "HoldMissing"))) {
+						vehicle->flags |= VEHICLE_FLAG_HOLDMISSING;
+					}
+
+					vehicle->wheelLastUp = Vector3F { 0.0f, 0.0f, -1.0f };
+					vehicle->objID = objID;
+					Gods98::Config_Free(config1);
+					return true;
+				}
+				/// TODO: Free WheelNullName allocated string on failure.
+			}
+			/// TODO: Free all allocated strings on failure.
+			/// TODO: We need a function to free the upgrade model on failure.
+			Gods98::Config_Free(config1);
+		}
+		/// TODO: Remove container on failure.
+	}
+	return false;
+}
 
 // Similar to `Vehicle_Load`, this does not free the passed pointer.
 // <LegoRR.exe @0046d0d0>
