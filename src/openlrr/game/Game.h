@@ -1072,8 +1072,8 @@ __inline real32 __cdecl Lego_GetElapsedAbs(void) { return legoGlobs.elapsedAbs; 
 // Which prevents any functions called after this during the main loop from
 // triggering debug keys.
 // <LegoRR.exe @00423120>
-//#define Lego_HandleRenameInput ((void (__cdecl* )(void))0x00423120)
-void __cdecl Lego_HandleRenameInput(void);
+//#define Lego_HandleRenameInput ((void (__cdecl* )(real32 elapsedAbs))0x00423120)
+void __cdecl Lego_HandleRenameInput(real32 elapsedAbs);
 
 // <LegoRR.exe @00423210>
 //#define Lego_MainLoop ((bool32 (__cdecl* )(real32 elapsed))0x00423210)

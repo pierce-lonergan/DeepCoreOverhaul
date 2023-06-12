@@ -924,7 +924,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	/// NOTE: Update handles ShortcutID::ReloadKeyBinds.
 	Shortcuts::shortcutManager.Update(elapsed, true);
 
-	Lego_HandleRenameInput();
+	Lego_HandleRenameInput(elapsedInterface);
 
 
 

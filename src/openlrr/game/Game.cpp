@@ -808,7 +808,7 @@ void __cdecl LegoRR::Lego_QuitLevel(void)
 //void __cdecl LegoRR::Lego_DrawRenameInput(real32 elapsedAbs);
 
 // <LegoRR.exe @00423120>
-void __cdecl LegoRR::Lego_HandleRenameInput(void)
+void __cdecl LegoRR::Lego_HandleRenameInput(real32 elapsedAbs)
 {
 	if (legoGlobs.renameInput != nullptr) {
 		uint32 inputLength = std::strlen(legoGlobs.renameInput);
