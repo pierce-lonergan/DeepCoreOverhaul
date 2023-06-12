@@ -1,7 +1,11 @@
 // Creature.cpp : 
 //
 
+#include "../../engine/core/Config.h"
+#include "../../engine/core/Utils.h"
+#include "../../engine/gfx/Activities.h"
 #include "MeshLOD.h"
+#include "Object.h"
 
 #include "Creature.h"
 
@@ -105,7 +109,64 @@ bool32 __cdecl LegoRR::Creature_IsCameraFlipDir(CreatureModel* creature)
 }
 
 // <LegoRR.exe @004068c0>
-//bool32 __cdecl LegoRR::Creature_Load(OUT CreatureModel* creature, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName);
+bool32 __cdecl LegoRR::Creature_Load(OUT CreatureModel* creature, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName)
+{
+	std::memset(creature, 0, sizeof(CreatureModel));
+
+	//char* pathParts[100];
+	//char baseDir[1024];
+	char fullNameBuff[1024];
+
+	/// REFACTOR: Load container before config, like all other load functions.
+	creature->contAct = Gods98::Container_Load(root, filename, "ACT", true);
+	if (creature->contAct != nullptr) {
+		// Get the filename from the path so we can build our desired path: e.g. "path\to\myObject\myObject.ae"
+		// Note that Container_Load already does this for "ACT" type files,
+		//  but we need the path for things not handled by Container.
+		const char* name = filename;
+		for (const char* s = name; *s != '\0'; s++) {
+			if (*s == '\\') name = s + 1;
+		}
+		std::sprintf(fullNameBuff, "%s\\%s.%s", filename, name, ACTIVITY_FILESUFFIX);
+		/// REFACTOR: We don't need all this extra logic just to find the filename.
+		//std::strcpy(baseDir, filename);
+		//numParts = Gods98::Util_TokeniseSafe(baseDir, pathParts, "\\", _countof(pathParts));
+		//for (uint32 i = 1; i < numParts; i++) {
+		//	pathParts[i][-1] = '\\'; // Restore separator between parts
+		//}
+		//std::sprintf(fullNameBuff, "%s\\%s.%s", baseDir, pathParts[numParts - 1], ACTIVITY_FILESUFFIX);
+
+		Gods98::Config* config = Gods98::Config_Load(fullNameBuff);
+		if (config != nullptr) {
+
+			creature->cameraNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "CameraNullName"));
+			if (creature->cameraNullName == nullptr) {
+				creature->cameraNullFrames = 0;
+			}
+			else {
+				creature->cameraNullFrames = Config_GetIntValue(config, Config_ID(gameName, "CameraNullFrames"));
+				creature->cameraFlipDir = Gods98::Config_GetBoolValue(config, Config_ID(gameName, "CameraFlipDir"));
+			}
+
+			creature->drillNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "DrillNullName"));
+			creature->footStepNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "FootStepNullName"));
+			creature->carryNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "CarryNullName"));
+			creature->throwNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "ThrowNullName"));
+			creature->depositNullName = Gods98::Config_GetStringValue(config, Config_ID(gameName, "DepositNullName"));
+
+			creature->polyMedium = LegoObject_LoadMeshLOD(config, gameName, filename, LOD_MediumPoly, 1);
+			creature->polyHigh = LegoObject_LoadMeshLOD(config, gameName, filename, LOD_HighPoly, 1);
+			creature->polyFP = LegoObject_LoadMeshLOD(config, gameName, filename, LOD_FPPoly, creature->cameraNullFrames);
+
+			creature->flags = CREATURE_FLAG_SOURCE;
+			creature->objID = objID;
+			Gods98::Config_Free(config);
+			return true;
+		}
+		/// TODO: Remove container on failure.
+	}
+	return false;
+}
 
 // <LegoRR.exe @00406b30>
 void __cdecl LegoRR::Creature_SwapPolyMedium(CreatureModel* creature, bool32 swap)

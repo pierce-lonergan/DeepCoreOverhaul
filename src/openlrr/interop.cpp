@@ -1860,11 +1860,8 @@ bool interop_hook_LegoRR_Creature(void)
 
 	// used by: LegoObject_FP_GetPositionAndHeading
 	result &= hook_write_jmpret(0x004068b0, LegoRR::Creature_IsCameraFlipDir);
-
-	// Not ready yet.
 	// used by: Lego_LoadMiniFigureTypes, Lego_LoadRockMonsterTypes
-	//result &= hook_write_jmpret(0x004068c0, LegoRR::Creature_Load);
-
+	result &= hook_write_jmpret(0x004068c0, LegoRR::Creature_Load);
 	// used by: LegoObject_FP_Callback_SwapPolyMeshParts
 	result &= hook_write_jmpret(0x00406b30, LegoRR::Creature_SwapPolyMedium);
 	// used by: LegoObject_FP_Callback_SwapPolyMeshParts

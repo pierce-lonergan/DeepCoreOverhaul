@@ -131,8 +131,8 @@ uint32 __cdecl Creature_GetCameraNullFrames(CreatureModel* creature);
 bool32 __cdecl Creature_IsCameraFlipDir(CreatureModel* creature);
 
 // <LegoRR.exe @004068c0>
-#define Creature_Load ((bool32 (__cdecl* )(OUT CreatureModel* creature, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName))0x004068c0)
-//bool32 __cdecl Creature_Load(OUT CreatureModel* creature, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName);
+//#define Creature_Load ((bool32 (__cdecl* )(OUT CreatureModel* creature, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName))0x004068c0)
+bool32 __cdecl Creature_Load(OUT CreatureModel* creature, LegoObject_ID objID, Gods98::Container* root, const char* filename, const char* gameName);
 
 // <LegoRR.exe @00406b30>
 //#define Creature_SwapPolyMedium ((void (__cdecl* )(CreatureModel* creature, bool32 swap))0x00406b30)
