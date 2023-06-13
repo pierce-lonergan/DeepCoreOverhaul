@@ -1443,8 +1443,8 @@ bool32 __cdecl LegoObject_Callback_SlipAndScare(LegoObject* liveObj, void* pOthe
 //real32 __cdecl LegoObject_MoveAnimation(LegoObject* liveObj, real32 elapsed);
 
 // <LegoRR.exe @00447f00>
-#define LegoObject_UpdateActivityChange ((bool32 (__cdecl* )(LegoObject* liveObj))0x00447f00)
-//bool32 __cdecl LegoObject_UpdateActivityChange(LegoObject* liveObj);
+//#define LegoObject_UpdateActivityChange ((bool32 (__cdecl* )(LegoObject* liveObj))0x00447f00)
+bool32 __cdecl LegoObject_UpdateActivityChange(LegoObject* liveObj);
 
 // <LegoRR.exe @00448160>
 #define LegoObject_SimpleObject_FUN_00448160 ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x00448160)

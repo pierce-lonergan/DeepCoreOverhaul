@@ -2305,7 +2305,68 @@ bool32 __cdecl LegoRR::LegoObject_Callback_SlipAndScare(LegoObject* liveObj, voi
 //real32 __cdecl LegoRR::LegoObject_MoveAnimation(LegoObject* liveObj, real32 elapsed);
 
 // <LegoRR.exe @00447f00>
-//bool32 __cdecl LegoRR::LegoObject_UpdateActivityChange(LegoObject* liveObj);
+bool32 __cdecl LegoRR::LegoObject_UpdateActivityChange(LegoObject* liveObj)
+{
+	bool32 success = false;
+
+	if (liveObj->activityName1 == liveObj->activityName2)
+		return false;
+
+	const char* actName = liveObj->activityName1;
+	if (actName != objectGlobs.activityName[Activity_Stand] &&
+		actName != objectGlobs.activityName[Activity_Route] &&
+		actName != objectGlobs.activityName[Activity_RouteRubble] &&
+		actName != objectGlobs.activityName[Activity_Drill] &&
+		actName != objectGlobs.activityName[Activity_Walk] &&
+		actName != objectGlobs.activityName[Activity_Reverse] &&
+		actName != objectGlobs.activityName[Activity_Carry] &&
+		actName != objectGlobs.activityName[Activity_CarryStand])
+	{
+		AITask_DoAnimationWait(liveObj);
+	}
+
+	switch (liveObj->type) {
+	case LegoObject_Vehicle:
+		success = Vehicle_SetActivity(liveObj->vehicle, liveObj->activityName1, liveObj->animTime);
+		liveObj->cameraNull = Vehicle_GetCameraNull(liveObj->vehicle, liveObj->cameraFrame);
+		break;
+	case LegoObject_MiniFigure:
+		success = Creature_SetActivity(liveObj->miniFigure, liveObj->activityName1, liveObj->animTime);
+		liveObj->cameraNull = Creature_GetCameraNull(liveObj->miniFigure, liveObj->cameraFrame);
+		break;
+	case LegoObject_RockMonster:
+		success = Creature_SetActivity(liveObj->rockMonster, liveObj->activityName1, liveObj->animTime);
+		liveObj->cameraNull = Creature_GetCameraNull(liveObj->rockMonster, liveObj->cameraFrame);
+		break;
+	case LegoObject_Building:
+		success = Building_SetActivity(liveObj->building, liveObj->activityName1, liveObj->animTime);
+		liveObj->cameraNull = Building_GetCameraNull(liveObj->building, liveObj->cameraFrame);
+		break;
+	}
+
+	if ((StatsObject_GetStatsFlags1(liveObj) & STATS1_CANBEDRIVEN) &&
+		liveObj->driveObject != nullptr && liveObj->driveObject->type == LegoObject_MiniFigure)
+	{
+		const char* actPrintName;
+		if (::_stricmp(liveObj->activityName1, objectGlobs.activityName[Activity_Route]) == 0) {
+			actPrintName = "Activity_";
+		}
+		else {
+			actPrintName = liveObj->activityName1;
+		}
+		char actBuff[256];
+		std::sprintf(actBuff, "%s%s", actPrintName, Object_GetTypeName(liveObj->type, liveObj->id));
+
+		Creature_SetActivity(liveObj->driveObject->miniFigure, actBuff, 0.0f);
+		liveObj->driveObject->cameraNull = Creature_GetCameraNull(liveObj->driveObject->miniFigure, liveObj->driveObject->cameraFrame);
+		liveObj->driveObject->activityName1 = liveObj->driveObject->activityName2;
+	}
+
+	liveObj->animTime = 0.0f;
+	liveObj->activityName2 = liveObj->activityName1;
+	liveObj->flags2 &= ~LIVEOBJ2_UNK_20000;
+	return success;
+}
 
 // <LegoRR.exe @00448160>
 //void __cdecl LegoRR::LegoObject_SimpleObject_FUN_00448160(LegoObject* liveObj, real32 elapsed);
