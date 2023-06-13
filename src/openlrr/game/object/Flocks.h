@@ -93,9 +93,9 @@ struct Flocks // [LegoRR/Flocks.c|struct:0x28] The singular flocks unit, which h
 	/*0c,4*/	bool32 hasVector1;
 	/*10,4*/	bool32 hasVector2;
 	/*14,4*/	undefined4 field_14;
-	/*18,4*/	undefined4 field_18;
+	/*18,4*/	real32 floatx_18;
 	/*1c,4*/	undefined4 field_1c;
-	/*20,4*/	undefined4 field_20;
+	/*20,4*/	real32 floaty_20;
 	/*24,4*/	FlocksFlags flags;
 	/*28*/
 };

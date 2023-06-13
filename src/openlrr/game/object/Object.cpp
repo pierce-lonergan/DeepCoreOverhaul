@@ -21,6 +21,7 @@
 #include "../Debug.h"
 #include "../Game.h"
 #include "AITask.h"
+#include "Flocks.h"
 #include "Stats.h"
 #include "Object.h"
 
@@ -2033,13 +2034,212 @@ void __cdecl LegoRR::LegoObject_TryRunAway(LegoObject* liveObj, const Point2F* d
 //bool32 __cdecl LegoRR::LegoObject_Route_SolidBlockCheck_FUN_00445860(LegoObject* liveObj);
 
 // <LegoRR.exe @004459a0>
-//void __cdecl LegoRR::LegoObject_FUN_004459a0(LegoObject* liveObj, real32 elapsed);
+void __cdecl LegoRR::LegoObject_UpdateSlipAndScare(LegoObject* liveObj, real32 elapsed)
+{
+	if (liveObj->type == LegoObject_RockMonster) {
+		// Monster interactions with MiniFigures and Vehicles (and units that can scare scorpions).
+		for (auto obj : objectListSet.EnumerateSkipUpgradeParts()) {
+			if (LegoObject_Callback_SlipAndScare(obj, liveObj))
+				break; // Unit was waken up.
+		}
+	}
+
+	// LIVEOBJ3_UNK_10000 seems to be a multi-use flag. For these object types it means ticking down.
+	if ((liveObj->type == LegoObject_Dynamite || liveObj->type == LegoObject_OohScary) &&
+		(liveObj->flags3 & LIVEOBJ3_UNK_10000))
+	{
+		// Units have 3 seconds to run for their lives.
+		// Any fuse longer than this won't startle them until then.
+		const real32 animTime = Gods98::Container_GetAnimationTime(liveObj->other);
+		const uint32 animFrames = Gods98::Container_GetAnimationFrames(liveObj->other);
+		if (animTime > ((real32)animFrames - (STANDARD_FRAMERATE * 3.0f))) {
+
+			for (auto obj : objectListSet.EnumerateSkipUpgradeParts()) {
+				// Always returns false, enumerate through all objects.
+				LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite(obj, liveObj);
+			}
+		}
+	}
+}
 
 // <LegoRR.exe @00445a30>
-//bool32 __cdecl LegoRR::LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite(LegoObject* liveObj, LegoObject* otherObj);
+bool32 __cdecl LegoRR::LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite(LegoObject* liveObj, void* pOtherObj)
+{
+	// Dynamite or a Sonic Blaster object.
+	LegoObject* explosiveObj = (LegoObject*)pOtherObj;
+
+	/// FIXME: Add option for non-explosives expert units to understand the dangers of dynamite.
+	///        Note that this also affects Sonic Blasters, so explosives experts shouldn't even apply for that(?)
+	if (liveObj->type == LegoObject_MiniFigure && (liveObj->abilityFlags & ABILITY_FLAG_DYNAMITE)) {
+		Point2F thisPos = { 0.0f, 0.0f }; // dummy init
+		Point2F otherPos = { 0.0f, 0.0f }; // dummy init
+		LegoObject_GetPosition(liveObj, &thisPos.x, &thisPos.y);
+		LegoObject_GetPosition(explosiveObj, &otherPos.x, &otherPos.y);
+
+		Point2F dir2D;
+		Gods98::Maths_Vector2DSubtract(&dir2D, &thisPos, &otherPos);
+		const real32 dist = Gods98::Maths_Vector2DModulus(&dir2D);
+		if (dist < legoGlobs.DynamiteDamageRadius) {
+			// Normalize dir2D.
+			Gods98::Maths_Vector2DScale(&dir2D, &dir2D, (1.0f / dist));
+			LegoObject_TryRunAway(liveObj, &dir2D);
+			return false;
+		}
+	}
+	return false;
+}
 
 // <LegoRR.exe @00445af0>
-//bool32 __cdecl LegoRR::LegoObject_Callback_FUN_00445af0(LegoObject* liveObj, LegoObject* otherObj);
+bool32 __cdecl LegoRR::LegoObject_Callback_SlipAndScare(LegoObject* liveObj, void* pOtherObj)
+{
+	LegoObject* monsterObj = (LegoObject*)pOtherObj;
+
+	/// SANITY: Don't apply actions on self. Only matters for can-scare-scorpion units,
+	///          all other units must have different object types.
+	if (liveObj == monsterObj)
+		return false;
+
+	Point2F thisPos = { 0.0f, 0.0f }; // dummy init
+	Point2F otherPos = { 0.0f, 0.0f }; // dummy init
+	LegoObject_GetPosition(monsterObj, &otherPos.x, &otherPos.y);
+	LegoObject_GetPosition(liveObj, &thisPos.x, &thisPos.y);
+
+	Point2F dir2D;
+	Gods98::Maths_Vector2DSubtract(&dir2D, &thisPos, &otherPos);
+	const real32 dist = Gods98::Maths_Vector2DModulus(&dir2D);
+	/// FIX APPLY: Normalize dir2D now, so that multiple functions depending
+	///             on it won't normalize it twice.
+	Gods98::Maths_Vector2DScale(&dir2D, &dir2D, (1.0f / dist));
+	const real32 alertRadius = StatsObject_GetAlertRadius(monsterObj);
+
+	if (!(monsterObj->flags3 & LIVEOBJ3_POWEROFF)) {
+		if (!(liveObj->flags2 & LIVEOBJ2_THROWN) && !(liveObj->flags2 & LIVEOBJ2_UNK_100) &&
+			(!(legoGlobs.flags2 & GAME2_CALLTOARMS) || !(liveObj->flags4 & LIVEOBJ4_UNK_4)) &&
+			liveObj->driveObject == nullptr)
+		{
+			if (liveObj->type == LegoObject_MiniFigure) {
+				if (StatsObject_GetStatsFlags1(monsterObj) & STATS1_GRABMINIFIGURE) {
+					Gods98::Container* cont = LegoObject_GetActivityContainer(monsterObj);
+					Vector3F dir;
+					Gods98::Container_GetOrientation(cont, nullptr, &dir, nullptr);
+
+					Gods98::Maths_Vector2DNormalize(&dir.vec2);
+					// This is Maths_RayEndPoint(&newPos, &otherPos, &dir.vec2, 15.0f) but 2D.
+					const Point2F newPos = {
+						otherPos.x + (dir.vec2.x * 15.0f),
+						otherPos.y + (dir.vec2.y * 15.0f),
+					};
+
+					Point2I blockPos = { 0, 0 }; // dummy init
+					Map3D_WorldToBlockPos_NoZ(Lego_GetMap(), newPos.x, newPos.y, &blockPos.x, &blockPos.y);
+					if (!Level_Block_IsWall((uint32)blockPos.x, (uint32)blockPos.y)) {
+						if (!Level_Block_IsSolidBuilding((uint32)blockPos.x, (uint32)blockPos.y, true)) {
+							const real32 newDist = Gods98::Maths_Vector2DDistance(&thisPos, &newPos);
+							const real32 collRadius = StatsObject_GetCollRadius(liveObj);
+							if (newDist < collRadius) {
+								LegoObject_DoThrowLegoman(monsterObj, liveObj);
+								// Once thrown, this object can't do anything else.
+								return false;
+							}
+						}
+					}
+				}
+
+				if (StatsObject_GetStatsFlags1(monsterObj) & STATS1_CAUSESLIP) {
+					const real32 otherCollRadius = StatsObject_GetCollRadius(monsterObj);
+					const real32 collRadius = StatsObject_GetCollRadius(liveObj);
+					if (dist < (collRadius + otherCollRadius)) {
+						LegoObject_DoSlip(liveObj);
+						// Kamikaze successful. Destroy the object causing the slip.
+						monsterObj->health = -1.0f;
+						monsterObj->flags3 |= LIVEOBJ3_REMOVING;
+					}
+				}
+
+				if ((StatsObject_GetStatsFlags1(monsterObj) & STATS1_CANSCARE) && alertRadius != 0.0f) {
+					const real32 collRadius = StatsObject_GetCollRadius(liveObj);
+					if (dist < (collRadius + alertRadius)) {
+						/// REFACTOR: Normalize done ahead of time.
+						LegoObject_TryRunAway(liveObj, &dir2D);
+					}
+				}
+			}
+
+			if (liveObj->type == LegoObject_MiniFigure || liveObj->type == LegoObject_Vehicle) {
+				if (!(liveObj->flags1 & LIVEOBJ1_GATHERINGROCK)) {
+					const real32 painThreshold = StatsObject_GetPainThreshold(monsterObj);
+					if (monsterObj->health > painThreshold) {
+						const real32 stampRadius = StatsObject_GetStampRadius(monsterObj);
+						if (dist < stampRadius) {
+							LegoObject_FUN_0043acb0(monsterObj, liveObj);
+						}
+					}
+				}
+
+				if ((StatsObject_GetStatsFlags1(monsterObj) & STATS1_SCAREDBYPLAYER) &&
+					!(monsterObj->flags1 & LIVEOBJ1_SCAREDBYPLAYER))
+				{
+					const real32 collRadius = StatsObject_GetCollRadius(liveObj);
+					if (dist < (collRadius + alertRadius)) {
+						if (LegoObject_FUN_00444520(monsterObj)) {
+							monsterObj->flags1 |= LIVEOBJ1_SCAREDBYPLAYER;
+						}
+					}
+				}
+			}
+
+			if (liveObj->type == LegoObject_MiniFigure) {
+				if (StatsObject_GetStatsFlags1(monsterObj) & STATS1_FLOCKS) {
+					const Point2F flocksPos = {
+						monsterObj->flocks->floatx_18,
+						monsterObj->flocks->floaty_20,
+					};
+					const real32 flocksDist = Gods98::Maths_Vector2DDistance(&thisPos, &flocksPos);
+					const real32 collRadius = StatsObject_GetCollRadius(liveObj);
+					if (flocksDist < (collRadius + alertRadius)) {
+
+						const uint32 weaponID = Weapon_GetWeaponIDByName("BatAttack");
+						const real32 damage = Weapon_GetDamageForObject(weaponID, liveObj);
+						LegoObject_AddDamage2(liveObj, damage, true, 1.0f);
+
+						monsterObj->flags2 |= LIVEOBJ2_UNK_80;
+
+						if (!(monsterObj->flocks->flags & FLOCKS_FLAG_UNK_1)) {
+							LegoObject* unitList[1] = { monsterObj };
+							AITask_PushFollowObject_Group(unitList, _countof(unitList), liveObj);
+							monsterObj->flocks->flags |= FLOCKS_FLAG_UNK_1;
+						}
+					}
+				}
+			}
+
+			if ((StatsObject_GetStatsFlags1(monsterObj) & STATS1_CANSCARESCORPION) && alertRadius != 0.0f) {
+				// Check if this is the Scorpion object type/ID.
+				LegoObject_Type objType;
+				LegoObject_ID objID;
+				if (Lego_GetObjectByName("Scorpion", &objType, &objID, nullptr) &&
+					objType == liveObj->type && objID == liveObj->id)
+				{
+					const real32 collRadius = StatsObject_GetCollRadius(liveObj);
+					if (dist < (collRadius + alertRadius)) {
+						/// REFACTOR: Normalize done ahead of time.
+						LegoObject_TryRunAway(liveObj, &dir2D);
+					}
+				}
+			}
+		}
+	}
+	else if (liveObj->type == LegoObject_MiniFigure || liveObj->type == LegoObject_Vehicle) {
+		// See if we can wake the other unit.
+		const real32 wakeRadius = StatsObject_GetWakeRadius(monsterObj);
+		if (dist < wakeRadius) {
+			LegoObject_RockMonster_DoWakeUp(monsterObj);
+			// The other object is being waken up. It can't perform any other actions now, so exit the loop.
+			return true;
+		}
+	}
+	return false;
+}
 
 // <LegoRR.exe @00446030>
 //LegoRR::LegoObject* __cdecl LegoRR::LegoObject_DoCollisionCallbacks_FUN_00446030(LegoObject* liveObj, const Point2F* param_2, real32 param_3, bool32 param_4);

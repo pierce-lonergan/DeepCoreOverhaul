@@ -3307,8 +3307,18 @@ bool interop_hook_LegoRR_Object(void)
 	result &= hook_write_jmpret(0x0043c830, LegoRR::LegoObject_UpdatePowerConsumption);
 
 	// used by: LegoObject_Callback_BirdScarer, LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite,
-	//          LegoObject_Callback_FUN_00445af0
+	//          LegoObject_Callback_SlipAndScare
 	result &= hook_write_jmpret(0x00444720, LegoRR::LegoObject_TryRunAway);
+
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x004459a0, LegoRR::LegoObject_UpdateSlipAndScare);
+	// used by: LegoObject_UpdateSlipAndScare
+	result &= hook_write_jmpret(0x00445a30, LegoRR::LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite);
+	// used by: LegoObject_UpdateSlipAndScare
+	result &= hook_write_jmpret(0x00445af0, LegoRR::LegoObject_Callback_SlipAndScare);
+
+	// used by: Lego_HandleKeys, LegoObject
+	result &= hook_write_jmpret(0x00447f00, LegoRR::LegoObject_UpdateActivityChange);
 
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00449ec0, LegoRR::LegoObject_HideAllCertainObjects);

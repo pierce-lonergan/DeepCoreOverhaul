@@ -1344,17 +1344,17 @@ void __cdecl LegoObject_TryRunAway(LegoObject* liveObj, const Point2F* dir);
 
 // Update scaring?
 // <LegoRR.exe @004459a0>
-#define LegoObject_FUN_004459a0 ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x004459a0)
-//void __cdecl LegoObject_FUN_004459a0(LegoObject* liveObj, real32 elapsed);
+//#define LegoObject_UpdateSlipAndScare ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x004459a0)
+void __cdecl LegoObject_UpdateSlipAndScare(LegoObject* liveObj, real32 elapsed);
 
 // Only mini-figure units trained to use explosives are effected.
 // <LegoRR.exe @00445a30>
-#define LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* otherObj))0x00445a30)
-//bool32 __cdecl LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite(LegoObject* liveObj, LegoObject* otherObj);
+//#define LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* otherObj))0x00445a30)
+bool32 __cdecl LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite(LegoObject* liveObj, void* pOtherObj);
 
 // <LegoRR.exe @00445af0>
-#define LegoObject_Callback_FUN_00445af0 ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* otherObj))0x00445af0)
-//bool32 __cdecl LegoObject_Callback_FUN_00445af0(LegoObject* liveObj, LegoObject* otherObj);
+//#define LegoObject_Callback_SlipAndScare ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* otherObj))0x00445af0)
+bool32 __cdecl LegoObject_Callback_SlipAndScare(LegoObject* liveObj, void* pOtherObj);
 
 // <LegoRR.exe @00446030>
 #define LegoObject_DoCollisionCallbacks_FUN_00446030 ((LegoObject* (__cdecl* )(LegoObject* liveObj, const Point2F* param_2, real32 param_3, bool32 param_4))0x00446030)
