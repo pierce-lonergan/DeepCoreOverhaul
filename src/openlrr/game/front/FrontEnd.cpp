@@ -1230,6 +1230,48 @@ LegoRR::Menu* __cdecl LegoRR::Front_Menu_UpdateMenuItemsInput(real32 elapsed, Me
 		return menu;
 	}
 
+	
+	/// DEBUG CUSTOM: Hotkey to toggle a front end level as completed.
+	if (Lego_IsAllowDebugKeys() && Input_IsKeyPressed(Gods98::Keys::KEYPAD_5) &&
+		menuItem->itemType == MenuItem_Type_Select)
+	{
+		MenuItem_SelectData* select = menuItem->itemData.select;
+
+		const sint32 selIndex = Front_MenuItem_Select_TestStringCollision(menu, menuItem, select);
+		if (selIndex >= 0) {
+			if (menu == frontGlobs.mainMenuSet->menus[1]) {
+				LevelLink* debugUnlockLink = Front_LevelLink_FindByLinkIndex(frontGlobs.startMissionLink, selIndex);
+				if (debugUnlockLink != nullptr) {
+					// Toggle debug level completed state.
+					debugUnlockLink->debugCompleted = !debugUnlockLink->debugCompleted;
+
+					// Update unlocked missions levels.
+					SaveData* currSave = Front_Save_GetCurrentSaveData();
+					if (currSave != nullptr) {
+						Front_Levels_UpdateAvailable(frontGlobs.startMissionLink, currSave->missionsTable,
+													 &frontGlobs.missionLevels, select, false);
+					}
+					else {
+						Front_Levels_UpdateAvailable(frontGlobs.startMissionLink, nullptr,
+													 &frontGlobs.missionLevels, select, true);
+					}
+				}
+			}
+			else if (menu == frontGlobs.mainMenuSet->menus[2]) {
+				LevelLink* debugUnlockLink = Front_LevelLink_FindByLinkIndex(frontGlobs.startTutorialLink, selIndex);
+				if (debugUnlockLink != nullptr) {
+					// Toggle debug level completed state.
+					debugUnlockLink->debugCompleted = !debugUnlockLink->debugCompleted;
+
+					// Update unlocked tutorial levels.
+					Front_Levels_UpdateAvailable(frontGlobs.startTutorialLink, nullptr,
+												 &frontGlobs.tutorialLevels, select, true);
+				}
+			}
+		}
+	}
+
+
 	// Return may be called in this block for "select" menu item types.
 	if (isPressed || Input_IsKeyPressed(Gods98::Keys::KEY_CURSORRIGHT)) {
 		SFX_Random_PlaySoundNormal(SFX_Okay, false);
@@ -3641,6 +3683,16 @@ void __cdecl LegoRR::Front_LoadLevels(MenuSet* unused_mainMenuFull)
 	frontGlobs.startTutorialLink = Front_LevelSet_LoadLevelLinks(&frontGlobs.tutorialLevels, frontGlobs.tutorialLevels.idNames[0]);
 	Front_Levels_ResetVisited();
 
+
+	/// CUSTOM: Setup linkIndexes for lookup of already-visited links.
+	sint32 linkIndex = 0;
+	Front_LevelLink_RunThroughLinks(frontGlobs.startMissionLink, Front_LevelLink_Callback_SetupLinkIndex, &linkIndex);
+	Front_Levels_ResetVisited();
+	linkIndex = 0;
+	Front_LevelLink_RunThroughLinks(frontGlobs.startTutorialLink, Front_LevelLink_Callback_SetupLinkIndex, &linkIndex);
+	Front_Levels_ResetVisited();
+
+
 	sint32 menuIDLevels = Front_GetMenuIDByName(frontGlobs.mainMenuSet, "Levels");
 	sint32 menuIDTuto = Front_GetMenuIDByName(frontGlobs.mainMenuSet, "Tutorials");
 	sint32 menuIDLoadSave = Front_GetMenuIDByName(frontGlobs.mainMenuSet, "Load Level Save");
@@ -4251,6 +4303,11 @@ LegoRR::LevelLink* __cdecl LegoRR::Front_LevelSet_LoadLevelLinks(LevelSet* level
 	if (link == nullptr)
 		return nullptr;
 
+	std::memset(link, 0, sizeof(LevelLink));
+
+	/// CUSTOM:
+	link->linkIndex = -1;
+	link->debugCompleted = false;
 
 	sint32 setIndex = Front_LevelSet_IndexOf(levelSet, levelName);
 	if (setIndex != -1) {
@@ -4258,16 +4315,16 @@ LegoRR::LevelLink* __cdecl LegoRR::Front_LevelSet_LoadLevelLinks(LevelSet* level
 
 		uint32 numParts;
 		char* linkNames[15]; // Maximum of 15 linked levels
-		char* levelLinks = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, levelName, "LevelLinks"));
+		char* levelLinksStr = Gods98::Config_GetStringValue(legoGlobs.config, Config_ID(legoGlobs.gameName, levelName, "LevelLinks"));
 
-		if (levelLinks == nullptr) {
+		if (levelLinksStr == nullptr) {
 			// No links defined for this level, as the property is not included.
 			// (this is the only valid way to define no links)
 			link->linkLevels = nullptr;
 			link->linkCount = 0;
 			return link;
 		}
-		else if ((numParts = Gods98::Util_Tokenise(levelLinks, linkNames, ",")) != 0) {
+		else if ((numParts = Gods98::Util_Tokenise(levelLinksStr, linkNames, ",")) != 0) {
 			// NOTE: 0 is only returned for an empty string, which I guess is considered invalid for this property.
 			/// FIXME: Loosen CFG strictness and allow empty LevelLinks to specify no future levels.
 
@@ -4279,13 +4336,13 @@ LegoRR::LevelLink* __cdecl LegoRR::Front_LevelSet_LoadLevelLinks(LevelSet* level
 			link->linkCount = numParts;
 
 			/// FIX APPLY: LegoRR doesn't free this string allocation.
-			Gods98::Mem_Free(levelLinks);
+			Gods98::Mem_Free(levelLinksStr);
 			return link;
 		}
 
 		// Failure, empty LevelLinks property.
 		/// FIX APPLY: LegoRR doesn't free this string allocation.
-		Gods98::Mem_Free(levelLinks);
+		Gods98::Mem_Free(levelLinksStr);
 	}
 	// Failure, either not in LevelSet, or LevelLinks property is empty string.
 	Gods98::Mem_Free(link);
@@ -4313,6 +4370,13 @@ bool32 __cdecl LegoRR::Front_LevelLink_RunThroughLinks(LevelLink* startLink, Lev
 			}
 		}
 	}
+	return false;
+}
+
+/// CUSTOM: Used to setup LevelLink::linkIndex field.
+bool32 __cdecl LegoRR::Front_LevelLink_Callback_SetupLinkIndex(LevelLink* link, void* pIndex)
+{
+	link->linkIndex = (*(sint32*)pIndex)++;
 	return false;
 }
 
@@ -4394,6 +4458,11 @@ void __cdecl LegoRR::Front_Levels_UpdateAvailable_Recursive(LevelLink* link, Sea
 			completed = (search->saveReward[link->setIndex].flags & SAVEREWARD_FLAG_COMPLETED);
 		}
 
+		/// CUSTOM: Debug support for marking a level as completed.
+		if (link->debugCompleted) {
+			completed = true;
+		}
+
 		// Note FrontEndOpen does not count as "completed", so that linked levels
 		// are not unlocked automatically just from this level existing.
 		MenuItem_SelectItem* selItem = &search->selectData->selItemList[search->index];
@@ -4408,6 +4477,14 @@ void __cdecl LegoRR::Front_Levels_UpdateAvailable_Recursive(LevelLink* link, Sea
 		search->index++;
 
 		for (uint32 i = 0; i < link->linkCount; i++) {
+			/// FIX APPLY: Unlock level links that are already visited.
+			LevelLink* nextLink = link->linkLevels[i];
+			if (completed && nextLink != nullptr && nextLink->visited) {
+
+				MenuItem_SelectItem* visitedSelItem = &search->selectData->selItemList[nextLink->linkIndex];
+				visitedSelItem->flags |= SELECTITEM_FLAG_ENABLED; // unlocked 
+			}
+
 			// When a level is completed, all its links are unlocked.
 			Front_Levels_UpdateAvailable_Recursive(link->linkLevels[i], search, completed);
 		}
@@ -4545,7 +4622,7 @@ void __cdecl LegoRR::Front_Callback_SelectTutorialItem(real32 elapsedAbs, sint32
 	}
 
 	if (frontGlobs.saveLevelWnd->textWindow != nullptr && g_levelSelectPrinting) {
-		TextWindow_PrintF(frontGlobs.saveLevelWnd->textWindow, langLevelName);
+		Gods98::TextWindow_PrintF(frontGlobs.saveLevelWnd->textWindow, langLevelName);
 
 		if (frontGlobs.levelSelectHoverNumber != frontGlobs.levelSelectLastNumber) {
 			frontGlobs.levelSelectSFXStopped = true;

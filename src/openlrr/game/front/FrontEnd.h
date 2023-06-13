@@ -240,8 +240,12 @@ struct LevelLink // [LegoRR/FrontEnd.c|struct:0x14]
 	/*0c,4*/	undefined4 field_c;
 	/*10,4*/	bool32 visited; // True if reached in RunThroughRecurse callback.
 	/*14*/
+	/// CUSTOM:
+	/*14,4*/	sint32 linkIndex;
+	/*18,4*/	bool32 debugCompleted;
+	/*1c*/
 };
-assert_sizeof(LevelLink, 0x14);
+assert_sizeof(LevelLink, 0x1c);
 
 
 struct LevelSet // [LegoRR/FrontEnd.c|struct:0x14]
@@ -1143,6 +1147,9 @@ LevelLink* __cdecl Front_LevelSet_LoadLevelLinks(LevelSet* levelSet, OPTIONAL co
 
 // <LegoRR.exe @004170f0>
 bool32 __cdecl Front_LevelLink_RunThroughLinks(LevelLink* startLink, LevelLink_RunThroughLinksCallback callback, void* data);
+
+/// CUSTOM: Used to setup LevelLink::linkIndex field.
+bool32 __cdecl Front_LevelLink_Callback_SetupLinkIndex(LevelLink* link, void* pIndex);
 
 // DATA: sint32* pCount;
 // <LegoRR.exe @00417170>
