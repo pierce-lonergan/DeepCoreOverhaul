@@ -1195,8 +1195,8 @@ void __cdecl LegoObject_UpdatePowerConsumption(LegoObject* liveObj);
 //bool32 __cdecl LegoObject_Route_Score_FUN_004413b0(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, sint32** out_new_bxs, sint32** out_new_bys, sint32* out_count, void* callback, void* data);
 
 // <LegoRR.exe @004419c0>
-#define LegoObject_Route_AllocPtr_FUN_004419c0 ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 count, real32* param_3, real32* param_4, real32* param_5))0x004419c0)
-//bool32 __cdecl LegoObject_Route_AllocPtr_FUN_004419c0(LegoObject* liveObj, uint32 count, real32* param_3, real32* param_4, real32* param_5);
+#define LegoObject_Route_AllocPtr_FUN_004419c0 ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 count, const sint32* bxList, const sint32* byList, OPTIONAL const Point2F* point))0x004419c0)
+//bool32 __cdecl LegoObject_Route_AllocPtr_FUN_004419c0(LegoObject* liveObj, uint32 count, const sint32* bxList, const sint32* byList, OPTIONAL const Point2F* point);
 
 // <LegoRR.exe @00441c00>
 #define LegoObject_Route_End ((void (__cdecl* )(LegoObject* liveObj, bool32 completed))0x00441c00)
@@ -1314,8 +1314,8 @@ void __cdecl LegoObject_UpdatePowerConsumption(LegoObject* liveObj);
 //bool32 __cdecl LegoObject_FUN_00444520(LegoObject* liveObj);
 
 // <LegoRR.exe @00444720>
-#define LegoObject_TryRunAway ((void (__cdecl* )(LegoObject* liveObj, const Point2F* dir))0x00444720)
-//void __cdecl LegoObject_TryRunAway(LegoObject* liveObj, const Point2F* dir);
+//#define LegoObject_TryRunAway ((void (__cdecl* )(LegoObject* liveObj, const Point2F* dir))0x00444720)
+void __cdecl LegoObject_TryRunAway(LegoObject* liveObj, const Point2F* dir);
 
 // <LegoRR.exe @004448e0>
 #define LegoObject_DoSlip ((void (__cdecl* )(LegoObject* liveObj))0x004448e0)

@@ -1871,7 +1871,7 @@ void __cdecl LegoRR::LegoObject_UpdatePowerConsumption(LegoObject* liveObj)
 //bool32 __cdecl LegoRR::LegoObject_Route_Score_FUN_004413b0(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, sint32** out_new_bxs, sint32** out_new_bys, sint32* out_count, void* callback, void* data);
 
 // <LegoRR.exe @004419c0>
-//bool32 __cdecl LegoRR::LegoObject_Route_AllocPtr_FUN_004419c0(LegoObject* liveObj, uint32 count, real32* param_3, real32* param_4, real32* param_5);
+//bool32 __cdecl LegoRR::LegoObject_Route_AllocPtr_FUN_004419c0(LegoObject* liveObj, uint32 count, const sint32* bxList, const sint32* byList, OPTIONAL const Point2F* point);
 
 // <LegoRR.exe @00441c00>
 //void __cdecl LegoRR::LegoObject_Route_End(LegoObject* liveObj, bool32 completed);
@@ -1955,7 +1955,64 @@ void __cdecl LegoRR::LegoObject_UpdatePowerConsumption(LegoObject* liveObj)
 //bool32 __cdecl LegoRR::LegoObject_FUN_00444520(LegoObject* liveObj);
 
 // <LegoRR.exe @00444720>
-//void __cdecl LegoRR::LegoObject_TryRunAway(LegoObject* liveObj, const Point2F* dir);
+void __cdecl LegoRR::LegoObject_TryRunAway(LegoObject* liveObj, const Point2F* dir)
+{
+	Point2I blockPos = { 0, 0 }; // dummy init
+	LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+
+	if (!(liveObj->flags1 & LIVEOBJ1_RUNNINGAWAY) && LegoObject_IsActive(liveObj, true) &&
+		!Lego_IsFPObject(liveObj) && liveObj->driveObject == nullptr &&
+		!Level_Block_IsWall((uint32)blockPos.x, (uint32)blockPos.y))
+	{
+		LegoObject_Interrupt(liveObj, true, true);
+
+		Point2F wPos = { 0.0f, 0.0f }; // dummy init
+		LegoObject_GetPosition(liveObj, &wPos.x, &wPos.y);
+
+		Point2F awayPos;
+		Gods98::Maths_Vector2DScale(&awayPos, dir, legoGlobs.MiniFigureRunAway);
+		Gods98::Maths_Vector2DAdd(&awayPos, &awayPos, &wPos);
+
+		Point2I awayBlockPos = { 0, 0 }; // dummy init
+		if (Map3D_WorldToBlockPos_NoZ(Lego_GetMap(), awayPos.x, awayPos.y, &awayBlockPos.x, &awayBlockPos.y)) {
+
+			Point2I tempBlock = blockPos;
+			bool isLocalList = false;
+			sint32* bxList = nullptr;
+			sint32* byList = nullptr;
+			sint32 count;
+
+			if (awayBlockPos.x == blockPos.x && awayBlockPos.y == blockPos.y) {
+				isLocalList = true;
+				bxList = &tempBlock.x;
+				byList = &tempBlock.y;
+				byList = &blockPos.y;
+				count = 1;
+			}
+			else if (!LegoObject_Route_Score_FUN_004413b0(liveObj,
+														  (uint32)blockPos.x, (uint32)blockPos.y,
+														  (uint32)awayBlockPos.x, (uint32)awayBlockPos.y,
+														  &bxList, &byList, &count, nullptr, nullptr))
+			{
+				return;
+			}
+
+			if (LegoObject_Route_AllocPtr_FUN_004419c0(liveObj, count, bxList, byList, &awayPos)) {
+				liveObj->routeBlocks[liveObj->routeBlocksTotal - 1].flagsByte |= ROUTE_FLAG_RUNAWAY;
+			}
+
+			/// FIX APPLY: Don't free memory on the stack!!!
+			///            This was causing fatal memory corruption in debug builds. (#66)
+			if (!isLocalList) {
+				if (bxList != nullptr) Gods98::Mem_Free(bxList);
+				if (byList != nullptr) Gods98::Mem_Free(byList);
+			}
+
+			liveObj->flags1 |= LIVEOBJ1_RUNNINGAWAY;
+			Bubble_ShowBubble(liveObj);
+		}
+	}
+}
 
 // <LegoRR.exe @004448e0>
 //void __cdecl LegoRR::LegoObject_DoSlip(LegoObject* liveObj);

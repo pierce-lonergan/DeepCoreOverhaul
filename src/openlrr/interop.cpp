@@ -3306,6 +3306,10 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: LegoObject_Create, LegoObject_Callback_Update, StatsObject_Debug_ToggleSelfPowered
 	result &= hook_write_jmpret(0x0043c830, LegoRR::LegoObject_UpdatePowerConsumption);
 
+	// used by: LegoObject_Callback_BirdScarer, LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite,
+	//          LegoObject_Callback_FUN_00445af0
+	result &= hook_write_jmpret(0x00444720, LegoRR::LegoObject_TryRunAway);
+
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00449ec0, LegoRR::LegoObject_HideAllCertainObjects);
 
