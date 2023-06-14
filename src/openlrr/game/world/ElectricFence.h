@@ -237,12 +237,12 @@ void __cdecl ElectricFence_RunThroughLists(ElectricFence_RunThroughListsCallback
 //Vector3F* __cdecl ElectricFence_Block_GetDistanceBetweenBlocks(uint32 bxFrom, uint32 byFrom, uint32 bxTo, uint32 byTo, OUT Vector3F* vector);
 
 // <LegoRR.exe @0040dd70>
-#define ElectricFence_LiveObject_FUN_0040dd70 ((bool32 (__cdecl* )(LegoObject* liveObj))0x0040dd70)
-//bool32 __cdecl ElectricFence_LiveObject_FUN_0040dd70(LegoObject* liveObj);
+#define ElectricFence_TrySparkObject ((bool32 (__cdecl* )(LegoObject* liveObj))0x0040dd70)
+//bool32 __cdecl ElectricFence_TrySparkObject(LegoObject* liveObj);
 
 // <LegoRR.exe @0040dff0>
-#define ElectricFence_LiveObject_SparkBlock_FUN_0040dff0 ((void (__cdecl* )(LegoObject* liveObj, const Point2F* objWorldPos, uint32 bx, uint32 by))0x0040dff0)
-//void __cdecl ElectricFence_LiveObject_SparkBlock_FUN_0040dff0(LegoObject* liveObj, Point2F* objWorldPos, uint32 bx, uint32 by);
+#define ElectricFence_SparkObjectAndCreateBeam ((void (__cdecl* )(LegoObject* liveObj, const Point2F* objWorldPos, uint32 bx, uint32 by))0x0040dff0)
+//void __cdecl ElectricFence_SparkObjectAndCreateBeam(LegoObject* liveObj, Point2F* objWorldPos, uint32 bx, uint32 by);
 
 // <LegoRR.exe @0040e110>
 #define ElectricFence_Block_FUN_0040e110 ((bool32 (__cdecl* )(Lego_Level* level, uint32 bx, uint32 by))0x0040e110)

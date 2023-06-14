@@ -69,6 +69,7 @@ typedef bool32 (__cdecl* LegoObject_RunThroughListsCallback)(LegoObject* liveObj
 
 enum RouteAction : uint8 // [LegoRR/Text.c|enum:0x1|type:byte]
 {
+	ROUTE_ACTION_NONE        = 0,
 	ROUTE_ACTION_UNK_1       = 1,
 	ROUTE_ACTION_REINFORCE   = 2,
 	ROUTE_ACTION_GATHERROCK  = 3,
@@ -367,9 +368,10 @@ struct LegoObject // [LegoRR/LegoObject.c|struct:0x40c|tags:LISTSET]
 	/*290,4*/		real32 routeCurveCurrDist;
 	/*294,4*/		real32 routeCurveInitialDist; // Used as spill-over when distance traveled is beyond routeCurveTotalDist.
 	/*298,8*/       Point2F point_298;
-	/*2a0,c*/       Vector3F vector_2a0;
+	/*2a0,c*/       Vector3F tempPosition; // Last position used for finding new face direction when moving.
+										   // Only ever used as a temporary variable.
 	/*2ac,c*/       Vector3F faceDirection; // 1.0 to -1.0 directions that determine rotation with atan2
-	/*2b8,4*/       real32 faceDirectionLength_2b8; // faceDirection length (faceDirection may be Vector4F...)
+	/*2b8,4*/       real32 faceDirectionLength; // faceDirection length (faceDirection may be Vector4F...)
 	/*2bc,4*/       sint32 strafeSignFP; // (direction sign only, does higher numbers do not affect speed)
 	/*2c0,4*/       sint32 forwardSignFP; // (direction sign only, does higher numbers do not affect speed)
 	/*2c4,4*/       real32 rotateSpeedFP;
@@ -386,7 +388,8 @@ struct LegoObject // [LegoRR/LegoObject.c|struct:0x40c|tags:LISTSET]
 	/*2fc,4*/       LegoObject* routeToObject; // other half of object_300
 	/*300,4*/       LegoObject* interactObject; // Used in combination with routeToObject for Upgrade station and RM boulders.
 	/*304,4*/       LegoObject* carryingThisObject;
-	/*308,1c*/      LegoObject* carriedObjects[7]; // (includes carried vehicles)
+	/*308,17*/      LegoObject* carriedObjects[6]; // (includes carried vehicles)
+	/*320,4*/		uint32 carryingIndex; // Index of carried object in holder's carriedObjects list.
 	/*324,4*/       uint32 numCarriedObjects;
 	/*328,4*/       uint32 carryNullFrames;
 	/*32c,4*/       Flocks* flocks;
@@ -422,9 +425,9 @@ struct LegoObject // [LegoRR/LegoObject.c|struct:0x40c|tags:LISTSET]
 	/*3c8,4*/       undefined4 field_3c8; // (unused?)
 	/*3cc,4*/       LegoObject* teleportDownObject;
 	/*3d0,4*/       real32 damageNumbers; // Used to display damage text over objects.
-	/*3d4,4*/       real32 elapsedTime1; // elapsed time counter 1
-	/*3d8,4*/       real32 elapsedTime2; // elapsed time counter 2
-	/*3dc,4*/       real32 activityElapsedTime; // elapsed time since last order?
+	/*3d4,4*/       real32 elapsedTime1; // elapsed time counter 1 (for training, and something with vehicles)
+	/*3d8,4*/       real32 elapsedTime2; // elapsed time counter 2 (for upgrading and one other thing)
+	/*3dc,4*/       real32 eatWaitTimer; // Unit will try to find food once the timer reaches 125.
 	/*3e0,4*/       LiveFlags1 flags1;
 	/*3e4,4*/       LiveFlags2 flags2;
 	/*3e8,4*/       LiveFlags3 flags3; // (assigned 0, flags?)
@@ -432,8 +435,8 @@ struct LegoObject // [LegoRR/LegoObject.c|struct:0x40c|tags:LISTSET]
 	/*3f0,4*/       LegoObject_AbilityFlags abilityFlags; // (orig: flags5) Trained ability flags, and saved in ObjectRecall.
 	/*3f4,4*/       undefined4 field_3f4;
 	/*3f8,4*/       bool32 bool_3f8;
-	/*3fc,4*/       real32 floatSnd_3fc;
-	/*400,4*/       real32 floatSnd_400;
+	/*3fc,4*/       real32 hurtSoundTimer; // Timer resets after reaching (hurtSoundDuration * 2).
+	/*400,4*/       real32 hurtSoundDuration;
 	/*404,4*/       LegoObject_UpgradeType upgradingType; // New upgrade type added as mask to vehicle level when upgrade is finished.
 	/*408,4*/       LegoObject* nextFree; // (for listSet)
 	/*40c*/
@@ -525,8 +528,16 @@ public:
 
 #pragma region Globals
 
+// Static variable used in LegoObject_Callback_Update.
+// <LegoRR.exe @004a58b0>
+extern real32 & s_objectDamageShakeTimer; // = 1.0f;
+
 // <LegoRR.exe @004df790>
 extern LegoObject_Globs & objectGlobs;
+
+// Static variable used in LegoObject_Callback_Update. Assigned to but never used.
+// <LegoRR.exe @00557090>
+extern LegoObject* (& s_currentUpdateObject);
 
 extern LegoObject_ListSet objectListSet;
 
@@ -744,8 +755,8 @@ bool32 __cdecl LegoObject_Callback_FindPoweredBuildingAtBlockPos(LegoObject* liv
 //undefined4 __cdecl LegoObject_Search_FUN_00438eb0(LegoObject* liveObj);
 
 // <LegoRR.exe @00438f20>
-#define LegoObject_Search_FUN_00438f20 ((undefined4 (__cdecl* )(LegoObject* liveObj))0x00438f20)
-//undefined4 __cdecl LegoObject_Search_FUN_00438f20(LegoObject* liveObj);
+#define LegoObject_FindSnackServingBuilding ((LegoObject* (__cdecl* )(LegoObject* liveObj))0x00438f20)
+//LegoObject* __cdecl LegoObject_FindSnackServingBuilding(LegoObject* liveObj);
 
 // <LegoRR.exe @00438f90>
 #define LegoObject_FindBigTeleporter ((LegoObject* (__cdecl* )(const Point2F* worldPos))0x00438f90)
@@ -1018,8 +1029,8 @@ bool32 __cdecl LegoObject_Callback_Remove(LegoObject* liveObj, void* unused);
 // Requires the objects health to be set to <= 0.0f beforehand.
 // Requires that non-Building objects are not frozen, or in the middle of a teleport-down animation.
 // <LegoRR.exe @0043bf00>
-#define LegoObject_TeleportUp ((void (__cdecl* )(LegoObject* liveObj))0x0043bf00)
-//void __cdecl LegoObject_TeleportUp(LegoObject* liveObj);
+//#define LegoObject_UpdateRemoval ((void (__cdecl* )(LegoObject* liveObj))0x0043bf00)
+void __cdecl LegoObject_UpdateRemoval(LegoObject* liveObj);
 
 // <LegoRR.exe @0043c4c0>
 #define LegoObject_CanSupportOxygenForType ((bool32 (__cdecl* )(LegoObject_Type consumerType, LegoObject_ID consumerID, LegoObject_Type producerType, LegoObject_ID producerID))0x0043c4c0)
@@ -1066,64 +1077,64 @@ bool32 __cdecl LegoObject_Callback_UpdateRadarSurvey(LegoObject* liveObj, void* 
 void __cdecl LegoObject_UpdatePowerConsumption(LegoObject* liveObj);
 
 // <LegoRR.exe @0043c910>
-#define LegoObject_CheckCanSteal ((bool32 (__cdecl* )(LegoObject* liveObj))0x0043c910)
-//bool32 __cdecl LegoObject_CheckCanSteal(LegoObject* liveObj);
+//#define LegoObject_CheckCanSteal ((bool32 (__cdecl* )(LegoObject* liveObj))0x0043c910)
+bool32 __cdecl LegoObject_CheckCanSteal(LegoObject* liveObj);
 
 // <LegoRR.exe @0043c970>
-#define LegoObject_FUN_0043c970 ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x0043c970)
-//void __cdecl LegoObject_FUN_0043c970(LegoObject* liveObj, real32 elapsed);
+//#define LegoObject_UpdateElapsedTimes ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x0043c970)
+void __cdecl LegoObject_UpdateElapsedTimes(LegoObject* liveObj, real32 elapsed);
 
 // DATA: real32* pElapsed
 // <LegoRR.exe @0043cad0>
 #define LegoObject_Callback_Update ((bool32 (__cdecl* )(LegoObject* liveObj, real32* pElapsed))0x0043cad0)
-//bool32 __cdecl LegoObject_Callback_Update(LegoObject* liveObj, real32* pElapsed);
+//bool32 __cdecl LegoObject_Callback_Update(LegoObject* liveObj, void* pElapsed);
 
 // <LegoRR.exe @0043f160>
-#define LegoObject_ProcCarriedObjects_FUN_0043f160 ((void (__cdecl* )(LegoObject* liveObj))0x0043f160)
-//void __cdecl LegoObject_ProcCarriedObjects_FUN_0043f160(LegoObject* liveObj);
+//#define LegoObject_ProccessCarriedObjects ((void (__cdecl* )(LegoObject* liveObj))0x0043f160)
+void __cdecl LegoObject_ProccessCarriedObjects(LegoObject* liveObj);
 
 // <LegoRR.exe @0043f3c0>
-#define LegoObject_ClearFlags4_40_AndSameForObject2FC ((void (__cdecl* )(LegoObject* unused_liveObj, LegoObject* liveObj))0x0043f3c0)
-//void __cdecl LegoObject_ClearFlags4_40_AndSameForObject2FC(LegoObject* unused_liveObj, LegoObject* liveObj);
+//#define LegoObject_ClearDockOccupiedFlag ((void (__cdecl* )(LegoObject* unused_liveObj, LegoObject* liveObj))0x0043f3c0)
+void __cdecl LegoObject_ClearDockOccupiedFlag(LegoObject* unused_liveObj, LegoObject* liveObj);
 
 // <LegoRR.exe @0043f3f0>
-#define LegoObject_TriggerFrameCallback ((void (__cdecl* )(Gods98::Container* cont, void* data))0x0043f3f0)
-//void __cdecl LegoObject_TriggerFrameCallback(Gods98::Container* cont, void* data);
+//#define LegoObject_TriggerFrameCallback ((void (__cdecl* )(Gods98::Container* cont, void* data))0x0043f3f0)
+void __cdecl LegoObject_TriggerFrameCallback(Gods98::Container* cont, void* data);
 
 // <LegoRR.exe @0043f410>
-#define LegoObject_QueueTeleport ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID))0x0043f410)
-//bool32 __cdecl LegoObject_QueueTeleport(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID);
+//#define LegoObject_QueueTeleport ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID))0x0043f410)
+bool32 __cdecl LegoObject_QueueTeleport(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @0043f450>
-#define LegoObject_UpdateTeleporter ((void (__cdecl* )(LegoObject* liveObj))0x0043f450)
-//void __cdecl LegoObject_UpdateTeleporter(LegoObject* liveObj);
+//#define LegoObject_UpdateTeleporter ((void (__cdecl* )(LegoObject* liveObj))0x0043f450)
+void __cdecl LegoObject_UpdateTeleporter(LegoObject* liveObj);
 
 // Removes the first teleport-down reference that matches the specified object.
 // <LegoRR.exe @0043f820>
-#define LegoObject_RemoveTeleportDownReference ((bool32 (__cdecl* )(LegoObject* teleportDownObj))0x0043f820)
-//bool32 __cdecl LegoObject_RemoveTeleportDownReference(LegoObject* teleportDownObj);
+//#define LegoObject_RemoveTeleportDownReference ((bool32 (__cdecl* )(LegoObject* teleportDownObj))0x0043f820)
+bool32 __cdecl LegoObject_RemoveTeleportDownReference(LegoObject* teleportDownObj);
 
 // Removes the teleport-down reference if it matches the specified object. Returns true on match.
 // DATA: LegoObject* teleportDownObj
 // <LegoRR.exe @0043f840>
-#define LegoObject_Callback_RemoveTeleportDownReference ((bool32 (__cdecl* )(LegoObject* liveObj, void* teleportDownObj))0x0043f840)
-//bool32 __cdecl LegoObject_Callback_RemoveTeleportDownReference(LegoObject* liveObj, void* teleportDownObj);
+//#define LegoObject_Callback_RemoveTeleportDownReference ((bool32 (__cdecl* )(LegoObject* liveObj, void* teleportDownObj))0x0043f840)
+bool32 __cdecl LegoObject_Callback_RemoveTeleportDownReference(LegoObject* liveObj, void* pTeleportDownObj);
 
 // <LegoRR.exe @0043f870>
-#define LegoObject_TrainMiniFigure_instantunk ((void (__cdecl* )(LegoObject* liveObj, LegoObject_AbilityFlags trainFlags))0x0043f870)
-//void __cdecl LegoObject_TrainMiniFigure_instantunk(LegoObject* liveObj, LegoObject_AbilityFlags trainFlags);
+//#define LegoObject_TrainMiniFigure_instantunk ((void (__cdecl* )(LegoObject* liveObj, LegoObject_AbilityFlags trainFlags))0x0043f870)
+void __cdecl LegoObject_TrainMiniFigure_instantunk(LegoObject* liveObj, LegoObject_AbilityFlags trainFlags);
 
 // <LegoRR.exe @0043f960>
-#define LegoObject_AddDamage2 ((void (__cdecl* )(LegoObject* liveObj, real32 damage, bool32 showVisual, real32 elapsed))0x0043f960)
-//void __cdecl LegoObject_AddDamage2(LegoObject* liveObj, real32 damage, bool32 showVisual, real32 elapsed);
+//#define LegoObject_AddDamage2 ((void (__cdecl* )(LegoObject* liveObj, real32 damage, bool32 showVisual, real32 elapsed))0x0043f960)
+void __cdecl LegoObject_AddDamage2(LegoObject* liveObj, real32 damage, bool32 showVisual, real32 elapsed);
 
 // <LegoRR.exe @0043fa90>
-#define LegoObject_UnkUpdateEnergyHealth ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x0043fa90)
-//void __cdecl LegoObject_UnkUpdateEnergyHealth(LegoObject* liveObj, real32 elapsed);
+//#define LegoObject_UpdateEnergyHealthAndLavaContact ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x0043fa90)
+void __cdecl LegoObject_UpdateEnergyHealthAndLavaContact(LegoObject* liveObj, real32 elapsed);
 
 // <LegoRR.exe @0043fe00>
-#define LegoObject_MiniFigurePlayHurtSND ((bool32 (__cdecl* )(LegoObject* liveObj, real32 elapsed, real32 damage))0x0043fe00)
-//bool32 __cdecl LegoObject_MiniFigurePlayHurtSND(LegoObject* liveObj, real32 elapsed, real32 damage);
+//#define LegoObject_MiniFigurePlayHurtSound ((bool32 (__cdecl* )(LegoObject* liveObj, real32 elapsed, real32 damage))0x0043fe00)
+bool32 __cdecl LegoObject_MiniFigurePlayHurtSound(LegoObject* liveObj, real32 elapsed, real32 damage);
 
 // <LegoRR.exe @0043fee0>
 #define LegoObject_FUN_0043fee0 ((bool32 (__cdecl* )(LegoObject* carriedObj))0x0043fee0)
@@ -1171,8 +1182,8 @@ void __cdecl LegoObject_UpdatePowerConsumption(LegoObject* liveObj);
 //bool32 __cdecl LegoObject_Callback_BirdScarer(LegoObject* liveObj, SearchDynamiteRadius* search);
 
 // <LegoRR.exe @00440ca0>
-#define LegoObject_SetActivity ((void (__cdecl* )(LegoObject* liveObj, Activity_Type activityType, uint32 repeatCount))0x00440ca0)
-//void __cdecl LegoObject_SetActivity(LegoObject* liveObj, Activity_Type activityType, uint32 repeatCount);
+//#define LegoObject_SetActivity ((void (__cdecl* )(LegoObject* liveObj, Activity_Type activityType, uint32 repeatCount))0x00440ca0)
+void __cdecl LegoObject_SetActivity(LegoObject* liveObj, Activity_Type activityType, uint32 repeatCount);
 
 // <LegoRR.exe @00440cd0>
 #define LegoObject_UpdateCarrying ((void (__cdecl* )(LegoObject* liveObj))0x00440cd0)
@@ -1219,46 +1230,46 @@ void __cdecl LegoObject_UpdatePowerConsumption(LegoObject* liveObj);
 //void __cdecl LegoObject_CreateWeaponProjectile(LegoObject* liveObj, Weapon_KnownType knownWeapon);
 
 // <LegoRR.exe @004424d0>
-#define LegoObject_UnkActivityCrumble_FUN_004424d0 ((void (__cdecl* )(LegoObject* liveObj))0x004424d0)
-//void __cdecl LegoObject_UnkActivityCrumble_FUN_004424d0(LegoObject* liveObj);
+//#define LegoObject_StartCrumbling ((void (__cdecl* )(LegoObject* liveObj))0x004424d0)
+void __cdecl LegoObject_StartCrumbling(LegoObject* liveObj);
 
 // <LegoRR.exe @00442520>
-#define LegoObject_GetPosition ((void (__cdecl* )(LegoObject* liveObj, OUT real32* xPos, OUT real32* yPos))0x00442520)
-//void __cdecl LegoObject_GetPosition(LegoObject* liveObj, OUT real32* xPos, OUT real32* yPos);
+//#define LegoObject_GetPosition ((void (__cdecl* )(LegoObject* liveObj, OUT real32* xPos, OUT real32* yPos))0x00442520)
+void __cdecl LegoObject_GetPosition(LegoObject* liveObj, OUT real32* xPos, OUT real32* yPos);
 
 // <LegoRR.exe @00442560>
-#define LegoObject_GetFaceDirection ((void (__cdecl* )(LegoObject* liveObj, OUT Point2F* direction))0x00442560)
-//void __cdecl LegoObject_GetFaceDirection(LegoObject* liveObj, OUT Point2F* direction);
+//#define LegoObject_GetFaceDirection ((void (__cdecl* )(LegoObject* liveObj, OUT Point2F* dir2D))0x00442560)
+void __cdecl LegoObject_GetFaceDirection(LegoObject* liveObj, OUT Point2F* dir2D);
 
 // <LegoRR.exe @004425c0>
-#define LegoObject_UnkUpdateOrientation ((void (__cdecl* )(LegoObject* liveObj, real32 theta, OPTIONAL const Vector3F* vecDir))0x004425c0)
-//void __cdecl LegoObject_UnkUpdateOrientation(LegoObject* liveObj, real32 theta, OPTIONAL const Vector3F* vecDir);
+//#define LegoObject_SetHeadingOrDirection ((void (__cdecl* )(LegoObject* liveObj, real32 theta, OPTIONAL const Vector3F* dir))0x004425c0)
+void __cdecl LegoObject_SetHeadingOrDirection(LegoObject* liveObj, real32 theta, OPTIONAL const Vector3F* dir);
 
 // <LegoRR.exe @00442740>
-#define LegoObject_GetHeading ((real32 (__cdecl* )(LegoObject* liveObj))0x00442740)
-//real32 __cdecl LegoObject_GetHeading(LegoObject* liveObj);
+//#define LegoObject_GetHeading ((real32 (__cdecl* )(LegoObject* liveObj))0x00442740)
+real32 __cdecl LegoObject_GetHeading(LegoObject* liveObj);
 
 // <LegoRR.exe @004427b0>
-#define LegoObject_GetBlockPos ((bool32 (__cdecl* )(LegoObject* liveObj, OUT sint32* bx, OUT sint32* by))0x004427b0)
-//bool32 __cdecl LegoObject_GetBlockPos(LegoObject* liveObj, OUT sint32* bx, OUT sint32* by);
+//#define LegoObject_GetBlockPos ((bool32 (__cdecl* )(LegoObject* liveObj, OUT sint32* bx, OUT sint32* by))0x004427b0)
+bool32 __cdecl LegoObject_GetBlockPos(LegoObject* liveObj, OUT sint32* bx, OUT sint32* by);
 
 // <LegoRR.exe @00442800>
-#define LegoObject_GetWorldZCallback ((real32 (__cdecl* )(real32 xPos, real32 yPos, Map3D* map))0x00442800)
-//real32 __cdecl LegoObject_GetWorldZCallback(real32 xPos, real32 yPos, Map3D* map);
+//#define LegoObject_GetWorldZCallback ((real32 (__cdecl* )(real32 xPos, real32 yPos, Map3D* map))0x00442800)
+real32 __cdecl LegoObject_GetWorldZCallback(real32 xPos, real32 yPos, Map3D* map);
 
 // The same as `LegoObject_GetWorldZCallback`, but returns a lower Z value with over Lake terrain.
 // Objects wading in a lake (aka, not sailing) will have their Z lowered a bit, and have it at the lowest near the center of a lake BLOCK.
 // <LegoRR.exe @00442820>
-#define LegoObject_GetWorldZCallback_Lake ((real32 (__cdecl* )(real32 xPos, real32 yPos, Map3D* map))0x00442820)
-//real32 __cdecl LegoObject_GetWorldZCallback_Lake(real32 xPos, real32 yPos, Map3D* map);
+//#define LegoObject_GetWorldZCallback_Lake ((real32 (__cdecl* )(real32 xPos, real32 yPos, Map3D* map))0x00442820)
+real32 __cdecl LegoObject_GetWorldZCallback_Lake(real32 xPos, real32 yPos, Map3D* map);
 
 // <LegoRR.exe @004428b0>
-#define LegoObject_UpdateRoutingVectors_FUN_004428b0 ((void (__cdecl* )(LegoObject* liveObj, real32 xDir, real32 yDir))0x004428b0)
-//void __cdecl LegoObject_UpdateRoutingVectors_FUN_004428b0(LegoObject* liveObj, real32 xDir, real32 yDir);
+//#define LegoObject_UpdateRoutingVectors ((void (__cdecl* )(LegoObject* liveObj, real32 xPos, real32 yPos))0x004428b0)
+void __cdecl LegoObject_UpdateRoutingVectors(LegoObject* liveObj, real32 xPos, real32 yPos);
 
 // <LegoRR.exe @00442b60>
-#define LegoObject_SetPositionAndHeading ((void (__cdecl* )(LegoObject* liveObj, real32 xPos, real32 yPos, real32 theta, bool32 assignHeading))0x00442b60)
-//void __cdecl LegoObject_SetPositionAndHeading(LegoObject* liveObj, real32 xPos, real32 yPos, real32 theta, bool32 assignHeading);
+//#define LegoObject_SetPositionAndHeading ((void (__cdecl* )(LegoObject* liveObj, real32 xPos, real32 yPos, real32 theta, bool32 assignHeading))0x00442b60)
+void __cdecl LegoObject_SetPositionAndHeading(LegoObject* liveObj, real32 xPos, real32 yPos, real32 theta, bool32 assignHeading);
 
 // <LegoRR.exe @00442dd0>
 #define LegoObject_FP_UpdateMovement ((sint32 (__cdecl* )(LegoObject* liveObj, real32 elapsed, OUT real32* transSpeed))0x00442dd0)

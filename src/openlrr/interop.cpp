@@ -1759,7 +1759,7 @@ bool interop_hook_LegoRR_Building(void)
 
 	// used by: Lego_LoadBuildingTypes
 	result &= hook_write_jmpret(0x00407c90, LegoRR::Building_Load);
-	// used by: LegoObject_ProcCarriedObjects_FUN_0043f160
+	// used by: LegoObject_ProccessCarriedObjects
 	result &= hook_write_jmpret(0x00408210, LegoRR::Building_ChangePowerLevel);
 	// used by: Construction_CleanupBuildingFoundation, ElectricFence_Callback_FUN_0040d510,
 	//          Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_Callback_PickSphereSelection,
@@ -1776,14 +1776,14 @@ bool interop_hook_LegoRR_Building(void)
 	// used by: Lego_LoadBuildingTypes, LegoObject_Hide
 	result &= hook_write_jmpret(0x004085a0, LegoRR::Building_Hide);
 
-	// used by: LegoObject_UnkUpdateOrientation, LegoObject_SetPositionAndHeading
+	// used by: LegoObject_SetHeadingOrDirection, LegoObject_SetPositionAndHeading
 	result &= hook_write_jmpret(0x004085f0, LegoRR::Building_SetOrientation);
 	// used by: LegoObject_SetPositionAndHeading, LegoObject_UpdateWorldStickyPosition
 	result &= hook_write_jmpret(0x00408640, LegoRR::Building_SetPosition);
 	// used by: LegoObject_UpdateCarrying
 	result &= hook_write_jmpret(0x004086a0, LegoRR::Building_GetCarryNull);
 	// used by: LegoObject_TryDepositCarried, LegoObject_GetDepositNull,
-	//          LegoObject_ProcCarriedObjects_FUN_0043f160, LegoObject_UpdateTeleporter
+	//          LegoObject_ProccessCarriedObjects, LegoObject_UpdateTeleporter
 	result &= hook_write_jmpret(0x004086e0, LegoRR::Building_GetDepositNull);
 	// used by: AITask_FUN_00404ef0, LegoObject_FUN_00440470, LegoObject_TryFindDriver_FUN_00440690,
 	//          LegoObject_SpawnDropCrystals_FUN_0044b110
@@ -1878,14 +1878,14 @@ bool interop_hook_LegoRR_Creature(void)
 	result &= hook_write_jmpret(0x00406c60, LegoRR::Creature_MoveAnimation);
 	// used by: LegoObject_Callback_Update
 	result &= hook_write_jmpret(0x00406cd0, LegoRR::Creature_GetAnimationTime);
-	// used by: LegoObject_Route_End, LegoObject_UnkUpdateOrientation, LegoObject_UpdateRoutingVectors_FUN_004428b0,
+	// used by: LegoObject_Route_End, LegoObject_SetHeadingOrDirection, LegoObject_UpdateRoutingVectors,
 	//          LegoObject_SetPositionAndHeading, LegoObject_Route_UpdateMovement
 	result &= hook_write_jmpret(0x00406cf0, LegoRR::Creature_SetOrientation);
-	// used by: LegoObject_UpdateRoutingVectors_FUN_004428b0, LegoObject_SetPositionAndHeading,
+	// used by: LegoObject_UpdateRoutingVectors, LegoObject_SetPositionAndHeading,
 	//          LegoObject_FP_UpdateMovement, LegoObject_UpdateWorldStickyPosition
 	result &= hook_write_jmpret(0x00406d20, LegoRR::Creature_SetPosition);
 
-	// used by: LegoObject_TeleportUp, LegoObject_UpdateActivityChange
+	// used by: LegoObject_UpdateRemoval, LegoObject_UpdateActivityChange
 	result &= hook_write_jmpret(0x00406d70, LegoRR::Creature_SetActivity);
 	// used by: Lego_Shutdown_Full, LegoObject_Remove
 	result &= hook_write_jmpret(0x00406df0, LegoRR::Creature_Remove);
@@ -2447,7 +2447,7 @@ bool interop_hook_LegoRR_ElectricFence(void)
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x0040cf60, LegoRR::ElectricFence_AddList);
 
-	// used by: ElectricFence_Debug_RemoveFence, LegoObject_TeleportUp, Message_Debug_DestroySelectedUnits
+	// used by: ElectricFence_Debug_RemoveFence, LegoObject_UpdateRemoval, Message_Debug_DestroySelectedUnits
 	result &= hook_write_jmpret(0x0040cfd0, LegoRR::ElectricFence_RemoveFence);
 
 	// used by: ElectricFence_RemoveFence
@@ -2478,7 +2478,7 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: Interface_DoSomethingWithRenameReplace, LegoObject_GetBuildingUpgradeCost,
 	//          LegoObject_HasEnoughOreToUpgrade, LegoObject_CanSpawnCarryableObject, LegoObject_Callback_Update
 	result &= hook_write_jmpret(0x0041f830, LegoRR::Level_GetOreCount);
-	// used by: LegoObject_FinishEnteringWallHole, LegoObject_UnkUpdateEnergyHealth
+	// used by: LegoObject_FinishEnteringWallHole, LegoObject_UpdateEnergyHealthAndLavaContact
 	result &= hook_write_jmpret(0x0041f850, LegoRR::Level_AddStolenCrystals);
 	// used by: Camera_Update
 	result &= hook_write_jmpret(0x0041f870, LegoRR::Lego_SetRadarNoTrackObject);
@@ -2742,7 +2742,7 @@ bool interop_hook_LegoRR_Messages(void)
 	result &= hook_write_jmpret(0x00452390, LegoRR::Message_Update);
 	// used by: Message_Update
 	result &= hook_write_jmpret(0x004526f0, LegoRR::Message_PickRandomFloorBlock);
-	// used by: LegoObject_Remove, LegoObject_TeleportUp
+	// used by: LegoObject_Remove, LegoObject_UpdateRemoval
 	result &= hook_write_jmpret(0x00452770, LegoRR::Message_RemoveObjectReference);
 
 	result &= hook_write_jmpret(0x004527e0, LegoRR::Message_CopySelectedUnits);
@@ -2772,7 +2772,7 @@ bool interop_hook_LegoRR_Messages(void)
 	result &= hook_write_jmpret(0x00452b80, LegoRR::Message_ReduceSelectedUnits);
 	// used by: Interface_DoAction_FUN_0041dbd0, Message_Update
 	result &= hook_write_jmpret(0x00452ea0, LegoRR::Message_ClearSelectedUnits);
-	// used by: LegoObject_TeleportUp, LegoObject_FUN_00440470, Message_Update, Message_RemoveObjectReference
+	// used by: LegoObject_UpdateRemoval, LegoObject_FUN_00440470, Message_Update, Message_RemoveObjectReference
 	result &= hook_write_jmpret(0x00452f10, LegoRR::Message_DeselectObject);
 	// used by: Message_Update
 	result &= hook_write_jmpret(0x00452f80, LegoRR::Message_Debug_DestroySelectedUnits);
@@ -3265,7 +3265,7 @@ bool interop_hook_LegoRR_Object(void)
 	result &= hook_write_jmpret(0x00438660, LegoRR::LegoObject_SetNumBuildingsTeleported);
 	// used by: LegoObject_Weapon_FUN_004375c0, LegoObject_Create, LegoObject_Callback_Update
 	result &= hook_write_jmpret(0x00438670, LegoRR::LegoObject_SetCrystalPoweredColour);
-	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_TeleportUp,
+	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_UpdateRemoval,
 	//          LegoObject_Callback_Update
 	result &= hook_write_jmpret(0x00438720, LegoRR::LegoObject_FUN_00438720);
 	// used by: Interface_DoAction_FUN_0041dbd0
@@ -3298,6 +3298,9 @@ bool interop_hook_LegoRR_Object(void)
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x0043b610, LegoRR::LegoObject_Callback_Remove);
 
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0043bf00, LegoRR::LegoObject_UpdateRemoval);
+
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x0043c570, LegoRR::LegoObject_UpdateAllRadarSurvey);
 	// used by: LegoObject_UpdateAllRadarSurvey
@@ -3305,6 +3308,70 @@ bool interop_hook_LegoRR_Object(void)
 	
 	// used by: LegoObject_Create, LegoObject_Callback_Update, StatsObject_Debug_ToggleSelfPowered
 	result &= hook_write_jmpret(0x0043c830, LegoRR::LegoObject_UpdatePowerConsumption);
+	// used by: AITask_FUN_00405880
+	result &= hook_write_jmpret(0x0043c910, LegoRR::LegoObject_CheckCanSteal);
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0043c970, LegoRR::LegoObject_UpdateElapsedTimes);
+	// used by: LegoObject_UpdateAll
+	//result &= hook_write_jmpret(0x0043cad0, LegoRR::LegoObject_Callback_Update);
+	// used by: LegoObject_Callback_Update, LegoObject_Interrupt
+	result &= hook_write_jmpret(0x0043f160, LegoRR::LegoObject_ProccessCarriedObjects);
+	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0043f3c0, LegoRR::LegoObject_ClearDockOccupiedFlag);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x0043f3f0, LegoRR::LegoObject_TriggerFrameCallback);
+	// used by: Lego_TryTeleportObject
+	result &= hook_write_jmpret(0x0043f410, LegoRR::LegoObject_QueueTeleport);
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0043f450, LegoRR::LegoObject_UpdateTeleporter);
+	// used by: LegoObject_Remove, LegoObject_FUN_00438720
+	result &= hook_write_jmpret(0x0043f820, LegoRR::LegoObject_RemoveTeleportDownReference);
+	// used by: LegoObject_RemoveTeleportDownReference
+	result &= hook_write_jmpret(0x0043f840, LegoRR::LegoObject_Callback_RemoveTeleportDownReference);
+	// used by: AITask_LiveObject_SetAITaskUnk, Lego_LoadOLObjectList, HiddenObject_ExposeBlock
+	result &= hook_write_jmpret(0x0043f870, LegoRR::LegoObject_TrainMiniFigure_instantunk);
+	// used by: Lego_HandleWorldDebugKeys, LegoObject_Callback_Update,
+	//          LegoObject_UpdateEnergyHealthAndLavaContact, LegoObject_Callback_DynamiteExplosion,
+	//          LegoObject_Callback_SlipAndScare, LegoObject_FUN_004477b0, LegoObject_FUN_00447880,
+	//          Weapon_GenericDamageObject, Weapon_GunDamageObject
+	result &= hook_write_jmpret(0x0043f960, LegoRR::LegoObject_AddDamage2);
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0043fa90, LegoRR::LegoObject_UpdateEnergyHealthAndLavaContact);
+	// used by: LegoObject_UpdateEnergyHealthAndLavaContact
+	result &= hook_write_jmpret(0x0043fe00, LegoRR::LegoObject_MiniFigurePlayHurtSound);
+
+	// used by: Lego_HandleKeys, LegoObject
+	result &= hook_write_jmpret(0x00440ca0, LegoRR::LegoObject_SetActivity);
+
+	// used by: ElectricFence_SparkObjectAndCreateBeam, LegoObject_UpdateRemoval
+	result &= hook_write_jmpret(0x004424d0, LegoRR::LegoObject_StartCrumbling);
+	// used by: AITask, Construction, Effect, ElectricFence, Lego, LegoObject, Message,
+	//          NERPs, RadarMap, Teleporter, Weapon
+	result &= hook_write_jmpret(0x00442520, LegoRR::LegoObject_GetPosition);
+	// used by: AITask_FUN_00405b40, Construction_CleanupBuildingFoundation,
+	//          ElectricFence_Callback_FUN_0040d510, LegoObject_GetHeading,
+	//          LegoObject_Callback_HideCertainObjects, SpiderWeb_CheckCollision
+	result &= hook_write_jmpret(0x00442560, LegoRR::LegoObject_GetFaceDirection);
+	// used by: LegoObject_UpdateTeleporter, LegoObject_FireBeamWeaponAtObject
+	result &= hook_write_jmpret(0x004425c0, LegoRR::LegoObject_SetHeadingOrDirection);
+	// used by: LegoObject_Callback_Update, LegoObject_SimpleObject_FUN_00448160,
+	//          LegoObject_PlaceBirdScarer_AndTickDown, LegoObject_Freeze
+	result &= hook_write_jmpret(0x00442740, LegoRR::LegoObject_GetHeading);
+	// used by: AITask, Construction, ElectricFence, Interface, Lego, LegoObject,
+	//          NERPs, Objective, SpiderWeb
+	result &= hook_write_jmpret(0x004427b0, LegoRR::LegoObject_GetBlockPos);
+	// used by: LegoObject_UpdateRoutingVectors, LegoObject_SetPositionAndHeading,
+	//          LegoObject_FP_UpdateMovement, LegoObject_UpdateWorldStickyPosition
+	result &= hook_write_jmpret(0x00442800, LegoRR::LegoObject_GetWorldZCallback);
+	// used by: LegoObject_UpdateRoutingVectors, LegoObject_SetPositionAndHeading,
+	//          LegoObject_FP_UpdateMovement, LegoObject_UpdateWorldStickyPosition
+	result &= hook_write_jmpret(0x00442820, LegoRR::LegoObject_GetWorldZCallback_Lake);
+	// used by: LegoObject_Route_UpdateMovement
+	result &= hook_write_jmpret(0x004428b0, LegoRR::LegoObject_UpdateRoutingVectors);
+	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_CreateInWorld,
+	//          LegoObject_Callback_Update, LegoObject_UpdateTeleporter, LegoObject_PTL_GatherRock,
+	//          LegoObject_SimpleObject_FUN_00448160, LegoObject_UpdatePushing
+	result &= hook_write_jmpret(0x00442b60, LegoRR::LegoObject_SetPositionAndHeading);
 
 	// used by: LegoObject_Callback_BirdScarer, LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite,
 	//          LegoObject_Callback_SlipAndScare
@@ -3329,7 +3396,7 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: Lego_QuitLevel, Lego_LoadLevel, Objective_SetStatus
 	result &= hook_write_jmpret(0x0044b080, LegoRR::LegoObject_SetLevelEnding);
 
-	// used by: LegoObject_TeleportUp
+	// used by: LegoObject_UpdateRemoval
 	result &= hook_write_jmpret(0x0044b0a0, LegoRR::LegoObject_FUN_0044b0a0);
 
 
@@ -3715,7 +3782,7 @@ bool interop_hook_LegoRR_Vehicle(void)
 	result &= hook_write_jmpret(0x0046d240, LegoRR::Vehicle_GetUpgradeLevel);
 
 	// used by: Lego_HandleWorldDebugKeys, LegoObject_Create, LegoObject_CompleteVehicleUpgrade,
-	//          LegoObject_TeleportUp, Vehicle_Remove
+	//          LegoObject_UpdateRemoval, Vehicle_Remove
 	result &= hook_write_jmpret(0x0046d250, LegoRR::Vehicle_SetUpgradeLevel);
 	// used by: LegoObject_FUN_00438720, LegoObject_UpdateTeleporter
 	result &= hook_write_jmpret(0x0046d280, LegoRR::Vehicle_HideWheels);
@@ -3733,13 +3800,13 @@ bool interop_hook_LegoRR_Vehicle(void)
 	result &= hook_write_jmpret(0x0046d580, LegoRR::Vehicle_Hide);
 	// used by: LegoObject_IsHidden
 	result &= hook_write_jmpret(0x0046d5f0, LegoRR::Vehicle_IsHidden);
-	// used by: LegoObject_UnkUpdateOrientation, LegoObject_UpdateRoutingVectors_FUN_004428b0, LegoObject_SetPositionAndHeading
+	// used by: LegoObject_SetHeadingOrDirection, LegoObject_UpdateRoutingVectors, LegoObject_SetPositionAndHeading
 	result &= hook_write_jmpret(0x0046d610, LegoRR::Vehicle_SetOrientation);
-	// used by: LegoObject_UpdateRoutingVectors_FUN_004428b0, LegoObject_SetPositionAndHeading, LegoObject_FP_UpdateMovement, LegoObject_UpdateWorldStickyPosition
+	// used by: LegoObject_UpdateRoutingVectors, LegoObject_SetPositionAndHeading, LegoObject_FP_UpdateMovement, LegoObject_UpdateWorldStickyPosition
 	result &= hook_write_jmpret(0x0046d640, LegoRR::Vehicle_SetPosition);
-	// used by: LegoObject_UpdateRoutingVectors_FUN_004428b0, LegoObject_GetActivityContainer
+	// used by: LegoObject_UpdateRoutingVectors, LegoObject_GetActivityContainer
 	result &= hook_write_jmpret(0x0046dca0, LegoRR::Vehicle_GetActivityContainer);
-	// used by: LegoObject_UpdateRoutingVectors_FUN_004428b0, LegoObject_GetActivityContainer
+	// used by: LegoObject_UpdateRoutingVectors, LegoObject_GetActivityContainer
 	result &= hook_write_jmpret(0x0046dcb0, LegoRR::Vehicle_FindNull);
 	// used by: LegoObject_UpdateActivityChange, LegoObject_FP_GetPositionAndHeading
 	result &= hook_write_jmpret(0x0046dd10, LegoRR::Vehicle_GetCameraNull);

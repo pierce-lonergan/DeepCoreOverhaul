@@ -178,10 +178,10 @@ void __cdecl LegoRR::ElectricFence_RunThroughLists(ElectricFence_RunThroughLists
 //Vector3F* __cdecl LegoRR::ElectricFence_Block_GetDistanceBetweenBlocks(uint32 bxFrom, uint32 byFrom, uint32 bxTo, uint32 byTo, OUT Vector3F* vector);
 
 // <LegoRR.exe @0040dd70>
-//bool32 __cdecl LegoRR::ElectricFence_LiveObject_FUN_0040dd70(LegoObject* liveObj);
+//bool32 __cdecl LegoRR::ElectricFence_TrySparkObject(LegoObject* liveObj);
 
 // <LegoRR.exe @0040dff0>
-//void __cdecl LegoRR::ElectricFence_LiveObject_SparkBlock_FUN_0040dff0(LegoObject* liveObj, Point2F* objWorldPos, uint32 bx, uint32 by);
+//void __cdecl LegoRR::ElectricFence_SparkObjectAndCreateBeam(LegoObject* liveObj, Point2F* objWorldPos, uint32 bx, uint32 by);
 
 // <LegoRR.exe @0040e110>
 //bool32 __cdecl LegoRR::ElectricFence_Block_FUN_0040e110(Lego_Level* level, uint32 bx, uint32 by);

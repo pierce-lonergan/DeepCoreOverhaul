@@ -6,6 +6,8 @@
 #include "../../engine/input/Input.h"
 
 #include "../audio/SFX.h"
+#include "../effects/DamageText.h"
+#include "../front/Reward.h"
 #include "../interface/hud/Bubbles.h"
 #include "../interface/Encyclopedia.h"
 #include "../interface/HelpWindow.h"
@@ -44,8 +46,16 @@
 
 #pragma region Globals
 
+// Static variable used in LegoObject_Callback_Update.
+// <LegoRR.exe @004a58b0>
+real32 & LegoRR::s_objectDamageShakeTimer = *(real32*)0x004a58b0; // = 1.0f;
+
 // <LegoRR.exe @004df790>
 LegoRR::LegoObject_Globs & LegoRR::objectGlobs = *(LegoRR::LegoObject_Globs*)0x004df790;
+
+// Static variable used in LegoObject_Callback_Update. Assigned to but never used.
+// <LegoRR.exe @00557090>
+LegoRR::LegoObject* (& LegoRR::s_currentUpdateObject) = *(LegoRR::LegoObject**)0x00557090;
 
 LegoRR::LegoObject_ListSet LegoRR::objectListSet = LegoRR::LegoObject_ListSet(LegoRR::objectGlobs);
 
@@ -787,7 +797,7 @@ void __cdecl LegoRR::HiddenObject_ExposeBlock(const Point2I* blockPos)
 						}
 					}
 					LegoObject_TrainMiniFigure_instantunk(driverObj, trainFlags);
-					LegoObject_ClearFlags4_40_AndSameForObject2FC(driverObj, vehicleObj);
+					LegoObject_ClearDockOccupiedFlag(driverObj, vehicleObj);
 				}
 			}
 		}
@@ -1337,7 +1347,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_FindPoweredBuildingAtBlockPos(LegoObj
 //undefined4 __cdecl LegoRR::LegoObject_Search_FUN_00438eb0(LegoObject* liveObj);
 
 // <LegoRR.exe @00438f20>
-//undefined4 __cdecl LegoRR::LegoObject_Search_FUN_00438f20(LegoObject* liveObj);
+//LegoRR::LegoObject* __cdecl LegoRR::LegoObject_FindSnackServingBuilding(LegoObject* liveObj);
 
 // <LegoRR.exe @00438f90>
 //LegoRR::LegoObject* __cdecl LegoRR::LegoObject_FindBigTeleporter(const Point2F* worldPos);
@@ -1665,7 +1675,231 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Remove(LegoObject* liveObj, void* unu
 //void __cdecl LegoRR::LegoObject_FinishEnteringWallHole(LegoObject* liveObj);
 
 // <LegoRR.exe @0043bf00>
-//void __cdecl LegoRR::LegoObject_TeleportUp(LegoObject* liveObj);
+void __cdecl LegoRR::LegoObject_UpdateRemoval(LegoObject* liveObj)
+{
+	if (liveObj->type != LegoObject_Building) {
+		if (liveObj->flags2 & LIVEOBJ2_FROZEN)
+			return;
+
+		if (liveObj->flags1 & LIVEOBJ1_TELEPORTINGDOWN)
+			return;
+	}
+
+	if (liveObj->health > 0.0f)
+		return;
+
+
+	if ((StatsObject_GetStatsFlags1(liveObj) & STATS1_ANYTELEPORTER) &&
+		liveObj->teleportDownObject != nullptr &&
+		(liveObj->teleportDownObject->flags1 & LIVEOBJ1_TELEPORTINGDOWN))
+	{
+		// Cancel teleport-in-progress.
+		liveObj->teleportDownObject->flags1 &= ~LIVEOBJ1_TELEPORTINGDOWN;
+		liveObj->teleportDownObject->health = -1.0f;
+
+		LegoObject_FUN_00438720(liveObj);
+		LegoObject_SetActivity(liveObj->teleportDownObject, Activity_Stand, true);
+		LegoObject_UpdateActivityChange(liveObj->teleportDownObject);
+	}
+
+
+	if (liveObj->flags3 & LIVEOBJ3_REMOVING) {
+		// Object is already marked for removing. Handle final cleanup.
+		if (liveObj->driveObject != nullptr) {
+			// Eject driver.
+			Interface_ChangeMenu_IfPrimarySelectedVehicle_IsLiveObject(liveObj);
+			liveObj->driveObject->flags2 &= ~LIVEOBJ2_DRIVING;
+			liveObj->driveObject->driveObject = nullptr;
+			liveObj->driveObject = nullptr;
+		}
+
+		if (liveObj->type == LegoObject_MiniFigure && (liveObj->flags4 & LIVEOBJ4_UNK_8)) {
+			ObjectRecall_StoreMiniFigure(liveObj);
+		}
+
+		if (liveObj->type == LegoObject_Vehicle) {
+			Vehicle_SetUpgradeLevel(liveObj->vehicle, 0);
+		}
+
+		LegoObject_FUN_0044b0a0(liveObj);
+
+		// Handle different types of removal.
+		if (liveObj->type == LegoObject_Boulder) {
+			LegoObject_DestroyBoulder_AndCreateExplode(liveObj);
+		}
+		else if (liveObj->type == LegoObject_Building) {
+			Construction_RemoveBuildingObject(liveObj);
+		}
+		else {
+			LegoObject_Remove(liveObj);
+		}
+		return;
+	}
+
+	if (liveObj->type == LegoObject_PowerCrystal) {
+		// No clue why this is only handled for power crystals and not other simple objects.
+		liveObj->flags3 |= LIVEOBJ3_REMOVING;
+		return;
+	}
+	
+	if (liveObj->type == LegoObject_RockMonster) {
+		if (StatsObject_GetStatsFlags2(liveObj) & STATS2_SPLITONZEROHEALTH) {
+
+			if (!(liveObj->flags1 & LIVEOBJ1_CRUMBLING)) {
+				LegoObject_StartCrumbling(liveObj);
+			}
+		}
+		else if (StatsObject_GetStatsFlags2(liveObj) & STATS2_USEHOLES) {
+
+			LegoObject_Interrupt(liveObj, false, true);
+
+			liveObj->flags1 |= LIVEOBJ1_ENTERING_WALLHOLE;
+			LegoObject_SetActivity(liveObj, Activity_Enter, false);
+			LegoObject_UpdateActivityChange(liveObj);
+		}
+		return;
+	}
+	
+	if (liveObj->type == LegoObject_MiniFigure || liveObj->type == LegoObject_Vehicle ||
+		liveObj->type == LegoObject_Building || liveObj->type == LegoObject_ElectricFence)
+	{
+		// A lot of logic for the remaining object types.
+
+		if (liveObj->type == LegoObject_Building &&
+			!(liveObj->teleporter_modeFlags & 0x4) && !(liveObj->flags4 & LIVEOBJ4_UNK_8))
+		{
+			if (liveObj->flags2 & LIVEOBJ2_UNK_100000)
+				return;
+
+			liveObj->flags2 |= LIVEOBJ2_UNK_100000;
+			Construction_CleanupBuildingFoundation(liveObj);
+			LegoObject_SetActivity(liveObj, Activity_Explode, 0);
+			LegoObject_UpdateActivityChange(liveObj);
+			AITask_StopRepairForObject(liveObj);
+		}
+		else {
+
+			if (!(liveObj->flags3 & LIVEOBJ3_CANDAMAGE))
+				return;
+
+			if (liveObj->flags1 & LIVEOBJ1_TELEPORTINGUP)
+				return;
+
+			const char* actName = liveObj->activityName1;
+			Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+
+			if (liveObj->flags4 & LIVEOBJ4_UNK_8) {
+				LegoObject_FUN_0044b0a0(liveObj);
+			}
+
+			if (liveObj->type == LegoObject_Building) {
+				Construction_CleanupBuildingFoundation(liveObj);
+			}
+
+			if (liveObj->flags4 & LIVEOBJ4_ENTRANCEOCCUPIED) {
+				if (liveObj->routeToObject != nullptr) {
+					liveObj->routeToObject->flags4 &= ~LIVEOBJ4_ENTRANCEOCCUPIED;
+					liveObj->routeToObject = nullptr;
+				}
+			}
+
+			// Handle driven objects.
+			if (liveObj->driveObject != nullptr) {
+				Point2I blockPos = { 0, 0 }; // dummy init
+				LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+				if ((StatsObject_GetStatsFlags3(liveObj) & STATS3_CARRYVEHICLES) && (liveObj->flags1 & LIVEOBJ1_CARRYING) &&
+					liveObj->carriedObjects[0] != nullptr &&
+					!Lego_GetCrossTerrainType(liveObj->carriedObjects[0], blockPos.x, blockPos.y, blockPos.x, blockPos.y, true))
+				{
+					// Destroy the carried vehicle along with this object.
+					liveObj->carriedObjects[0]->health = -1.0f;
+				}
+
+				if (!(StatsObject_GetStatsFlags1(liveObj) & STATS1_CANBEDRIVEN) ||
+					Lego_GetCrossTerrainType(liveObj->driveObject, blockPos.x, blockPos.y, blockPos.x, blockPos.y, true))
+				{
+					// Eject the driver.
+					Interface_ChangeMenu_IfPrimarySelectedVehicle_IsLiveObject(liveObj);
+
+					liveObj->driveObject->flags2 &= ~LIVEOBJ2_DRIVING;
+
+					if (liveObj->driveObject->type == LegoObject_MiniFigure) {
+						Creature_SetActivity(liveObj->driveObject->miniFigure, objectGlobs.activityName[Activity_Stand], 0.0f);
+					}
+					liveObj->driveObject->driveObject = nullptr;
+					liveObj->driveObject = nullptr;
+				}
+				else {
+					// Otherwise kill the driver.
+					liveObj->driveObject->health = -1.0f;
+				}
+			}
+
+			if (liveObj->type == LegoObject_ElectricFence) {
+				ElectricFence_RemoveFence(liveObj);
+			}
+
+			// Send death messages.
+			{
+				Point2I blockPos = { 0, 0 }; // dummy init
+				LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+				switch (liveObj->type) {
+				case LegoObject_Vehicle:
+					Info_Send(Info_GenericDeath, nullptr, nullptr, &blockPos);
+					Info_Send(Info_VehicleDeath, nullptr, nullptr, &blockPos);
+					break;
+				case LegoObject_MiniFigure:
+					Info_Send(Info_GenericDeath, nullptr, nullptr, &blockPos);
+					Info_Send(Info_LegoManDeath, nullptr, nullptr, &blockPos);
+					break;
+				case LegoObject_Building:
+					Info_Send(Info_GenericDeath, nullptr, nullptr, &blockPos);
+					Info_Send(Info_BuildingDeath, nullptr, nullptr, &blockPos);
+					break;
+				}
+			}
+
+			// Interrupt the object.
+			if (!(liveObj->flags2 & LIVEOBJ2_THROWN)) {
+				LegoObject_Interrupt(liveObj, false, true); // Normal interrupt.
+
+				Gods98::Container_SetActivity(cont, actName);
+				liveObj->activityName2 = liveObj->activityName1;
+			}
+			else {
+				LegoObject_Interrupt(liveObj, true, true); // Thrown interrupt.
+			}
+
+			liveObj->flags1 |= LIVEOBJ1_TELEPORTINGUP;
+
+			// Create the teleporting up effect animation.
+			liveObj->contMiniTeleportUp = Gods98::Container_Clone(legoGlobs.contMiniTeleportUp);
+			Gods98::Container_SetAnimationTime(liveObj->contMiniTeleportUp, 0.0f);
+			Gods98::Container_Hide(liveObj->contMiniTeleportUp, false);
+			Gods98::Container* refCont = LegoObject_GetActivityContainer(liveObj);
+			Gods98::Container_SetPosition(liveObj->contMiniTeleportUp, refCont, 0.0f, 0.0f, 0.0f);
+			Gods98::Container_SetOrientation(liveObj->contMiniTeleportUp, nullptr, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+
+			// Scale up the teleporting up effect animation for buildings.
+			if (liveObj->type == LegoObject_Building) {
+				real32 collRadius = StatsObject_GetCollRadius(liveObj);
+				if (collRadius <= 0.0f) {
+					collRadius = 4.0f; // Default radius.
+				}
+
+				// Note: Condition should always be true unless NaN.
+				if (collRadius > 0.0f) {
+					Gods98::Container_AddScale(liveObj->contMiniTeleportUp, Gods98::Container_Combine::Before,
+											   (collRadius / 4.0f), 1.0f, (collRadius / 4.0f));
+				}
+			}
+		}
+
+		Message_DeselectObject(liveObj);
+		Message_RemoveObjectReference(liveObj);
+		return;
+	}
+}
 
 // <LegoRR.exe @0043c4c0>
 //bool32 __cdecl LegoRR::LegoObject_CanSupportOxygenForType(LegoObject_Type consumerType, LegoObject_ID consumerID, LegoObject_Type producerType, LegoObject_ID producerID);
@@ -1779,46 +2013,543 @@ void __cdecl LegoRR::LegoObject_UpdatePowerConsumption(LegoObject* liveObj)
 }
 
 // <LegoRR.exe @0043c910>
-//bool32 __cdecl LegoRR::LegoObject_CheckCanSteal(LegoObject* liveObj);
+bool32 __cdecl LegoRR::LegoObject_CheckCanSteal(LegoObject* liveObj)
+{
+	if (StatsObject_GetStatsFlags1(liveObj) & STATS1_CANSTEAL) {
+		const uint32 capacity = StatsObject_GetCapacity(liveObj);
+		if (capacity != 0 && liveObj->stolenCrystalLevels != nullptr &&
+			(uint32)*liveObj->stolenCrystalLevels >= capacity)
+		{
+			// Already at capacity for stolen crystals.
+			return false;
+		}
+
+		if (!(liveObj->flags3 & LIVEOBJ3_POWEROFF)) {
+			return true;
+		}
+	}
+	return false;
+}
 
 // <LegoRR.exe @0043c970>
-//void __cdecl LegoRR::LegoObject_FUN_0043c970(LegoObject* liveObj, real32 elapsed);
+void __cdecl LegoRR::LegoObject_UpdateElapsedTimes(LegoObject* liveObj, real32 elapsed)
+{
+	const real32 lastElapsedTime1 = liveObj->elapsedTime1;
+	const real32 lastElapsedTime2 = liveObj->elapsedTime2;
+
+	liveObj->elapsedTime1 += elapsed;
+	liveObj->elapsedTime2 += elapsed;
+	liveObj->eatWaitTimer += elapsed;
+
+	switch (liveObj->type) {
+	case LegoObject_MiniFigure:
+		{
+			const real32 upgradeTime = Lego_GetObjectUpgradeTime(liveObj->type);
+			if (upgradeTime != 0.0f) {
+				if (lastElapsedTime2 < upgradeTime && liveObj->elapsedTime2 >= upgradeTime) {
+					Info_Send(Info_CanUpgradeMinifigure, nullptr, liveObj, nullptr);
+				}
+			}
+
+			const real32 trainTime = Lego_GetTrainTime();
+			if (trainTime != 0.0f) {
+				if (lastElapsedTime1 < trainTime && liveObj->elapsedTime1 >= trainTime) {
+					Info_Send(Info_CanTrainMinifigure, nullptr, liveObj, nullptr);
+				}
+			}
+		}
+		break;
+
+	case LegoObject_PowerCrystal:
+	case LegoObject_Ore:
+	case LegoObject_Barrier:
+	case LegoObject_ElectricFence:
+		// Can only carry inactive electric fences (ones that aren't already setup in position).
+		if (liveObj->type != LegoObject_ElectricFence || !(liveObj->flags2 & LIVEOBJ2_ACTIVEELECTRICFENCE)) {
+
+			const real32 unknownTime = (STANDARD_FRAMERATE * 30.0f); // 30 seconds.
+			if (lastElapsedTime2 < unknownTime && liveObj->elapsedTime2 >= unknownTime) {
+				liveObj->elapsedTime2 = 0.0f;
+				AITask_LiveObject_FUN_004025f0(liveObj);
+			}
+		}
+		break;
+	}
+}
 
 // <LegoRR.exe @0043cad0>
-//bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, real32* pElapsed);
+//bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pElapsed);
 
 // <LegoRR.exe @0043f160>
-//void __cdecl LegoRR::LegoObject_ProcCarriedObjects_FUN_0043f160(LegoObject* liveObj);
+void __cdecl LegoRR::LegoObject_ProccessCarriedObjects(LegoObject* liveObj)
+{
+	const bool canProcess = (StatsObject_GetStatsFlags1(liveObj) & (STATS1_PROCESSCRYSTAL|STATS1_PROCESSORE));
+
+	LegoObject* routeToObj = liveObj->routeToObject;
+
+
+	for (uint32 i = 0; i < liveObj->numCarriedObjects; i++) {
+		LegoObject* carriedObj = liveObj->carriedObjects[i];
+		carriedObj->routeToObject = nullptr;
+
+		if (canProcess) {
+			carriedObj->carryingThisObject = nullptr;
+			carriedObj->interactObject = nullptr;
+
+			switch (carriedObj->type) {
+			case LegoObject_Ore:
+				if (i == 0) {
+					// Produce a stud.
+					Gods98::Container* depositNull = Building_GetDepositNull(liveObj->building);
+					Vector3F depositNullPos;
+					Gods98::Container_GetPosition(depositNull, nullptr, &depositNullPos);
+
+					ObjectModel* studModel = legoGlobs.contOresTable[LegoObject_ID_ProcessedOre];
+					LegoObject* studObj = LegoObject_CreateInWorld(studModel,
+																   LegoObject_Ore, LegoObject_ID_ProcessedOre, 0,
+																   depositNullPos.x, depositNullPos.y, 0.0f);
+					Message_PostEvent(Message_GenerateOreComplete, studObj, Message_Argument(0), nullptr);
+				}
+				else if (i >= (uint32)StatsObject_GetMaxCarry(liveObj)) {
+					// Overflow ore into storage.
+					Level_IncOreStored(false);
+				}
+				LegoObject_Remove(carriedObj);
+				break;
+
+			/// NOTE: Original logic doesn't check for PowerCrystal type.
+			case LegoObject_PowerCrystal:
+			default:
+				LegoObject_PutAwayCarriedObject(liveObj, carriedObj);
+				if (liveObj->type == LegoObject_Building) {
+					Building_ChangePowerLevel(liveObj->building, true);
+				}
+				LegoObject_RequestPowerGridUpdate();
+				break;
+			}
+		}
+		else if (routeToObj->numCarriedObjects != routeToObj->carryNullFrames) {
+			/// TODO: Should this be a less-than check??
+
+			routeToObj->carriedObjects[routeToObj->numCarriedObjects] = carriedObj;
+			routeToObj->carriedObjects[routeToObj->numCarriedObjects]->carryingThisObject = routeToObj;
+			routeToObj->carriedObjects[routeToObj->numCarriedObjects]->carryingIndex = routeToObj->numCarriedObjects;
+			routeToObj->numCarriedObjects++;
+
+			routeToObj->flags1 |= LIVEOBJ1_CARRYING;
+
+			Message_PostEvent(Message_CrystalToRefineryComplete, nullptr, Message_Argument(0), nullptr);
+			if (StatsObject_GetStatsFlags1(routeToObj) & STATS1_PROCESSCRYSTAL) {
+				Info_Send(Info_CrystalPower, nullptr, routeToObj, nullptr);
+			}
+		}
+		else {
+			// The routeToObj can't carry more objects
+			// Shift all carried objects starting at 'i' to the front of the list.
+			// Note that all objects being shifted out of the list were already deposited into routeToObj.
+
+			// Readability: j minus 'i' offset, not minus one.
+			const uint32 start = i;
+			for (uint32 j = start; j < liveObj->numCarriedObjects; j++) {
+				liveObj->carriedObjects[j - start] = liveObj->carriedObjects[j];
+			}
+			liveObj->numCarriedObjects -= start;
+			return; // End loop here. All items handled.
+		}
+	}
+
+	liveObj->numCarriedObjects = 0;
+	liveObj->routeToObject = nullptr;
+	liveObj->flags1 &= ~LIVEOBJ1_CARRYING;
+}
 
 // <LegoRR.exe @0043f3c0>
-//void __cdecl LegoRR::LegoObject_ClearFlags4_40_AndSameForObject2FC(LegoObject* unused_liveObj, LegoObject* liveObj);
+void __cdecl LegoRR::LegoObject_ClearDockOccupiedFlag(LegoObject* unused_liveObj, LegoObject* liveObj)
+{
+	liveObj->flags4 &= ~LIVEOBJ4_DOCKOCCUPIED;
+	if (liveObj->routeToObject != nullptr) {
+		liveObj->routeToObject->flags4 &= ~LIVEOBJ4_DOCKOCCUPIED;
+	}
+}
 
 // <LegoRR.exe @0043f3f0>
-//void __cdecl LegoRR::LegoObject_TriggerFrameCallback(Gods98::Container* cont, void* data);
+void __cdecl LegoRR::LegoObject_TriggerFrameCallback(Gods98::Container* cont, void* data)
+{
+	LegoObject* liveObj = (LegoObject*)Gods98::Container_GetUserData(cont);
+	if (liveObj != nullptr) {
+		liveObj->flags2 |= LIVEOBJ2_TRIGGERFRAMECALLBACK;
+	}
+}
 
 // <LegoRR.exe @0043f410>
-//bool32 __cdecl LegoRR::LegoObject_QueueTeleport(LegoObject* liveObj, LegoObject_Type objType, LegoObject_ID objID);
+bool32 __cdecl LegoRR::LegoObject_QueueTeleport(LegoObject* unused_liveObj, LegoObject_Type objType, LegoObject_ID objID)
+{
+	/// CONSTANT: Max queued teleport units.
+	if (legoGlobs.objTeleportQueue_COUNT < 9) {
+		legoGlobs.objTeleportQueueTypes_TABLE[legoGlobs.objTeleportQueue_COUNT] = objType;
+		legoGlobs.objTeleportQueueIDs_TABLE[legoGlobs.objTeleportQueue_COUNT] = objID;
+		legoGlobs.objTeleportQueue_COUNT++;
+		return true;
+	}
+	return false;
+}
 
 // <LegoRR.exe @0043f450>
-//void __cdecl LegoRR::LegoObject_UpdateTeleporter(LegoObject* liveObj);
+void __cdecl LegoRR::LegoObject_UpdateTeleporter(LegoObject* liveObj)
+{
+	if (legoGlobs.objTeleportQueue_COUNT == 0 || !LegoObject_IsActive(liveObj, false) ||
+		(liveObj->teleportDownObject != nullptr && (liveObj->teleportDownObject->flags1 & LIVEOBJ1_TELEPORTINGDOWN)) ||
+		(liveObj->flags4 & (LIVEOBJ4_DOCKOCCUPIED|LIVEOBJ4_ENTRANCEOCCUPIED)))
+	{
+		// Either there's nothing to teleport, the object isn't active,
+		//  it's busy teleporting, or its entrance is occupied.
+		return;
+	}
+
+	bool teleporterFound = false;
+	uint32 queuedIndex = 0; // dummy init
+
+	for (uint32 i = 0; i < legoGlobs.objTeleportQueue_COUNT; i++) {
+		const LegoObject_Type queuedType = legoGlobs.objTeleportQueueTypes_TABLE[i];
+		const LegoObject_ID queuedID = legoGlobs.objTeleportQueueIDs_TABLE[i];
+
+		const StatsFlags2 teleRequire = Stats_GetStatsFlags2(queuedType, queuedID);
+		const StatsFlags1 teleType = StatsObject_GetStatsFlags1(liveObj);
+		if (((teleRequire & STATS2_USESMALLTELEPORTER)   && (teleType & STATS1_SMALLTELEPORTER)) ||
+			((teleRequire & STATS2_USEBIGTELEPORTER)     && (teleType & STATS1_BIGTELEPORTER))   ||
+			((teleRequire & STATS2_USEWATERTELEPORTER)   && (teleType & STATS1_WATERTELEPORTER)) ||
+			((teleRequire & STATS2_USELEGOMANTELEPORTER) && (teleType & STATS1_MANTELEPORTER)))
+		{
+			const sint32 crystalCost = Stats_GetCostCrystal(queuedType, queuedID, 0);
+			const sint32 crystalCount = Level_GetCrystalCount(false);
+			if (crystalCost <= crystalCount) {
+				LegoObject_Type barracksType;
+				LegoObject_ID barracksID;
+				Lego_GetObjectByName("Barracks", &barracksType, &barracksID, nullptr);
+				if (LegoObject_CanSupportOxygenForType(queuedType, queuedID, barracksType, barracksID)) {
+					// Teleported found, break out of list.
+					teleporterFound = true;
+					queuedIndex = i;
+					break;
+				}
+			}
+		}
+	}
+
+	if (teleporterFound) {
+		const LegoObject_Type queuedType = legoGlobs.objTeleportQueueTypes_TABLE[queuedIndex];
+		const LegoObject_ID queuedID = legoGlobs.objTeleportQueueIDs_TABLE[queuedIndex];
+
+		/// TODO: We should sanity check for success with Lego_GetObjectTypeModel.
+		ObjectModel* objModel = nullptr;
+		Lego_GetObjectTypeModel(queuedType, queuedID, &objModel);
+		liveObj->teleportDownObject = LegoObject_CreateInWorld(objModel, queuedType, queuedID, 0, 0.0f, 0.0f, 0.0f);
+
+		Level_SubtractCrystalsStored(Stats_GetCostCrystal(queuedType, queuedID, 0));
+		LegoObject_RequestPowerGridUpdate();
+
+
+		if (StatsObject_GetStatsFlags1(liveObj) & STATS1_WATERTELEPORTER) {
+			liveObj->flags4 |= LIVEOBJ4_DOCKOCCUPIED;
+			liveObj->teleportDownObject->flags4 |= LIVEOBJ4_DOCKOCCUPIED;
+			liveObj->teleportDownObject->routeToObject = liveObj;
+		}
+		else if (StatsObject_GetStatsFlags1(liveObj->teleportDownObject) & STATS1_CANBEDRIVEN) {
+			liveObj->flags4 |= LIVEOBJ4_ENTRANCEOCCUPIED;
+			liveObj->teleportDownObject->flags4 |= LIVEOBJ4_ENTRANCEOCCUPIED;
+			liveObj->teleportDownObject->routeToObject = liveObj;
+		}
+
+			
+		Gods98::Container* depositNull = Building_GetDepositNull(liveObj->building);
+		Vector3F wPos, dir;
+		Gods98::Container_GetPosition(depositNull, nullptr, &wPos);
+		Gods98::Container_GetOrientation(depositNull, nullptr, &dir, nullptr);
+
+		if (queuedType == LegoObject_Vehicle && (Stats_GetStatsFlags2(queuedType, queuedID) & STATS2_USESMALLTELEPORTER)) {
+			// Because the Teleport Pad also supports Rock Raiders,
+			//  extra logic is used here to choose the position of teleported vehicles.
+			// This simply gets the center of the destination block.
+			Point2I blockPos = { 0, 0 }; // dummy init
+			Map3D_WorldToBlockPos_NoZ(Lego_GetMap(), wPos.x, wPos.y, &blockPos.x, &blockPos.y);
+				
+			Map3D_BlockToWorldPos(Lego_GetMap(), blockPos.x, blockPos.y, &wPos.x, &wPos.y);
+		}
+
+		LegoObject_SetPositionAndHeading(liveObj->teleportDownObject, wPos.x, wPos.y, 0.0f, false);
+		LegoObject_SetHeadingOrDirection(liveObj->teleportDownObject, 0.0f, &dir);
+		ObjectRecall_RecallMiniFigure(liveObj->teleportDownObject);
+
+		liveObj->teleportDownObject->flags1 |= LIVEOBJ1_TELEPORTINGDOWN;
+
+		LegoObject_SetActivity(liveObj->teleportDownObject, Activity_TeleportIn, 1);
+		LegoObject_UpdateActivityChange(liveObj->teleportDownObject);
+
+		if (liveObj->teleportDownObject->type == LegoObject_Vehicle) {
+			// Wheels are built into the teleport-down animation, unlike the animations when active.
+			Vehicle_HideWheels(liveObj->teleportDownObject->vehicle, true);
+		}
+
+		// Shift all queued objects up one to replace the object that was just teleported.
+		/// REFACTOR: Move count decrement below shift for clarity.
+		for (uint32 i = queuedIndex; i < (legoGlobs.objTeleportQueue_COUNT - 1); i++) {
+			legoGlobs.objTeleportQueueTypes_TABLE[i] = legoGlobs.objTeleportQueueTypes_TABLE[i + 1];
+			legoGlobs.objTeleportQueueIDs_TABLE[i] = legoGlobs.objTeleportQueueIDs_TABLE[i + 1];
+		}
+		legoGlobs.objTeleportQueue_COUNT--;
+	}
+}
 
 // <LegoRR.exe @0043f820>
-//bool32 __cdecl LegoRR::LegoObject_RemoveTeleportDownReference(LegoObject* teleportDownObj);
+bool32 __cdecl LegoRR::LegoObject_RemoveTeleportDownReference(LegoObject* teleportDownObj)
+{
+	for (auto obj : objectListSet.EnumerateSkipUpgradeParts()) {
+		if (LegoObject_Callback_RemoveTeleportDownReference(obj, teleportDownObj))
+			return true;
+	}
+	return false;
+	//return LegoObject_RunThroughListsSkipUpgradeParts(LegoObject_Callback_RemoveTeleportDownReference, teleportDownObj);
+}
 
 // <LegoRR.exe @0043f840>
-//bool32 __cdecl LegoRR::LegoObject_Callback_RemoveTeleportDownReference(LegoObject* liveObj, void* teleportDownObj);
+bool32 __cdecl LegoRR::LegoObject_Callback_RemoveTeleportDownReference(LegoObject* liveObj, void* pTeleportDownObj)
+{
+	LegoObject* teleportDownObj = (LegoObject*)pTeleportDownObj;
+
+	if (liveObj->teleportDownObject == teleportDownObj) {
+		liveObj->teleportDownObject = nullptr;
+		return true;
+	}
+	return false;
+}
 
 // <LegoRR.exe @0043f870>
-//void __cdecl LegoRR::LegoObject_TrainMiniFigure_instantunk(LegoObject* liveObj, LegoObject_AbilityFlags trainFlags);
+void __cdecl LegoRR::LegoObject_TrainMiniFigure_instantunk(LegoObject* liveObj, LegoObject_AbilityFlags trainFlags)
+{
+	if (liveObj->type == LegoObject_MiniFigure) {
+		liveObj->abilityFlags |= trainFlags;
+		objectGlobs.NERPs_TrainFlags |= trainFlags;
+
+		/// FIXME: This should really allow training all types at once...
+		if (trainFlags & ABILITY_FLAG_PILOT) {
+			Info_Send(Info_TrainPilot, nullptr, liveObj, nullptr);
+		}
+		else if (trainFlags & ABILITY_FLAG_SAILOR) {
+			Info_Send(Info_TrainSailor, nullptr, liveObj, nullptr);
+		}
+		else if (trainFlags & ABILITY_FLAG_DRIVER) {
+			Info_Send(Info_TrainDriver, nullptr, liveObj, nullptr);
+		}
+		else if (trainFlags & ABILITY_FLAG_DYNAMITE) {
+			Info_Send(Info_TrainDynamite, nullptr, liveObj, nullptr);
+		}
+		else if (trainFlags & ABILITY_FLAG_REPAIR) {
+			Info_Send(Info_TrainRepair, nullptr, liveObj, nullptr);
+		}
+		else if (trainFlags & ABILITY_FLAG_SCANNER) {
+			Info_Send(Info_TrainScanner, nullptr, liveObj, nullptr);
+		}
+
+		liveObj->elapsedTime1 = 0.0f;
+	}
+}
 
 // <LegoRR.exe @0043f960>
-//void __cdecl LegoRR::LegoObject_AddDamage2(LegoObject* liveObj, real32 damage, bool32 showVisual, real32 elapsed);
+void __cdecl LegoRR::LegoObject_AddDamage2(LegoObject* liveObj, real32 damage, bool32 showVisual, real32 elapsed)
+{
+	if (LegoObject_IsActive(liveObj, true) && liveObj->carryingThisObject == nullptr) {
+
+		if (liveObj->type == LegoObject_Building && damage != 0.0f && liveObj->health == 100.0f) {
+			AITask_DoRepair_Target(liveObj, false);
+		}
+
+		if (LegoObject_IsRockMonsterCanGather(liveObj)) {
+			// I have no idea what these numbers are trying to say.
+			// Note that teh first number is 10,010 (with a ten at the end), while the second is a flat 10,000.
+			const real32 healthDecayRate = StatsObject_GetHealthDecayRate(liveObj);
+			const uint32 decayVal = (uint32)(sint32)(healthDecayRate / STANDARD_FRAMERATE * elapsed * 10010.0f);
+			const uint32 decayCap = (uint32)(sint32)(damage * 10000.0f);
+
+			if (decayVal < decayCap) {
+				RewardQuota_RockMonsterDamageDealt(damage);
+			}
+		}
+
+		if (liveObj->type == LegoObject_MiniFigure) {
+			RewardQuota_MiniFigureDamageTaken(damage);
+		}
+
+		liveObj->health -= damage;
+		
+		if (damage > 0.0f) {
+			if (showVisual) {
+				liveObj->flags2 |= (LIVEOBJ2_DAMAGE_UNK_1000|LIVEOBJ2_SHOWDAMAGENUMBERS);
+				liveObj->damageNumbers += damage;
+				Bubble_ShowHealthBar(liveObj);
+			}
+
+			if ((StatsObject_GetStatsFlags2(liveObj) & STATS2_DAMAGECAUSESCALLTOARMS)) {
+				Lego_SetCallToArmsOn(true);
+			}
+		}
+	}
+}
 
 // <LegoRR.exe @0043fa90>
-//void __cdecl LegoRR::LegoObject_UnkUpdateEnergyHealth(LegoObject* liveObj, real32 elapsed);
+void __cdecl LegoRR::LegoObject_UpdateEnergyHealthAndLavaContact(LegoObject* liveObj, real32 elapsed)
+{
+	const Point2I DIRECTIONS[DIRECTION__COUNT] = {
+		{  0, -1 },
+		{  1,  0 },
+		{  0,  1 },
+		{ -1,  0 },
+	};
+
+	if (liveObj->type != LegoObject_UpgradePart && liveObj->type != LegoObject_Boulder) {
+		// Update object health decay.
+		if (liveObj->health > 0.0f) {
+			if (!(liveObj->flags3 & LIVEOBJ3_POWEROFF)) {
+				const real32 healthDecayRate = StatsObject_GetHealthDecayRate(liveObj);
+				LegoObject_AddDamage2(liveObj, (healthDecayRate / STANDARD_FRAMERATE * elapsed), false, elapsed);
+			}
+		}
+		else {
+			liveObj->health = 0.0f;
+		}
+
+		// Update object energy decay.
+		if (liveObj->energy > 0.0f) {
+			if (!(liveObj->flags3 & LIVEOBJ3_POWEROFF)) {
+				const real32 energyDecayRate = StatsObject_GetEnergyDecayRate(liveObj);
+				liveObj->energy -= (energyDecayRate / STANDARD_FRAMERATE * elapsed);
+			}
+		}
+		else {
+			liveObj->energy = 0.0f;
+		}
+
+
+		Point2I blockPos = { 0, 0 }; // dummy init
+		LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+
+		// Destroy ore and crystal objects that are sitting on lava.
+		if (liveObj->carryingThisObject == nullptr &&
+			(liveObj->type == LegoObject_Ore || liveObj->type == LegoObject_PowerCrystal) &&
+			blockValue(legoGlobs.currLevel, blockPos.x, blockPos.y).terrain == Lego_SurfaceType_Lava)
+		{
+			/// FIXME: Stolen ore is treated as crystals.
+			Level_AddStolenCrystals(1);
+			liveObj->health = -1.0f;
+			liveObj->flags3 |= LIVEOBJ3_REMOVING;
+		}
+
+		// Apply surface damage to the object.
+		real32 damage = 0.0f;
+		if (Level_GetObjectDamageFromSurface(liveObj, blockPos.x, blockPos.y, elapsed, &damage)) {
+			LegoObject_AddDamage2(liveObj, damage, true, elapsed);
+		}
+
+		// See if an electric fence can hit this object.
+		if ((StatsObject_GetStatsFlags2(liveObj) & STATS2_CANBEHITBYFENCE) &&
+			!(liveObj->flags1 & (LIVEOBJ1_EXPANDING|LIVEOBJ1_CRUMBLING)) &&
+			!(liveObj->flags2 & LIVEOBJ2_FROZEN))
+		{
+			ElectricFence_TrySparkObject(liveObj);
+		}
+
+		// See if the object needs to eat food, and try to navigate to a place serving food if needed.
+		/// CONSTANT: Unit tries to eat every 5 seconds.
+		const real32 eatWaitTime = (STANDARD_FRAMERATE * 5.0f); // 5 seconds.
+		// Scale minEnergy by health so that units with low health don't try to eat all the time.
+		const real32 scaledMinEnergy = liveObj->health / 100.0f * legoGlobs.MinEnergyForEat;
+		if (!(legoGlobs.flags2 & GAME2_NOAUTOEAT) && liveObj->type == LegoObject_MiniFigure &&
+			liveObj->energy < scaledMinEnergy && liveObj->eatWaitTimer > eatWaitTime)
+		{
+			// Is this a timer for how long a unit waits before eating again?
+			liveObj->eatWaitTimer = 0.0f;
+
+			if (liveObj->driveObject == nullptr &&
+				!AITask_LiveObject_IsCurrentTaskType(liveObj, AITask_Type_GotoEat))
+			{
+				// Find an object that serves snacks.
+				LegoObject* snacksObj = LegoObject_FindSnackServingBuilding(liveObj);
+				if (snacksObj != nullptr) {
+					// Reuse variable blockPos.
+					blockPos = Point2I { 0, 0 }; // dummy init
+					Point2I snacksBlockPos = { 0, 0 }; // dummy init
+					LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+					LegoObject_GetBlockPos(snacksObj, &snacksBlockPos.x, &snacksBlockPos.y);
+
+					// Find a side of the snacks-serving object that this object can to navigate to.
+					for (uint32 d = 0; d < _countof(DIRECTIONS); d++) {
+						sint32* bxList = nullptr;
+						sint32* byList = nullptr;
+						sint32 count; // dummy output
+						if (LegoObject_Route_Score_FUN_004413b0(liveObj, blockPos.x, blockPos.y,
+																snacksBlockPos.x + DIRECTIONS[d].x,
+																snacksBlockPos.y + DIRECTIONS[d].y,
+																&bxList, &byList, &count, nullptr, nullptr))
+						{
+							Gods98::Mem_Free(bxList);
+							Gods98::Mem_Free(byList);
+							AITask_QueueGotoEat_Target(liveObj, snacksObj);
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		// Cap energy at the object's health.
+		// Those poor injured Rock Raiders are starving!!!
+		if (liveObj->energy >= liveObj->health) {
+			liveObj->energy = liveObj->health;
+		}
+
+		// This only does something when damage is non-zero.
+		LegoObject_MiniFigurePlayHurtSound(liveObj, elapsed, damage);
+
+		if ((liveObj->flags2 & LIVEOBJ2_SHOWDAMAGENUMBERS) &&
+			!(liveObj->flags2 & LIVEOBJ2_DAMAGE_UNK_1000))
+		{
+			DamageFont_DisplayDamage_OverLiveObject(liveObj, (uint32)(sint32)liveObj->damageNumbers);
+			liveObj->damageNumbers = 0.0f;
+			liveObj->flags2 &= ~LIVEOBJ2_SHOWDAMAGENUMBERS;
+		}
+		liveObj->flags2 &= ~LIVEOBJ2_DAMAGE_UNK_1000;
+	}
+}
 
 // <LegoRR.exe @0043fe00>
-//bool32 __cdecl LegoRR::LegoObject_MiniFigurePlayHurtSND(LegoObject* liveObj, real32 elapsed, real32 damage);
+bool32 __cdecl LegoRR::LegoObject_MiniFigurePlayHurtSound(LegoObject* liveObj, real32 elapsed, real32 damage)
+{
+	if (liveObj->type == LegoObject_MiniFigure && damage != 0.0f) {
+		SFX_ID hurtSFXID;
+		if (SFX_GetType("SND_Hurt", &hurtSFXID)) {
+			if (liveObj->hurtSoundTimer == 0.0f) {
+				// Play a new sound.
+				Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+				SFX_Random_PlaySound3DOnContainer(cont, hurtSFXID, false, true, nullptr);
+				/// FIXME: hurtSoundTimer adds amount in standard units, but below it adds amount in seconds...
+				liveObj->hurtSoundTimer += elapsed;
+				liveObj->hurtSoundDuration = SFX_Random_GetSamplePlayTime(hurtSFXID);
+			}
+			else {
+				// Update the sound timer.
+				liveObj->hurtSoundTimer += elapsed / STANDARD_FRAMERATE;
+
+				// Reset timer after twice the hurt SFX duration has passed.
+				const real32 resetTime = (liveObj->hurtSoundDuration * 2.0f);
+				if (liveObj->hurtSoundTimer > resetTime) {
+					liveObj->hurtSoundTimer = 0.0f;
+					liveObj->hurtSoundDuration = 0.0f;
+					return true;
+				}
+			}
+		}
+	}
+	return true;
+}
 
 // <LegoRR.exe @0043fee0>
 //bool32 __cdecl LegoRR::LegoObject_FUN_0043fee0(LegoObject* carriedObj);
@@ -1854,7 +2585,12 @@ void __cdecl LegoRR::LegoObject_UpdatePowerConsumption(LegoObject* liveObj)
 //bool32 __cdecl LegoRR::LegoObject_Callback_BirdScarer(LegoObject* liveObj, SearchDynamiteRadius* search);
 
 // <LegoRR.exe @00440ca0>
-//void __cdecl LegoRR::LegoObject_SetActivity(LegoObject* liveObj, Activity_Type activityType, uint32 repeatCount);
+void __cdecl LegoRR::LegoObject_SetActivity(LegoObject* liveObj, Activity_Type activityType, uint32 repeatCount)
+{
+	liveObj->activityName1 = objectGlobs.activityName[activityType];
+	liveObj->animRepeat = repeatCount;
+	liveObj->animTime = 0.0f;
+}
 
 // <LegoRR.exe @00440cd0>
 //void __cdecl LegoRR::LegoObject_UpdateCarrying(LegoObject* liveObj);
@@ -1890,34 +2626,275 @@ void __cdecl LegoRR::LegoObject_UpdatePowerConsumption(LegoObject* liveObj)
 //void __cdecl LegoRR::LegoObject_CreateWeaponProjectile(LegoObject* liveObj, Weapon_KnownType knownWeapon);
 
 // <LegoRR.exe @004424d0>
-//void __cdecl LegoRR::LegoObject_UnkActivityCrumble_FUN_004424d0(LegoObject* liveObj);
+void __cdecl LegoRR::LegoObject_StartCrumbling(LegoObject* liveObj)
+{
+	LegoObject_Interrupt(liveObj, false, true);
+
+	LegoObject_SetActivity(liveObj, Activity_Crumble, 1);
+	if (LegoObject_UpdateActivityChange(liveObj)) {
+		liveObj->flags1 |= LIVEOBJ1_CRUMBLING;
+	}
+
+	liveObj->health = -1.0f;
+}
 
 // <LegoRR.exe @00442520>
-//void __cdecl LegoRR::LegoObject_GetPosition(LegoObject* liveObj, OUT real32* xPos, OUT real32* yPos);
+void __cdecl LegoRR::LegoObject_GetPosition(LegoObject* liveObj, OUT real32* xPos, OUT real32* yPos)
+{
+	Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+	Vector3F wPos;
+	Gods98::Container_GetPosition(cont, nullptr, &wPos);
+	*xPos = wPos.x;
+	*yPos = wPos.y;
+}
 
 // <LegoRR.exe @00442560>
-//void __cdecl LegoRR::LegoObject_GetFaceDirection(LegoObject* liveObj, OUT Point2F* direction);
+void __cdecl LegoRR::LegoObject_GetFaceDirection(LegoObject* liveObj, OUT Point2F* dir2D)
+{
+	Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+	Vector3F dir3D;
+	Gods98::Container_GetOrientation(cont, nullptr, &dir3D, nullptr);
+	*dir2D = dir3D.vec2;
+	Gods98::Maths_Vector2DNormalize(dir2D);
+}
 
 // <LegoRR.exe @004425c0>
-//void __cdecl LegoRR::LegoObject_UnkUpdateOrientation(LegoObject* liveObj, real32 theta, OPTIONAL const Vector3F* vecDir);
+void __cdecl LegoRR::LegoObject_SetHeadingOrDirection(LegoObject* liveObj, real32 theta, OPTIONAL const Vector3F* dir)
+{
+	Vector3F newDir;
+	if (dir == nullptr) {
+		const Vector3F v = { 0.0f, 1.0f, 0.0f };
+		Vector3F axis = { 0.0f, 0.0f, -1.0f };
+		Gods98::Maths_Vector3DRotate(&newDir, &v, &axis, theta);
+	}
+	else {
+		newDir = *dir;
+	}
+
+	switch (liveObj->type) {
+	case LegoObject_Vehicle:
+		Vehicle_SetOrientation(liveObj->vehicle, newDir.x, newDir.y, newDir.z);
+		break;
+
+	case LegoObject_MiniFigure:
+		Creature_SetOrientation(liveObj->miniFigure, newDir.x, newDir.y);
+		break;
+
+	case LegoObject_RockMonster:
+		Creature_SetOrientation(liveObj->rockMonster, newDir.x, newDir.y);
+		break;
+
+	case LegoObject_Building:
+		Building_SetOrientation(liveObj->building, newDir.x, newDir.y);
+		break;
+
+	default:
+		if (liveObj->flags3 & LIVEOBJ3_SIMPLEOBJECT) {
+			Gods98::Container_SetOrientation(liveObj->other, nullptr, newDir.x, newDir.y, newDir.z,
+											 0.0f, 0.0f, -1.0f);
+		}
+		break;
+	}
+
+	liveObj->faceDirection = newDir;
+	liveObj->faceDirectionLength = 0.01f; // Arbitrarily low value. See also: LegoObject_SetPositionAndHeading
+
+	/// FIXME: Should we really be assigning this to tempPosition without giving it a position???
+	///        Consider changing to Maths_RayEndPoint? Maybe not though, since tempPosition is only used
+	///         as a temporary variable that only ever stores the most recent return from Container_GetPosition.
+	// negative faceDirectionLength
+	Gods98::Maths_Vector3DScale(&liveObj->tempPosition, &liveObj->faceDirection, -liveObj->faceDirectionLength);
+	//Gods98::Maths_RayEndPoint(&liveObj->tempPosition, &liveObj->tempPosition, &liveObj->faceDirection, -liveObj->faceDirectionLength);
+}
 
 // <LegoRR.exe @00442740>
-//real32 __cdecl LegoRR::LegoObject_GetHeading(LegoObject* liveObj);
+real32 __cdecl LegoRR::LegoObject_GetHeading(LegoObject* liveObj)
+{
+	Point2F dir2D;
+	LegoObject_GetFaceDirection(liveObj, &dir2D);
+
+	/// REMOVE: std::sqrt(1.0f) multiplier (which is just one).
+	/// REMOVE: Dividing by the modulus is pointless, since LegoObject_GetFaceDirection already normalizes the output.
+	real32 theta = Maths_ACos(dir2D.y);// / Gods98::Maths_Vector2DModulus(&dir2D));
+	// Original math: Maths_ACos(dir2D.y / (std::sqrt(1.0f) * Gods98::Maths_Vector2DModulus(&dir2D)));
+
+	if (dir2D.x < 0.0f) {
+		// Handle ranges between [M_PI, M_PI*2].
+		theta = (M_PI * 2.0f) - theta;
+	}
+	return theta;
+}
 
 // <LegoRR.exe @004427b0>
-//bool32 __cdecl LegoRR::LegoObject_GetBlockPos(LegoObject* liveObj, OUT sint32* bx, OUT sint32* by);
+bool32 __cdecl LegoRR::LegoObject_GetBlockPos(LegoObject* liveObj, OUT sint32* bx, OUT sint32* by)
+{
+	Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+	Vector3F wPos;
+	Gods98::Container_GetPosition(cont, nullptr, &wPos);
+	/// REFACTOR: We can just use LegoObject_GetPosition here instead.
+	//Point2F wPos = { 0.0f, 0.0f }; // dummy init
+	//LegoObject_GetPosition(liveObj, &wPos.x, &wPos.y);
+	return Map3D_WorldToBlockPos_NoZ(Lego_GetMap(), wPos.x, wPos.y, bx, by);
+}
 
 // <LegoRR.exe @00442800>
-//real32 __cdecl LegoRR::LegoObject_GetWorldZCallback(real32 xPos, real32 yPos, Map3D* map);
+real32 __cdecl LegoRR::LegoObject_GetWorldZCallback(real32 xPos, real32 yPos, Map3D* map)
+{
+	return Map3D_GetWorldZ(map, xPos, yPos);
+}
 
 // <LegoRR.exe @00442820>
-//real32 __cdecl LegoRR::LegoObject_GetWorldZCallback_Lake(real32 xPos, real32 yPos, Map3D* map);
+real32 __cdecl LegoRR::LegoObject_GetWorldZCallback_Lake(real32 xPos, real32 yPos, Map3D* map)
+{
+	real32 zModifier = 0.0;
+	Point2I blockPos = { 0, 0 }; // dummy init
+	if (Map3D_WorldToBlockPos(map, xPos, yPos, &blockPos.x, &blockPos.y, &zModifier)) {
+		if (blockValue(legoGlobs.currLevel, blockPos.x, blockPos.y).terrain == Lego_SurfaceType_Lake) {
+			zModifier *= 8.0f;
+		}
+		else {
+			zModifier = 0.0f;
+		}
+	}
+	return (Map3D_GetWorldZ(map, xPos, yPos) + zModifier);
+}
 
 // <LegoRR.exe @004428b0>
-//void __cdecl LegoRR::LegoObject_UpdateRoutingVectors_FUN_004428b0(LegoObject* liveObj, real32 xDir, real32 yDir);
+void __cdecl LegoRR::LegoObject_UpdateRoutingVectors(LegoObject* liveObj, real32 xPos, real32 yPos)
+{
+	/// REFACTOR: Call LegoObject_GetActivityContainer instead of manually getting
+	///            the container for vehicles, minifigures, and rockmonsters.
+	///           Using this means we can uncomment building and simple object movement.
+	Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+
+	Vector3F oldPos;
+	Gods98::Container_GetPosition(cont, nullptr, &oldPos);
+	if (xPos != oldPos.x || yPos != oldPos.y) {
+		/// REFACTOR: For clarity, don't use face direction as an intermediate variable (newPos).
+		const Vector3F newPos = { xPos, yPos, 0.0f };
+		liveObj->tempPosition = oldPos;
+
+		Gods98::Maths_Vector3DSubtract(&liveObj->faceDirection, &newPos, &oldPos);
+		liveObj->faceDirection.z = 0.0f; // We only want a 2D direction.
+		liveObj->faceDirectionLength = Gods98::Maths_Vector3DModulus(&liveObj->faceDirection);
+		// Normalize face direction.
+		Gods98::Maths_Vector3DScale(&liveObj->faceDirection, &liveObj->faceDirection, (1.0f / liveObj->faceDirectionLength));
+	}
+
+	switch (liveObj->type) {
+	case LegoObject_Vehicle:
+		if (!(liveObj->flags1 & LIVEOBJ1_LIFTING)) {
+			// Use positive face direction.
+			Vehicle_SetOrientation(liveObj->vehicle, liveObj->faceDirection.x, liveObj->faceDirection.y, liveObj->faceDirection.z);
+		}
+		else {
+			// Use negative face direction.
+			Vehicle_SetOrientation(liveObj->vehicle, -liveObj->faceDirection.x, -liveObj->faceDirection.y, -liveObj->faceDirection.z);
+		}
+		Vehicle_SetPosition(liveObj->vehicle, xPos, yPos, LegoObject_GetWorldZCallback, Lego_GetMap());
+		break;
+
+	case LegoObject_MiniFigure:
+		if (!(liveObj->flags1 & LIVEOBJ1_LIFTING)) {
+			// Use positive face direction.
+			Creature_SetOrientation(liveObj->miniFigure, liveObj->faceDirection.x, liveObj->faceDirection.y);
+		}
+		else {
+			// Use negative face direction.
+			Creature_SetOrientation(liveObj->miniFigure, -liveObj->faceDirection.x, -liveObj->faceDirection.y);
+		}
+		// Use lake z callback for minifigures, since they sink a bit when in water.
+		Creature_SetPosition(liveObj->miniFigure, xPos, yPos, LegoObject_GetWorldZCallback_Lake, Lego_GetMap());
+		break;
+
+	case LegoObject_RockMonster:
+		Creature_SetOrientation(liveObj->rockMonster, liveObj->faceDirection.x, liveObj->faceDirection.y);
+		Creature_SetPosition(liveObj->rockMonster, xPos, yPos, LegoObject_GetWorldZCallback, Lego_GetMap());
+		break;
+
+	case LegoObject_Building:
+		/// OPTIONAL: Not in original function since buildings don't move themselves.
+		//Building_SetOrientation(liveObj->building, liveObj->faceDirection.x, liveObj->faceDirection.y);
+		//Building_SetPosition(liveObj->building, xPos, yPos, LegoObject_GetWorldZCallback, Lego_GetMap());
+		break;
+
+	default:
+		/// OPTIONAL: Not in original function since simple objects don't move themselves.
+		//if (liveObj->flags3 & LIVEOBJ3_SIMPLEOBJECT) {
+		//	Gods98::Container_SetOrientation(liveObj->other, nullptr,
+		//									 liveObj->faceDirection.x, liveObj->faceDirection.y, liveObj->faceDirection.z,
+		//									 0.0f, 0.0f, -1.0f);
+		//	const real32 zPos = Map3D_GetWorldZ(Lego_GetMap(), xPos, yPos);
+		//	Gods98::Container_SetPosition(liveObj->other, nullptr, xPos, yPos, zPos);
+		//}
+		break;
+	}
+}
 
 // <LegoRR.exe @00442b60>
-//void __cdecl LegoRR::LegoObject_SetPositionAndHeading(LegoObject* liveObj, real32 xPos, real32 yPos, real32 theta, bool32 assignHeading);
+void __cdecl LegoRR::LegoObject_SetPositionAndHeading(LegoObject* liveObj, real32 xPos, real32 yPos, real32 theta, bool32 assignHeading)
+{
+	Vector3F newDir = { 0.0f, 0.0f, 0.0f }; // dummy init
+	if (assignHeading) {
+		const Vector3F v = { 0.0f, 1.0f, 0.0f };
+		Vector3F axis = { 0.0f, 0.0f, -1.0f };
+		Gods98::Maths_Vector3DRotate(&newDir, &v, &axis, theta);
+	}
+
+	switch (liveObj->type) {
+	case LegoObject_Vehicle:
+		if (assignHeading) {
+			Vehicle_SetOrientation(liveObj->vehicle, newDir.x, newDir.y, newDir.z);
+		}
+		Vehicle_SetPosition(liveObj->vehicle, xPos, yPos, LegoObject_GetWorldZCallback, Lego_GetMap());
+		break;
+
+	case LegoObject_MiniFigure:
+		if (assignHeading) {
+			Creature_SetOrientation(liveObj->miniFigure, newDir.x, newDir.y);
+		}
+		// Use lake z callback for minifigures, since they sink a bit when in water.
+		Creature_SetPosition(liveObj->miniFigure, xPos, yPos, LegoObject_GetWorldZCallback_Lake, Lego_GetMap());
+		break;
+
+	case LegoObject_RockMonster:
+		if (assignHeading) {
+			Creature_SetOrientation(liveObj->rockMonster, newDir.x, newDir.y);
+		}
+		Creature_SetPosition(liveObj->rockMonster, xPos, yPos, LegoObject_GetWorldZCallback, Lego_GetMap());
+		break;
+
+	case LegoObject_Building:
+		if (assignHeading) {
+			Building_SetOrientation(liveObj->building, newDir.x, newDir.y);
+		}
+		Building_SetPosition(liveObj->building, xPos, yPos, LegoObject_GetWorldZCallback, Lego_GetMap());
+		break;
+
+	default:
+		if (liveObj->flags3 & LIVEOBJ3_SIMPLEOBJECT) {
+			if (assignHeading) {
+				Gods98::Container_SetOrientation(liveObj->other, nullptr, newDir.x, newDir.y, newDir.z,
+												 0.0f, 0.0f, -1.0f);
+			}
+			const real32 zPos = Map3D_GetWorldZ(Lego_GetMap(), xPos, yPos);
+			Gods98::Container_SetPosition(liveObj->other, nullptr, xPos, yPos, zPos);
+		}
+		break;
+	}
+
+	if (assignHeading) {
+		liveObj->faceDirection = newDir;
+	}
+	liveObj->faceDirectionLength = 0.01f; // Arbitrarily low value. See also: LegoObject_SetHeadingOrDirection
+
+	// negative faceDirectionLength
+	const Vector3F newPos = { xPos, yPos, 0.0f };
+	Gods98::Maths_RayEndPoint(&liveObj->tempPosition, &newPos, &liveObj->faceDirection, -liveObj->faceDirectionLength);
+	//Gods98::Maths_Vector3DScale(&liveObj->tempPosition, &liveObj->faceDirection, -liveObj->faceDirectionLength);
+	//liveObj->tempPosition.x += xPos;
+	//liveObj->tempPosition.y += yPos;
+}
 
 // <LegoRR.exe @00442dd0>
 //sint32 __cdecl LegoRR::LegoObject_FP_UpdateMovement(LegoObject* liveObj, real32 elapsed, OUT real32* transSpeed);
@@ -2166,6 +3143,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_SlipAndScare(LegoObject* liveObj, voi
 			}
 
 			if (liveObj->type == LegoObject_MiniFigure || liveObj->type == LegoObject_Vehicle) {
+				/// FIXME: Is this flag check supposed to be for monsterObj???
 				if (!(liveObj->flags1 & LIVEOBJ1_GATHERINGROCK)) {
 					const real32 painThreshold = StatsObject_GetPainThreshold(monsterObj);
 					if (monsterObj->health > painThreshold) {
