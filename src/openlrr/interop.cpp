@@ -3313,7 +3313,7 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: LegoObject_Callback_Update
 	result &= hook_write_jmpret(0x0043c970, LegoRR::LegoObject_UpdateElapsedTimes);
 	// used by: LegoObject_UpdateAll
-	//result &= hook_write_jmpret(0x0043cad0, LegoRR::LegoObject_Callback_Update);
+	result &= hook_write_jmpret(0x0043cad0, LegoRR::LegoObject_Callback_Update);
 	// used by: LegoObject_Callback_Update, LegoObject_Interrupt
 	result &= hook_write_jmpret(0x0043f160, LegoRR::LegoObject_ProccessCarriedObjects);
 	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_Callback_Update

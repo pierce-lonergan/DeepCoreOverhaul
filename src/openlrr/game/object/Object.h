@@ -1086,8 +1086,8 @@ void __cdecl LegoObject_UpdateElapsedTimes(LegoObject* liveObj, real32 elapsed);
 
 // DATA: real32* pElapsed
 // <LegoRR.exe @0043cad0>
-#define LegoObject_Callback_Update ((bool32 (__cdecl* )(LegoObject* liveObj, real32* pElapsed))0x0043cad0)
-//bool32 __cdecl LegoObject_Callback_Update(LegoObject* liveObj, void* pElapsed);
+//#define LegoObject_Callback_Update ((bool32 (__cdecl* )(LegoObject* liveObj, real32* pElapsed))0x0043cad0)
+bool32 __cdecl LegoObject_Callback_Update(LegoObject* liveObj, void* pElapsed);
 
 // <LegoRR.exe @0043f160>
 //#define LegoObject_ProccessCarriedObjects ((void (__cdecl* )(LegoObject* liveObj))0x0043f160)

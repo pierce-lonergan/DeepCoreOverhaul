@@ -2078,7 +2078,1430 @@ void __cdecl LegoRR::LegoObject_UpdateElapsedTimes(LegoObject* liveObj, real32 e
 }
 
 // <LegoRR.exe @0043cad0>
-//bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pElapsed);
+bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pElapsed)
+{
+	const real32 elapsed = *(real32*)pElapsed;
+
+	bool shouldStopDrillSound = true;
+
+	//bool32 reinforcingFinished = false; // dummy init
+	//real32 dummyOutTransSpeed = 0.0f; // dummy init
+
+	// Assigned to but never used.
+	//static LegoObject* s_currentUpdateObject = nullptr;
+	s_currentUpdateObject = liveObj;
+	//liveObj_00 = liveObj;
+
+	// Used for LIVEOBJ2_DAMAGESHAKING flag.
+	//static real32 s_objectDamageShakeTimer = 1.0f;
+
+	LegoObject_UpdateElapsedTimes(liveObj, elapsed);
+
+
+	if (liveObj->flags4 & LIVEOBJ4_UNK_200000) {
+		// Some kind of update/end/change activity flag.
+		liveObj->activityName1 = nullptr;
+		LegoObject_UpdateActivityChange(liveObj);
+		liveObj->flags4 &= ~LIVEOBJ4_UNK_200000;
+	}
+
+	if (liveObj->flags2 & LIVEOBJ2_FROZEN) {
+		// Object can't do anything else while frozen.
+		if (liveObj->freezeTimer <= 0.0f) {
+			LegoObject_FUN_0044c3d0(liveObj);
+		}
+		liveObj->freezeTimer -= elapsed;
+		return false;
+	}
+
+
+	if (liveObj->flags4 & LIVEOBJ4_UNK_40000) {
+		Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+		if (cont != nullptr) {
+			const SFX_ID engineSFXID = StatsObject_GetEngineSound(liveObj);
+			if (engineSFXID != SFX_NULL) {
+				liveObj->engineSoundHandle = SFX_Random_PlaySound3DOnContainer(cont, engineSFXID, true, true, nullptr);
+				liveObj->flags4 |= LIVEOBJ4_ENGINESOUNDPLAYING;
+			}
+		}
+		liveObj->flags4 &= ~LIVEOBJ4_UNK_40000;
+	}
+
+
+	if ((legoGlobs.flags2 & GAME2_CALLTOARMS) && LegoObject_MiniFigureHasBeamEquipped2(liveObj)) {
+		// Update MiniFigure with Call-to-arms behavior?
+		Bubble_ShowCallToArms(liveObj);
+		liveObj->flags4 |= LIVEOBJ4_CALLTOARMS;
+	}
+	else {
+		Bubble_SetCallToArmsTimer(liveObj, 0.0f);
+		liveObj->flags4 &= ~LIVEOBJ4_CALLTOARMS;
+	}
+
+
+	if (liveObj->type == LegoObject_Vehicle && (liveObj->flags4 & LIVEOBJ4_DOCKOCCUPIED) &&
+		liveObj->routeToObject == nullptr && liveObj->driveObject == nullptr)
+	{
+		liveObj->flags4 &= ~LIVEOBJ4_DOCKOCCUPIED;
+		LegoObject_WaterVehicle_Register(liveObj);
+	}
+
+
+	if (liveObj->type == LegoObject_MiniFigure || liveObj->type == LegoObject_Vehicle) {
+		Lego_Level* level = Lego_GetLevel();
+		Point2I blockPos = { 0, 0 }; // dummy init
+		LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+		if (blockValue(level, blockPos.x, blockPos.y).flags2 & BLOCK2_EMERGE_TRIGGER) {
+			Level_HandleEmergeTriggers(level, &blockPos, nullptr);
+		}
+	}
+
+
+	LegoObject_FUN_0043bde0(liveObj);
+
+
+	if (liveObj->type == LegoObject_MiniFigure && (liveObj->flags2 & LIVEOBJ2_DRIVING) &&
+		liveObj->driveObject != nullptr && liveObj->driveObject->type == LegoObject_Vehicle)
+	{
+		const real32 vehicleAnimTime = Vehicle_GetAnimationTime(liveObj->driveObject->vehicle);
+		Creature_SetAnimationTime(liveObj->miniFigure, vehicleAnimTime);
+	}
+	else {
+		// dummyOutTransSpeed is only passed to a function as a dummy output argument.
+		/*dummyOutTransSpeed =*/ LegoObject_MoveAnimation(liveObj, elapsed);
+	}
+
+
+	if (StatsObject_GetStatsFlags1(liveObj) & STATS1_ANYTELEPORTER) {
+		LegoObject_UpdateTeleporter(liveObj);
+	}
+
+	if (liveObj->type != LegoObject_Building || LegoObject_IsActive(liveObj, false)) {
+		Level_ConsumeObjectOxygen(liveObj, elapsed);
+	}
+
+	if (!(objectGlobs.flags & LegoObject_GlobFlags::OBJECT_GLOB_FLAG_POWERUPDATING)) {
+		liveObj->flags3 &= ~LIVEOBJ3_UNK_40000000;
+	}
+	else {
+		LegoObject_UpdatePowerConsumption(liveObj);
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_TELEPORTINGUP) {
+		if (liveObj->contMiniTeleportUp == nullptr) {
+			// Teleporting, but no teleport animation, so finish instantly??
+			// This seems bugged, since it doesn't unset the LIVEOBJ1_TELEPORTINGUP flag.
+			// Nor does it set health to -1.0f.
+			liveObj->flags3 |= LIVEOBJ3_REMOVING;
+		}
+		else {
+			Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+			Gods98::Container_AddTranslation(cont, Gods98::Container_Combine::After, 0.0f, 0.0f, -elapsed);
+			const real32 animOverrun = Gods98::Container_MoveAnimation(liveObj->contMiniTeleportUp, elapsed);
+			if (animOverrun > 0.0f) {
+				// Teleport animation finished. Done teleporting up.
+				liveObj->health = -1.0f;
+				liveObj->flags3 |= LIVEOBJ3_REMOVING;
+				liveObj->flags1 &= ~LIVEOBJ1_TELEPORTINGUP;
+				Gods98::Container_Remove(liveObj->contMiniTeleportUp);
+			}
+		}
+		return false;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_DRILLING) {
+
+		if (liveObj->flags1 & LIVEOBJ1_DRILLINGSTART) {
+			Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+			const SFX_ID drillSFXID = StatsObject_GetDrillSoundType(liveObj, false);
+			liveObj->drillSoundHandle = SFX_Random_PlaySound3DOnContainer(cont, drillSFXID, true, true, nullptr);
+
+			liveObj->flags4 |= LIVEOBJ4_DRILLSOUNDPLAYING;
+			liveObj->flags1 &= ~LIVEOBJ1_DRILLINGSTART;
+		}
+
+
+		bool doDrillSound = false;
+		const Point2I target = {
+			(sint32)liveObj->targetBlockPos.x,
+			(sint32)liveObj->targetBlockPos.y,
+		};
+		Point2F drillNullPos = { 0.0f, 0.0f }; // dummy init
+
+
+		if (liveObj->routeBlocks == nullptr ||
+			!LiveObject_BlockCheck_FUN_004326a0(liveObj, (uint32)target.x, (uint32)target.y,
+												(liveObj->flags3 & LIVEOBJ3_UNK_2000000), true))
+		{
+			liveObj->flags1 &= ~LIVEOBJ1_DRILLING;
+			liveObj->flags3 &= ~LIVEOBJ3_UNK_2000000;
+			doDrillSound = true;
+		}
+		else if (LegoObject_GetDrillNullPosition(liveObj, &drillNullPos.x, &drillNullPos.y)) {
+
+			const Point2I routeBlockPos = liveObj->routeBlocks[liveObj->routeBlocksCurrent].blockPos;
+
+			if (liveObj->type == LegoObject_MiniFigure) {
+				Gods98::Container* contCam = Lego_GetCurrentCamera_Container();
+				Gods98::Container* drillNull = Creature_GetDrillNull(liveObj->miniFigure);
+				//util::logf_removed((char*)drillNull, contCam, 0);
+			}
+
+			//target = Point2I {
+			//	(sint32)liveObj->targetBlockPos.x,
+			//	(sint32)liveObj->targetBlockPos.y,
+			//};
+			real32 drillTime = StatsObject_GetDrillTimeType(liveObj, Lego_GetBlockTerrain(target.x, target.y));
+			if ((StatsObject_GetStatsFlags1(liveObj) & STATS1_SINGLEWIDTHDIG) &&
+				(liveObj->flags3 & LIVEOBJ3_UNK_2000000))
+			{
+				drillTime /= 2.0f;
+			}
+
+			if (!Level_Block_Damage((uint32)target.x, (uint32)target.y, drillTime, elapsed)) {
+
+				Point2I drillNullBlockPos = { 0, 0 }; // dummy init
+				if (Lego_WorldToBlockPos_NoZ(drillNullPos.x, drillNullPos.y, &drillNullBlockPos.x, &drillNullBlockPos.y) &&
+					drillNullBlockPos.x == routeBlockPos.x && drillNullBlockPos.y == routeBlockPos.y)
+				{
+					liveObj->flags3 |= LIVEOBJ3_UNK_4000;
+				}
+			}
+			else if (LiveObject_BlockCheck_FUN_004326a0(liveObj, (uint32)target.x, (uint32)target.y,
+														(liveObj->flags3 & LIVEOBJ3_UNK_2000000), true))
+			{
+				//target = Point2I {
+				//	(sint32)liveObj->targetBlockPos.x,
+				//	(sint32)liveObj->targetBlockPos.y,
+				//};
+				bool wallDestroyed;
+				if (!(liveObj->flags3 & LIVEOBJ3_UNK_2000000)) {
+					wallDestroyed = Level_DestroyWall(Lego_GetLevel(), (uint32)routeBlockPos.x, (uint32)routeBlockPos.y, false);
+				}
+				else {
+					wallDestroyed = Level_DestroyWallConnection(Lego_GetLevel(), (uint32)target.x, (uint32)target.y);
+				}
+
+				if (wallDestroyed) {
+					AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Dig, nullptr, true);
+					liveObj->flags1 &= ~LIVEOBJ1_DRILLING;
+
+					Level_Block_SetBusy(&target, false);
+
+					if (liveObj->routeBlocks[liveObj->routeBlocksTotal - 1].actionByte == ROUTE_ACTION_UNK_1) {
+						liveObj->routeBlocks[liveObj->routeBlocksTotal - 1].actionByte = ROUTE_ACTION_NONE;
+					}
+
+					doDrillSound = true;
+				}
+			}
+		}
+		
+		if (doDrillSound) {
+			SFX_Sound3D_StopSound(liveObj->drillSoundHandle);
+			liveObj->flags4 &= ~LIVEOBJ4_DRILLSOUNDPLAYING;
+
+			/// TODO: What is happening with the drill sound here?
+			///       We're stopping it then playing it again without storing the handle...
+			Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+			const SFX_ID drillSFXID = StatsObject_GetDrillSoundType(liveObj, true);
+			SFX_Random_PlaySound3DOnContainer(cont, drillSFXID, false, true, nullptr);
+			//util::logf_removed(nullptr, 0, 0);
+			liveObj->flags3 &= ~LIVEOBJ3_UNK_4000;
+		}
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_PUSHED) {
+		LegoObject_UpdatePushing(liveObj, elapsed);
+	}
+
+
+	if ((liveObj->flags2 & LIVEOBJ2_DAMAGESHAKING) && elapsed > 0.0f) {
+		Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+		if (cont != nullptr) {
+			Vector3F dir, up;
+			Gods98::Container_GetOrientation(cont, nullptr, &dir, &up);
+			Gods98::Maths_Vector3DScale(&up, &up, 10.0f);
+
+			Vector3F rngVec;
+			Gods98::Maths_Vector3DRandom(&rngVec);
+
+			/// FIXME: We shouldn't be using a static variable here if this flag is used by more than one object at a time.
+			Gods98::Maths_Vector3DAdd(&up, &up, &rngVec);
+			Gods98::Maths_Vector3DScale(&up, &up, (s_objectDamageShakeTimer * 0.1f));
+			//up.z = -1.0f;
+
+			/// TODO: Do we not need to normalize up before passing it to SetOrientation?
+			Gods98::Container_SetOrientation(cont, nullptr, dir.x, dir.y, dir.z, up.x, up.y, -1.0f);
+
+			s_objectDamageShakeTimer -= elapsed * 0.16f;
+			if (s_objectDamageShakeTimer < 0.0f) {
+				s_objectDamageShakeTimer = 1.0f;
+				liveObj->flags2 &= ~LIVEOBJ2_DAMAGESHAKING;
+			}
+		}
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_CRUMBLING) {
+		LegoObject_DestroyRockMonster_FUN_0044c290(liveObj);
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_SLIPPING) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_SLIPPING;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags4 & LIVEOBJ4_UNK_1000) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags4 &= ~LIVEOBJ4_UNK_1000;
+			liveObj->flags4 |= LIVEOBJ4_UNK_2000;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags4 & LIVEOBJ4_UNK_4000) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags4 &= ~LIVEOBJ4_UNK_4000;
+			LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags4 & LIVEOBJ4_UNK_2000) {
+		LegoObject_SetActivity(liveObj, Activity_Open, 0);
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_PUSHED) {
+		// Can't do anything while pushed?
+		goto objectupdate_end;
+	}
+
+
+	/// TODO: Is this flag name accurate?
+	if (liveObj->flags1 & LIVEOBJ1_TURNING) {
+		/// FIXME: Is turning not based on elapsed time???
+		if (liveObj->animTime > 0.0f) {
+			if (liveObj->flags1 & LIVEOBJ1_TURNRIGHT) {
+				Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+				Gods98::Container_AddRotation(cont, Gods98::Container_Combine::Before, 0.0f, 1.0f, 0.0f, (M_PI / 2.0f));
+				Gods98::Container_SetAnimationTime(cont, 0.0f);
+				liveObj->flags1 &= ~LIVEOBJ1_TURNRIGHT;
+			}
+			else {
+				real32 angle;
+				if (liveObj->activityName1 == objectGlobs.activityName[Activity_TurnLeft] ||
+					liveObj->activityName1 == objectGlobs.activityName[Activity_CarryTurnLeft])
+				{
+					angle = -(M_PI / 2.0f);
+				}
+				else {
+					angle = (M_PI / 2.0f);
+				}
+				Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+				Gods98::Container_AddRotation(cont, Gods98::Container_Combine::Before, 0.0f, 1.0f, 0.0f, angle);
+
+				liveObj->flags1 &= ~LIVEOBJ1_TURNING;
+				liveObj->flags1 |= LIVEOBJ1_MOVING;
+
+				if (liveObj->routeBlocksTotal <= 0) {
+					LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+				}
+				else if ((liveObj->flags1 & LIVEOBJ1_RUNNINGAWAY) && liveObj->type == LegoObject_MiniFigure) {
+					LegoObject_SetActivity(liveObj, Activity_RunPanic, 0);
+				}
+				else {
+					LegoObject_SetActivity(liveObj, Activity_Route, 0);
+				}
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_UNK_20) {
+		LegoObject_TryDepart_FUN_004499c0(liveObj);
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_CANTDO) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_CANTDO;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_UNUSED_10000000) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_UNUSED_10000000;
+			Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+			Gods98::Container_SetOrientation(cont, nullptr, liveObj->dirVector_2c8.x, liveObj->dirVector_2c8.y, 0.0f, 0.0f, 0.0f, -1.0f);
+			LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_FIRINGLASER) {
+		if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
+			LegoObject_CreateWeaponProjectile(liveObj, Weapon_KnownType_Laser);
+		}
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_FIRINGLASER;
+
+			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
+				LegoObject_CreateWeaponProjectile(liveObj, Weapon_KnownType_Laser);
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags4 & LIVEOBJ4_UNK_8000) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags4 &= ~LIVEOBJ4_UNK_8000;
+
+			if (liveObj->routeToObject != nullptr) {
+				Gods98::Container* cont = LegoObject_GetDepositNull(liveObj->routeToObject);
+				if (cont != nullptr) {
+					Vector3F wPos, dir;
+					Gods98::Container_GetPosition(cont, nullptr, &wPos);
+					Gods98::Container_GetOrientation(cont, nullptr, &dir, nullptr);
+
+					wPos.z = Map3D_GetWorldZ(Lego_GetMap(), wPos.x, wPos.y);
+					Gods98::Container_SetPosition(cont, nullptr, wPos.x, wPos.y, wPos.z);
+					Gods98::Container_SetOrientation(cont, nullptr, dir.x, dir.y, dir.z, 0.0f, 0.0f, -1.0f);
+				}
+
+				LegoObject_DoOpeningClosing(liveObj->routeToObject, false);
+			}
+			LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_UNK_80000000) {
+		if (liveObj->routeToObject == nullptr) {
+			liveObj->flags2 &= ~LIVEOBJ2_UNK_80000000;
+		}
+		else {
+			Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+			Gods98::Container* routeToCont = LegoObject_GetActivityContainer(liveObj->routeToObject);
+			LegoObject* routeToObj = liveObj->routeToObject;
+
+			Vector3F wPos, dir, up;
+			Gods98::Container_GetPosition(routeToCont, nullptr, &wPos);
+			Gods98::Container_GetOrientation(routeToCont, nullptr, &dir, &up);
+			Gods98::Container_SetPosition(cont, nullptr, wPos.x, wPos.y, wPos.z);
+			Gods98::Container_SetOrientation(cont, nullptr, dir.x, dir.y, dir.z, up.x, up.y, up.z);
+
+			if (liveObj->animTime > 0.0f) {
+				routeToObj->carriedObjects[routeToObj->numCarriedObjects] = liveObj;
+				routeToObj->carriedObjects[routeToObj->numCarriedObjects]->carryingThisObject = routeToObj;
+				/// FIXME: Uhhhh.... Last number of carried objects?
+				routeToObj->carriedObjects[routeToObj->numCarriedObjects]->carryingIndex = routeToObj->numCarriedObjects;
+
+				routeToObj->flags1 |= LIVEOBJ1_CARRYING;
+				LegoObject_DoOpeningClosing(routeToObj, false);
+				routeToObj->numCarriedObjects++;
+
+				liveObj->flags2 &= ~LIVEOBJ2_UNK_80000000;
+				LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+				AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_FindLoad, nullptr, true);
+
+				routeToObj->flags4 &= ~LIVEOBJ4_UNK_10000;
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_RECHARGING) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_RECHARGING;
+
+			if (liveObj->flags1 & LIVEOBJ1_CARRYING) {
+				liveObj->carriedObjects[0]->flags3 &= ~LIVEOBJ3_POWEROFF;
+
+				Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj->carriedObjects[0]);
+				Vector3F wPos;
+				Gods98::Container_GetPosition(cont, nullptr, &wPos);
+				SFX_Random_PlaySound3DOnContainer(nullptr, SFX_CrystalRecharge, false, false, &wPos);
+				LegoObject_SetCrystalPoweredColour(liveObj->carriedObjects[0], true);
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_FIRINGPUSHER) {
+		if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
+			LegoObject_CreateWeaponProjectile(liveObj, Weapon_KnownType_Pusher);
+		}
+
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_FIRINGPUSHER;
+
+			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
+				LegoObject_CreateWeaponProjectile(liveObj, Weapon_KnownType_Pusher);
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_FIRINGFREEZER) {
+		if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
+			LegoObject_CreateWeaponProjectile(liveObj, Weapon_KnownType_Freezer);
+		}
+
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_FIRINGFREEZER;
+
+			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
+				LegoObject_CreateWeaponProjectile(liveObj, Weapon_KnownType_Freezer);
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_UNK_800) {
+		if (liveObj->type == LegoObject_RockMonster && Creature_CheckThrowNull(liveObj->rockMonster)) {
+			LegoObject_FUN_00447a40(liveObj);
+		}
+
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_UNK_800;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_UNK_4000) {
+		LegoObject* routeToObj = liveObj->routeToObject;
+		if (routeToObj != nullptr && !(routeToObj->flags1 & LIVEOBJ1_STORING) &&
+			!(routeToObj->flags3 & LIVEOBJ3_UNK_1000000) && routeToObj->numCarriedObjects != routeToObj->carryNullFrames)
+		{
+			liveObj->flags1 &= ~LIVEOBJ1_UNK_4000;
+			liveObj->flags1 |= LIVEOBJ1_STORING;
+
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_STORING) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_STORING;
+
+			AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Deposit, liveObj, true);
+			LegoObject_ProccessCarriedObjects(liveObj);
+		}
+		else if (liveObj->routeToObject != nullptr) {
+			liveObj->routeToObject->flags3 |= LIVEOBJ3_UNK_1000000;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_RESTING) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_RESTING;
+			liveObj->flags3 &= ~LIVEOBJ3_UNK_4000;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_UNK_200000) {
+		if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
+			LegoObject_FUN_0043aeb0(liveObj);
+		}
+
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_UNK_200000;
+
+			AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_AttackPath, nullptr, true);
+			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
+				LegoObject_FUN_0043aeb0(liveObj);
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_UNK_40000) {
+		if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
+			LegoObject_FUN_004477b0(liveObj);
+		}
+
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_UNK_40000;
+
+			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
+				LegoObject_FUN_004477b0(liveObj);
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_UNK_20000000) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_UNK_20000000;
+			liveObj->flags3 &= ~LIVEOBJ3_POWEROFF;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_REPAIRDRAINING) {
+		if ((StatsObject_GetStatsFlags2(liveObj) & STATS2_DRAINPOWER) && liveObj->routeToObject != nullptr &&
+			!(liveObj->routeToObject->flags4 & LIVEOBJ4_UNK_10))
+		{
+			if (LegoObject_IsActive(liveObj->routeToObject, false)) {
+				Info_Send(Info_PowerDrain, nullptr, liveObj->routeToObject, nullptr);
+				Lego_SetCallToArmsOn(true);
+			}
+			liveObj->routeToObject->flags4 |= LIVEOBJ4_UNK_10;
+			LegoObject_RequestPowerGridUpdate();
+		}
+
+		if ((liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) && LegoObject_FUN_00447880(liveObj)) {
+			liveObj->flags2 &= ~LIVEOBJ2_UNK_80000;
+		}
+
+		if (liveObj->animTime > 0.0f) {
+			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000) && LegoObject_FUN_00447880(liveObj)) {
+				liveObj->flags2 &= ~LIVEOBJ2_UNK_80000;
+
+				AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Repair, nullptr, true);
+			}
+
+			if (!(liveObj->flags2 & LIVEOBJ2_UNK_80000)) {
+				liveObj->flags1 &= ~LIVEOBJ1_REPAIRDRAINING;
+
+				if (liveObj->routeToObject != nullptr) {
+					liveObj->routeToObject->flags4 &= ~LIVEOBJ4_UNK_10;
+					LegoObject_RequestPowerGridUpdate();
+					liveObj->routeToObject = nullptr;
+				}
+				AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Repair, nullptr, true);
+			}
+			else {
+				Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+				Gods98::Container_SetAnimationTime(cont, liveObj->animTime);
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_EATING) {
+		if (liveObj->animTime > 0.0f) {
+			if (LegoObject_Add25EnergyAndSetHealth(liveObj)) {
+				liveObj->flags1 &= ~LIVEOBJ1_EATING;
+
+				AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Eat, nullptr, true);
+				AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_GotoEat, nullptr, true);
+			}
+			else {
+				Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+				Gods98::Container_SetAnimationTime(cont, liveObj->animTime);
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_UNK_40) {
+		liveObj->flags2 &= ~LIVEOBJ2_UNK_40;
+
+		if (liveObj->aiTask != nullptr) {
+			LegoObject_MiniFigure_EquipTool(liveObj, liveObj->aiTask->toolType);
+			AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_GetTool, nullptr, true);
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_TRAINING) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_TRAINING;
+
+			AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Train, nullptr, true);
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_UPGRADING) {
+		if (liveObj->type == LegoObject_MiniFigure) {
+			if (liveObj->routeToObject == nullptr) {
+				liveObj->flags2 &= ~LIVEOBJ2_UPGRADING;
+			}
+			else {
+				const real32 animTime = Creature_GetAnimationTime(liveObj->miniFigure);
+				const real32 upgradeTime = StatsObject_GetUpgradeTime(liveObj);
+				const real32 funcCoef = StatsObject_GetFunctionCoef(liveObj->routeToObject);
+				if (animTime >= (funcCoef * upgradeTime)) {
+					AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Upgrade, nullptr, true);
+					LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+					LegoObject_UpdateActivityChange(liveObj);
+					const uint32 newObjLevel = liveObj->objLevel + 1;
+					const uint32 maxObjLevels = Stats_GetLevels(liveObj->type, liveObj->id);
+					if (newObjLevel < maxObjLevels) {
+						StatsObject_SetObjectLevel(liveObj, newObjLevel);
+						HelpWindow_RecallDependencies(liveObj->type, liveObj->id, liveObj->objLevel, false);
+					}
+					liveObj->routeToObject = nullptr;
+					liveObj->flags2 &= ~LIVEOBJ2_UPGRADING;
+				}
+			}
+			goto objectupdate_end;
+		}
+
+		if (liveObj->animTime > 0.0f) {
+
+			if (liveObj->routeToObject == nullptr ||
+				!(StatsObject_GetStatsFlags2(liveObj->routeToObject) & STATS2_UPGRADEBUILDING))
+			{
+				liveObj->flags2 &= ~LIVEOBJ2_UPGRADING;
+			}
+			else if (!(liveObj->routeToObject->flags2 & LIVEOBJ2_UPGRADING)) {
+
+				AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Upgrade, nullptr, true);
+
+				const uint32 oreCost = Stats_GetUpgradeCostOre(liveObj->type, liveObj->id, liveObj->upgradingType);
+				const uint32 oreCount = Level_GetOreCount(false);
+				if (oreCount >= oreCost) {
+					LegoObject_CompleteVehicleUpgrade(liveObj);
+					Level_SubtractOreStored(false, oreCost);
+				}
+				else {
+					const uint32 studsCost = Stats_GetUpgradeCostStuds(liveObj->type, liveObj->id, liveObj->upgradingType);
+					const uint32 studsCount = Level_GetOreCount(true);
+					if (studsCount >= studsCost) {
+						LegoObject_CompleteVehicleUpgrade(liveObj);
+						Level_SubtractOreStored(true, studsCost);
+					}
+				}
+
+				liveObj->routeToObject->interactObject = nullptr;
+				liveObj->routeToObject = nullptr;
+				liveObj->flags2 &= ~LIVEOBJ2_UPGRADING;
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_PLACING) {
+		Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+		Gods98::Container_ForceAnimationUpdate(cont);
+
+		if ((liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) && (liveObj->flags1 & LIVEOBJ1_CARRYING) &&
+			liveObj->carriedObjects[0] != nullptr)
+		{
+			Gods98::Container* carriedCont = LegoObject_GetActivityContainer(liveObj->carriedObjects[0]);
+			Vector3F wPos;
+			Gods98::Container_GetPosition(carriedCont, nullptr, &wPos);
+
+			SFX_ID placeSFXID;
+			switch (liveObj->carriedObjects[0]->type) {
+			case LegoObject_PowerCrystal:
+				placeSFXID = SFX_PlaceCrystal;
+				break;
+			case LegoObject_Ore:
+				placeSFXID = SFX_PlaceOre;
+				break;
+			default:
+				placeSFXID = SFX_Place;
+				break;
+			}
+			SFX_Random_PlaySound3DOnContainer(nullptr, placeSFXID, false, false, &wPos);
+		}
+
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_PLACING;
+
+			LegoObject_DropCarriedObject(liveObj, true);
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_GETTINGHIT) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_GETTINGHIT;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->carryingThisObject != nullptr) {
+		goto objectupdate_end;
+	}
+
+
+	if ((liveObj->flags1 & LIVEOBJ1_MOVING) && LegoObject_FUN_0043c6a0(liveObj)) {
+		LegoObject_Route_End(liveObj, true);
+		LegoObject_Proc_FUN_0043c7f0(liveObj);
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_MOVING) {
+		LegoObject_Route_UpdateMovement(liveObj, elapsed);
+		LegoObject_UpdateCarryingEnergy(liveObj, elapsed);
+		LegoObject_RockMonster_FUN_0043ad70(liveObj);
+
+		if (liveObj->flags2 & LIVEOBJ2_UNK_4000000) {
+			if (!Weapon_LegoObject_WithinWeaponRange(liveObj, liveObj->aiTask->targetObject) ||
+				Weapon_LegoObject_DoCallbacksSearch_FUN_00471b90(liveObj, liveObj->aiTask->targetObject))
+			{
+				liveObj->flags2 &= ~LIVEOBJ2_UNK_4000000;
+			}
+			else {
+				LegoObject_Proc_FUN_0043c780(liveObj);
+			}
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_DRILLING) {
+			const Point2I target = {
+				(sint32)liveObj->targetBlockPos.x,
+				(sint32)liveObj->targetBlockPos.y,
+			};
+			LegoObject_SetActivity(liveObj, Activity_Drill, 0);
+			Level_Block_SetBusy(&target, true);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_LIFTING) {
+			LegoObject_SetActivity(liveObj, Activity_Reverse, 0);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags2 & LIVEOBJ2_TRAINING) {
+			LegoObject_SetActivity(liveObj, Activity_Train, 0);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags2 & LIVEOBJ2_RECHARGING) {
+			LegoObject_SetActivity(liveObj, Activity_Recharge, 0);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_CLEARING) {
+			// repeatCount = (liveObj->type != LegoObject_MiniFigure) - 1 & 2;
+			const uint32 repeatCount = (liveObj->type == LegoObject_MiniFigure ? 2 : 0);
+			LegoObject_SetActivity(liveObj, Activity_Clear, repeatCount);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags2 & LIVEOBJ2_UNK_80000000) {
+			LegoObject_SetActivity(liveObj, Activity_FloatOn, 0);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags2 & LIVEOBJ2_UNK_4) {
+			if (liveObj->routeToObject != nullptr) {
+				LegoObject_ClearDockOccupiedFlag(liveObj, liveObj->routeToObject);
+			}
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_REINFORCING) {
+			const Point2I target = {
+				(sint32)liveObj->targetBlockPos.x,
+				(sint32)liveObj->targetBlockPos.y,
+			};
+			Level_Block_SetBusy(&target, true);
+			LegoObject_SetActivity(liveObj, Activity_Reinforce, legoGlobs.ReinforceHits);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_PLACING) {
+			LegoObject_SetActivity(liveObj, Activity_Place, 0);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_ENTERING_WALLHOLE) {
+			const Point2I target = {
+				(sint32)liveObj->targetBlockPos.x,
+				(sint32)liveObj->targetBlockPos.y,
+			};
+			if (!(StatsObject_GetStatsFlags2(liveObj) & STATS2_USEHOLES) &&
+				!Level_Block_IsWall((uint32)target.x, (uint32)target.y))
+			{
+				liveObj->flags1 &= ~LIVEOBJ1_ENTERING_WALLHOLE;
+				liveObj->flags2 |= LIVEOBJ2_UNK_20;
+			}
+			else if (!Level_Block_IsReinforced((uint32)target.x, (uint32)target.y)) {
+				LegoObject_SetActivity(liveObj, Activity_Enter, 0);
+			}
+			else {
+				LegoObject_SetActivity(liveObj, Activity_EnterRein, 0);
+				if (!LegoObject_UpdateActivityChange(liveObj)) {
+					LegoObject_SetActivity(liveObj, Activity_Enter, 0);
+					LegoObject_UpdateActivityChange(liveObj);
+				}
+
+				if (StatsObject_GetStatsFlags2(liveObj) & STATS2_REMOVEREINFORCEMENT) {
+					Level_Block_RemoveReinforcement(&target);
+				}
+			}
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_REPAIRDRAINING) {
+			LegoObject_SetActivity(liveObj, Activity_Repair, 0);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags2 & LIVEOBJ2_UNK_200000) {
+			LegoObject_SetActivity(liveObj, Activity_Stamp, 0);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags2 & LIVEOBJ2_UPGRADING) {
+			if (liveObj->type == LegoObject_MiniFigure) {
+				LegoObject_SetActivity(liveObj, Activity_Train, 100);
+			}
+			else {
+				LegoObject_SetActivity(liveObj, Activity_Upgrade, 0);
+				LegoObject_SetActivity(liveObj->routeToObject, Activity_Upgrade, 0);
+				LegoObject_UpdateActivityChange(liveObj->routeToObject);
+				liveObj->routeToObject->flags2 |= LIVEOBJ2_UPGRADING;
+			}
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_EATING) {
+			LegoObject_SetActivity(liveObj, Activity_Eat, 0);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_GATHERINGROCK) {
+			if (liveObj->routeToObject == nullptr || liveObj->routeToObject->carryingThisObject != nullptr) {
+				liveObj->flags1 &= ~LIVEOBJ1_GATHERINGROCK;
+			}
+			else {
+				LegoObject_SetActivity(liveObj, Activity_Collect, 0);
+				if (liveObj->type == LegoObject_RockMonster) {
+					switch (liveObj->routeToObject->type) {
+					case LegoObject_Boulder:
+						LegoObject_SetActivity(liveObj, Activity_Gather, 0);
+						break;
+					case LegoObject_PowerCrystal:
+						LegoObject_SetActivity(liveObj, Activity_Eat, 0);
+						break;
+					}
+				}
+
+				liveObj->carriedObjects[liveObj->numCarriedObjects] = liveObj->routeToObject;
+				liveObj->carriedObjects[liveObj->numCarriedObjects]->carryingThisObject = liveObj;
+				/// FIXME: Uhhhh.... Last number of carried objects?
+				liveObj->carriedObjects[liveObj->numCarriedObjects]->carryingIndex = liveObj->numCarriedObjects;
+				liveObj->routeToObject = nullptr;
+
+				liveObj->flags1 |= LIVEOBJ1_CARRYING;
+				AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Collect, liveObj->carriedObjects[liveObj->numCarriedObjects], true);
+				AITask_DoAnimationWait(liveObj);
+				liveObj->numCarriedObjects++;
+			}
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_STORING) {
+			LegoObject_SetActivity(liveObj, Activity_Deposit, 0);
+
+			LegoObject* routeToObj = liveObj->routeToObject;
+			if (routeToObj != nullptr && (StatsObject_GetStatsFlags1(routeToObj) & (STATS1_PROCESSCRYSTAL|STATS1_PROCESSORE))) {
+
+				if (!(routeToObj->flags1 & LIVEOBJ1_STORING) && !(routeToObj->flags3 & LIVEOBJ3_UNK_1000000) &&
+					routeToObj->numCarriedObjects != routeToObj->carryNullFrames)
+				{
+					routeToObj->flags3 |= LIVEOBJ3_UNK_1000000;
+				}
+				else {
+					liveObj->flags1 &= ~LIVEOBJ1_STORING;
+					liveObj->flags1 |= LIVEOBJ1_UNK_4000;
+				}
+			}
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_UNK_800) {
+			LegoObject_SetActivity(liveObj, Activity_Throw, 0);
+			goto objectupdate_end;
+		}
+
+		if ((liveObj->flags1 & LIVEOBJ1_TURNING) || (liveObj->flags1 & LIVEOBJ1_RESTING)) {
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_CARRYING) {
+			Point2I blockPos = { 0, 0 }; // dummy init
+			LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+
+			const uint32 rubbleLayers = Level_Block_GetRubbleLayers(&blockPos);
+			if ((rubbleLayers >= (LEGO_RUBBLELAYERCOUNT - 1) ||
+				 blockValue(legoGlobs.currLevel, blockPos.x, blockPos.y).terrain == Lego_SurfaceType_Lake) &&
+				(liveObj->flags3 & LIVEOBJ3_CANROUTERUBBLE))
+			{
+				LegoObject_SetActivity(liveObj, Activity_CarryRubble, 0);
+			}
+			else {
+				LegoObject_SetActivity(liveObj, Activity_Carry, 0);
+			}
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_CANTDO) {
+			LegoObject_Route_End(liveObj, false);
+			LegoObject_SetActivity(liveObj, Activity_CantDo, 1);
+			goto objectupdate_end;
+		}
+
+		if (liveObj->flags1 & LIVEOBJ1_MOVING) {
+			Point2I blockPos = { 0, 0 }; // dummy init
+			LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+
+			if ((liveObj->flags1 & LIVEOBJ1_RUNNINGAWAY) && liveObj->type == LegoObject_MiniFigure) {
+				LegoObject_SetActivity(liveObj, Activity_RunPanic, 0);
+			}
+			else {
+				const uint32 rubbleLayers = Level_Block_GetRubbleLayers(&blockPos);
+				if ((rubbleLayers >= (LEGO_RUBBLELAYERCOUNT - 1) ||
+					 blockValue(legoGlobs.currLevel, blockPos.x, blockPos.y).terrain == Lego_SurfaceType_Lake) &&
+					(liveObj->flags3 & LIVEOBJ3_CANROUTERUBBLE))
+				{
+					LegoObject_SetActivity(liveObj, Activity_RouteRubble, 0);
+				}
+				else {
+					LegoObject_SetActivity(liveObj, Activity_Route, 0);
+				}
+			}
+			goto objectupdate_end;
+		}
+
+		// End of large LIVEOBJ1_MOVING block (not the block just above this).
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_TELEPORTINGDOWN) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_TELEPORTINGDOWN;
+
+			if (liveObj->type == LegoObject_Vehicle) {
+				LegoObject_SetActivity(liveObj, Activity_Route, 0);
+				LegoObject_UpdateActivityChange(liveObj);
+			}
+			LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+			LegoObject_FUN_00438720(liveObj);
+		}
+		LegoObject_UpdateWorldStickyPosition(liveObj, elapsed);
+
+		Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+		if (cont != nullptr) {
+			// Change up orientation to (0.0f, 0.0f, -1.0f).
+			Vector3F dir;
+			Gods98::Container_GetOrientation(cont, nullptr, &dir, nullptr);
+			Gods98::Container_SetOrientation(cont, nullptr, dir.x, dir.y, dir.z, 0.0f, 0.0f, -1.0f);
+		}
+		goto objectupdate_end;
+	}
+
+
+	{
+		bool32 reinforcingFinished;
+		if (LegoObject_Update_Reinforcing(liveObj, elapsed, &reinforcingFinished)) {
+			if (reinforcingFinished) {
+				AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Reinforce, nullptr, true);
+			}
+			goto objectupdate_end;
+		}
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_EXPANDING) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_EXPANDING;
+
+			if (LegoObject_IsRockMonsterCanGather(liveObj)) {
+				const Point2I target = {
+					(sint32)liveObj->targetBlockPos.x,
+					(sint32)liveObj->targetBlockPos.y,
+				};
+				Message_PostEvent(Message_GenerateRockMonsterComplete, liveObj, 0, nullptr);
+				Level_Block_SetBusy(&target, false);
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_UNK_100000) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_UNK_100000;
+			liveObj->flags3 |= LIVEOBJ3_REMOVING;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_UNK_4) {
+		liveObj->flags2 &= ~LIVEOBJ2_UNK_4;
+
+		LegoObject* routeToObj = liveObj->routeToObject;
+
+		AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_FindDriver, nullptr, true);
+
+		liveObj->flags2 |= LIVEOBJ2_DRIVING;
+		routeToObj->flags4 &= ~LIVEOBJ4_ENTRANCEOCCUPIED;
+		if (routeToObj->routeToObject != nullptr) {
+			routeToObj->routeToObject->flags4 &= ~LIVEOBJ4_ENTRANCEOCCUPIED;
+		}
+		routeToObj->flags2 &= ~LIVEOBJ2_UNK_10;
+
+		routeToObj->routeToObject = nullptr;
+		routeToObj->driveObject = liveObj;
+		liveObj->driveObject = routeToObj;
+		liveObj->routeToObject = nullptr;
+
+		Interface_ChangeMenu_IfVehicleMounted_IsLiveObject(liveObj->driveObject);
+		LegoObject_UpdateWorldStickyPosition(liveObj, elapsed);
+
+		routeToObj->activityName2 = nullptr;
+		LegoObject_UpdateActivityChange(routeToObj);
+
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_DRIVING) {
+		// A driver can't perform any of the remaining actions.
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_ENTERING_WALLHOLE) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_ENTERING_WALLHOLE;
+			liveObj->flags2 &= ~LIVEOBJ2_UNK_20;
+			LegoObject_FinishEnteringWallHole(liveObj);
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_BUILDPATH) {
+		if (liveObj->animTime > 0.0f) {
+			Point2I blockPos = { 0, 0 }; // dummy init
+			LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+
+			Construction_Zone* construct = Construction_Zone_FindByHandleOrAtBlock(&blockPos, nullptr);
+			if (construct != nullptr && (construct->flags & CONSTRUCTION_FLAG_LAYPATH)) {
+				Level_Block_SetPath(&blockPos);
+				Construction_Zone_CompletePath(&blockPos);
+				Info_Send(Info_PathCompleted, nullptr, nullptr, &blockPos);
+				AITask_DoAttackPath(&blockPos);
+			}
+
+			liveObj->flags2 &= ~LIVEOBJ2_BUILDPATH;
+			AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_BuildPath, nullptr, true);
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_CLEARING) {
+		if (liveObj->type == LegoObject_Vehicle) {
+			LegoObject_UpdateWorldStickyPosition(liveObj, elapsed);
+		}
+
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_CLEARING;
+
+			AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Clear, nullptr, true);
+			if (liveObj->type == LegoObject_Vehicle) {
+				LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_CANTDO) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_CANTDO;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_UNK_100) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_UNK_100;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_UNK_10000) {
+		const uint32 rng = (uint32)Gods98::Maths_Rand();
+		if ((rng % 10) > 0) {
+			LegoObject_FUN_00444520(liveObj);
+		}
+		liveObj->flags1 &= ~LIVEOBJ1_UNK_10000;
+
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_THROWN) {
+		if (!(liveObj->throwObject->flags2 & LIVEOBJ2_THROWING) || liveObj->animTime > 0.0f) {
+			liveObj->flags2 &= ~LIVEOBJ2_THROWN;
+
+			LegoObject_SetActivity(liveObj, Activity_GetUp, 0);
+			LegoObject_UpdateActivityChange(liveObj);
+			liveObj->flags2 |= LIVEOBJ2_UNK_100;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags2 & LIVEOBJ2_THROWING) {
+		if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
+			Point2F wPos2D = { 0.0f, 0.0f }; // dummy init
+			LegoObject_GetPosition(liveObj, &wPos2D.x, &wPos2D.y);
+			const real32 heading = LegoObject_GetHeading(liveObj);
+			LegoObject_SetPositionAndHeading(liveObj->throwObject, wPos2D.x, wPos2D.y, heading, true);
+		}
+
+		if (liveObj->animTime > 0.0f) {
+			Gods98::Container* depositNull = LegoObject_GetDepositNull(liveObj);
+			Vector3F wPos;
+			Gods98::Container_GetPosition(depositNull, nullptr, &wPos);
+			LegoObject_SetPositionAndHeading(liveObj, wPos.x, wPos.y, 0.0f, false);
+			liveObj->flags2 &= ~LIVEOBJ2_THROWING;
+			LegoObject_AddDamage2(liveObj->throwObject, 10.0f, true, elapsed);
+			LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (LiveObject_FUN_00433b40(liveObj, elapsed, false)) {
+		goto objectupdate_end;
+	}
+
+
+	{
+		real32 dummyOutTransSpeed;
+		const sint32 fpState = LegoObject_FP_UpdateMovement(liveObj, elapsed, &dummyOutTransSpeed);
+		if (fpState != 0) {
+			switch (fpState) {
+			case 1:
+				if (!(liveObj->flags1 & LIVEOBJ1_CARRYING)) {
+					LegoObject_SetActivity(liveObj, Activity_Route, 0);
+				}
+				else {
+					LegoObject_SetActivity(liveObj, Activity_Carry, 0);
+				}
+				break;
+			case 2:
+				LegoObject_SetActivity(liveObj, Activity_Walk, 0);
+				break;
+			case 3:
+				{
+					Point2F drillNullPos = { 0.0f, 0.0f }; // dummy init
+					if (LegoObject_GetDrillNullPosition(liveObj, &drillNullPos.x, &drillNullPos.y)) {
+						Point2I blockPos = { 0, 0 }; // dummy init
+						if (Map3D_WorldToBlockPos_NoZ(Lego_GetMap(), drillNullPos.x, drillNullPos.y, &blockPos.x, &blockPos.y) &&
+							Level_Block_IsWall((uint32)blockPos.x, (uint32)blockPos.y))
+						{
+							const real32 drillTime = StatsObject_GetDrillTimeType(liveObj, Lego_GetBlockTerrain(blockPos.x, blockPos.y));
+							if (!(liveObj->flags4 & LIVEOBJ4_UNK_20000)) {
+								/// REMOVE: Return value not used.
+								//LegoObject_GetActivityContainer(liveObj);
+								const SFX_ID drillSFXID = StatsObject_GetDrillSoundType(liveObj, false);
+								liveObj->drillSoundHandle = SFX_Random_PlaySoundNormal(drillSFXID, true);
+								liveObj->flags4 |= (LIVEOBJ4_UNK_20000|LIVEOBJ4_DRILLSOUNDPLAYING);
+							}
+
+							shouldStopDrillSound = false;
+
+							LegoObject_SetActivity(liveObj, Activity_Drill, 0);
+
+							if (Level_Block_Damage((uint32)blockPos.x, (uint32)blockPos.y, drillTime, elapsed) &&
+								LiveObject_BlockCheck_FUN_004326a0(liveObj, (uint32)blockPos.x, (uint32)blockPos.y, false, true))
+							{
+								Level_DestroyWall(Lego_GetLevel(), (uint32)blockPos.x, (uint32)blockPos.y, false);
+							}
+						}
+					}
+				}
+				break;
+			case 4:
+				LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+				break;
+			}
+
+			if (liveObj->type == LegoObject_MiniFigure) {
+				/// FIXME: Step SFX is not effected by elapsed time.
+				if ((objectGlobs.s_stepCounter_c63c & 3) == 0) {
+					SFX_Random_PlaySoundNormal(SFX_Step, false);
+				}
+				objectGlobs.s_stepCounter_c63c++;
+			}
+			goto objectupdate_end;
+		}
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_GATHERINGROCK) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_GATHERINGROCK;
+
+			if (liveObj->flags1 & LIVEOBJ1_CARRYING) {
+				if (liveObj->type == LegoObject_RockMonster) {
+					LegoObject* carriedObj = liveObj->carriedObjects[0];
+					if (carriedObj->type == LegoObject_Boulder) {
+						const Message_Argument msgArg = Message_Argument(LegoObject_Search_FUN_00438e40(liveObj, 0x400));
+						Message_PostEvent(Message_GatherRockComplete, liveObj, msgArg, nullptr);
+					}
+					else {
+						liveObj->carriedObjects[0] = nullptr;
+						liveObj->numCarriedObjects = 0;
+						carriedObj->carryingThisObject = nullptr;
+						carriedObj->interactObject = nullptr;
+
+						AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Collect, carriedObj, true);
+						LegoObject_PutAwayCarriedObject(liveObj, carriedObj);
+
+						liveObj->flags1 &= ~LIVEOBJ1_CARRYING;
+					}
+				}
+				else {
+					switch (liveObj->carriedObjects[liveObj->numCarriedObjects - 1]->type) {
+					case LegoObject_PowerCrystal:
+						Level_IncCrystalsPickedUp();
+						break;
+					case LegoObject_Ore:
+						Level_IncOrePickedUp();
+						Info_Send(Info_OreCollected, nullptr, liveObj, nullptr);
+						break;
+					}
+				}
+			}
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_WAITING) {
+		if (liveObj->animTime > 0.0f) {
+			liveObj->flags1 &= ~LIVEOBJ1_WAITING;
+		}
+		goto objectupdate_end;
+	}
+
+
+	if (liveObj->flags1 & LIVEOBJ1_TURNING) {
+		goto objectupdate_end;
+	}
+
+
+	// Final behaviour:
+	if (liveObj->flags1 & LIVEOBJ1_CARRYING) {
+
+		LegoObject_SetActivity(liveObj, Activity_CarryStand, 0);
+	}
+	else if (liveObj->type == LegoObject_Building && ((liveObj->flags3 & LIVEOBJ3_POWEROFF) ||
+													  !(liveObj->flags3 & LIVEOBJ3_HASPOWER)))
+	{
+		LegoObject_SetActivity(liveObj, Activity_Unpowered, 0);
+	}
+	else if (liveObj->type == LegoObject_RockMonster && (liveObj->flags3 & LIVEOBJ3_POWEROFF)) {
+
+		LegoObject_SetActivity(liveObj, Activity_Unpowered, 0);
+	}
+	else if (liveObj->type == LegoObject_Vehicle && (liveObj->flags4 & LIVEOBJ4_UNK_2000)) {
+
+		LegoObject_SetActivity(liveObj, Activity_Open, 0);
+	}
+	else {
+		LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+	}
+	LegoObject_UpdateWorldStickyPosition(liveObj, elapsed);
+	goto objectupdate_end;
+
+
+
+objectupdate_end:
+
+	if (shouldStopDrillSound && (liveObj->flags4 & LIVEOBJ4_UNK_20000)) {
+		/// REMOVE: Return value not used.
+		//LegoObject_GetActivityContainer(liveObj);
+		SFX_Sound3D_StopSound(liveObj->drillSoundHandle);
+		liveObj->flags4 &= ~LIVEOBJ4_DRILLSOUNDPLAYING;
+
+		/// TODO: What is happening with the drill sound here?
+		///       We're stopping it then playing it again without storing the handle...
+		const SFX_ID drillSFXID = StatsObject_GetDrillSoundType(liveObj, true);
+		SFX_Random_PlaySoundNormal(drillSFXID, false);
+		liveObj->flags4 &= ~LIVEOBJ4_UNK_20000;
+	}
+
+	LegoObject_UpdateActivityChange(liveObj);
+
+	if (liveObj->driveObject != nullptr && liveObj->type != LegoObject_MiniFigure) {
+		LegoObject_UpdateDriverStickyPosition(liveObj);
+	}
+
+	if (liveObj->flags1 & LIVEOBJ1_CARRYING) {
+		LegoObject_UpdateCarrying(liveObj);
+	}
+
+	if (Weapon_LegoObject_IsActiveWithTracker(liveObj)) {
+		Weapon_LegoObject_UpdateTracker(liveObj, elapsed);
+	}
+
+	LegoObject_UpdateSlipAndScare(liveObj, elapsed);
+	LegoObject_Flocks_FUN_0044bef0(liveObj, elapsed);
+	LegoObject_UpdateEnergyHealthAndLavaContact(liveObj, elapsed);
+
+	if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
+		liveObj->flags2 &= ~LIVEOBJ2_TRIGGERFRAMECALLBACK;
+		liveObj->flags2 |= LIVEOBJ2_UNK_20000;
+	}
+
+	liveObj->flags4 &= ~LIVEOBJ4_DOUBLESELECTREADY;
+
+	LegoObject_UpdateRemoval(liveObj);
+
+	return false;
+}
 
 // <LegoRR.exe @0043f160>
 void __cdecl LegoRR::LegoObject_ProccessCarriedObjects(LegoObject* liveObj)
