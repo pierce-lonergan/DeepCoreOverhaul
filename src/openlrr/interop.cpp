@@ -2438,7 +2438,7 @@ bool interop_hook_LegoRR_ElectricFence(void)
 	// used by: Lego_LoadLevel, Lego_LoadMapSet
 	result &= hook_write_jmpret(0x0040cdb0, LegoRR::ElectricFence_Restart);
 
-	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_SimpleObject_FUN_00448160
+	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_SimpleObject_MoveAnimation
 	result &= hook_write_jmpret(0x0040ce80, LegoRR::ElectricFence_CreateFence);
 
 	// used by: ElectricFence_CreateFence, ElectricFence_Debug_PlaceFence
@@ -3343,6 +3343,17 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: Lego_HandleKeys, LegoObject
 	result &= hook_write_jmpret(0x00440ca0, LegoRR::LegoObject_SetActivity);
 
+	// used by: AITask_Callback_UpdateObject, AITask_LiveObject_FUN_00404d30, AITask_FUN_00405b40
+	result &= hook_write_jmpret(0x00440ef0, LegoRR::LegoObject_Route_BuildListToTarget);
+	// used by: LegoObject_Route_BuildList
+	result &= hook_write_jmpret(0x00440f30, LegoRR::LegoObject_Route_BuildListWithoutScore);
+	// used by: LegoObject
+	result &= hook_write_jmpret(0x004413b0, LegoRR::LegoObject_Route_BuildList);
+	// used by: AITask, LegoObject
+	result &= hook_write_jmpret(0x004419c0, LegoRR::LegoObject_Route_Begin);
+	// used by: AITask, Lego, LegoObject, Message, NERPs
+	result &= hook_write_jmpret(0x00441c00, LegoRR::LegoObject_Route_End);
+
 	// used by: ElectricFence_SparkObjectAndCreateBeam, LegoObject_UpdateRemoval
 	result &= hook_write_jmpret(0x004424d0, LegoRR::LegoObject_StartCrumbling);
 	// used by: AITask, Construction, Effect, ElectricFence, Lego, LegoObject, Message,
@@ -3354,7 +3365,7 @@ bool interop_hook_LegoRR_Object(void)
 	result &= hook_write_jmpret(0x00442560, LegoRR::LegoObject_GetFaceDirection);
 	// used by: LegoObject_UpdateTeleporter, LegoObject_FireBeamWeaponAtObject
 	result &= hook_write_jmpret(0x004425c0, LegoRR::LegoObject_SetHeadingOrDirection);
-	// used by: LegoObject_Callback_Update, LegoObject_SimpleObject_FUN_00448160,
+	// used by: LegoObject_Callback_Update, LegoObject_SimpleObject_MoveAnimation,
 	//          LegoObject_PlaceBirdScarer_AndTickDown, LegoObject_Freeze
 	result &= hook_write_jmpret(0x00442740, LegoRR::LegoObject_GetHeading);
 	// used by: AITask, Construction, ElectricFence, Interface, Lego, LegoObject,
@@ -3370,7 +3381,7 @@ bool interop_hook_LegoRR_Object(void)
 	result &= hook_write_jmpret(0x004428b0, LegoRR::LegoObject_UpdateRoutingVectors);
 	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_CreateInWorld,
 	//          LegoObject_Callback_Update, LegoObject_UpdateTeleporter, LegoObject_PTL_GatherRock,
-	//          LegoObject_SimpleObject_FUN_00448160, LegoObject_UpdatePushing
+	//          LegoObject_SimpleObject_MoveAnimation, LegoObject_UpdatePushing
 	result &= hook_write_jmpret(0x00442b60, LegoRR::LegoObject_SetPositionAndHeading);
 
 	// used by: LegoObject_Callback_BirdScarer, LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite,

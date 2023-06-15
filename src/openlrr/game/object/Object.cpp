@@ -212,11 +212,11 @@ void __cdecl LegoRR::LegoObject_Shutdown(void)
 {
 	LegoObject_RemoveAll();
 
-	if (objectGlobs.UnkSurfaceGrid_1_TABLE != nullptr) {
-		Gods98::Mem_Free(objectGlobs.UnkSurfaceGrid_1_TABLE);
+	if (objectGlobs.routeBuildListScores != nullptr) {
+		Gods98::Mem_Free(objectGlobs.routeBuildListScores);
 	}
 
-	/// REFACTOR: Moved below freeing `UnkSurfaceGrid_1_TABLE`.
+	/// REFACTOR: Moved below freeing `routeBuildListScores`.
 	objectListSet.Shutdown();
 	objectGlobs.flags = LegoObject_GlobFlags::OBJECT_GLOB_FLAG_NONE;
 
@@ -3907,14 +3907,14 @@ void __cdecl LegoRR::LegoObject_UpdateEnergyHealthAndLavaContact(LegoObject* liv
 					for (uint32 d = 0; d < _countof(DIRECTIONS); d++) {
 						sint32* bxList = nullptr;
 						sint32* byList = nullptr;
-						sint32 count; // dummy output
-						if (LegoObject_Route_Score_FUN_004413b0(liveObj, blockPos.x, blockPos.y,
+						uint32 count; // dummy output
+						if (LegoObject_Route_BuildList(liveObj, blockPos.x, blockPos.y,
 																snacksBlockPos.x + DIRECTIONS[d].x,
 																snacksBlockPos.y + DIRECTIONS[d].y,
 																&bxList, &byList, &count, nullptr, nullptr))
 						{
-							Gods98::Mem_Free(bxList);
-							Gods98::Mem_Free(byList);
+							if (bxList != nullptr) Gods98::Mem_Free(bxList);
+							if (byList != nullptr) Gods98::Mem_Free(byList);
 							AITask_QueueGotoEat_Target(liveObj, snacksObj);
 							break;
 						}
@@ -4022,19 +4022,641 @@ void __cdecl LegoRR::LegoObject_SetActivity(LegoObject* liveObj, Activity_Type a
 //void __cdecl LegoRR::LegoObject_InitBoulderMesh_FUN_00440eb0(LegoObject* liveObj, Gods98::Container_Texture* contTexture);
 
 // <LegoRR.exe @00440ef0>
-//bool32 __cdecl LegoRR::LegoObject_Route_ScoreNoCallback_FUN_00440ef0(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, sint32** out_param_6, sint32** out_param_7, sint32* out_count);
+bool32 __cdecl LegoRR::LegoObject_Route_BuildListToTarget(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bxTarget, uint32 byTarget, OUT sint32** bxList, OUT sint32** byList, OUT uint32* count)
+{
+	return LegoObject_Route_BuildList(liveObj, bx, by, bxTarget, byTarget, bxList, byList, count, nullptr, nullptr);
+}
 
 // <LegoRR.exe @00440f30>
-//bool32 __cdecl LegoRR::LegoObject_Route_ScoreSub_FUN_00440f30(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, uint32** out_param_6, uint32** out_param_7, uint32* out_count, undefined* callback, void* data);
+bool32 __cdecl LegoRR::LegoObject_Route_BuildListWithoutScore(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bxTarget, uint32 byTarget, OUT sint32** bxList, OUT sint32** byList, OUT uint32* count, OPTIONAL LegoObject_RouteChooseBlockCallback callback, void* data)
+{
+	const Point2I DIRECTIONS[DIRECTION__COUNT] = {
+		{  0, -1 },
+		{  1,  0 },
+		{  0,  1 },
+		{ -1,  0 },
+	};
+
+	const uint32 blockWidth = Lego_GetMap()->blockWidth;
+	const uint32 blockHeight = Lego_GetMap()->blockHeight;
+
+	const uint32 newCount = (blockHeight * blockWidth);
+
+	// Unsigned comparisons used to skip checking < 0.
+	if ((uint32)bx >= blockWidth || (uint32)by >= blockHeight) {
+		return false;
+	}
+
+	if (callback == nullptr) {
+		// bxTarget, byTarget are used as the target block pos if a callback is not supplied,
+		//  otherwise the callback determines if the passed block is a target.
+		// Unsigned comparisons used to skip checking < 0.
+		if ((uint32)bxTarget >= blockWidth || (uint32)byTarget >= blockHeight) {
+			return false;
+		}
+		// Ensure the unit is able to walk on the target block's terrain.
+		if (!Lego_GetCrossTerrainType(liveObj, bxTarget, byTarget, bxTarget, byTarget, false)) {
+			return false;
+		}
+	}
+
+	if (objectGlobs.routeBuildListCount != newCount) {
+		if (objectGlobs.routeBuildListLengths != nullptr) {
+			Gods98::Mem_Free(objectGlobs.routeBuildListLengths);
+			objectGlobs.routeBuildListLengths = nullptr;
+		}
+		/// FIX APPLY: Make sure the other allocated grid depending on the same count is freed.
+		///            Otherwise it won't be resized when needed.
+		if (objectGlobs.routeBuildListScores != nullptr) {
+			Gods98::Mem_Free(objectGlobs.routeBuildListScores);
+			objectGlobs.routeBuildListScores = nullptr;
+		}
+
+		objectGlobs.routeBuildListCount = newCount;
+	}
+
+	if (objectGlobs.routeBuildListLengths == nullptr) {
+		objectGlobs.routeBuildListLengths = (uint32*)Gods98::Mem_Alloc(objectGlobs.routeBuildListCount * sizeof(uint32));
+	}
+
+	if (objectGlobs.routeBuildListLengths != nullptr) {
+
+		for (uint32 i = 0; i < objectGlobs.routeBuildListCount; i++) {
+			objectGlobs.routeBuildListLengths[i] = 0;
+		}
+
+		// A set of two lists are used here, one is used to store the current blocks being iterated through,
+		//  and the other is used to build the possible blocks to move to.
+		//RoutingBlock blockList[2][100];
+		/// REFACTOR: Don't bother using RoutingBlock if we're just using the Point2I blockPos field...
+		/// SANITY: Increase list size from 100 to something higher.
+		Point2I blockList[2][250];
+		uint32 countList[2];
+
+		sint32 success = 0; // -1 = failure, 0 = continue, 1 = success.
+
+		uint32 swapIndex = 0;
+		blockList[0][0].x = bx;
+		blockList[0][0].y = by;
+		countList[0] = 1;
+		countList[1] = 0;
+
+		uint32 currCount = 1;
+		objectGlobs.routeBuildListLengths[blockWidth * by + bx] = currCount;
+
+		while (success == 0) {
+			currCount++;
+
+			for (uint32 i = 0; i < countList[swapIndex]; i++) {
+				for (uint32 j = 0; j < _countof(DIRECTIONS); j++) {
+					const Point2I blockPos = blockList[swapIndex][i];
+
+					const sint32 bxOff = blockPos.x + DIRECTIONS[j].x;
+					const sint32 byOff = blockPos.y + DIRECTIONS[j].y;
+
+					const uint32 gridIndex = blockWidth * byOff + bxOff;
+
+					// Unsigned comparisons used to skip checking >= 0.
+					if ((uint32)bxOff < blockWidth && (uint32)byOff < blockHeight) {
+						// Check CrossTerrain from our current direction-offset to one further in that direction.
+						const sint32 bxOff2 = bxOff + DIRECTIONS[j].x;
+						const sint32 byOff2 = byOff + DIRECTIONS[j].y;
+
+						/// OPTIMIZE: Move CrossTerrain check to after grid check.
+						if (objectGlobs.routeBuildListLengths[gridIndex] == 0 &&
+							Lego_GetCrossTerrainType(liveObj, bxOff, byOff, bxOff2, byOff2, false))
+						{
+							const uint32 nextSwapIndex = (swapIndex == 0 ? 1 : 0); // Swap index.
+							blockList[nextSwapIndex][countList[nextSwapIndex]].x = bxOff;
+							blockList[nextSwapIndex][countList[nextSwapIndex]].y = byOff;
+							countList[nextSwapIndex]++;
+							objectGlobs.routeBuildListLengths[gridIndex] = currCount;
+
+							if (callback == nullptr) {
+								if (bxOff == bxTarget && byOff == byTarget) {
+									success = 1; // Success.
+								}
+							}
+							else {
+								const Point2I callbackBlockPos = { bxOff, byOff };
+								if (callback(liveObj, &callbackBlockPos, data)) {
+									success = 1; // Success.
+									bxTarget = bxOff; // This block has been chosen as the target.
+									byTarget = byOff;
+								}
+							}
+						}
+					}
+				}
+			}
+			countList[swapIndex] = 0;
+			swapIndex = (swapIndex == 0 ? 1 : 0); // Swap index.
+			if (countList[swapIndex] == 0) {
+				success = -1; // Failure.
+				// Or just return false here...
+				return false;
+			}
+		}
+
+		if (success == -1) {
+			return false;
+		}
+
+
+		sint32* bxCurrList = (sint32*)Gods98::Mem_Alloc(currCount * sizeof(sint32));
+		sint32* byCurrList = (sint32*)Gods98::Mem_Alloc(currCount * sizeof(sint32));
+		if (bxCurrList != nullptr && byCurrList != nullptr) {
+			bxCurrList[0] = bx;
+			byCurrList[0] = by;
+			bxCurrList[currCount - 1] = bxTarget;
+			byCurrList[currCount - 1] = byTarget;
+
+			// Start from target block and navigate our way back to the start.
+			sint32 bxCurr = bxTarget;
+			sint32 byCurr = byTarget;
+
+			// Direction is preserved after successful matches,
+			//  meaning the first attempt is to keep checking in the same direction.
+			Direction direction = DIRECTION_UP; // 0
+
+			/// SANITY: Change from not equals 1 to greater than 1.
+			for (uint32 i = (currCount - 1); i > 1; i--) {
+
+				for (uint32 j = 0; j < _countof(DIRECTIONS); j++) {
+					// Note: We use direction (not j) here for the optimisation.
+					const sint32 bxOff = bxCurr + DIRECTIONS[direction].x;
+					const sint32 byOff = byCurr + DIRECTIONS[direction].y;
+
+					// Unsigned comparisons used to skip checking >= 0.
+					if ((uint32)bxOff < blockWidth && (uint32)byOff < blockHeight) {
+						const uint32 gridIndex = blockWidth * byOff + bxOff;
+						if (objectGlobs.routeBuildListLengths[gridIndex] == i) {
+							bxCurrList[i - 1] = bxOff;
+							byCurrList[i - 1] = byOff;
+							bxCurr = bxOff;
+							byCurr = byOff;
+							break;
+						}
+					}
+
+					// If we failed to match then go to the next direction.
+					//direction = (direction + 1) % DIRECTION__COUNT;
+					direction = DirectionCW(direction);
+				}
+			}
+			*bxList = bxCurrList;
+			*byList = byCurrList;
+			*count = currCount;
+			return true;
+		}
+		/// FIX APPLY: Free lists on failure.
+		if (bxCurrList != nullptr) Gods98::Mem_Free(bxCurrList);
+		if (byCurrList != nullptr) Gods98::Mem_Free(byCurrList);
+	}
+	/// FIX APPLY: We should return false on failure here, especially because we haven't assigned to the output variables.
+	return false;
+}
 
 // <LegoRR.exe @004413b0>
-//bool32 __cdecl LegoRR::LegoObject_Route_Score_FUN_004413b0(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, sint32** out_new_bxs, sint32** out_new_bys, sint32* out_count, void* callback, void* data);
+bool32 __cdecl LegoRR::LegoObject_Route_BuildList(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bxTarget, uint32 byTarget, OUT sint32** bxList, OUT sint32** byList, OUT uint32* count, OPTIONAL LegoObject_RouteChooseBlockCallback callback, void* data)
+{
+	const Point2I DIRECTIONS[DIRECTION__COUNT] = {
+		{  0, -1 },
+		{  1,  0 },
+		{  0,  1 },
+		{ -1,  0 },
+	};
+
+	// Testing for diagonal pathfinding.
+	/*const Point2I DIRECTIONS[8] = {
+		{  0, -1 },
+		{  1, -1 },
+		{  1,  0 },
+		{  1,  1 },
+		{  0,  1 },
+		{ -1,  1 },
+		{ -1,  0 },
+		{ -1, -1 },
+	};*/
+
+	const uint32 blockWidth = Lego_GetMap()->blockWidth;
+	const uint32 blockHeight = Lego_GetMap()->blockHeight;
+
+	const uint32 newCount = (blockHeight * blockWidth);
+
+	// Unsigned comparisons used to skip checking < 0.
+	if ((uint32)bx >= blockWidth || (uint32)by >= blockHeight) {
+		return false;
+	}
+
+	if (callback == nullptr) {
+		// bxTarget, byTarget are used as the target block pos if a callback is not supplied,
+		//  otherwise the callback determines if the passed block is a target.
+		// Unsigned comparisons used to skip checking < 0.
+		if ((uint32)bxTarget >= blockWidth || (uint32)byTarget >= blockHeight) {
+			return false;
+		}
+		// Ensure the unit is able to walk on the target block's terrain.
+		if (!Lego_GetCrossTerrainType(liveObj, bxTarget, byTarget, bxTarget, byTarget, false)) {
+			return false;
+		}
+	}
+
+	if (objectGlobs.routeBuildListCount != newCount) {
+		if (objectGlobs.routeBuildListScores != nullptr) {
+			Gods98::Mem_Free(objectGlobs.routeBuildListScores);
+			objectGlobs.routeBuildListScores = nullptr;
+		}
+		/// FIX APPLY: Make sure the other allocated grid depending on the same count is freed.
+		///            Otherwise it won't be resized when needed.
+		if (objectGlobs.routeBuildListLengths != nullptr) {
+			Gods98::Mem_Free(objectGlobs.routeBuildListLengths);
+			objectGlobs.routeBuildListLengths = nullptr;
+		}
+
+		objectGlobs.routeBuildListCount = newCount;
+	}
+
+	if (objectGlobs.routeBuildListScores == nullptr) {
+		objectGlobs.routeBuildListScores = (real32*)Gods98::Mem_Alloc(objectGlobs.routeBuildListCount * sizeof(real32));
+	}
+
+	if (objectGlobs.routeBuildListScores != nullptr) {
+
+		for (uint32 i = 0; i < objectGlobs.routeBuildListCount; i++) {
+			objectGlobs.routeBuildListScores[i] = 0.0f;
+		}
+
+		// A set of two lists are used here, one is used to store the current blocks being iterated through,
+		//  and the other is used to build the possible blocks to move to.
+		//RoutingBlock blockList[2][100];
+		/// REFACTOR: Don't bother using RoutingBlock if we're just using the Point2I blockPos field...
+		/// SANITY: Increase list size from 100 to something higher.
+		Point2I blockList[2][250];
+		uint32 countList[2];
+
+		sint32 success = 0; // -1 = failure, 0 = continue, 1 = success.
+
+		uint32 swapIndex = 0;
+		blockList[0][0].x = bx;
+		blockList[0][0].y = by;
+		countList[0] = 1;
+		countList[1] = 0;
+
+		bool targetSuccess = false;
+		uint32 backupCount = 0; // Used if targetSuccess is true.
+
+		uint32 currCount = 1;
+		objectGlobs.routeBuildListScores[blockWidth * by + bx] = 1.0f;
+
+		while (success == 0) {
+			currCount++;
+
+			for (uint32 i = 0; i < countList[swapIndex]; i++) {
+				for (uint32 j = 0; j < _countof(DIRECTIONS); j++) {
+					const Point2I blockPos = blockList[swapIndex][i];
+
+					const real32 lastScore = objectGlobs.routeBuildListScores[blockWidth * blockPos.y + blockPos.x];
+
+					const sint32 bxOff = blockPos.x + DIRECTIONS[j].x;
+					const sint32 byOff = blockPos.y + DIRECTIONS[j].y;
+
+					const uint32 gridIndex = blockWidth * byOff + bxOff;
+
+					// Unsigned comparisons used to skip checking >= 0.
+					if ((uint32)bxOff < blockWidth && (uint32)byOff < blockHeight) {
+						// Check CrossTerrain from our current direction-offset to one further in that direction.
+						const sint32 bxOff2 = bxOff + DIRECTIONS[j].x;
+						const sint32 byOff2 = byOff + DIRECTIONS[j].y;
+
+						real32 scoreModifier = 1.0f;
+						/// TODO: Is this intended to be offset2 and not offset1??
+						const Point2I blockOff2Pos = { bxOff2, byOff2 };
+						/// TODO: Consider scaling score modifiers by path and rubble coefs.
+						///       But first consider it's possible Rock Monsters are intended to walk through paths and destroy them.
+						if (Level_Block_IsPath(&blockOff2Pos)) {
+							scoreModifier = 0.5f; // Prioritize routing across paths.
+						}
+						/// TODO: Consider avoiding rubble by checking rubble layers.
+						///       But first consider if this will hamper Rock Monster movement.
+						//else if (Level_Block_GetRubbleLayers(&blockOff2Pos) > 0) {
+						//	scoreModifier = 2.0f;
+						//}
+
+						const real32 newScore = lastScore + scoreModifier;
+
+						/// OPTIMIZE: Move CrossTerrain check to after grid check.
+						if ((objectGlobs.routeBuildListScores[gridIndex] == 0.0f ||
+							 objectGlobs.routeBuildListScores[gridIndex] > newScore) &&
+							Lego_GetCrossTerrainType(liveObj, bxOff, byOff, bxOff2, byOff2, false))
+						{
+							const uint32 nextSwapIndex = (swapIndex == 0 ? 1 : 0); // Swap index.
+							blockList[nextSwapIndex][countList[nextSwapIndex]].x = bxOff;
+							blockList[nextSwapIndex][countList[nextSwapIndex]].y = byOff;
+							countList[nextSwapIndex]++;
+							objectGlobs.routeBuildListScores[gridIndex] = newScore;
+
+							if (callback == nullptr) {
+								if (bxOff == bxTarget && byOff == byTarget) {
+									// Why is the logic for success here different than if decided by a callback??
+									//success = 1; // Success.
+									targetSuccess = true; // Success.
+									backupCount = currCount;
+								}
+							}
+							else {
+								const Point2I callbackBlockPos = { bxOff, byOff };
+								if (callback(liveObj, &callbackBlockPos, data)) {
+									success = 1; // Success.
+									bxTarget = bxOff; // This block has been chosen as the target.
+									byTarget = byOff;
+								}
+							}
+						}
+					}
+				}
+			}
+			countList[swapIndex] = 0;
+			swapIndex = (swapIndex == 0 ? 1 : 0); // Swap index.
+			if (countList[swapIndex] == 0) {
+				success = -1; // Failure.
+				// Or just return false here...
+				if (!targetSuccess) return false;
+			}
+		}
+
+		if (targetSuccess) {
+			success = 1; // Success.
+			currCount = backupCount;
+		}
+
+		if (success == -1) {
+			return false;
+		}
+
+
+		sint32* bxCurrList = (sint32*)Gods98::Mem_Alloc(currCount * sizeof(sint32));
+		sint32* byCurrList = (sint32*)Gods98::Mem_Alloc(currCount * sizeof(sint32));
+		if (bxCurrList != nullptr && byCurrList != nullptr) {
+			bxCurrList[0] = bx;
+			byCurrList[0] = by;
+			bxCurrList[currCount - 1] = bxTarget;
+			byCurrList[currCount - 1] = byTarget;
+
+			// Start from target block and navigate our way back to the start.
+			sint32 bxCurr = bxTarget;
+			sint32 byCurr = byTarget;
+
+			// Unlike BuildListsWithoutScore, this method doesn't prioritize the last direction.
+			// Direction is preserved after successful matches,
+			//  meaning the first attempt is to keep checking in the same direction.
+			//Direction direction = DIRECTION_UP; // 0
+
+			/// SANITY: Change from not equals 1 to greater than 1.
+			for (uint32 i = (currCount - 1); i > 1; i--) {
+
+				/// FIX APPLY: Handle routes that have a arbitrarily large score.
+				real32 minScore = 0.0f;// 10000.0f; // Arbitrarily high score.
+				sint32 bxMin = 0; // Block position for min score.
+				sint32 byMin = 0;
+
+				for (uint32 j = 0; j < _countof(DIRECTIONS); j++) {
+					// Note: We use direction (not j) here for the optimisation.
+					//const sint32 bxOff = bxCurr + DIRECTIONS[direction].x;
+					//const sint32 byOff = byCurr + DIRECTIONS[direction].y;
+					const sint32 bxOff = bxCurr + DIRECTIONS[j].x;
+					const sint32 byOff = byCurr + DIRECTIONS[j].y;
+
+					// Unsigned comparisons used to skip checking >= 0.
+					if ((uint32)bxOff < blockWidth && (uint32)byOff < blockHeight) {
+						const uint32 gridIndex = blockWidth * byOff + bxOff;
+
+						const Point2I blockOffPos = { bxOff, byOff };
+
+						const real32 score = objectGlobs.routeBuildListScores[gridIndex];
+						// Prioritize lower scores, or equal scores that cross a path.
+						/// FIX APPLY: Handle routes that have a arbitrarily large score.
+						if ((score > 0.0f && (score < minScore || minScore == 0.0f)) ||
+							(score == minScore && Level_Block_IsPath(&blockOffPos)))
+						{
+							minScore = score;
+							bxMin = bxOff;
+							byMin = byOff;
+						}
+					}
+
+					// If we failed to match then go to the next direction.
+					//direction = (direction + 1) % DIRECTION__COUNT;
+					//direction = DirectionCW(direction);
+				}
+				bxCurrList[i - 1] = bxMin;
+				byCurrList[i - 1] = byMin;
+				bxCurr = bxMin;
+				byCurr = byMin;
+			}
+
+			/// TODO: Consider only writing these when the first block is entered.
+			*bxList = bxCurrList;
+			*byList = byCurrList;
+			*count = currCount;
+
+			// Reverse comparison.
+			//if ((bxCurrList[0] != bxCurrList[1] || std::abs(byCurrList[0] - byCurrList[1]) != 1) &&
+			//	(byCurrList[0] != byCurrList[1] || std::abs(bxCurrList[0] - bxCurrList[1]) != 1))
+
+			if ((bxCurrList[0] == bxCurrList[1] && std::abs(byCurrList[0] - byCurrList[1]) == 1) ||
+				(byCurrList[0] == byCurrList[1] && std::abs(bxCurrList[0] - bxCurrList[1]) == 1))
+			{
+				// The route starts by moving exactly one block in one direction.
+				//*bxList = bxCurrList;
+				//*byList = byCurrList;
+				//*count = currCount;
+				return true;
+			}
+			else {
+				// The route doesn't start by moving exactly one block in one direction.
+				// I'm not actually sure if it's possible to hit this condition...
+				// Was it intended at one point to support moving in 8 directions?
+
+				// Use the second method to build a route.... I really don't understand this....
+				// It must be some sort of existing pathfinding algorithm.
+				Gods98::Mem_Free(bxCurrList);
+				Gods98::Mem_Free(byCurrList);
+				return LegoObject_Route_BuildListWithoutScore(liveObj, bx, by, bxTarget, byTarget, bxList, byList, count, callback, data);
+			}
+		}
+		/// FIX APPLY: Free lists on failure.
+		if (bxCurrList != nullptr) Gods98::Mem_Free(bxCurrList);
+		if (byCurrList != nullptr) Gods98::Mem_Free(byCurrList);
+	}
+	/// FIX APPLY: We should return false on failure here, especially because we haven't assigned to the output variables.
+	return false;
+}
 
 // <LegoRR.exe @004419c0>
-//bool32 __cdecl LegoRR::LegoObject_Route_AllocPtr_FUN_004419c0(LegoObject* liveObj, uint32 count, const sint32* bxList, const sint32* byList, OPTIONAL const Point2F* point);
+bool32 __cdecl LegoRR::LegoObject_Route_Begin(LegoObject* liveObj, uint32 count, const sint32* bxList, const sint32* byList, OPTIONAL const Point2F* finalPosition)
+{
+	if (!LegoObject_Check_LotsOfFlags1AndFlags2_FUN_0043bdb0(liveObj)) {
+
+		bool failed = false;
+
+		if (liveObj->flags4 & LIVEOBJ4_DOCKOCCUPIED) {
+			liveObj->flags4 &= ~LIVEOBJ4_DOCKOCCUPIED;
+			liveObj->routeToObject = nullptr;
+		}
+
+		RoutingBlock* routeBlocks = (RoutingBlock*)Gods98::Mem_Alloc(count * sizeof(RoutingBlock));
+		if (routeBlocks != nullptr) {
+			sint32 lastRouteCmp = -1;
+
+			for (uint32 i = 0; i < count; i++) {
+				RoutingBlock* routeBlock = &routeBlocks[i];
+
+				routeBlock->blockPos = Point2I { bxList[i], byList[i] };
+
+				// Only use the optional finalPosition argument at the final target block.
+				if (finalPosition != nullptr && i == (count - 1)) {
+					// Use the supplied position on the block.
+					// Sanity init for failure. For once this is actually handled by Vanilla.
+					Point2F blockCenter = { 0.5f, 0.5f };
+
+					Map3D_FUN_0044fb30(Lego_GetMap(), finalPosition, nullptr, &blockCenter);
+					routeBlock->blockOffset = blockCenter;
+				}
+				else if (!(liveObj->flags3 & LIVEOBJ3_CENTERBLOCKIDLE) &&
+						 (StatsObject_GetStatsFlags1(liveObj) & STATS1_ROUTEAVOIDANCE))
+				{
+					// Choose a random position on the block.
+					routeBlock->blockOffset = Point2F {
+						Gods98::Maths_RandRange(0.3f, 0.7f),
+						Gods98::Maths_RandRange(0.3f, 0.7f),
+					};
+				}
+				else {
+					// Use the center of the block.
+					routeBlock->blockOffset = Point2F { 0.5f, 0.5f };
+				}
+
+				routeBlock->flagsByte = ROUTE_FLAG_NONE;
+				routeBlock->actionByte = ROUTE_ACTION_NONE;
+
+				if (i < (count - 1)) {
+					const sint32 routeCmp = Map3D_CheckRoutingComparison_FUN_00450b60(bxList[i + 1], byList[i + 1], bxList[i], byList[i]);
+					if (routeCmp == -1) {
+						failed = true;
+						break;
+					}
+					if (i > 0 && routeCmp != lastRouteCmp) {
+						const sint32 crossType = Lego_GetCrossTerrainType(liveObj, bxList[i + 1], byList[i + 1], bxList[i - 1], byList[i - 1], false);
+						if (crossType == 2) {
+							routeBlock->flagsByte |= ROUTE_FLAG_UNK_10;
+						}
+					}
+				}
+			}
+		}
+
+		/// TODO: Should we be confirming routeBlocks is non-null??
+		if (!failed) {
+			// Cancel existing route.
+			LegoObject_Route_End(liveObj, false);
+
+			liveObj->flags3 &= ~LIVEOBJ3_UNK_400;
+			liveObj->flags1 |= LIVEOBJ1_MOVING;
+			liveObj->routeBlocks = routeBlocks;
+			liveObj->routeBlocksTotal = count;
+			liveObj->routeBlocksCurrent = 0;
+			liveObj->routeCurveCurrDist = 0.0f;
+			liveObj->routeCurveTotalDist = 0.0f;
+			return true;
+		}
+
+		if (routeBlocks != nullptr) Gods98::Mem_Free(routeBlocks);
+	}
+	return false;
+}
 
 // <LegoRR.exe @00441c00>
-//void __cdecl LegoRR::LegoObject_Route_End(LegoObject* liveObj, bool32 completed);
+void __cdecl LegoRR::LegoObject_Route_End(LegoObject* liveObj, bool32 completed)
+{
+	if (liveObj->routeBlocks != nullptr) {
+		if (!completed) {
+			// Loop from current block to total blocks (ignoring 0-current).
+			for (uint32 i = liveObj->routeBlocksCurrent; i < liveObj->routeBlocksTotal; i++) {
+				const RouteAction action = liveObj->routeBlocks[i].actionByte;
+
+				if (action == ROUTE_ACTION_GATHERROCK) {
+					if (liveObj->routeToObject != nullptr) {
+						if (liveObj->routeToObject->type == LegoObject_Boulder) {
+							LegoObject_DestroyBoulder_AndCreateExplode(liveObj->routeToObject);
+						}
+						else {
+							liveObj->routeToObject->interactObject = nullptr;
+						}
+						liveObj->routeToObject = nullptr;
+					}
+					break; // Finish the loop early.
+				}
+				else if (action == ROUTE_ACTION_STORE) {
+					liveObj->routeToObject = nullptr;
+					break; // Finish the loop early.
+				}
+			}
+
+			if (liveObj->type == LegoObject_RockMonster) {
+				if ((liveObj->flags1 & LIVEOBJ1_CARRYING) && liveObj->carriedObjects[0]->type == LegoObject_Boulder) {
+					LegoObject_DropCarriedObject(liveObj, false);
+				}
+
+				AITask_LiveObject_FUN_00403b30(liveObj, AITask_Type_Gather, nullptr);
+				AITask_LiveObject_FUN_00403b30(liveObj, AITask_Type_Repair, nullptr);
+			}
+
+			if (liveObj->flags1 & LIVEOBJ1_DRILLING) {
+				const Point2I targetBlockPos = {
+					(sint32)liveObj->targetBlockPos.x,
+					(sint32)liveObj->targetBlockPos.y,
+				};
+				Level_Block_SetBusy(&targetBlockPos, false);
+			}
+
+			AITask_Game_UnkLiveObjectHandleDynamite(liveObj);
+		}
+		else { // If completed.
+			if (liveObj->type == LegoObject_MiniFigure) {
+				Creature_SetOrientation(liveObj->miniFigure, liveObj->point_298.x, liveObj->point_298.y);
+				liveObj->faceDirection.x = liveObj->point_298.x;
+				liveObj->faceDirection.y = liveObj->point_298.y;
+			}
+		}
+
+		Gods98::Mem_Free(liveObj->routeBlocks);
+		liveObj->routeBlocks = nullptr;
+
+		AITask_Route_End(liveObj, completed);
+	}
+
+	liveObj->routeBlocksTotal = 0;
+	liveObj->routeBlocksCurrent = 0;
+	liveObj->routeCurveCurrDist = 0.0f;
+	liveObj->routeCurveTotalDist = 0.0f;
+	liveObj->routeCurveInitialDist = 0.0f;
+	
+	liveObj->flags1 &= ~(LIVEOBJ1_MOVING|LIVEOBJ1_RUNNINGAWAY);
+	liveObj->flags3 &= ~(LIVEOBJ3_UNK_400|LIVEOBJ3_UNK_4000);
+
+	if (liveObj->routeToObject != nullptr) {
+		liveObj->routeToObject->flags4 &= ~LIVEOBJ4_UNK_10;
+	}
+
+	if (liveObj->flags1 & LIVEOBJ1_LIFTING) {
+		liveObj->flags1 &= ~LIVEOBJ1_LIFTING;
+		// Invert face direction.
+		Gods98::Maths_Vector3DScale(&liveObj->faceDirection, &liveObj->faceDirection, -1.0f);
+	}
+
+	LegoObject_SetActivity(liveObj, Activity_Stand, 0);
+}
 
 // <LegoRR.exe @00441df0>
 //void __cdecl LegoRR::LegoObject_Interrupt(LegoObject* liveObj, bool32 actStand, bool32 dropCarried);
@@ -4381,7 +5003,7 @@ void __cdecl LegoRR::LegoObject_TryRunAway(LegoObject* liveObj, const Point2F* d
 			bool isLocalList = false;
 			sint32* bxList = nullptr;
 			sint32* byList = nullptr;
-			sint32 count;
+			uint32 count = 0;
 
 			if (awayBlockPos.x == blockPos.x && awayBlockPos.y == blockPos.y) {
 				isLocalList = true;
@@ -4390,7 +5012,7 @@ void __cdecl LegoRR::LegoObject_TryRunAway(LegoObject* liveObj, const Point2F* d
 				byList = &blockPos.y;
 				count = 1;
 			}
-			else if (!LegoObject_Route_Score_FUN_004413b0(liveObj,
+			else if (!LegoObject_Route_BuildList(liveObj,
 														  (uint32)blockPos.x, (uint32)blockPos.y,
 														  (uint32)awayBlockPos.x, (uint32)awayBlockPos.y,
 														  &bxList, &byList, &count, nullptr, nullptr))
@@ -4398,7 +5020,7 @@ void __cdecl LegoRR::LegoObject_TryRunAway(LegoObject* liveObj, const Point2F* d
 				return;
 			}
 
-			if (LegoObject_Route_AllocPtr_FUN_004419c0(liveObj, count, bxList, byList, &awayPos)) {
+			if (LegoObject_Route_Begin(liveObj, count, bxList, byList, &awayPos)) {
 				liveObj->routeBlocks[liveObj->routeBlocksTotal - 1].flagsByte |= ROUTE_FLAG_RUNAWAY;
 			}
 
@@ -4770,7 +5392,7 @@ bool32 __cdecl LegoRR::LegoObject_UpdateActivityChange(LegoObject* liveObj)
 }
 
 // <LegoRR.exe @00448160>
-//void __cdecl LegoRR::LegoObject_SimpleObject_FUN_00448160(LegoObject* liveObj, real32 elapsed);
+//void __cdecl LegoRR::LegoObject_SimpleObject_MoveAnimation(LegoObject* liveObj, real32 elapsed);
 
 // <LegoRR.exe @00448a80>
 //void __cdecl LegoRR::LegoObject_Debug_DropActivateDynamite(LegoObject* liveObj);
@@ -4845,7 +5467,7 @@ void __cdecl LegoRR::LegoObject_HideAllCertainObjects(void)
 }
 
 // <LegoRR.exe @00449ee0>
-//void __cdecl LegoRR::LegoObject_FlocksCallback_FUN_00449ee0(Flocks* flockData, FlocksItem* subdata, void* data);
+//void __cdecl LegoRR::LegoObject_FlocksCallback_HideCertainObjects(Flocks* flockData, FlocksItem* subdata, void* data);
 
 // <LegoRR.exe @00449f90>
 //void __cdecl LegoRR::LegoObject_Hide2(LegoObject* liveObj, bool32 hide2);

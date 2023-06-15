@@ -59,6 +59,8 @@ namespace Dummy {
 
 typedef bool32 (__cdecl* LegoObject_RunThroughListsCallback)(LegoObject* liveObj, void* data);
 
+typedef bool32 (__cdecl* LegoObject_RouteChooseBlockCallback)(LegoObject* liveObj, const Point2I* blockPos, void* data);
+
 #pragma endregion
 
 /**********************************************************************************
@@ -192,7 +194,7 @@ enum LiveFlags3 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ3_UNK_400        = 0x400,
 	LIVEOBJ3_UNUSED_800     = 0x800, // Observed on Rock Raider being pummeled by RockFallin.
 	LIVEOBJ3_CENTERBLOCKIDLE = 0x1000, // Used for vehicles. These units will only idle in the center of a block. Ignored if STATS1_ROUTEAVOIDANCE.
-	                                   // Only used in LegoObject_Route_AllocPtr_FUN_004419c0.
+	                                   // Only used in LegoObject_Route_Begin.
 	LIVEOBJ3_UNK_2000       = 0x2000,
 	LIVEOBJ3_UNK_4000       = 0x4000,
 	LIVEOBJ3_CANDYNAMITE    = 0x8000,
@@ -272,7 +274,7 @@ enum RouteFlags : uint8 // [LegoRR/LegoObject.c|flags:0x1|type:byte]
 	ROUTE_FLAG_GOTOBUILDING = 0x4,
 	ROUTE_FLAG_UNK_8        = 0x8,
 	ROUTE_UNK_MASK_c        = 0xc,
-	ROUTE_FLAG_UNK_10       = 0x10,
+	ROUTE_FLAG_UNK_10       = 0x10, // Related to CrossTerrainType 2.
 	ROUTE_FLAG_UNK_20       = 0x20,
 	ROUTE_FLAG_RUNAWAY      = 0x40,
 };
@@ -450,9 +452,9 @@ struct LegoObject_Globs // [LegoRR/LegoObject.c|struct:0xc644|tags:GLOBS]
 	/*0080,4*/      LegoObject* freeList;
 	/*0084,4b0*/    SFX_ID objectTtSFX[LegoObject_Type_Count][LegoObject_ID_Count]; // [objType:20][objID:15]
 	/*0534,13c*/    const char* activityName[Activity_Type_Count]; // [activityType:79]
-	/*0670,4*/      void* UnkSurfaceGrid_1_TABLE;
-	/*0674,4*/      void* UnkSurfaceGrid_2_TABLE;
-	/*0678,4*/      uint32 UnkSurfaceGrid_COUNT;
+	/*0670,4*/      real32* routeBuildListScores;
+	/*0674,4*/      uint32* routeBuildListLengths;
+	/*0678,4*/      uint32 routeBuildListCount;
 	/*067c,4*/      real32 radarSurveyCycleTimer; // Timer for how often survey scans update.
 	/*0680,4*/      uint32 listCount;
 	/*0684,4*/      LegoObject_GlobFlags flags;
@@ -1194,24 +1196,24 @@ void __cdecl LegoObject_SetActivity(LegoObject* liveObj, Activity_Type activityT
 //void __cdecl LegoObject_InitBoulderMesh_FUN_00440eb0(LegoObject* liveObj, Gods98::Container_Texture* contTexture);
 
 // <LegoRR.exe @00440ef0>
-#define LegoObject_Route_ScoreNoCallback_FUN_00440ef0 ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, sint32** out_param_6, sint32** out_param_7, sint32* out_count))0x00440ef0)
-//bool32 __cdecl LegoObject_Route_ScoreNoCallback_FUN_00440ef0(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, sint32** out_param_6, sint32** out_param_7, sint32* out_count);
+//#define LegoObject_Route_BuildListToTarget ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bxTarget, uint32 byTarget, OUT sint32** bxList, OUT sint32** byList, OUT uint32* count))0x00440ef0)
+bool32 __cdecl LegoObject_Route_BuildListToTarget(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bxTarget, uint32 byTarget, OUT sint32** bxList, OUT sint32** byList, OUT uint32* count);
 
 // <LegoRR.exe @00440f30>
-#define LegoObject_Route_ScoreSub_FUN_00440f30 ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, uint32** out_param_6, uint32** out_param_7, uint32* out_count, undefined* callback, void* data))0x00440f30)
-//bool32 __cdecl LegoObject_Route_ScoreSub_FUN_00440f30(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, uint32** out_param_6, uint32** out_param_7, uint32* out_count, undefined* callback, void* data);
+//#define LegoObject_Route_BuildListWithoutScore ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bxTarget, uint32 byTarget, OUT sint32** bxList, OUT sint32** byList, OUT uint32* coun, OPTIONAL LegoObject_RouteChooseBlockCallback callback, void* data))0x00440f30)
+bool32 __cdecl LegoObject_Route_BuildListWithoutScore(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bxTarget, uint32 byTarget, OUT sint32** bxList, OUT sint32** byList, OUT uint32* count, OPTIONAL LegoObject_RouteChooseBlockCallback callback, void* data);
 
 // <LegoRR.exe @004413b0>
-#define LegoObject_Route_Score_FUN_004413b0 ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, sint32** out_new_bxs, sint32** out_new_bys, sint32* out_count, void* callback, void* data))0x004413b0)
-//bool32 __cdecl LegoObject_Route_Score_FUN_004413b0(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bx2, uint32 by2, sint32** out_new_bxs, sint32** out_new_bys, sint32* out_count, void* callback, void* data);
+//#define LegoObject_Route_BuildList ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bxTarget, uint32 byTarget, OUT sint32** bxList, OUT sint32** byList, OUT uint32* count, OPTIONAL LegoObject_RouteChooseBlockCallback callback, void* data))0x004413b0)
+bool32 __cdecl LegoObject_Route_BuildList(LegoObject* liveObj, uint32 bx, uint32 by, uint32 bxTarget, uint32 byTarget, OUT sint32** bxList, OUT sint32** byList, OUT uint32* count, OPTIONAL LegoObject_RouteChooseBlockCallback callback, void* data);
 
 // <LegoRR.exe @004419c0>
-#define LegoObject_Route_AllocPtr_FUN_004419c0 ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 count, const sint32* bxList, const sint32* byList, OPTIONAL const Point2F* point))0x004419c0)
-//bool32 __cdecl LegoObject_Route_AllocPtr_FUN_004419c0(LegoObject* liveObj, uint32 count, const sint32* bxList, const sint32* byList, OPTIONAL const Point2F* point);
+//#define LegoObject_Route_Begin ((bool32 (__cdecl* )(LegoObject* liveObj, uint32 count, const sint32* bxList, const sint32* byList, OPTIONAL const Point2F* finalPosition))0x004419c0)
+bool32 __cdecl LegoObject_Route_Begin(LegoObject* liveObj, uint32 count, const sint32* bxList, const sint32* byList, OPTIONAL const Point2F* finalPosition);
 
 // <LegoRR.exe @00441c00>
-#define LegoObject_Route_End ((void (__cdecl* )(LegoObject* liveObj, bool32 completed))0x00441c00)
-//void __cdecl LegoObject_Route_End(LegoObject* liveObj, bool32 completed);
+//#define LegoObject_Route_End ((void (__cdecl* )(LegoObject* liveObj, bool32 completed))0x00441c00)
+void __cdecl LegoObject_Route_End(LegoObject* liveObj, bool32 completed);
 
 // <LegoRR.exe @00441df0>
 #define LegoObject_Interrupt ((void (__cdecl* )(LegoObject* liveObj, bool32 actStand, bool32 dropCarried))0x00441df0)
@@ -1458,8 +1460,8 @@ bool32 __cdecl LegoObject_Callback_SlipAndScare(LegoObject* liveObj, void* pOthe
 bool32 __cdecl LegoObject_UpdateActivityChange(LegoObject* liveObj);
 
 // <LegoRR.exe @00448160>
-#define LegoObject_SimpleObject_FUN_00448160 ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x00448160)
-//void __cdecl LegoObject_SimpleObject_FUN_00448160(LegoObject* liveObj, real32 elapsed);
+#define LegoObject_SimpleObject_MoveAnimation ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x00448160)
+//void __cdecl LegoObject_SimpleObject_MoveAnimation(LegoObject* liveObj, real32 elapsed);
 
 // <LegoRR.exe @00448a80>
 #define LegoObject_Debug_DropActivateDynamite ((void (__cdecl* )(LegoObject* liveObj))0x00448a80)
@@ -1550,8 +1552,8 @@ bool32 __cdecl LegoObject_UpdateActivityChange(LegoObject* liveObj);
 void __cdecl LegoObject_HideAllCertainObjects(void);
 
 // <LegoRR.exe @00449ee0>
-#define LegoObject_FlocksCallback_FUN_00449ee0 ((void (__cdecl* )(Flocks* flockData, FlocksItem* subdata, void* data))0x00449ee0)
-//void __cdecl LegoObject_FlocksCallback_FUN_00449ee0(Flocks* flockData, FlocksItem* subdata, void* data);
+#define LegoObject_FlocksCallback_HideCertainObjects ((void (__cdecl* )(Flocks* flockData, FlocksItem* subdata, void* data))0x00449ee0)
+//void __cdecl LegoObject_FlocksCallback_HideCertainObjects(Flocks* flockData, FlocksItem* subdata, void* data);
 
 // <LegoRR.exe @00449f90>
 #define LegoObject_Hide2 ((void (__cdecl* )(LegoObject* liveObj, bool32 hide2))0x00449f90)
