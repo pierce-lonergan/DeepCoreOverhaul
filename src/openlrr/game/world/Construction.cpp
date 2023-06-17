@@ -374,6 +374,45 @@ LegoRR::Construction_Zone* __cdecl LegoRR::Construction_Zone_FindByHandleOrAtBlo
 	return nullptr;
 }
 
+/// CUSTOM: Alternate version of Construction_Zone_FindByHandleOrAtBlock that checks all blocks that are part of a construction zone.
+LegoRR::Construction_Zone* LegoRR::Construction_Zone_FindAtOccupiedBlock(const Point2I* blockPos, bool solidOnly)
+{
+	Construction_Zone* construct = constructionGlobs.constructList;
+	for (; construct != nullptr; construct = construct->next) {
+
+		if (Construction_Zone_OccupiesBlock(construct, blockPos, solidOnly))
+			return construct;
+	}
+	return nullptr;
+}
+
+/// CUSTOM: Helper method to determine if the specified block is within a construction zone's shape.
+bool LegoRR::Construction_Zone_OccupiesBlock(Construction_Zone* construct, const Point2I* blockPos, bool solidOnly)
+{
+	for (uint32 i = 0; i < construct->shapeCount; i++) {
+		const Point2I shapeBlock = construct->shapeBlocks[i];
+		const bool matches = (blockPos->x == shapeBlock.x && blockPos->y == shapeBlock.y);
+
+		if ((i != (construct->shapeCount - 1)) &&
+			(shapeBlock.x == construct->shapeBlocks[i + 1].x) &&
+			(shapeBlock.y == construct->shapeBlocks[i + 1].y))
+		{
+			// Should we return true on path tiles?
+			if (!solidOnly && matches) {
+				return true;
+			}
+			i++; // Skip next shape point.
+		}
+		else {
+			// This is a solid tile.
+			if (matches) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 // <LegoRR.exe @00409040>
 void __cdecl LegoRR::Construction_Zone_CompletePath(const Point2I* originBlockPos)
 {
@@ -662,10 +701,11 @@ void __cdecl LegoRR::Construction_Zone_RequestPathResources(Construction_Zone* c
 }
 
 // <LegoRR.exe @00409530>
-void __cdecl LegoRR::Construction_Zone_CancelBuilding(const Point2I* originBlockPos)
+void __cdecl LegoRR::Construction_Zone_CancelBuilding(const Point2I* occupiedBlockPos)
 {
 	Lego_Level* level = Lego_GetLevel();
-	Construction_Zone* construct = Construction_Zone_FindByHandleOrAtBlock(originBlockPos, nullptr);
+	/// FIX APPLY: Allow cancelling construction when selecting a tile other than the origin.
+	Construction_Zone* construct = Construction_Zone_FindAtOccupiedBlock(occupiedBlockPos, false);
 
 	if (construct != nullptr && (construct->requestCount != construct->placedCount)) {
 		// Restore blocks.

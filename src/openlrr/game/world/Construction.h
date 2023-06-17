@@ -195,6 +195,12 @@ bool32 __cdecl Construction_Zone_ExistsAtBlock(const Point2I* originBlockPos);
 //#define Construction_Zone_FindByHandleOrAtBlock ((Construction_Zone* (__cdecl* )(OPTIONAL const Point2I* originBlockPos, OPTIONAL const uint32* constructHandle))0x00408ff0)
 Construction_Zone* __cdecl Construction_Zone_FindByHandleOrAtBlock(OPTIONAL const Point2I* originBlockPos, OPTIONAL const uint32* constructHandle);
 
+/// CUSTOM: Alternate version of Construction_Zone_FindByHandleOrAtBlock that checks all blocks that are part of a construction zone.
+Construction_Zone* Construction_Zone_FindAtOccupiedBlock(const Point2I* blockPos, bool solidOnly);
+
+/// CUSTOM: Helper method to determine if the specified block is within a construction zone's shape.
+bool Construction_Zone_OccupiesBlock(Construction_Zone* construct, const Point2I* blockPos, bool solidOnly);
+
 // <LegoRR.exe @00409040>
 //#define Construction_Zone_CompletePath ((void (__cdecl* )(const Point2I* originBlockPos))0x00409040)
 void __cdecl Construction_Zone_CompletePath(const Point2I* originBlockPos);
@@ -246,7 +252,7 @@ void __cdecl Construction_Zone_RequestPathResources(Construction_Zone* construct
 
 // <LegoRR.exe @00409530>
 //#define Construction_Zone_CancelBuilding ((void (__cdecl* )(const Point2I* originBlockPos))0x00409530)
-void __cdecl Construction_Zone_CancelBuilding(const Point2I* originBlockPos);
+void __cdecl Construction_Zone_CancelBuilding(const Point2I* occupiedBlockPos);
 
 // Starts a construction zone for a Building object.
 // Returns handle value to construction zone.
