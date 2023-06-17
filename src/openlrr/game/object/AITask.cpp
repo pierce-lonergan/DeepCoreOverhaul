@@ -365,7 +365,7 @@ void __cdecl LegoRR::AITask_RemoveGetToolReferences(AITask* aiTask)
 //void __cdecl LegoRR::AITask_Construction_FUN_00403630(uint32 constructHandle, bool32 checkObjType, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @00403680>
-//void __cdecl LegoRR::AITask_DoRequest_ObjectType(LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel, const Point2I* blockPos, undefined4 param_5, Point2F* pointFloat, bool32 param_7);
+//void __cdecl LegoRR::AITask_DoRequest_ObjectType(LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel, const Point2I* blockPos, uint32 constructHandle, const Point2F* blockOffset, bool32 faceOutFlag);
 
 // <LegoRR.exe @00403740>
 //void __cdecl LegoRR::AITask_PlaceRequestObject(const Point2I* blockPos, LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel);

@@ -166,42 +166,42 @@ uint32 __cdecl Construction_GetBuildingBase(const char* baseName);
 
 // Calling with a null placedObj will still allow the construction zone to evaluate if all resources are placed.
 // <LegoRR.exe @00408c10>
-#define Construction_Zone_PlaceResource ((void (__cdecl* )(uint32 constructHandle, OPTIONAL LegoObject* placedObj))0x00408c10)
-//void __cdecl Construction_Zone_PlaceResource(uint32 constructHandle, OPTIONAL LegoObject* placedObj);
+//#define Construction_Zone_PlaceResource ((void (__cdecl* )(uint32 constructHandle, OPTIONAL LegoObject* placedObj))0x00408c10)
+void __cdecl Construction_Zone_PlaceResource(uint32 constructHandle, OPTIONAL LegoObject* placedObj);
 
 // <LegoRR.exe @00408ca0>
 //#define Construction_Zone_NeedsMoreOfResource ((bool32 (__cdecl* )(uint32 constructHandle, LegoObject_Type objType, LegoObject_ID objID))0x00408ca0)
 bool32 __cdecl Construction_Zone_NeedsMoreOfResource(uint32 constructHandle, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @00408d40>
-#define Construction_Zone_CountOfResourcePlaced ((uint32 (__cdecl* )(Construction_Zone* construct, LegoObject_Type objType, LegoObject_ID objID))0x00408d40)
-//uint32 __cdecl Construction_Zone_CountOfResourcePlaced(Construction_Zone* construct, LegoObject_Type objType, LegoObject_ID objID);
+//#define Construction_Zone_CountOfResourcePlaced ((uint32 (__cdecl* )(Construction_Zone* construct, LegoObject_Type objType, LegoObject_ID objID))0x00408d40)
+uint32 __cdecl Construction_Zone_CountOfResourcePlaced(Construction_Zone* construct, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @00408d80>
-#define Construction_Zone_RequestResource ((void (__cdecl* )(const Point2I* originBlockPos, LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, uint32 count))0x00408d80)
-//void __cdecl Construction_Zone_RequestResource(const Point2I* originBlockPos, LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, uint32 count);
+//#define Construction_Zone_RequestResource ((void (__cdecl* )(const Point2I* originBlockPos, LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, uint32 count))0x00408d80)
+void __cdecl Construction_Zone_RequestResource(const Point2I* originBlockPos, LegoObject_Type objType, LegoObject_ID objID, uint32 objLevel, uint32 count);
 
 // <LegoRR.exe @00408df0>
-#define Construction_Zone_RequestBarriers ((void (__cdecl* )(const Point2I* originBlockPos, const Point2I* shapeBlocks, uint32 shapeCount))0x00408df0)
-//void __cdecl Construction_Zone_RequestBarriers(const Point2I* originBlockPos, const Point2I* shapeBlocks, uint32 shapeCount);
+//#define Construction_Zone_RequestBarriers ((void (__cdecl* )(const Point2I* originBlockPos, const Point2I* shapeBlocks, uint32 shapeCount))0x00408df0)
+void __cdecl Construction_Zone_RequestBarriers(const Point2I* originBlockPos, const Point2I* shapeBlocks, uint32 shapeCount);
 
 // Checks if a construction zone origin exists at the specified block position.
 // <LegoRR.exe @00408fd0>
-#define Construction_Zone_ExistsAtBlock ((bool32 (__cdecl* )(const Point2I* originBlockPos))0x00408fd0)
-//bool32 __cdecl Construction_Zone_ExistsAtBlock(const Point2I* originBlockPos);
+//#define Construction_Zone_ExistsAtBlock ((bool32 (__cdecl* )(const Point2I* originBlockPos))0x00408fd0)
+bool32 __cdecl Construction_Zone_ExistsAtBlock(const Point2I* originBlockPos);
 
 // `originBlockPos` or `constructHandle` must be non-null. `originBlockPos` has priority.
 // <LegoRR.exe @00408ff0>
-#define Construction_Zone_FindByHandleOrAtBlock ((Construction_Zone* (__cdecl* )(OPTIONAL const Point2I* originBlockPos, OPTIONAL const uint32* constructHandle))0x00408ff0)
-//Construction_Zone* __cdecl Construction_Zone_FindByHandleOrAtBlock(OPTIONAL const Point2I* originBlockPos, OPTIONAL const uint32* constructHandle);
+//#define Construction_Zone_FindByHandleOrAtBlock ((Construction_Zone* (__cdecl* )(OPTIONAL const Point2I* originBlockPos, OPTIONAL const uint32* constructHandle))0x00408ff0)
+Construction_Zone* __cdecl Construction_Zone_FindByHandleOrAtBlock(OPTIONAL const Point2I* originBlockPos, OPTIONAL const uint32* constructHandle);
 
 // <LegoRR.exe @00409040>
-#define Construction_Zone_CompletePath ((void (__cdecl* )(const Point2I* originBlockPos))0x00409040)
-//void __cdecl Construction_Zone_CompletePath(const Point2I* originBlockPos);
+//#define Construction_Zone_CompletePath ((void (__cdecl* )(const Point2I* originBlockPos))0x00409040)
+void __cdecl Construction_Zone_CompletePath(const Point2I* originBlockPos);
 
 // <LegoRR.exe @00409080>
-#define Construction_Zone_CancelPath ((void (__cdecl* )(const Point2I* originBlockPos))0x00409080)
-//void __cdecl Construction_Zone_CancelPath(const Point2I* originBlockPos);
+//#define Construction_Zone_CancelPath ((void (__cdecl* )(const Point2I* originBlockPos))0x00409080)
+void __cdecl Construction_Zone_CancelPath(const Point2I* originBlockPos);
 
 // <LegoRR.exe @00409110>
 //#define Construction_UpdateAll ((void (__cdecl* )(real32 elapsedGame))0x00409110)
@@ -209,22 +209,22 @@ void __cdecl Construction_UpdateAll(real32 elapsedGame);
 
 // This check is used to prevent buildings from completing while unrelated units are inside the construction zone.
 // <LegoRR.exe @004091a0>
-#define Construction_Zone_NoForeignObjectsInside ((bool32 (__cdecl* )(Construction_Zone* construct))0x004091a0)
-//bool32 __cdecl Construction_Zone_NoForeignObjectsInside(Construction_Zone* construct);
+//#define Construction_Zone_NoForeignObjectsInside ((bool32 (__cdecl* )(Construction_Zone* construct))0x004091a0)
+bool32 __cdecl Construction_Zone_NoForeignObjectsInside(Construction_Zone* construct);
 
 // DATA: Construction_Zone*
 // <LegoRR.exe @004091c0>
-#define Construction_Zone_ObjectCallback_IsForeignObjectInside ((bool32 (__cdecl* )(LegoObject* liveObj, void* data))0x004091c0)
-//bool32 __cdecl Construction_Zone_ObjectCallback_IsForeignObjectInside(LegoObject* liveObj, void* data);
+//#define Construction_Zone_ObjectCallback_IsForeignObjectInside ((bool32 (__cdecl* )(LegoObject* liveObj, void* data))0x004091c0)
+bool32 __cdecl Construction_Zone_ObjectCallback_IsForeignObjectInside(LegoObject* liveObj, void* pConstruct);
 
 // Starts a construction zone for laying down a Power Path.
 // <LegoRR.exe @00409230>
-#define Construction_Zone_StartPath ((bool32 (__cdecl* )(const Point2I* originBlockPos))0x00409230)
-//bool32 __cdecl Construction_Zone_StartPath(const Point2I* originBlockPos);
+//#define Construction_Zone_StartPath ((bool32 (__cdecl* )(const Point2I* originBlockPos))0x00409230)
+bool32 __cdecl Construction_Zone_StartPath(const Point2I* originBlockPos);
 
 // <LegoRR.exe @00409280>
-#define Construction_Zone_Create ((Construction_Zone* (__cdecl* )(const Point2I* originBlockPos))0x00409280)
-//Construction_Zone* __cdecl Construction_Zone_Create(const Point2I* originBlockPos);
+//#define Construction_Zone_Create ((Construction_Zone* (__cdecl* )(const Point2I* originBlockPos))0x00409280)
+Construction_Zone* __cdecl Construction_Zone_Create(const Point2I* originBlockPos);
 
 // <LegoRR.exe @004092e0>
 //#define Construction_PowerGrid_PowerAdjacentBlocks ((void (__cdecl* )(const Point2I* blockPos))0x004092e0)
@@ -245,50 +245,50 @@ bool32 __cdecl Construction_PowerGrid_DrainAdjacentBlocks_Recurse(const Point2I*
 void __cdecl Construction_Zone_RequestPathResources(Construction_Zone* construct);
 
 // <LegoRR.exe @00409530>
-#define Construction_Zone_CancelBuilding ((void (__cdecl* )(const Point2I* originBlockPos))0x00409530)
-//void __cdecl Construction_Zone_CancelBuilding(const Point2I* originBlockPos);
+//#define Construction_Zone_CancelBuilding ((void (__cdecl* )(const Point2I* originBlockPos))0x00409530)
+void __cdecl Construction_Zone_CancelBuilding(const Point2I* originBlockPos);
 
 // Starts a construction zone for a Building object.
 // Returns handle value to construction zone.
 // <LegoRR.exe @004096c0>
-#define Construction_Zone_StartBuilding ((uint32 (__cdecl* )(LegoObject_ID buildingObjID, const Point2I* originBlockPos, Direction direction, const Point2I* shapeBlocks, uint32 count))0x004096c0)
-//uint32 __cdecl Construction_Zone_StartBuilding(LegoObject_ID buildingObjID, const Point2I* originBlockPos, Direction direction, const Point2I* shapeBlocks, uint32 count);
+//#define Construction_Zone_StartBuilding ((uint32 (__cdecl* )(LegoObject_ID buildingObjID, const Point2I* originBlockPos, Direction direction, const Point2I* shapeBlocks, uint32 count))0x004096c0)
+uint32 __cdecl Construction_Zone_StartBuilding(LegoObject_ID buildingObjID, const Point2I* originBlockPos, Direction direction, const Point2I* shapeBlocks, uint32 count);
 
 // <LegoRR.exe @00409870>
-#define Construction_FlattenGround ((void (__cdecl* )(const Point2I* blockPos))0x00409870)
-//void __cdecl Construction_FlattenGround(const Point2I* blockPos);
+//#define Construction_FlattenGround ((void (__cdecl* )(const Point2I* blockPos))0x00409870)
+void __cdecl Construction_FlattenGround(const Point2I* blockPos);
 
 // <LegoRR.exe @00409900>
-#define Construction_RemoveAll ((void (__cdecl* )(void))0x00409900)
-//void __cdecl Construction_RemoveAll(void);
+//#define Construction_RemoveAll ((void (__cdecl* )(void))0x00409900)
+void __cdecl Construction_RemoveAll(void);
 
 // Frees and removes the construction zone from the global list.
 // <LegoRR.exe @00409920>
-#define Construction_Zone_Free ((void (__cdecl* )(Construction_Zone* construct))0x00409920)
-//void __cdecl Construction_Zone_Free(Construction_Zone* construct);
+//#define Construction_Zone_Free ((void (__cdecl* )(Construction_Zone* construct))0x00409920)
+void __cdecl Construction_Zone_Free(Construction_Zone* construct);
 
 // <LegoRR.exe @00409970>
-#define Construction_Zone_ConsumePlacedResources ((void (__cdecl* )(Construction_Zone* construct))0x00409970)
-//void __cdecl Construction_Zone_ConsumePlacedResources(Construction_Zone* construct);
+//#define Construction_Zone_ConsumePlacedResources ((void (__cdecl* )(Construction_Zone* construct))0x00409970)
+void __cdecl Construction_Zone_ConsumePlacedResources(Construction_Zone* construct);
 
 // Immediately spawns a Building object without the need of a construction zone.
 // <LegoRR.exe @004099c0>
-#define Construction_SpawnBuilding ((LegoObject* (__cdecl* )(LegoObject_ID objID, const Point2I* originBlockPos, Direction direction, const Point2I* shapeBlocks, uint32 shapeCount, bool32 teleportDown))0x004099c0)
-//LegoObject* __cdecl Construction_SpawnBuilding(LegoObject_ID objID, const Point2I* originBlockPos, Direction direction, const Point2I* shapeBlocks, uint32 shapeCount, bool32 teleportDown);
+//#define Construction_SpawnBuilding ((LegoObject* (__cdecl* )(LegoObject_ID objID, const Point2I* originBlockPos, Direction direction, const Point2I* shapeBlocks, uint32 shapeCount, bool32 teleportDown))0x004099c0)
+LegoObject* __cdecl Construction_SpawnBuilding(LegoObject_ID objID, const Point2I* originBlockPos, Direction direction, const Point2I* shapeBlocks, uint32 shapeCount, bool32 teleportDown);
 
 // <LegoRR.exe @00409a60>
-#define Construction_Zone_CompleteBuilding ((LegoObject* (__cdecl* )(Construction_Zone* construct, bool32 teleportDown))0x00409a60)
-//LegoObject* __cdecl Construction_Zone_CompleteBuilding(Construction_Zone* construct, bool32 teleportDown);
+//#define Construction_Zone_CompleteBuilding ((LegoObject* (__cdecl* )(Construction_Zone* construct, bool32 teleportDown))0x00409a60)
+LegoObject* __cdecl Construction_Zone_CompleteBuilding(Construction_Zone* construct, bool32 teleportDown);
 
-// Calls `AITask_Block_DeselectDig` (@00402a10) for the 4 blocks surrounding blockPos.
+// Calls `AITask_RemoveWallReferences` (@00402a10) for the 4 blocks surrounding blockPos.
 // <LegoRR.exe @00409c00>
-#define Construction_DeselectAdjacentDig ((void (__cdecl* )(const Point2I* blockPos))0x00409c00)
-//void __cdecl Construction_DeselectAdjacentDig(const Point2I* blockPos);
+//#define Construction_DeselectAdjacentWalls ((void (__cdecl* )(const Point2I* blockPos))0x00409c00)
+void __cdecl Construction_DeselectAdjacentWalls(const Point2I* blockPos);
 
 // Disables dropping resource costs for an object when teleported up. Generally used at the end of a level.
 // <LegoRR.exe @00409c70>
-#define Construction_DisableCryOreDrop ((void (__cdecl* )(bool32 disabled))0x00409c70)
-//void __cdecl Construction_DisableCryOreDrop(bool32 disabled);
+//#define Construction_DisableCryOreDrop ((void (__cdecl* )(bool32 disabled))0x00409c70)
+void __cdecl Construction_DisableCryOreDrop(bool32 disabled);
 
 // The process before directly removing a Building object.
 // - Unsets building tile flags.
@@ -297,18 +297,18 @@ void __cdecl Construction_Zone_RequestPathResources(Construction_Zone* construct
 // - Generates cryore drops for the build cost of the object.
 // etc...
 // <LegoRR.exe @00409c80>
-#define Construction_CleanupBuildingFoundation ((void (__cdecl* )(LegoObject* liveObj))0x00409c80)
-//void __cdecl Construction_CleanupBuildingFoundation(LegoObject* liveObj);
+//#define Construction_CleanupBuildingFoundation ((void (__cdecl* )(LegoObject* liveObj))0x00409c80)
+void __cdecl Construction_CleanupBuildingFoundation(LegoObject* liveObj);
 
 // Spawns the resource costs of an object (i.e. when a building is teleported up/destroyed).
 // <LegoRR.exe @00409e50>
-#define Construction_GenerateCryOreDrop ((void (__cdecl* )(LegoObject* liveObj))0x00409e50)
-//void __cdecl Construction_GenerateCryOreDrop(LegoObject* liveObj);
+//#define Construction_GenerateCryOreDrop ((void (__cdecl* )(LegoObject* liveObj))0x00409e50)
+void __cdecl Construction_GenerateCryOreDrop(LegoObject* liveObj);
 
 // A wrapper around `LegoObject_Remove` for use with Building objects.
 // <LegoRR.exe @00409f20>
-#define Construction_RemoveBuildingObject ((void (__cdecl* )(LegoObject* liveObj))0x00409f20)
-//void __cdecl Construction_RemoveBuildingObject(LegoObject* liveObj);
+//#define Construction_RemoveBuildingObject ((void (__cdecl* )(LegoObject* liveObj))0x00409f20)
+void __cdecl Construction_RemoveBuildingObject(LegoObject* liveObj);
 
 #pragma endregion
 

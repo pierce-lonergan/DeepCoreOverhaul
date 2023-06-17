@@ -1833,13 +1833,39 @@ bool interop_hook_LegoRR_Construction(void)
 
 	// used by: Stats_Initialise
 	result &= hook_write_jmpret(0x00408bb0, LegoRR::Construction_GetBuildingBase);
-
+	// used by: AITask_LiveObject_SetAITaskUnk, LegoObject_UpdateBuildingPlacement
+	result &= hook_write_jmpret(0x00408c10, LegoRR::Construction_Zone_PlaceResource);
 	// used by: AITask_LiveObject_SetAITaskUnk
 	result &= hook_write_jmpret(0x00408ca0, LegoRR::Construction_Zone_NeedsMoreOfResource);
-
+	// used by: Construction_Zone_NeedsMoreOfResource, Lego_ShowBlockToolTip
+	result &= hook_write_jmpret(0x00408d40, LegoRR::Construction_Zone_CountOfResourcePlaced);
+	// used by: Construction_Zone_RequestPathResources, LegoObject_UpdateBuildingPlacement
+	result &= hook_write_jmpret(0x00408d80, LegoRR::Construction_Zone_RequestResource);
+	// used by: LegoObject_UpdateBuildingPlacement
+	result &= hook_write_jmpret(0x00408df0, LegoRR::Construction_Zone_RequestBarriers);
+	// used by: Interface_HandleMenuItem, Lego_LoadPathMap, Level_BlockUpdateSurface,
+	//          AITask_DoClearTypeAction, Level_DestroyWall, Level_CanBuildOnBlock
+	result &= hook_write_jmpret(0x00408fd0, LegoRR::Construction_Zone_ExistsAtBlock);
+	// used by: Construction_Zone_PlaceResource, Construction_Zone_NeedsMoreOfResource,
+	//          Construction_Zone_RequestResource, Construction_Zone_RequestBarriers,
+	//          Construction_Zone_ExistsAtBlock, Construction_Zone_CompletePath,
+	//          Construction_Zone_CancelPath, Construction_Zone_CancelBuilding,
+	//          LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00408ff0, LegoRR::Construction_Zone_FindByHandleOrAtBlock);
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00409040, LegoRR::Construction_Zone_CompletePath);
+	// used by: Interface_DoAction_FUN_0041dbd0
+	result &= hook_write_jmpret(0x00409080, LegoRR::Construction_Zone_CancelPath);
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00409110, LegoRR::Construction_UpdateAll);
-
+	// used by: Construction_UpdateAll
+	result &= hook_write_jmpret(0x004091a0, LegoRR::Construction_Zone_NoForeignObjectsInside);
+	// used by: Construction_Zone_NoForeignObjectsInside
+	result &= hook_write_jmpret(0x004091c0, LegoRR::Construction_Zone_ObjectCallback_IsForeignObjectInside);
+	// used by: Interface_DoAction_FUN_0041dbd0
+	result &= hook_write_jmpret(0x00409230, LegoRR::Construction_Zone_StartPath);
+	// used by: Construction_Zone_StartPath, Construction_Zone_StartBuilding
+	result &= hook_write_jmpret(0x00409280, LegoRR::Construction_Zone_Create);
 	// used by: LegoObject_UpdatePowerConsumption
 	result &= hook_write_jmpret(0x004092e0, LegoRR::Construction_PowerGrid_PowerAdjacentBlocks);
 	// used by: LegoObject_UpdatePowerConsumption
@@ -1848,6 +1874,33 @@ bool interop_hook_LegoRR_Construction(void)
 	result &= hook_write_jmpret(0x004093a0, LegoRR::Construction_PowerGrid_DrainAdjacentBlocks_Recurse);
 	// used by: Construction_UpdateAll
 	result &= hook_write_jmpret(0x00409480, LegoRR::Construction_Zone_RequestPathResources);
+	// used by: Interface_DoAction_FUN_0041dbd0
+	result &= hook_write_jmpret(0x00409530, LegoRR::Construction_Zone_CancelBuilding);
+	// used by: LegoObject_UpdateBuildingPlacement
+	result &= hook_write_jmpret(0x004096c0, LegoRR::Construction_Zone_StartBuilding);
+	// used by: Construction_Zone_StartBuilding, Construction_SpawnBuilding, Level_DestroyWall
+	result &= hook_write_jmpret(0x00409870, LegoRR::Construction_FlattenGround);
+	// used by: Level_Free
+	result &= hook_write_jmpret(0x00409900, LegoRR::Construction_RemoveAll);
+	// used by: Construction_Zone_CompletePath, Construction_Zone_CancelPath,
+	//          Construction_UpdateAll, Construction_Zone_CancelBuilding, Construction_RemoveAll
+	result &= hook_write_jmpret(0x00409920, LegoRR::Construction_Zone_Free);
+	// used by: Construction_Zone_CompletePath, Construction_UpdateAll
+	result &= hook_write_jmpret(0x00409970, LegoRR::Construction_Zone_ConsumePlacedResources);
+	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock
+	result &= hook_write_jmpret(0x004099c0, LegoRR::Construction_SpawnBuilding);
+	// used by: Construction_UpdateAll, Construction_SpawnBuilding
+	result &= hook_write_jmpret(0x00409a60, LegoRR::Construction_Zone_CompleteBuilding);
+	// used by: Construction_Zone_CompleteBuilding
+	result &= hook_write_jmpret(0x00409c00, LegoRR::Construction_DeselectAdjacentWalls);
+	// used by: Lego_QuitLevel, Lego_LoadLevel, Objective_SetStatus
+	result &= hook_write_jmpret(0x00409c70, LegoRR::Construction_DisableCryOreDrop);
+	// used by: LegoObject_UpdateRemoval
+	result &= hook_write_jmpret(0x00409c80, LegoRR::Construction_CleanupBuildingFoundation);
+	// used by: Construction_CleanupBuildingFoundation
+	result &= hook_write_jmpret(0x00409e50, LegoRR::Construction_GenerateCryOreDrop);
+	// used by: LegoObject_UpdateRemoval, Message_Debug_DestroySelectedUnits
+	result &= hook_write_jmpret(0x00409f20, LegoRR::Construction_RemoveBuildingObject);
 
 	return_interop(result);
 }

@@ -471,8 +471,8 @@ void __cdecl AITask_RemoveGetToolReferences(AITask* aiTask);
 //void __cdecl AITask_Construction_FUN_00403630(uint32 constructHandle, bool32 checkObjType, LegoObject_Type objType, LegoObject_ID objID);
 
 // <LegoRR.exe @00403680>
-#define AITask_DoRequest_ObjectType ((void (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel, const Point2I* blockPos, undefined4 param_5, Point2F* pointFloat, bool32 param_7))0x00403680)
-//void __cdecl AITask_DoRequest_ObjectType(LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel, const Point2I* blockPos, undefined4 param_5, Point2F* pointFloat, bool32 param_7);
+#define AITask_DoRequest_ObjectType ((void (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel, const Point2I* blockPos, uint32 constructHandle, const Point2F* blockOffset, bool32 faceOutFlag))0x00403680)
+//void __cdecl AITask_DoRequest_ObjectType(LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel, const Point2I* blockPos, uint32 constructHandle, const Point2F* blockOffset, bool32 faceOutFlag);
 
 // <LegoRR.exe @00403740>
 #define AITask_PlaceRequestObject ((void (__cdecl* )(const Point2I* blockPos, LegoObject_Type objType, LegoObject_ID objID, sint32 objLevel))0x00403740)
