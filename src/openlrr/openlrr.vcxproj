@@ -279,7 +279,7 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     <ClInclude Include="game\world\Construction.h" />
     <ClInclude Include="game\world\Detail.h" />
     <ClInclude Include="game\world\ElectricFence.h" />
-    <ClInclude Include="game\world\Erode.h" />
+    <ClInclude Include="game\world\Erosion.h" />
     <ClInclude Include="game\world\Fallin.h" />
     <ClInclude Include="game\world\Map3D.h" />
     <ClInclude Include="game\world\Roof.h" />
@@ -403,7 +403,7 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     <ClCompile Include="game\world\Construction.cpp" />
     <ClCompile Include="game\world\Detail.cpp" />
     <ClCompile Include="game\world\ElectricFence.cpp" />
-    <ClCompile Include="game\world\Erode.cpp" />
+    <ClCompile Include="game\world\Erosion.cpp" />
     <ClCompile Include="game\world\Fallin.cpp" />
     <ClCompile Include="game\world\Map3D.cpp" />
     <ClCompile Include="game\world\Roof.cpp" />

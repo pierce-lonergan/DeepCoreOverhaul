@@ -1,4 +1,4 @@
-// Erode.h : 
+// Erosion.h : 
 //
 
 #pragma once

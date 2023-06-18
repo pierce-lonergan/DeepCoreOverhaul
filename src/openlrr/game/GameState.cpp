@@ -66,7 +66,7 @@
 #include "world/Construction.h"
 #include "world/Detail.h"
 #include "world/ElectricFence.h"
-#include "world/Erode.h"
+#include "world/Erosion.h"
 #include "world/Fallin.h"
 #include "world/Map3D.h"
 #include "world/Roof.h"
