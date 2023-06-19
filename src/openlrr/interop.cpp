@@ -72,6 +72,7 @@
 #include "game/world/Construction.h"
 #include "game/world/Detail.h"
 #include "game/world/ElectricFence.h"
+#include "game/world/Erosion.h"
 #include "game/world/Roof.h"
 #include "game/world/SelectPlace.h"
 #include "game/world/Water.h"
@@ -2016,6 +2017,33 @@ bool interop_hook_LegoRR_Encyclopedia(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Erosion(void)
+{
+	bool result = true;
+
+	// used by: Lego_LoadLevel
+	result &= hook_write_jmpret(0x0040e860, LegoRR::Erosion_Initialise);
+	// used by: Erosion_AddActiveBlock, Erosion_Update
+	result &= hook_write_jmpret(0x0040e8c0, LegoRR::Erosion_GetFreeActiveIndex);
+	// used by: Erosion_AddActiveBlock, Erosion_Update
+	result &= hook_write_jmpret(0x0040e8f0, LegoRR::Erosion_GetBlockErodeRate);
+	// used by: Lego_LoadErodeMap
+	result &= hook_write_jmpret(0x0040e940, LegoRR::Erosion_AddActiveBlock);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0040e9e0, LegoRR::Erosion_Update);
+	// used by: Erosion_Update, Erosion_AddOrRemoveLavaBlock
+	result &= hook_write_jmpret(0x0040ed30, LegoRR::Erosion_AddLockedBlock);
+	// used by: Erosion_AddActiveBlock, Erosion_Update, Level_BlockUpdateSurface,
+	//          Level_Block_SetPath
+	result &= hook_write_jmpret(0x0040ed80, LegoRR::Erosion_AddOrRemoveLavaBlock);
+	// used by: Erosion_FindAdjacentBlockPos
+	result &= hook_write_jmpret(0x0040eee0, LegoRR::Erosion_IsBlockLocked);
+	// used by: Erosion_Update
+	result &= hook_write_jmpret(0x0040ef30, LegoRR::Erosion_FindAdjacentBlockPos);
+
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_FrontEnd(void)
 {
 	bool result = true;
@@ -2593,6 +2621,12 @@ bool interop_hook_LegoRR_Game(void)
 	result &= hook_write_jmpret(0x004296e0, LegoRR::Lego_SetMusicPlaying);
 	// used by: Front_Callback_CycleSound, Lego_Initialise, Lego_Shutdown_Full, Lego_HandleKeys
 	result &= hook_write_jmpret(0x00429740, LegoRR::Lego_SetSoundOn);
+
+	// used by: Lego_LoadMapSet
+	result &= hook_write_jmpret(0x0042be70, LegoRR::Lego_LoadErodeMap);
+
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0042c260, LegoRR::Level_HandleEmergeTriggers);
 
 	// used by: Front_RestartLevel, Lego_Shutdown_Full, Lego_EndLevel
 	result &= hook_write_jmpret(0x0042eff0, LegoRR::Level_Free);
@@ -4118,6 +4152,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Credits();
 	result &= interop_hook_LegoRR_ElectricFence();
 	result &= interop_hook_LegoRR_Encyclopedia();
+	result &= interop_hook_LegoRR_Erosion();
 	result &= interop_hook_LegoRR_FrontEnd();
 	result &= interop_hook_LegoRR_Game();
 	result &= interop_hook_LegoRR_Interface();

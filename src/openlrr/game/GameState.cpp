@@ -1062,7 +1062,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 	LegoObject_UpdateAll(elapsedWorld);
 	Weapon_Update(elapsedWorld);
-	Erode_Update(elapsedWorld);
+	Erosion_Update(elapsedWorld);
 	Level_BlockActivity_UpdateAll(legoGlobs.currLevel, elapsedWorld);
 
 	/// CHANGE: Moved from Lego_Initialise so that these can be configured.

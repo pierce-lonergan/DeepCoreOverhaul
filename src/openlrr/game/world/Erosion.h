@@ -23,6 +23,10 @@ namespace LegoRR
 
 #pragma region Constants
 
+#define EROSION_MAXLAVABLOCKS				2000
+#define EROSION_MAXERODEBLOCKS				2000
+#define EROSION_MAXLOCKEDBLOCKS				1000
+
 #pragma endregion
 
 /**********************************************************************************
@@ -39,23 +43,23 @@ namespace LegoRR
 
 #pragma region Structs
 
-struct Erode_Globs // [LegoRR/Erode.c|struct:0xfa14|tags:GLOBS]
+struct Erosion_Globs // [LegoRR/Erode.c|struct:0xfa14|tags:GLOBS]
 {
-	/*0000,3e80*/	Point2I UnkBlocksList[2000];
-	/*3e80,4*/	uint32 UnkBlocksCount;
-	/*3e84,3e80*/	Point2I activeBlocks[2000];
-	/*7d04,1f40*/	bool32 activeStates[2000];
-	/*9c44,1f40*/	real32 activeTimers[2000]; // (countdown timers)
-	/*bb84,1f40*/	Point2I lockedBlocks[1000];
-	/*dac4,fa0*/	real32 lockedTimers[1000]; // (countdown timers)
-	/*ea64,fa0*/	bool32 lockedStates[1000];
-	/*fa04,4*/	real32 elapsedTimer; // (count-up elapsed timer)
-	/*fa08,4*/	real32 ErodeTriggerTime; // (init: Lego.cfg)
-	/*fa0c,4*/	real32 ErodeErodeTime; // (init: Lego.cfg)
-	/*fa10,4*/	real32 ErodeLockTime; // (init: Lego.cfg)
+	/*0000,3e80*/	Point2I lavaBlockList[EROSION_MAXLAVABLOCKS];
+	/*3e80,4*/	uint32 lavaBlockCount;
+	/*3e84,3e80*/	Point2I activeBlocks[EROSION_MAXERODEBLOCKS];  // (orig: erodeBlock) First-unused table
+	/*7d04,1f40*/	bool32 activeUsed[EROSION_MAXERODEBLOCKS];     // (orig: erodeUsed)
+	/*9c44,1f40*/	real32 activeTimers[EROSION_MAXERODEBLOCKS];   // (orig: erodeDone) Countdown timers to advance erosion level.
+	/*bb84,1f40*/	Point2I lockedBlocks[EROSION_MAXLOCKEDBLOCKS]; // (orig: erodeLocked) First-unused table
+	/*dac4,fa0*/	real32 lockedTimers[EROSION_MAXLOCKEDBLOCKS];  // (orig: erodeLockedTime) Countdown timers to unlock.
+	/*ea64,fa0*/	bool32 lockedUsed[EROSION_MAXLOCKEDBLOCKS];    // (orig: erodeLockedUsed)
+	/*fa04,4*/	real32 updateTime; // Count-up timer (to triggerTime) to start a new actively-eroding block.
+	/*fa08,4*/	real32 triggerTime; // (cfg: Level::ErodeTriggerTime, mult: seconds to standard units)
+	/*fa0c,4*/	real32 erodeTime; // (cfg: Level::ErodeErodeTime, mult: seconds to standard units * 0.2)
+	/*fa10,4*/	real32 lockTime; // (cfg: Level::ErodeLockTime, mult: seconds to standard units)
 	/*fa14*/
 };
-assert_sizeof(Erode_Globs, 0xfa14);
+assert_sizeof(Erosion_Globs, 0xfa14);
 
 #pragma endregion
 
@@ -66,7 +70,7 @@ assert_sizeof(Erode_Globs, 0xfa14);
 #pragma region Globals
 
 // <LegoRR.exe @004c8eb0>
-extern Erode_Globs & erodeGlobs;
+extern Erosion_Globs & erosionGlobs;
 
 #pragma endregion
 
@@ -85,40 +89,40 @@ extern Erode_Globs & erodeGlobs;
 #pragma region Functions
 
 // <LegoRR.exe @0040e860>
-#define Erode_Initialise ((void (__cdecl* )(real32 triggerTime, real32 erodeTime, real32 lockTime))0x0040e860)
-//void __cdecl Erode_Initialise(real32 triggerTime, real32 erodeTime, real32 lockTime);
+//#define Erosion_Initialise ((void (__cdecl* )(real32 triggerTime, real32 erodeTime, real32 lockTime))0x0040e860)
+void __cdecl Erosion_Initialise(real32 triggerTime, real32 erodeTime, real32 lockTime);
 
 // <LegoRR.exe @0040e8c0>
-#define Erode_GetFreeActiveIndex ((bool32 (__cdecl* )(OUT sint32* index))0x0040e8c0)
-//bool32 __cdecl Erode_GetFreeActiveIndex(OUT sint32* index);
+//#define Erosion_GetFreeActiveIndex ((bool32 (__cdecl* )(OUT uint32* index))0x0040e8c0)
+bool32 __cdecl Erosion_GetFreeActiveIndex(OUT uint32* index);
 
 // <LegoRR.exe @0040e8f0>
-#define Erode_GetBlockErodeRate ((real32 (__cdecl* )(const Point2I* blockPos))0x0040e8f0)
-//real32 __cdecl Erode_GetBlockErodeRate(const Point2I* blockPos);
+//#define Erosion_GetBlockErodeRate ((real32 (__cdecl* )(const Point2I* blockPos))0x0040e8f0)
+real32 __cdecl Erosion_GetBlockErodeRate(const Point2I* blockPos);
 
 // <LegoRR.exe @0040e940>
-#define Erode_AddActiveBlock ((void (__cdecl* )(const Point2I* blockPos, sint32 unkModulusNum))0x0040e940)
-//void __cdecl Erode_AddActiveBlock(const Point2I* blockPos, sint32 unkModulusNum);
+//#define Erosion_AddActiveBlock ((void (__cdecl* )(const Point2I* blockPos, sint32 erodeStage))0x0040e940)
+void __cdecl Erosion_AddActiveBlock(const Point2I* blockPos, sint32 erodeStage);
 
 // <LegoRR.exe @0040e9e0>
-#define Erode_Update ((void (__cdecl* )(real32 elapsedGame))0x0040e9e0)
-//void __cdecl Erode_Update(real32 elapsedGame);
+//#define Erosion_Update ((void (__cdecl* )(real32 elapsedWorld))0x0040e9e0)
+void __cdecl Erosion_Update(real32 elapsedWorld);
 
 // <LegoRR.exe @0040ed30>
-#define Erode_AddLockedBlock ((void (__cdecl* )(const Point2I* blockPos))0x0040ed30)
-//void __cdecl Erode_AddLockedBlock(const Point2I* blockPos);
+//#define Erosion_AddLockedBlock ((void (__cdecl* )(const Point2I* blockPos))0x0040ed30)
+void __cdecl Erosion_AddLockedBlock(const Point2I* blockPos);
 
 // <LegoRR.exe @0040ed80>
-#define Erode_Block_FUN_0040ed80 ((void (__cdecl* )(const Point2I* blockPos, bool32 doState2_else_add3))0x0040ed80)
-//void __cdecl Erode_Block_FUN_0040ed80(const Point2I* blockPos, bool32 doState2_else_add3);
+//#define Erosion_AddOrRemoveLavaBlock ((void (__cdecl* )(const Point2I* blockPos, bool32 add))0x0040ed80)
+void __cdecl Erosion_AddOrRemoveLavaBlock(const Point2I* blockPos, bool32 add);
 
 // <LegoRR.exe @0040eee0>
-#define Erode_IsBlockLocked ((bool32 (__cdecl* )(const Point2I* blockPos))0x0040eee0)
-//bool32 __cdecl Erode_IsBlockLocked(const Point2I* blockPos);
+//#define Erosion_IsBlockLocked ((bool32 (__cdecl* )(const Point2I* blockPos))0x0040eee0)
+bool32 __cdecl Erosion_IsBlockLocked(const Point2I* blockPos);
 
 // <LegoRR.exe @0040ef30>
-#define Erode_FindAdjacentBlockPos ((bool32 (__cdecl* )(const Point2I* blockPos, OUT Point2I* adjacentblockPos))0x0040ef30)
-//bool32 __cdecl Erode_FindAdjacentBlockPos(const Point2I* blockPos, OUT Point2I* adjacentblockPos);
+//#define Erosion_FindAdjacentBlockPos ((bool32 (__cdecl* )(const Point2I* blockPos, OUT Point2I* adjacentblockPos))0x0040ef30)
+bool32 __cdecl Erosion_FindAdjacentBlockPos(const Point2I* blockPos, OUT Point2I* adjacentblockPos);
 
 #pragma endregion
 

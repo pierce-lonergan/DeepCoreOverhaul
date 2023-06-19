@@ -231,7 +231,7 @@ enum BlockFlags2 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 	BLOCK2_DRAINPOWER_TEMP   = 0x2,
 	BLOCK2_TOOLSTORE         = 0x4,
 	BLOCK2_FENCEREQUEST      = 0x8,
-	BLOCK2_ERODELOCKED       = 0x10,
+	BLOCK2_ERODEPATHDELAY    = 0x10,
 	BLOCK2_SLUGHOLE_EXPOSED  = 0x20,
 	BLOCK2_EMERGE_POINT      = 0x40,
 	BLOCK2_EMERGE_TRIGGER    = 0x80,
@@ -337,7 +337,7 @@ struct Lego_Block // [LegoRR/Lego.c|struct:0x48|pack:1]
 	/*04,1*/	uint8 blockpointer;
 	/*05,1*/	Lego_CryOreType cryOre;
 	/*06,1*/	uint8 erodeSpeed; // (Lego_ErodeType >> 1, 0 = v.slow, 1 = slow, 2 = med, 3 = fast, 4 = v.fast)
-	/*07,1*/	uint8 erodeLevel; // 0 = low, 1 = med, 2 = high, 3 = max, 4 = lava
+	/*07,1*/	uint8 erodeStage; // 0 = low, 1 = med, 2 = high, 3 = max, 4 = lava
 	/*08,4*/	BlockFlags1 flags1;
 	/*0c,4*/	BlockFlags2 flags2;
 	/*10,4*/	Construction_Zone* construct;
@@ -1390,8 +1390,8 @@ __inline RadarMap* __cdecl Lego_GetRadarMap(void) { return legoGlobs.currLevel->
 //bool32 __cdecl Lego_LoadPreDugMap(Lego_Level* level, const char* filename, sint32 modifier);
 
 // <LegoRR.exe @0042be70>
-#define Lego_LoadErodeMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename))0x0042be70)
-//bool32 __cdecl Lego_LoadErodeMap(Lego_Level* level, const char* filename);
+//#define Lego_LoadErodeMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename))0x0042be70)
+bool32 __cdecl Lego_LoadErodeMap(Lego_Level* level, const char* filename);
 
 // <LegoRR.exe @0042bf90>
 #define Lego_LoadAIMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename))0x0042bf90)

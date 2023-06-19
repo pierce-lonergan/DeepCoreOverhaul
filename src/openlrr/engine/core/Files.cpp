@@ -1139,7 +1139,7 @@ uint32 Gods98::File_LoadHandle2(const char* filename, OPTIONAL OUT uint32* sizep
 
 		/// CUSTOM: Add extraSize to null-terminate buffer with.
 		Mem_HandleValue handle;
-		if ((handle = Mem_AllocHandle(size + extraSize)) != -1) {
+		if ((handle = Mem_AllocHandle(size + extraSize)) != MEMORY_HANDLE_INVALID) {
 			uint8* buffer = (uint8*)Mem_AddressHandle(handle);
 			File_Seek(file, 0, SeekOrigin::Set);
 			File_Read(buffer, sizeof(uint8), size, file);
@@ -1155,7 +1155,7 @@ uint32 Gods98::File_LoadHandle2(const char* filename, OPTIONAL OUT uint32* sizep
 		File_Close(file);
 	}
 
-	return (uint32)-1;
+	return (uint32)MEMORY_HANDLE_INVALID;
 }
 
 

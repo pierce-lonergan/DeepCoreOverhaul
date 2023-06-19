@@ -2,6 +2,7 @@
 //
 
 #include "../engine/audio/3DSound.h"
+#include "../engine/core/Files.h"
 #include "../engine/core/Maths.h"
 #include "../engine/core/Utils.h"
 #include "../engine/drawing/DirectDraw.h"
@@ -1741,9 +1742,9 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareMapBlockToolTip(const Point2I* blockPos
 			// Erosion:
 			if (block->erodeSpeed != Lego_ErodeType_None) {// && block->terrain != Lego_SurfaceType_Lava) {
 				bool erodeActive = false;
-				for (uint32 i = 0; i < _countof(erodeGlobs.activeBlocks); i++) {
-					const Point2I& activePos = erodeGlobs.activeBlocks[i];
-					if (erodeGlobs.activeStates[i] && activePos.x == blockPos->x && activePos.y == blockPos->y) {
+				for (uint32 i = 0; i < _countof(erosionGlobs.activeBlocks); i++) {
+					const Point2I activePos = erosionGlobs.activeBlocks[i];
+					if (erosionGlobs.activeUsed[i] && activePos.x == blockPos->x && activePos.y == blockPos->y) {
 						erodeActive = true;
 						break;
 					}
@@ -1760,7 +1761,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareMapBlockToolTip(const Point2I* blockPos
 					std::sprintf(buffVal, "\nErode: %s", erodeSpeedNames[block->erodeSpeed]);
 					std::strcat(buffText, buffVal);
 				}
-				std::sprintf(buffVal, ", %s, %i/%i", erodeActiveName, (uint32)block->erodeLevel, 4); // Progress 4 is lava
+				std::sprintf(buffVal, ", %s, %i/%i", erodeActiveName, (uint32)block->erodeStage, 4); // Progress 4 is lava
 				std::strcat(buffText, buffVal);
 			}
 
@@ -2686,7 +2687,45 @@ bool32 __cdecl LegoRR::Lego_LoadLevel2(const char* tempLevelName)
 //bool32 __cdecl LegoRR::Lego_LoadPreDugMap(Lego_Level* level, const char* filename, sint32 modifier);
 
 // <LegoRR.exe @0042be70>
-//bool32 __cdecl LegoRR::Lego_LoadErodeMap(Lego_Level* level, const char* filename);
+bool32 __cdecl LegoRR::Lego_LoadErodeMap(Lego_Level* level, const char* filename)
+{
+	if (filename == nullptr)
+		return false;
+
+	uint32 fileSize;
+	uint32 handle = Gods98::File_LoadBinaryHandle(filename, &fileSize);
+	/// TODO: We need a constant for this... probably.
+	if (handle == (uint32)MEMORY_HANDLE_INVALID)
+		return false;
+	
+	uint32 width, height;
+	MapShared_GetDimensions(handle, &width, &height);
+	const bool sizeMatches = (width == level->width && height == level->height);
+	if (sizeMatches) {
+
+		for (uint32 by = 0; by < height; by++) {
+			for (uint32 bx = 0; bx < width; bx++) {
+				const Point2I blockPos = { (sint32)bx, (sint32)by };
+
+				const Lego_ErodeType erodeType = (Lego_ErodeType)MapShared_GetBlock(handle, bx, by);
+				if (erodeType != Lego_ErodeType_None) {
+					// erodeSpeed can range from [1,5] (erodeType: [1,10] + 1 -> [2,11]).
+					blockValue(level, bx, by).erodeSpeed = ((uint8)erodeType + 1) / 2;
+
+					if (((uint32)erodeType % 2) == 0) {
+						// Even erode types are source blocks.
+						const uint32 rng = (uint32)Gods98::Maths_Rand();
+
+						Erosion_AddActiveBlock(&blockPos, rng % 4); // Start at erode stage [0,3].
+					}
+				}
+			}
+		}
+	}
+
+	Gods98::Mem_FreeHandle(handle);
+	return sizeMatches;
+}
 
 // <LegoRR.exe @0042bf90>
 //bool32 __cdecl LegoRR::Lego_LoadAIMap(Lego_Level* level, const char* filename);
