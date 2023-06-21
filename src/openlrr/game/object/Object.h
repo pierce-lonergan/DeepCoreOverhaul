@@ -116,7 +116,7 @@ enum LiveFlags1 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ1_STORING           = 0x2000,
 	LIVEOBJ1_UNK_4000          = 0x4000,
 	LIVEOBJ1_WAITING           = 0x8000,
-	LIVEOBJ1_UNK_10000         = 0x10000,
+	LIVEOBJ1_SPIDERCANWANDER   = 0x10000,
 	LIVEOBJ1_ENTERING_WALLHOLE = 0x20000, // This is a vague guess based on activity names... or something or other.
 	LIVEOBJ1_CLEARING          = 0x40000,
 	LIVEOBJ1_PLACING           = 0x80000,
@@ -143,32 +143,32 @@ enum LiveFlags2 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ2_THROWN               = 0x2,
 	LIVEOBJ2_UNK_4                = 0x4, // OL object flag? Related to driving? Route to object and get in?
 	LIVEOBJ2_DRIVING              = 0x8,
-	LIVEOBJ2_UNK_10               = 0x10,
-	LIVEOBJ2_UNK_20               = 0x20,
-	LIVEOBJ2_UNK_40               = 0x40,
-	LIVEOBJ2_UNK_80               = 0x80, // Observed with Flocks
-	LIVEOBJ2_UNK_100              = 0x100,
+	LIVEOBJ2_FINDINGDRIVER        = 0x10,
+	LIVEOBJ2_DEPARTING            = 0x20,
+	LIVEOBJ2_GETTINGTOOL          = 0x40,
+	LIVEOBJ2_FLOCKS_BATATTACKING  = 0x80, // Observed with Flocks
+	LIVEOBJ2_GETTINGUP            = 0x100,
 	LIVEOBJ2_BUILDPATH            = 0x200,
 	LIVEOBJ2_TRAINING             = 0x400,
-	LIVEOBJ2_UNK_800              = 0x800,
+	LIVEOBJ2_UNK_800              = 0x800, // Related to eating.
 	LIVEOBJ2_DAMAGE_UNK_1000      = 0x1000,
 	LIVEOBJ2_SHOWDAMAGENUMBERS    = 0x2000,
 	LIVEOBJ2_PUSHED               = 0x4000,
 	LIVEOBJ2_UPGRADING            = 0x8000,
 	LIVEOBJ2_TRIGGERFRAMECALLBACK = 0x10000, // What this actually does isn't clear.
-	LIVEOBJ2_UNK_20000            = 0x20000,
-	LIVEOBJ2_UNK_40000            = 0x40000,
+	LIVEOBJ2_ACTIVITYCHANGING     = 0x20000,
+	LIVEOBJ2_BUMPDAMAGING         = 0x40000,
 	LIVEOBJ2_UNK_80000            = 0x80000,
-	LIVEOBJ2_UNK_100000           = 0x100000,
-	LIVEOBJ2_UNK_200000           = 0x200000,
+	LIVEOBJ2_GETTINGSERVICED      = 0x100000,
+	LIVEOBJ2_ATTACKINGPATH        = 0x200000,
 	LIVEOBJ2_FIRINGLASER          = 0x400000,
 	LIVEOBJ2_FIRINGPUSHER         = 0x800000,
 	LIVEOBJ2_FIRINGFREEZER        = 0x1000000,
 	LIVEOBJ2_ACTIVEELECTRICFENCE  = 0x2000000,
-	LIVEOBJ2_UNK_4000000          = 0x4000000,
+	LIVEOBJ2_ATTACKINGMONSTER     = 0x4000000,
 	LIVEOBJ2_FROZEN               = 0x8000000,
 	LIVEOBJ2_RECHARGING           = 0x10000000,
-	LIVEOBJ2_UNK_20000000         = 0x20000000,
+	LIVEOBJ2_WAKINGUP             = 0x20000000,
 	LIVEOBJ2_DAMAGESHAKING        = 0x40000000, // Shaking effect when buildings are getting hit by RMonsters/boulders(?)
 	LIVEOBJ2_UNK_80000000         = 0x80000000,
 };
@@ -1063,8 +1063,8 @@ bool32 __cdecl LegoObject_Callback_UpdateRadarSurvey(LegoObject* liveObj, void* 
 
 // Function cannot return true unless param_3 is non-zero.
 // <LegoRR.exe @0043c750>
-#define LegoObject_FUN_0043c750 ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* routeToObject, Weapon_KnownType knownWeapon))0x0043c750)
-//bool32 __cdecl LegoObject_FUN_0043c750(LegoObject* liveObj, LegoObject* routeToObject, Weapon_KnownType knownWeapon);
+#define LegoObject_IsTargetActiveAndValidWeapon ((bool32 (__cdecl* )(LegoObject* liveObj, LegoObject* routeToObject, Weapon_KnownType knownWeapon))0x0043c750)
+//bool32 __cdecl LegoObject_IsTargetActiveAndValidWeapon(LegoObject* liveObj, LegoObject* routeToObject, Weapon_KnownType knownWeapon);
 
 // <LegoRR.exe @0043c780>
 #define LegoObject_Proc_FUN_0043c780 ((void (__cdecl* )(LegoObject* liveObj))0x0043c780)
@@ -1416,8 +1416,8 @@ bool32 __cdecl LegoObject_Callback_SlipAndScare(LegoObject* liveObj, void* pOthe
 //sint32 __cdecl LegoObject_FUN_00447670(LegoObject* liveObj, sint32 bx, sint32 by, LegoObject* liveObj2);
 
 // <LegoRR.exe @004477b0>
-#define LegoObject_FUN_004477b0 ((void (__cdecl* )(LegoObject* liveObj))0x004477b0)
-//void __cdecl LegoObject_FUN_004477b0(LegoObject* liveObj);
+//#define LegoObject_BumpDamageRouteObject ((void (__cdecl* )(LegoObject* liveObj))0x004477b0)
+void __cdecl LegoObject_BumpDamageRouteObject(LegoObject* liveObj);
 
 // <LegoRR.exe @00447880>
 #define LegoObject_FUN_00447880 ((sint32 (__cdecl* )(LegoObject* liveObj))0x00447880)

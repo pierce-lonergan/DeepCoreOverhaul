@@ -527,7 +527,7 @@ bool32 __cdecl LegoRR::Message_SelectObject2(LegoObject* liveObj, bool32 noDoubl
 
 			if (liveObj->type != LegoObject_Building &&
 				!(liveObj->flags1 & (LIVEOBJ1_STORING|LIVEOBJ1_SLIPPING|LIVEOBJ1_RESTING)) &&
-				!(liveObj->flags2 & LIVEOBJ2_UNK_100))
+				!(liveObj->flags2 & LIVEOBJ2_GETTINGUP))
 			{
 				LegoObject_Route_End(liveObj, false);
 				AITask_VariousGatherTasks_FUN_00403a90(liveObj);

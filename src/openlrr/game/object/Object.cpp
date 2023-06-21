@@ -1255,7 +1255,7 @@ void __cdecl LegoRR::LegoObject_SetPowerOn(LegoObject* liveObj, bool32 on)
 bool32 __cdecl LegoRR::LegoObject_IsActive(LegoObject* liveObj, bool32 ignoreUnpowered)
 {
 	if (!(liveObj->flags1 & (LIVEOBJ1_EXPANDING|LIVEOBJ1_CRUMBLING|LIVEOBJ1_TELEPORTINGDOWN|LIVEOBJ1_TELEPORTINGUP)) &&
-		!(liveObj->flags1 & LIVEOBJ1_ENTERING_WALLHOLE) && !(liveObj->flags2 & LIVEOBJ2_UNK_100000) &&
+		!(liveObj->flags1 & LIVEOBJ1_ENTERING_WALLHOLE) && !(liveObj->flags2 & LIVEOBJ2_GETTINGSERVICED) &&
 		liveObj->health >= 0.0f &&
 		(ignoreUnpowered || ((liveObj->flags3 & LIVEOBJ3_HASPOWER) && !(liveObj->flags3 & LIVEOBJ3_POWEROFF))))
 	{
@@ -1812,10 +1812,10 @@ void __cdecl LegoRR::LegoObject_UpdateRemoval(LegoObject* liveObj)
 		if (liveObj->type == LegoObject_Building &&
 			!(liveObj->teleporter_modeFlags & 0x4) && !(liveObj->flags4 & LIVEOBJ4_UNK_8))
 		{
-			if (liveObj->flags2 & LIVEOBJ2_UNK_100000)
+			if (liveObj->flags2 & LIVEOBJ2_GETTINGSERVICED)
 				return;
 
-			liveObj->flags2 |= LIVEOBJ2_UNK_100000;
+			liveObj->flags2 |= LIVEOBJ2_GETTINGSERVICED;
 			Construction_CleanupBuildingFoundation(liveObj);
 			LegoObject_SetActivity(liveObj, Activity_Explode, 0);
 			LegoObject_UpdateActivityChange(liveObj);
@@ -2015,7 +2015,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_UpdateRadarSurvey(LegoObject* liveObj
 //LegoRR::Weapon_KnownType __cdecl LegoRR::LegoObject_GetEquippedBeam(LegoObject* liveObj);
 
 // <LegoRR.exe @0043c750>
-//bool32 __cdecl LegoRR::LegoObject_FUN_0043c750(LegoObject* liveObj, LegoObject* routeToObject, Weapon_KnownType knownWeapon);
+//bool32 __cdecl LegoRR::LegoObject_IsTargetActiveAndValidWeapon(LegoObject* liveObj, LegoObject* routeToObject, Weapon_KnownType knownWeapon);
 
 // <LegoRR.exe @0043c780>
 //void __cdecl LegoRR::LegoObject_Proc_FUN_0043c780(LegoObject* liveObj);
@@ -2475,7 +2475,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 	}
 
 
-	if (liveObj->flags2 & LIVEOBJ2_UNK_20) {
+	if (liveObj->flags2 & LIVEOBJ2_DEPARTING) {
 		LegoObject_TryDepart_FUN_004499c0(liveObj);
 		goto objectupdate_end;
 	}
@@ -2507,7 +2507,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 		if (liveObj->animTime > 0.0f) {
 			liveObj->flags2 &= ~LIVEOBJ2_FIRINGLASER;
 
-			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
+			if (!(liveObj->flags2 & LIVEOBJ2_ACTIVITYCHANGING)) {
 				LegoObject_CreateWeaponProjectile(liveObj, Weapon_KnownType_Laser);
 			}
 		}
@@ -2557,7 +2557,6 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 			if (liveObj->animTime > 0.0f) {
 				routeToObj->carriedObjects[routeToObj->numCarriedObjects] = liveObj;
 				routeToObj->carriedObjects[routeToObj->numCarriedObjects]->carryingThisObject = routeToObj;
-				/// FIXME: Uhhhh.... Last number of carried objects?
 				routeToObj->carriedObjects[routeToObj->numCarriedObjects]->carryingIndex = routeToObj->numCarriedObjects;
 
 				routeToObj->flags1 |= LIVEOBJ1_CARRYING;
@@ -2601,7 +2600,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 		if (liveObj->animTime > 0.0f) {
 			liveObj->flags2 &= ~LIVEOBJ2_FIRINGPUSHER;
 
-			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
+			if (!(liveObj->flags2 & LIVEOBJ2_ACTIVITYCHANGING)) {
 				LegoObject_CreateWeaponProjectile(liveObj, Weapon_KnownType_Pusher);
 			}
 		}
@@ -2617,7 +2616,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 		if (liveObj->animTime > 0.0f) {
 			liveObj->flags2 &= ~LIVEOBJ2_FIRINGFREEZER;
 
-			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
+			if (!(liveObj->flags2 & LIVEOBJ2_ACTIVITYCHANGING)) {
 				LegoObject_CreateWeaponProjectile(liveObj, Weapon_KnownType_Freezer);
 			}
 		}
@@ -2673,16 +2672,16 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 	}
 
 
-	if (liveObj->flags2 & LIVEOBJ2_UNK_200000) {
+	if (liveObj->flags2 & LIVEOBJ2_ATTACKINGPATH) {
 		if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
 			LegoObject_AttackPath(liveObj);
 		}
 
 		if (liveObj->animTime > 0.0f) {
-			liveObj->flags2 &= ~LIVEOBJ2_UNK_200000;
+			liveObj->flags2 &= ~LIVEOBJ2_ATTACKINGPATH;
 
 			AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_AttackPath, nullptr, true);
-			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
+			if (!(liveObj->flags2 & LIVEOBJ2_ACTIVITYCHANGING)) {
 				LegoObject_AttackPath(liveObj);
 			}
 		}
@@ -2690,25 +2689,25 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 	}
 
 
-	if (liveObj->flags2 & LIVEOBJ2_UNK_40000) {
+	if (liveObj->flags2 & LIVEOBJ2_BUMPDAMAGING) {
 		if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
-			LegoObject_FUN_004477b0(liveObj);
+			LegoObject_BumpDamageRouteObject(liveObj);
 		}
 
 		if (liveObj->animTime > 0.0f) {
-			liveObj->flags2 &= ~LIVEOBJ2_UNK_40000;
+			liveObj->flags2 &= ~LIVEOBJ2_BUMPDAMAGING;
 
-			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
-				LegoObject_FUN_004477b0(liveObj);
+			if (!(liveObj->flags2 & LIVEOBJ2_ACTIVITYCHANGING)) {
+				LegoObject_BumpDamageRouteObject(liveObj);
 			}
 		}
 		goto objectupdate_end;
 	}
 
 
-	if (liveObj->flags2 & LIVEOBJ2_UNK_20000000) {
+	if (liveObj->flags2 & LIVEOBJ2_WAKINGUP) {
 		if (liveObj->animTime > 0.0f) {
-			liveObj->flags2 &= ~LIVEOBJ2_UNK_20000000;
+			liveObj->flags2 &= ~LIVEOBJ2_WAKINGUP;
 			liveObj->flags3 &= ~LIVEOBJ3_POWEROFF;
 		}
 		goto objectupdate_end;
@@ -2732,7 +2731,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 		}
 
 		if (liveObj->animTime > 0.0f) {
-			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000) && LegoObject_FUN_00447880(liveObj)) {
+			if (!(liveObj->flags2 & LIVEOBJ2_ACTIVITYCHANGING) && LegoObject_FUN_00447880(liveObj)) {
 				liveObj->flags2 &= ~LIVEOBJ2_UNK_80000;
 
 				AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_Repair, nullptr, true);
@@ -2774,8 +2773,8 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 	}
 
 
-	if (liveObj->flags2 & LIVEOBJ2_UNK_40) {
-		liveObj->flags2 &= ~LIVEOBJ2_UNK_40;
+	if (liveObj->flags2 & LIVEOBJ2_GETTINGTOOL) {
+		liveObj->flags2 &= ~LIVEOBJ2_GETTINGTOOL;
 
 		if (liveObj->aiTask != nullptr) {
 			LegoObject_MiniFigure_EquipTool(liveObj, liveObj->aiTask->toolType);
@@ -2916,11 +2915,11 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 		LegoObject_UpdateCarryingEnergy(liveObj, elapsed);
 		LegoObject_RockMonster_FUN_0043ad70(liveObj);
 
-		if (liveObj->flags2 & LIVEOBJ2_UNK_4000000) {
+		if (liveObj->flags2 & LIVEOBJ2_ATTACKINGMONSTER) {
 			if (!Weapon_LegoObject_WithinWeaponRange(liveObj, liveObj->aiTask->targetObject) ||
 				Weapon_LegoObject_DoCallbacksSearch_FUN_00471b90(liveObj, liveObj->aiTask->targetObject))
 			{
-				liveObj->flags2 &= ~LIVEOBJ2_UNK_4000000;
+				liveObj->flags2 &= ~LIVEOBJ2_ATTACKINGMONSTER;
 			}
 			else {
 				LegoObject_Proc_FUN_0043c780(liveObj);
@@ -2996,7 +2995,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 				!Level_Block_IsWall((uint32)target.x, (uint32)target.y))
 			{
 				liveObj->flags1 &= ~LIVEOBJ1_ENTERING_WALLHOLE;
-				liveObj->flags2 |= LIVEOBJ2_UNK_20;
+				liveObj->flags2 |= LIVEOBJ2_DEPARTING;
 			}
 			else if (!Level_Block_IsReinforced((uint32)target.x, (uint32)target.y)) {
 				LegoObject_SetActivity(liveObj, Activity_Enter, 0);
@@ -3020,7 +3019,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 			goto objectupdate_end;
 		}
 
-		if (liveObj->flags2 & LIVEOBJ2_UNK_200000) {
+		if (liveObj->flags2 & LIVEOBJ2_ATTACKINGPATH) {
 			LegoObject_SetActivity(liveObj, Activity_Stamp, 0);
 			goto objectupdate_end;
 		}
@@ -3062,7 +3061,6 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 
 				liveObj->carriedObjects[liveObj->numCarriedObjects] = liveObj->routeToObject;
 				liveObj->carriedObjects[liveObj->numCarriedObjects]->carryingThisObject = liveObj;
-				/// FIXME: Uhhhh.... Last number of carried objects?
 				liveObj->carriedObjects[liveObj->numCarriedObjects]->carryingIndex = liveObj->numCarriedObjects;
 				liveObj->routeToObject = nullptr;
 
@@ -3204,9 +3202,9 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 	}
 
 
-	if (liveObj->flags2 & LIVEOBJ2_UNK_100000) {
+	if (liveObj->flags2 & LIVEOBJ2_GETTINGSERVICED) {
 		if (liveObj->animTime > 0.0f) {
-			liveObj->flags2 &= ~LIVEOBJ2_UNK_100000;
+			liveObj->flags2 &= ~LIVEOBJ2_GETTINGSERVICED;
 			liveObj->flags3 |= LIVEOBJ3_REMOVING;
 		}
 		goto objectupdate_end;
@@ -3225,7 +3223,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 		if (routeToObj->routeToObject != nullptr) {
 			routeToObj->routeToObject->flags4 &= ~LIVEOBJ4_ENTRANCEOCCUPIED;
 		}
-		routeToObj->flags2 &= ~LIVEOBJ2_UNK_10;
+		routeToObj->flags2 &= ~LIVEOBJ2_FINDINGDRIVER;
 
 		routeToObj->routeToObject = nullptr;
 		routeToObj->driveObject = liveObj;
@@ -3251,7 +3249,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 	if (liveObj->flags1 & LIVEOBJ1_ENTERING_WALLHOLE) {
 		if (liveObj->animTime > 0.0f) {
 			liveObj->flags1 &= ~LIVEOBJ1_ENTERING_WALLHOLE;
-			liveObj->flags2 &= ~LIVEOBJ2_UNK_20;
+			liveObj->flags2 &= ~LIVEOBJ2_DEPARTING;
 			LegoObject_FinishEnteringWallHole(liveObj);
 		}
 		goto objectupdate_end;
@@ -3303,20 +3301,20 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 	}
 
 
-	if (liveObj->flags2 & LIVEOBJ2_UNK_100) {
+	if (liveObj->flags2 & LIVEOBJ2_GETTINGUP) {
 		if (liveObj->animTime > 0.0f) {
-			liveObj->flags2 &= ~LIVEOBJ2_UNK_100;
+			liveObj->flags2 &= ~LIVEOBJ2_GETTINGUP;
 		}
 		goto objectupdate_end;
 	}
 
 
-	if (liveObj->flags1 & LIVEOBJ1_UNK_10000) {
+	if (liveObj->flags1 & LIVEOBJ1_SPIDERCANWANDER) {
 		const uint32 rng = (uint32)Gods98::Maths_Rand();
 		if ((rng % 10) > 0) {
 			LegoObject_FUN_00444520(liveObj);
 		}
-		liveObj->flags1 &= ~LIVEOBJ1_UNK_10000;
+		liveObj->flags1 &= ~LIVEOBJ1_SPIDERCANWANDER;
 
 		goto objectupdate_end;
 	}
@@ -3328,7 +3326,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 
 			LegoObject_SetActivity(liveObj, Activity_GetUp, 0);
 			LegoObject_UpdateActivityChange(liveObj);
-			liveObj->flags2 |= LIVEOBJ2_UNK_100;
+			liveObj->flags2 |= LIVEOBJ2_GETTINGUP;
 		}
 		goto objectupdate_end;
 	}
@@ -3537,7 +3535,7 @@ objectupdate_end:
 
 	if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
 		liveObj->flags2 &= ~LIVEOBJ2_TRIGGERFRAMECALLBACK;
-		liveObj->flags2 |= LIVEOBJ2_UNK_20000;
+		liveObj->flags2 |= LIVEOBJ2_ACTIVITYCHANGING;
 	}
 
 	liveObj->flags4 &= ~LIVEOBJ4_DOUBLESELECTREADY;
@@ -5179,7 +5177,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_SlipAndScare(LegoObject* liveObj, voi
 	const real32 alertRadius = StatsObject_GetAlertRadius(monsterObj);
 
 	if (!(monsterObj->flags3 & LIVEOBJ3_POWEROFF)) {
-		if (!(liveObj->flags2 & LIVEOBJ2_THROWN) && !(liveObj->flags2 & LIVEOBJ2_UNK_100) &&
+		if (!(liveObj->flags2 & LIVEOBJ2_THROWN) && !(liveObj->flags2 & LIVEOBJ2_GETTINGUP) &&
 			(!(legoGlobs.flags2 & GAME2_CALLTOARMS) || !(liveObj->flags4 & LIVEOBJ4_UNK_4)) &&
 			liveObj->driveObject == nullptr)
 		{
@@ -5269,7 +5267,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_SlipAndScare(LegoObject* liveObj, voi
 						const real32 damage = Weapon_GetDamageForObject(weaponID, liveObj);
 						LegoObject_AddDamage2(liveObj, damage, true, 1.0f);
 
-						monsterObj->flags2 |= LIVEOBJ2_UNK_80;
+						monsterObj->flags2 |= LIVEOBJ2_FLOCKS_BATATTACKING;
 
 						if (!(monsterObj->flocks->flags & FLOCKS_FLAG_UNK_1)) {
 							LegoObject* unitList[1] = { monsterObj };
@@ -5342,7 +5340,29 @@ bool32 __cdecl LegoRR::LegoObject_Callback_SlipAndScare(LegoObject* liveObj, voi
 //sint32 __cdecl LegoRR::LegoObject_FUN_00447670(LegoObject* liveObj, sint32 bx, sint32 by, LegoObject* liveObj2);
 
 // <LegoRR.exe @004477b0>
-//void __cdecl LegoRR::LegoObject_FUN_004477b0(LegoObject* liveObj);
+void __cdecl LegoRR::LegoObject_BumpDamageRouteObject(LegoObject* liveObj)
+{
+	LegoObject* routeToObj = liveObj->routeToObject;
+	liveObj->routeToObject = nullptr;
+
+	if (routeToObj != nullptr) {
+		Point2F routeToPos = { 0.0f, 0.0f }; // dummy init
+		LegoObject_GetPosition(routeToObj, &routeToPos.x, &routeToPos.y);
+		Point2F thisPos = { 0.0f, 0.0f }; // dummy init
+		LegoObject_GetPosition(liveObj, &thisPos.x, &thisPos.y);
+
+		Point2F dir;
+		Gods98::Maths_Vector2DSubtract(&dir, &routeToPos, &thisPos);
+
+		const real32 routeToCollRadius = StatsObject_GetCollRadius(routeToObj);
+		const real32 collRadius = StatsObject_GetCollRadius(liveObj);
+		if (Gods98::Maths_Vector2DModulus(&dir) < ((collRadius * 2.0f) + routeToCollRadius)) {
+			LegoObject_Hit(routeToObj, &dir, true);
+			// Deal 10 damage on collision.
+			LegoObject_AddDamage2(routeToObj, 10.0f, true, 1.0f);
+		}
+	}
+}
 
 // <LegoRR.exe @00447880>
 //sint32 __cdecl LegoRR::LegoObject_FUN_00447880(LegoObject* liveObj);
@@ -5431,7 +5451,7 @@ bool32 __cdecl LegoRR::LegoObject_UpdateActivityChange(LegoObject* liveObj)
 
 	liveObj->animTime = 0.0f;
 	liveObj->activityName2 = liveObj->activityName1;
-	liveObj->flags2 &= ~LIVEOBJ2_UNK_20000;
+	liveObj->flags2 &= ~LIVEOBJ2_ACTIVITYCHANGING;
 	return success;
 }
 

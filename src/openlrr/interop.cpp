@@ -3456,7 +3456,7 @@ bool interop_hook_LegoRR_Object(void)
 	result &= hook_write_jmpret(0x0043f870, LegoRR::LegoObject_TrainMiniFigure_instantunk);
 	// used by: Lego_HandleWorldDebugKeys, LegoObject_Callback_Update,
 	//          LegoObject_UpdateEnergyHealthAndLavaContact, LegoObject_Callback_DynamiteExplosion,
-	//          LegoObject_Callback_SlipAndScare, LegoObject_FUN_004477b0, LegoObject_FUN_00447880,
+	//          LegoObject_Callback_SlipAndScare, LegoObject_BumpDamageRouteObject, LegoObject_FUN_00447880,
 	//          Weapon_GenericDamageObject, Weapon_GunDamageObject
 	result &= hook_write_jmpret(0x0043f960, LegoRR::LegoObject_AddDamage2);
 	// used by: LegoObject_Callback_Update
@@ -3518,6 +3518,9 @@ bool interop_hook_LegoRR_Object(void)
 	result &= hook_write_jmpret(0x00445a30, LegoRR::LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite);
 	// used by: LegoObject_UpdateSlipAndScare
 	result &= hook_write_jmpret(0x00445af0, LegoRR::LegoObject_Callback_SlipAndScare);
+
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x004477b0, LegoRR::LegoObject_BumpDamageRouteObject);
 
 	// used by: Lego_HandleKeys, LegoObject
 	result &= hook_write_jmpret(0x00447f00, LegoRR::LegoObject_UpdateActivityChange);
