@@ -1876,7 +1876,7 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 	/// DEBUG KEYBIND: [A]  "Creates a landslide at mousepoint."
 	// The DIRECTION_FLAG_N here is probably why the landslide debug key is so finicky.
 	if (Shortcut_IsPressed(ShortcutID::Debug_CreateLandslide)) {
-		Fallin_Block_FUN_0040f260(&mouseBlockPos, DIRECTION_FLAG_N, true);
+		Fallin_GenerateLandSlide(&mouseBlockPos, DIRECTION_FLAG_N, true);
 	}
 	/// DEBUG KEYBIND: [A]  "Causes unit at mousepoint to slip."
 	if (mouseOverObj != nullptr && Shortcut_IsPressed(ShortcutID::Debug_TripUnit)) {
@@ -2693,8 +2693,7 @@ bool32 __cdecl LegoRR::Lego_LoadErodeMap(Lego_Level* level, const char* filename
 		return false;
 
 	uint32 fileSize;
-	uint32 handle = Gods98::File_LoadBinaryHandle(filename, &fileSize);
-	/// TODO: We need a constant for this... probably.
+	const uint32 handle = Gods98::File_LoadBinaryHandle(filename, &fileSize);
 	if (handle == (uint32)MEMORY_HANDLE_INVALID)
 		return false;
 	
@@ -2706,13 +2705,17 @@ bool32 __cdecl LegoRR::Lego_LoadErodeMap(Lego_Level* level, const char* filename
 		for (uint32 by = 0; by < height; by++) {
 			for (uint32 bx = 0; bx < width; bx++) {
 				const Point2I blockPos = { (sint32)bx, (sint32)by };
+				Lego_Block* block = &blockValue(level, bx, by);
 
-				const Lego_ErodeType erodeType = (Lego_ErodeType)MapShared_GetBlock(handle, bx, by);
+				block->erodeSpeed = 0; // No erosion for this block.
+
+				// type: Lego_ErodeType
+				const uint32 erodeType = MapShared_GetBlock(handle, bx, by);
 				if (erodeType != Lego_ErodeType_None) {
 					// erodeSpeed can range from [1,5] (erodeType: [1,10] + 1 -> [2,11]).
-					blockValue(level, bx, by).erodeSpeed = ((uint8)erodeType + 1) / 2;
+					block->erodeSpeed = (uint8)((erodeType + 1) / 2);
 
-					if (((uint32)erodeType % 2) == 0) {
+					if ((erodeType % 2) == 0) {
 						// Even erode types are source blocks.
 						const uint32 rng = (uint32)Gods98::Maths_Rand();
 
@@ -2808,10 +2811,84 @@ bool32 __cdecl LegoRR::Level_HandleEmergeTriggers(Lego_Level* level, const Point
 //bool32 __cdecl LegoRR::Lego_LoadPathMap(Lego_Level* level, const char* filename, sint32 modifier);
 
 // <LegoRR.exe @0042c900>
-//bool32 __cdecl LegoRR::Lego_LoadFallinMap(Lego_Level* level, const char* filename);
+bool32 __cdecl LegoRR::Lego_LoadFallinMap(Lego_Level* level, const char* filename)
+{
+	// Don't use fallin data for blocks unless we successfully load the map file.
+	legoGlobs.hasFallins = false;
+
+	if (filename == nullptr)
+		return false;
+
+	uint32 fileSize;
+	const uint32 handle = Gods98::File_LoadBinaryHandle(filename, &fileSize);
+	if (handle == (uint32)MEMORY_HANDLE_INVALID)
+		return false;
+
+	uint32 width, height;
+	MapShared_GetDimensions(handle, &width, &height);
+	const bool sizeMatches = (width == level->width && height == level->height);
+	if (sizeMatches) {
+		// Use fallin data for blocks.
+		legoGlobs.hasFallins = true;
+
+		for (uint32 by = 0; by < height; by++) {
+			for (uint32 bx = 0; bx < width; bx++) {
+				Lego_Block* block = &blockValue(level, bx, by);
+
+				block->fallinIntensity = 0; // No fallins for this block.
+
+				// type: Lego_FallInType
+				const uint32 fallinType = MapShared_GetBlock(handle, bx, by);
+				if (fallinType != Lego_FallInType_None) {
+
+					if (fallinType >= Lego_FallInType_Danger_Low) {
+						block->fallinIntensity = (uint32)(fallinType - Lego_FallInType_Danger_Low) + 1; // [1,4]
+						block->fallinUpper = true;
+					}
+					else {
+						block->fallinIntensity = fallinType; // [1,4]
+						block->fallinUpper = false;
+					}
+
+					/// FIX APPLY: Properly use fallinIntensity for maxTime instead of fallinType, which might be higher.
+					///            As seen in Lego_UpdateFallins.
+					const uint32 maxTime = (block->fallinIntensity * legoGlobs.FallinMultiplier * STANDARD_FRAMERATEI);
+					block->fallinTimer = (real32)((uint32)block->randomness % maxTime);
+				}
+			}
+		}
+	}
+
+	Gods98::Mem_FreeHandle(handle);
+	return sizeMatches;
+}
 
 // <LegoRR.exe @0042caa0>
-//void __cdecl LegoRR::Lego_UpdateFallins(real32 elapsedGame);
+void __cdecl LegoRR::Lego_UpdateFallins(real32 elapsedWorld)
+{
+	if (legoGlobs.hasFallins) {
+		Lego_Level* level = Lego_GetLevel();
+
+		for (uint32 by = 0; by < level->height; by++) {
+			for (uint32 bx = 0; bx < level->width; bx++) {
+				Lego_Block* block = &blockValue(level, bx, by);
+
+				if (block->fallinIntensity != 0) {
+					block->fallinTimer += elapsedWorld;
+					const uint32 maxTime = block->fallinIntensity * legoGlobs.FallinMultiplier * STANDARD_FRAMERATEI;
+					if (block->fallinTimer > (real32)maxTime) {
+						block->fallinTimer = 0.0f;
+						const Point2I blockPos = { (sint32)bx, (sint32)by };
+
+						if (Fallin_TryGenerateLandSlide(&blockPos, block->fallinUpper)) {
+							Info_Send(Info_Landslide, nullptr, nullptr, &blockPos);
+						}
+					}
+				}
+			}
+		}
+	}
+}
 
 // <LegoRR.exe @0042cbc0>
 //bool32 __cdecl LegoRR::Lego_LoadBlockPointersMap(Lego_Level* level, const char* filename, sint32 modifier);
@@ -3012,7 +3089,60 @@ const char* __cdecl LegoRR::Level_Free(void)
 //void __cdecl LegoRR::Level_UncoverHiddenCavern(uint32 bx, uint32 by);
 
 // <LegoRR.exe @004316b0>
-//void __cdecl LegoRR::Lego_PTL_RockFall(uint32 bx, uint32 by, Direction direction, bool32 isBlockVertexPos);
+void __cdecl LegoRR::Lego_PTL_RockFall(uint32 bx, uint32 by, Direction direction, bool32 isBlockVertexPos)
+{
+	const Point2F EFFECT_DIRECTIONS[DIRECTION__COUNT] = {
+		{  0.0f,  1.0f },
+		{  1.0f,  0.0f },
+		{  0.0f, -1.0f },
+		{ -1.0f,  0.0f },
+	};
+
+	/// FIX APPLY: Don't use floating points here, there's no need to.
+	/// REFACTOR: Use standard directions here, since it doesn't make a difference.
+	const Point2I DIRECTIONS[DIRECTION__COUNT] = {
+		{ -1,  0 },
+		{  0,  1 },
+		{  1,  0 },
+		{  0, -1 },
+	};
+
+	// Count number of adjacent floor blocks to determine rockfall effect type.
+	uint32 floorCount = 0;
+	for (uint32 i = 0; i < _countof(DIRECTIONS); i++) {
+		const Point2I blockOffPos = {
+			(sint32)bx + DIRECTIONS[i].x,
+			(sint32)by + DIRECTIONS[i].y,
+		};
+		if (blockValue(Lego_GetLevel(), blockOffPos.x, blockOffPos.y).flags1 & BLOCK1_FLOOR) {
+			floorCount++;
+		}
+	}
+	const RockFallType rockFallType = (floorCount <= 1 ? ROCKFALL_3SIDES : ROCKFALL_OUTSIDECORNER);
+
+	Vector3F wPos = { 0.0f, 0.0f, 0.0f }; // dummy init
+	if (!isBlockVertexPos) {
+		Map3D_BlockToWorldPos(Lego_GetMap(), bx, by, &wPos.x, &wPos.y);
+	}
+	else {
+		// wPos.z obtained here is not used.
+		Map3D_BlockVertexToWorldPos(Lego_GetMap(), bx, by, &wPos.x, &wPos.y, &wPos.z);
+	}
+	/// TODO: We can probably skip getting the z pos for Map3D_BlockVertexToWorldPos...
+	wPos.z = Map3D_GetWorldZ(Lego_GetMap(), wPos.x, wPos.y);
+
+	/// REFACTOR: We don't need to get the world z twice.
+	const Vector3F sfxPos = wPos;
+	//Vector3F sfxPos = { wPos.x, wPos.y, 0.0f };
+	//sfxPos.z = Map3D_GetWorldZ(Lego_GetMap(), sfxPos.x, sfxPos.y);
+	SFX_Random_PlaySound3DOnContainer(nullptr, SFX_RockBreak, false, false, &sfxPos);
+
+	if (Effect_Spawn_RockFall(rockFallType, bx, by, wPos.x, wPos.y, wPos.z,
+							  EFFECT_DIRECTIONS[direction].x, EFFECT_DIRECTIONS[direction].y))
+	{
+		blockValue(Lego_GetLevel(), bx, by).flags1 |= BLOCK1_ROCKFALLFX;
+	}
+}
 
 // <LegoRR.exe @004318e0>
 //LegoRR::Lego_SurfaceType __cdecl LegoRR::Lego_GetBlockTerrain(sint32 bx, sint32 by);
@@ -3419,7 +3549,47 @@ void __cdecl LegoRR::Level_PowerGrid_ClearDrainPowerBlocks(void)
 //void __cdecl LegoRR::Level_SetPointer_FromSurfaceType(Lego_SurfaceType surfaceType);
 
 // <LegoRR.exe @00435160>
-//void __cdecl LegoRR::Level_GenerateFallin_InRadius(const Point2I* blockPos, sint32 radius, bool32 param_3);
+void __cdecl LegoRR::Level_GenerateLandSlideNearBlock(const Point2I* blockPos, sint32 radius, bool32 once)
+{
+	bool32 blocksTried[10][10] = { { false } };
+
+	const uint32 diameter = radius * 2;
+
+	uint32 maxTries = diameter * diameter;
+	if (!once) {
+		// Reduce max attempts if we're asking for more than one fallin.
+		maxTries /= 4;
+	}
+	// We don't need to worry about going over list bounds,
+	//  since we only check within the diameter x diameter area.
+	//if (maxTries > (10 * 10)) {
+	//	maxTries = (10 * 10);
+	//}
+
+	for (uint32 i = 0; i < maxTries; i++) {
+		const uint32 rngY = (uint32)Gods98::Maths_Rand() % diameter;
+		const uint32 rngX = (uint32)Gods98::Maths_Rand() % diameter;
+
+		const Point2I blockOffPos = {
+			blockPos->x + (sint32)rngX - radius,
+			blockPos->y + (sint32)rngY - radius,
+		};
+
+		// Unlike other grids, X is the higher order coordinate here.
+		//const uint32 idx = 10 * rngX + rngY;
+		if (!blocksTried[rngX][rngY]) {
+			// We haven't already tried this block.
+			if (Fallin_TryGenerateLandSlide(&blockOffPos, true)) {
+				if (once) {
+					return; // Fallin generated, finish here since only one was asked for.
+				}
+			}
+
+			// Mark this block as tried, so we don't try it again.
+			blocksTried[rngX][rngY] = true;
+		}
+	}
+}
 
 // <LegoRR.exe @00435230>
 //void __cdecl LegoRR::Level_UpdateTutorialBlockFlashing(Lego_Level* level, Gods98::Viewport* viewMain, real32 elapsedGame, real32 elapsedAbs);

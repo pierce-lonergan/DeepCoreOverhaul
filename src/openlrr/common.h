@@ -107,6 +107,7 @@
 
 // Standard Gods engine FPS constant. Used everywhere
 #define STANDARD_FRAMERATE		25.0f
+#define STANDARD_FRAMERATEI		25
 
 #pragma endregion
 

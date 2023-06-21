@@ -7,6 +7,7 @@
 
 #include "../audio/SFX.h"
 #include "../effects/DamageText.h"
+#include "../effects/Effects.h"
 #include "../front/Reward.h"
 #include "../interface/hud/Bubbles.h"
 #include "../interface/Encyclopedia.h"
@@ -1506,10 +1507,53 @@ void __cdecl LegoRR::LegoObject_RequestPowerGridUpdate(void)
 //void __cdecl LegoRR::LegoObject_RockMonster_FUN_0043ad70(LegoObject* liveObj);
 
 // <LegoRR.exe @0043aeb0>
-//void __cdecl LegoRR::LegoObject_FUN_0043aeb0(LegoObject* liveObj);
+void __cdecl LegoRR::LegoObject_AttackPath(LegoObject* liveObj)
+{
+	Point2I blockPos = { 0, 0 }; // dummy init
+	LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+
+	// 1-in-5 chance to generate landslides near the stamped block.
+	if (((uint32)Gods98::Maths_Rand() % 5) == 0) {
+		Level_GenerateLandSlideNearBlock(&blockPos, 3, true);
+	}
+
+	// Stamp and destroy the path.
+	if (Level_Block_IsPath(&blockPos)) {
+		Effect_Spawn_SmashPath(liveObj, nullptr);
+		AITask_DoClearTypeAction(&blockPos, Message_ClearRemovePathComplete);
+		Level_BlockUpdateSurface(Lego_GetLevel(), blockPos.x, blockPos.y, 0);
+	}
+
+	// Cause any Mini-Figures carrying crystals within the stamp radius to drop everything.
+	for (auto obj : objectListSet.EnumerateSkipUpgradeParts()) {
+		LegoObject_Callback_StampMiniFigureWithCrystal(obj, liveObj);
+	}
+	//LegoObject_RunThroughListsSkipUpgradeParts(LegoObject_Callback_StampMiniFigureWithCrystal, liveObj);
+}
 
 // <LegoRR.exe @0043af50>
-//bool32 __cdecl LegoRR::LegoObject_Callback_TryStampMiniFigureWithCrystal(LegoObject* targetObj, LegoObject* stamperObj);
+bool32 __cdecl LegoRR::LegoObject_Callback_StampMiniFigureWithCrystal(LegoObject* targetObj, void* pStamperObj)
+{
+	LegoObject* stamperObj = (LegoObject*)pStamperObj;
+
+	if (targetObj->type == LegoObject_MiniFigure && (targetObj->flags1 & LIVEOBJ1_CARRYING) &&
+		targetObj->carriedObjects[0]->type == LegoObject_PowerCrystal)
+	{
+		Point2F stamperPos = { 0.0f, 0.0f }; // dummy init
+		LegoObject_GetPosition(stamperObj, &stamperPos.x, &stamperPos.y);
+		Point2F targetPos = { 0.0f, 0.0f }; // dummy init
+		LegoObject_GetPosition(targetObj, &targetPos.x, &targetPos.y);
+
+		// Is target within stamping distance?
+		const real32 stampRadius = StatsObject_GetStampRadius(stamperObj);
+		if (Gods98::Maths_Vector2DDistance(&targetPos, &stamperPos) < stampRadius) {
+			// Drop carried crystal and end routing.
+			LegoObject_DropCarriedObject(targetObj, false);
+			LegoObject_Route_End(targetObj, false);
+		}
+	}
+	return false;
+}
 
 // <LegoRR.exe @0043b010>
 LegoRR::LegoObject* __cdecl LegoRR::LegoObject_TryGenerateSlug(LegoObject* originObj, LegoObject_ID objID)

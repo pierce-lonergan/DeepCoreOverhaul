@@ -353,7 +353,7 @@ struct Lego_Block // [LegoRR/Lego.c|struct:0x48|pack:1]
 	/*34,1*/	uint8 aiNode;
 	/*35,3*/	undefined field_0x35_0x37[3];
 	/*38,4*/	bool32 fallinUpper; // (fallin upper: 1 if fallin > 4)
-	/*3c,4*/	sint32 fallinIntensity; // (fallin scale: 1-4)
+	/*3c,4*/	uint32 fallinIntensity; // (fallin scale: 1-4)
 	/*40,4*/	real32 fallinTimer; // (randomized with full fallin value)
 	/*44,4*/	bool32 tutoHighlightState; // Tutorial block highlight color (false = tutorial color, true = normal).
 	/*48*/
@@ -1426,12 +1426,12 @@ bool32 __cdecl Level_HandleEmergeTriggers(Lego_Level* level, const Point2I* bloc
 //bool32 __cdecl Lego_LoadPathMap(Lego_Level* level, const char* filename, sint32 modifier);
 
 // <LegoRR.exe @0042c900>
-#define Lego_LoadFallinMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename))0x0042c900)
-//bool32 __cdecl Lego_LoadFallinMap(Lego_Level* level, const char* filename);
+//#define Lego_LoadFallinMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename))0x0042c900)
+bool32 __cdecl Lego_LoadFallinMap(Lego_Level* level, const char* filename);
 
 // <LegoRR.exe @0042caa0>
-#define Lego_UpdateFallins ((void (__cdecl* )(real32 elapsedGame))0x0042caa0)
-//void __cdecl Lego_UpdateFallins(real32 elapsedGame);
+//#define Lego_UpdateFallins ((void (__cdecl* )(real32 elapsedWorld))0x0042caa0)
+void __cdecl Lego_UpdateFallins(real32 elapsedWorld);
 
 // <LegoRR.exe @0042cbc0>
 #define Lego_LoadBlockPointersMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename, sint32 modifier))0x0042cbc0)
@@ -1592,8 +1592,8 @@ __inline Map3D* Lego_GetMap(void) { return Lego_GetLevel()->map; }
 //void __cdecl Level_UncoverHiddenCavern(uint32 bx, uint32 by);
 
 // <LegoRR.exe @004316b0>
-#define Lego_PTL_RockFall ((void (__cdecl* )(uint32 bx, uint32 by, Direction direction, bool32 isBlockVertexPos))0x004316b0)
-//void __cdecl Lego_PTL_RockFall(uint32 bx, uint32 by, Direction direction, bool32 isBlockVertexPos);
+//#define Lego_PTL_RockFall ((void (__cdecl* )(uint32 bx, uint32 by, Direction direction, bool32 isBlockVertexPos))0x004316b0)
+void __cdecl Lego_PTL_RockFall(uint32 bx, uint32 by, Direction direction, bool32 isBlockVertexPos);
 
 // <LegoRR.exe @004318e0>
 #define Lego_GetBlockTerrain ((Lego_SurfaceType (__cdecl* )(sint32 bx, sint32 by))0x004318e0)
@@ -1929,8 +1929,8 @@ __inline SFX_ID __cdecl Lego_GetSurfaceTypeSFX(Lego_SurfaceType surfaceType) { r
 //void __cdecl Level_SetPointer_FromSurfaceType(Lego_SurfaceType surfaceType);
 
 // <LegoRR.exe @00435160>
-#define Level_GenerateFallin_InRadius ((void (__cdecl* )(const Point2I* blockPos, sint32 radius, bool32 param_3))0x00435160)
-//void __cdecl Level_GenerateFallin_InRadius(const Point2I* blockPos, sint32 radius, bool32 param_3);
+//#define Level_GenerateLandSlideNearBlock ((void (__cdecl* )(const Point2I* blockPos, sint32 radius, bool32 once))0x00435160)
+void __cdecl Level_GenerateLandSlideNearBlock(const Point2I* blockPos, sint32 radius, bool32 once);
 
 // <LegoRR.exe @00435230>
 #define Level_UpdateTutorialBlockFlashing ((void (__cdecl* )(Lego_Level* level, Gods98::Viewport* viewMain, real32 elapsedGame, real32 elapsedAbs))0x00435230)

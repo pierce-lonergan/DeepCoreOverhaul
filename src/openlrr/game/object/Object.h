@@ -949,12 +949,12 @@ void __cdecl LegoObject_RequestPowerGridUpdate(void);
 //void __cdecl LegoObject_RockMonster_FUN_0043ad70(LegoObject* liveObj);
 
 // <LegoRR.exe @0043aeb0>
-#define LegoObject_FUN_0043aeb0 ((void (__cdecl* )(LegoObject* liveObj))0x0043aeb0)
-//void __cdecl LegoObject_FUN_0043aeb0(LegoObject* liveObj);
+//#define LegoObject_AttackPath ((void (__cdecl* )(LegoObject* liveObj))0x0043aeb0)
+void __cdecl LegoObject_AttackPath(LegoObject* liveObj);
 
 // <LegoRR.exe @0043af50>
-#define LegoObject_Callback_TryStampMiniFigureWithCrystal ((bool32 (__cdecl* )(LegoObject* targetObj, LegoObject* stamperObj))0x0043af50)
-//bool32 __cdecl LegoObject_Callback_TryStampMiniFigureWithCrystal(LegoObject* targetObj, LegoObject* stamperObj);
+//#define LegoObject_Callback_StampMiniFigureWithCrystal ((bool32 (__cdecl* )(LegoObject* targetObj, LegoObject* stamperObj))0x0043af50)
+bool32 __cdecl LegoObject_Callback_StampMiniFigureWithCrystal(LegoObject* targetObj, void* pStamperObj);
 
 // <LegoRR.exe @0043b010>
 //#define LegoObject_TryGenerateSlug ((LegoObject* (__cdecl* )(LegoObject* originObj, LegoObject_ID objID))0x0043b010)

@@ -73,6 +73,7 @@
 #include "game/world/Detail.h"
 #include "game/world/ElectricFence.h"
 #include "game/world/Erosion.h"
+#include "game/world/Fallin.h"
 #include "game/world/Roof.h"
 #include "game/world/SelectPlace.h"
 #include "game/world/Water.h"
@@ -2044,6 +2045,27 @@ bool interop_hook_LegoRR_Erosion(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Fallin(void)
+{
+	bool result = true;
+
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0040f010, LegoRR::Fallin_Update);
+	// used by: Fallin_Update, Fallin_GenerateCaveIn, Lego_UpdateFallins,
+	//          Level_GenerateLandSlideNearBlock
+	result &= hook_write_jmpret(0x0040f0c0, LegoRR::Fallin_TryGenerateLandSlide);
+	// used by: Fallin_TryGenerateLandSlide, Fallin_GenerateCaveIn
+	result &= hook_write_jmpret(0x0040f1e0, LegoRR::Fallin_CanLandSlideAtBlock);
+	// used by: Fallin_TryGenerateLandSlide, Fallin_GenerateCaveIn, Lego_HandleWorldDebugKeys
+	result &= hook_write_jmpret(0x0040f260, LegoRR::Fallin_GenerateLandSlide);
+	// used by: Lego_LoadLevel
+	result &= hook_write_jmpret(0x0040f510, LegoRR::Fallin_Initialise);
+	// used by: Fallin_GenerateLandSlide
+	result &= hook_write_jmpret(0x0040f520, LegoRR::Fallin_GenerateCaveIn);
+
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_FrontEnd(void)
 {
 	bool result = true;
@@ -2628,8 +2650,16 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: LegoObject_Callback_Update
 	result &= hook_write_jmpret(0x0042c260, LegoRR::Level_HandleEmergeTriggers);
 
+	// used by: Lego_LoadMapSet
+	result &= hook_write_jmpret(0x0042c900, LegoRR::Lego_LoadFallinMap);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0042caa0, LegoRR::Lego_UpdateFallins);
+
 	// used by: Front_RestartLevel, Lego_Shutdown_Full, Lego_EndLevel
 	result &= hook_write_jmpret(0x0042eff0, LegoRR::Level_Free);
+
+	// used by: Message_Update
+	result &= hook_write_jmpret(0x004316b0, LegoRR::Lego_PTL_RockFall);
 
 	// used by: SelectPlace_CheckAndUpdate
 	result &= hook_write_jmpret(0x00431a50, LegoRR::Level_CanBuildOnBlock);
@@ -2649,6 +2679,9 @@ bool interop_hook_LegoRR_Game(void)
 	result &= hook_write_jmpret(0x00432200, LegoRR::Level_PowerGrid_IsDrainPowerBlock);
 	// used by: Construction_PowerGrid_DrainAdjacentBlocks
 	result &= hook_write_jmpret(0x00432230, LegoRR::Level_PowerGrid_ClearDrainPowerBlocks);
+
+	// used by: LegoObject_AttackPath
+	result &= hook_write_jmpret(0x00435160, LegoRR::Level_GenerateLandSlideNearBlock);
 
 	// used by: Lego_MainLoop, Lego_HandleKeys, Objective_HandleKeys
 	result &= hook_write_jmpret(0x00435870, LegoRR::Lego_EndLevel);
@@ -3373,6 +3406,10 @@ bool interop_hook_LegoRR_Object(void)
 
 	result &= hook_write_jmpret(0x00439c50, LegoRR::LegoObject_RequestPowerGridUpdate);
 
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x0043aeb0, LegoRR::LegoObject_AttackPath);
+	// used by: LegoObject_AttackPath
+	result &= hook_write_jmpret(0x0043af50, LegoRR::LegoObject_Callback_StampMiniFigureWithCrystal);
 	// used by: Lego_UpdateSlug_FUN_004260f0, NERPFunc__GenerateSlug
 	result &= hook_write_jmpret(0x0043b010, LegoRR::LegoObject_TryGenerateSlug);
 
@@ -4153,6 +4190,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_ElectricFence();
 	result &= interop_hook_LegoRR_Encyclopedia();
 	result &= interop_hook_LegoRR_Erosion();
+	result &= interop_hook_LegoRR_Fallin();
 	result &= interop_hook_LegoRR_FrontEnd();
 	result &= interop_hook_LegoRR_Game();
 	result &= interop_hook_LegoRR_Interface();

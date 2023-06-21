@@ -66,6 +66,7 @@ bool interop_hook_LegoRR_Credits(void);
 bool interop_hook_LegoRR_ElectricFence(void);
 bool interop_hook_LegoRR_Encyclopedia(void);
 bool interop_hook_LegoRR_Erosion(void);
+bool interop_hook_LegoRR_Fallin(void);
 bool interop_hook_LegoRR_FrontEnd(void);
 bool interop_hook_LegoRR_Game(void);
 bool interop_hook_LegoRR_Interface(void);
