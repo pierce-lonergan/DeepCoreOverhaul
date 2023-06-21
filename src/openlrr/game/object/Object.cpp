@@ -4044,10 +4044,10 @@ bool32 __cdecl LegoRR::LegoObject_MiniFigurePlayHurtSound(LegoObject* liveObj, r
 //bool32 __cdecl LegoRR::LegoObject_Callback_DynamiteExplosion(LegoObject* liveObj, SearchDynamiteRadius* search);
 
 // <LegoRR.exe @00440b80>
-//void __cdecl LegoRR::LegoObject_DoBirdScarerRadiusCallbacks(OPTIONAL LegoObject* liveObj, OPTIONAL const Point2F* position, real32 radius);
+//void __cdecl LegoRR::LegoObject_ScareUnitsWithBigBang(OPTIONAL LegoObject* liveObj, OPTIONAL const Point2F* wPos, real32 radius);
 
 // <LegoRR.exe @00440be0>
-//bool32 __cdecl LegoRR::LegoObject_Callback_BirdScarer(LegoObject* liveObj, SearchDynamiteRadius* search);
+//bool32 __cdecl LegoRR::LegoObject_Callback_ScareUnitWithBigBang(LegoObject* liveObj, SearchDynamiteRadius* search);
 
 // <LegoRR.exe @00440ca0>
 void __cdecl LegoRR::LegoObject_SetActivity(LegoObject* liveObj, Activity_Type activityType, uint32 repeatCount)

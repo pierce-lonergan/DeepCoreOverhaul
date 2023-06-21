@@ -39,6 +39,7 @@
 #include "engine/Init.h"
 
 #include "game/audio/SFX.h"
+#include "game/effects/Effects.h"
 #include "game/effects/LightEffects.h"
 #include "game/effects/Smoke.h"
 #include "game/front/Credits.h"
@@ -1993,6 +1994,70 @@ bool interop_hook_LegoRR_BezierCurve(void)
 	return_interop(result);
 }
 
+bool interop_hook_LegoRR_Effect(void)
+{
+	bool result = true;
+
+	// used by: Level_Free
+	result &= hook_write_jmpret(0x0040bcf0, LegoRR::Effect_StopAll);
+	// used by: LegoObject_DestroyBoulder_AndCreateExplode
+	result &= hook_write_jmpret(0x0040bd10, LegoRR::Effect_Spawn_BoulderExplode_AtSimpleObject);
+	// used by: Effect_Spawn_BoulderExplode_AtSimpleObject, Weapon_GunHitObject, Weapon_FireLazer
+	result &= hook_write_jmpret(0x0040bd40, LegoRR::Effect_Spawn_BoulderExplode);
+	// used by: LegoObject_AttackPath
+	result &= hook_write_jmpret(0x0040bde0, LegoRR::Effect_Spawn_SmashPath);
+	// used by: Lego_LoadLevel
+	result &= hook_write_jmpret(0x0040bea0, LegoRR::Effect_FindRockFallStyle);
+	// used by: Lego_LoadLevel
+	result &= hook_write_jmpret(0x0040bef0, LegoRR::Effect_SetRockFallStyle);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x0040bf00, LegoRR::Effect_Load_RockFallStylesAll);
+	// used by: Effect_Load_RockFallStylesAll
+	result &= hook_write_jmpret(0x0040c000, LegoRR::Effect_Load_RockFallStyle);
+	// used by: Lego_LoadMiscObjects
+	result &= hook_write_jmpret(0x0040c0e0, LegoRR::Effect_Load_ElectricFenceBeam);
+	// used by: Fallin_GenerateLandSlide, Lego_PTL_RockFall
+	result &= hook_write_jmpret(0x0040c160, LegoRR::Effect_Spawn_RockFall);
+	// used by: ElectricFence_Block_UnkAreaDistanceBetweenBlocks, ElectricFence_SparkObjectAndCreateBeam
+	result &= hook_write_jmpret(0x0040c220, LegoRR::Effect_Spawn_ElectricFenceBeam);
+	// used by: Effect_StopAll, Level_UpdateEffects
+	result &= hook_write_jmpret(0x0040c2d0, LegoRR::Effect_UpdateAll);
+	// used by: Effect_UpdateAll
+	result &= hook_write_jmpret(0x0040c400, LegoRR::Effect_Update_BoulderExplode);
+	// used by: Effect_UpdateAll
+	result &= hook_write_jmpret(0x0040c450, LegoRR::Effect_Update_SmashPath);
+	// used by: Level_UpdateEffects
+	result &= hook_write_jmpret(0x0040c4a0, LegoRR::Effect_GetBlockPos_RockFall);
+	// used by: LegoObject_UpdateWorldStickyPosition
+	result &= hook_write_jmpret(0x0040c4e0, LegoRR::Effect_GetTumbleNull_RockFall);
+	// used by: Level_Free
+	result &= hook_write_jmpret(0x0040c5c0, LegoRR::Effect_RemoveAll_BoulderExplode);
+	// used by: Lego_Shutdown_Full
+	result &= hook_write_jmpret(0x0040c5f0, LegoRR::Effect_RemoveAll_RockFall);
+	// used by: Lego_LoadMiscObjects
+	result &= hook_write_jmpret(0x0040c650, LegoRR::Effect_Load_Explosion);
+	// used by: LegoObject_SimpleObject_MoveAnimation
+	result &= hook_write_jmpret(0x0040c680, LegoRR::Effect_Spawn_Explosion);
+	// used by: Effect_UpdateAll
+	result &= hook_write_jmpret(0x0040c760, LegoRR::Effect_Update_Explosion);
+	// used by: Effect_Spawn_Particle
+	result &= hook_write_jmpret(0x0040c7d0, LegoRR::Effect_GetMiscEffectData);
+	// used by: Effect_Initialise
+	result &= hook_write_jmpret(0x0040c850, LegoRR::Effect_Load_Misc);
+	// used by: Lego_LoadMiscObjects
+	result &= hook_write_jmpret(0x0040c8c0, LegoRR::Effect_Initialise);
+	// used by: Effect_Update_MiscEffectsAll
+	result &= hook_write_jmpret(0x0040caa0, LegoRR::Effect_Update_MiscEffect);
+	// used by: Effect_UpdateAll
+	result &= hook_write_jmpret(0x0040cb70, LegoRR::Effect_Update_MiscEffectsAll);
+	// used by: Construction_CleanupBuildingFoundation, Erosion_Update, Level_Block_ClearRubbleLayer,
+	//          LegoObject_UpgradeBuilding, LegoObject_SimpleObject_MoveAnimation,
+	//          Weapon_GunHitObject, Weapon_FireLazer
+	result &= hook_write_jmpret(0x0040cc10, LegoRR::Effect_Spawn_Particle);
+
+	return_interop(result);
+}
+
 bool interop_hook_LegoRR_Encyclopedia(void)
 {
 	bool result = true;
@@ -2602,7 +2667,8 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00423120, LegoRR::Lego_HandleRenameInput);
 
-
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x00424530, LegoRR::Level_UpdateEffects);
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00424660, LegoRR::Lego_UpdateSceneFog);
 	// used by: Lego_DrawAllLaserTrackerBoxes
@@ -2679,6 +2745,9 @@ bool interop_hook_LegoRR_Game(void)
 	result &= hook_write_jmpret(0x00432200, LegoRR::Level_PowerGrid_IsDrainPowerBlock);
 	// used by: Construction_PowerGrid_DrainAdjacentBlocks
 	result &= hook_write_jmpret(0x00432230, LegoRR::Level_PowerGrid_ClearDrainPowerBlocks);
+
+	// used by: LegoObject_UpdateWorldStickyPosition
+	result &= hook_write_jmpret(0x00432a30, LegoRR::Level_Block_IsRockFallFX);
 
 	// used by: Fallin_CanLandSlideAtBlock
 	result &= hook_write_jmpret(0x00432dc0, LegoRR::Level_Block_IsInitiallyExposed);
@@ -3511,7 +3580,7 @@ bool interop_hook_LegoRR_Object(void)
 	//          LegoObject_SimpleObject_MoveAnimation, LegoObject_UpdatePushing
 	result &= hook_write_jmpret(0x00442b60, LegoRR::LegoObject_SetPositionAndHeading);
 
-	// used by: LegoObject_Callback_BirdScarer, LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite,
+	// used by: LegoObject_Callback_ScareUnitWithBigBang, LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite,
 	//          LegoObject_Callback_SlipAndScare
 	result &= hook_write_jmpret(0x00444720, LegoRR::LegoObject_TryRunAway);
 
@@ -4193,6 +4262,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Construction();
 	result &= interop_hook_LegoRR_Creature();
 	result &= interop_hook_LegoRR_Credits();
+	result &= interop_hook_LegoRR_Effect();
 	result &= interop_hook_LegoRR_ElectricFence();
 	result &= interop_hook_LegoRR_Encyclopedia();
 	result &= interop_hook_LegoRR_Erosion();

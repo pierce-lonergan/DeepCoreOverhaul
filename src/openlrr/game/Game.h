@@ -1084,8 +1084,8 @@ bool32 __cdecl Lego_MainLoop(real32 elapsed);
 //void __cdecl Level_ConsumeObjectOxygen(LegoObject* liveObj, real32 elapsed);
 
 // <LegoRR.exe @00424530>
-#define Level_UpdateEffects ((void (__cdecl* )(Lego_Level* level, real32 elapsedGame))0x00424530)
-//void __cdecl Level_UpdateEffects(Lego_Level* level, real32 elapsedGame);
+//#define Level_UpdateEffects ((void (__cdecl* )(Lego_Level* level, real32 elapsedWorld))0x00424530)
+void __cdecl Level_UpdateEffects(Lego_Level* level, real32 elapsedWorld);
 
 // <LegoRR.exe @00424660>
 //#define Lego_UpdateSceneFog ((void (__cdecl* )(bool32 fogEnabled, real32 elapsed))0x00424660)
@@ -1720,8 +1720,8 @@ void __cdecl Level_PowerGrid_ClearDrainPowerBlocks(void);
 //bool32 __cdecl Level_Block_IsSolidBuilding(uint32 bx, uint32 by, bool32 includeToolStore);
 
 // <LegoRR.exe @00432a30>
-#define Level_Block_IsRockFallFX ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432a30)
-//bool32 __cdecl Level_Block_IsRockFallFX(uint32 bx, uint32 by);
+//#define Level_Block_IsRockFallFX ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432a30)
+bool32 __cdecl Level_Block_IsRockFallFX(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432a80>
 #define Level_Block_IsGround ((bool32 (__cdecl* )(uint32 bx, uint32 by))0x00432a80)

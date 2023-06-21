@@ -867,7 +867,29 @@ void __cdecl LegoRR::Lego_HandleRenameInput(real32 elapsedAbs)
 //void __cdecl LegoRR::Level_ConsumeObjectOxygen(LegoObject* liveObj, real32 elapsed);
 
 // <LegoRR.exe @00424530>
-//void __cdecl LegoRR::Level_UpdateEffects(Lego_Level* level, real32 elapsedGame);
+void __cdecl LegoRR::Level_UpdateEffects(Lego_Level* level, real32 elapsedWorld)
+{
+	RockFallType* rockFallTypes;
+	uint32* rockFallIndexes;
+	const uint32 numRockFallCompleted = Effect_UpdateAll(elapsedWorld, &rockFallTypes, &rockFallIndexes);
+
+	for (uint32 i = 0; i < numRockFallCompleted; i++) {
+		Point2I blockPos = { 0, 0 }; // dummy init
+		Effect_GetBlockPos_RockFall(rockFallTypes[i], rockFallIndexes[i], &blockPos.x, &blockPos.y);
+
+		Lego_Block* block = &blockValue(Lego_GetLevel(), blockPos.x, blockPos.y);
+		block->flags1 &= ~BLOCK1_ROCKFALLFX;
+
+		if (!(block->flags1 & BLOCK1_LANDSLIDING)) {
+			// This is a rockfall effect generated from drilling a wall.
+			/// FIXME: This can trigger if multiple landslides occur on the same block at once.
+			///        As can be noticed with the A debug key generating CryOre when spammed.
+			Message_PostEvent(Message_RockFallComplete, nullptr, Message_Argument(0), &blockPos);
+		}
+
+		block->flags1 &= ~(BLOCK1_LANDSLIDING | BLOCK1_BUSY_WALL);
+	}
+}
 
 // <LegoRR.exe @00424660>
 void __cdecl LegoRR::Lego_UpdateSceneFog(bool32 fogEnabled, real32 elapsed)
@@ -3403,7 +3425,15 @@ void __cdecl LegoRR::Level_PowerGrid_ClearDrainPowerBlocks(void)
 //bool32 __cdecl LegoRR::Level_Block_IsSolidBuilding(uint32 bx, uint32 by, bool32 includeToolStore);
 
 // <LegoRR.exe @00432a30>
-//bool32 __cdecl LegoRR::Level_Block_IsRockFallFX(uint32 bx, uint32 by);
+bool32 __cdecl LegoRR::Level_Block_IsRockFallFX(uint32 bx, uint32 by)
+{
+	/// TODO: Why is size - 1 being used here?
+	// Unsigned comparisons skip needing to check >= 0.
+	if ((uint32)bx < (Lego_GetLevel()->width - 1) && (uint32)by < (Lego_GetLevel()->height - 1)) {
+		return (blockValue(Lego_GetLevel(), bx, by).flags1 & BLOCK1_ROCKFALLFX);
+	}
+	return false;
+}
 
 // <LegoRR.exe @00432a80>
 //bool32 __cdecl LegoRR::Level_Block_IsGround(uint32 bx, uint32 by);

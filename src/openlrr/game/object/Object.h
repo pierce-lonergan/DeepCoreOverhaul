@@ -1175,13 +1175,13 @@ bool32 __cdecl LegoObject_MiniFigurePlayHurtSound(LegoObject* liveObj, real32 el
 //bool32 __cdecl LegoObject_Callback_DynamiteExplosion(LegoObject* liveObj, SearchDynamiteRadius* search);
 
 // <LegoRR.exe @00440b80>
-#define LegoObject_DoBirdScarerRadiusCallbacks ((void (__cdecl* )(OPTIONAL LegoObject* liveObj, OPTIONAL const Point2F* position, real32 radius))0x00440b80)
-//void __cdecl LegoObject_DoBirdScarerRadiusCallbacks(OPTIONAL LegoObject* liveObj, OPTIONAL const Point2F* position, real32 radius);
+#define LegoObject_ScareUnitsWithBigBang ((void (__cdecl* )(OPTIONAL LegoObject* liveObj, OPTIONAL const Point2F* wPos, real32 radius))0x00440b80)
+//void __cdecl LegoObject_ScareUnitsWithBigBang(OPTIONAL LegoObject* liveObj, OPTIONAL const Point2F* wPos, real32 radius);
 
 // DATA: SearchDynamiteRadius*
 // <LegoRR.exe @00440be0>
-#define LegoObject_Callback_BirdScarer ((bool32 (__cdecl* )(LegoObject* liveObj, SearchDynamiteRadius* search))0x00440be0)
-//bool32 __cdecl LegoObject_Callback_BirdScarer(LegoObject* liveObj, SearchDynamiteRadius* search);
+#define LegoObject_Callback_ScareUnitWithBigBang ((bool32 (__cdecl* )(LegoObject* liveObj, SearchDynamiteRadius* search))0x00440be0)
+//bool32 __cdecl LegoObject_Callback_ScareUnitWithBigBang(LegoObject* liveObj, SearchDynamiteRadius* search);
 
 // <LegoRR.exe @00440ca0>
 //#define LegoObject_SetActivity ((void (__cdecl* )(LegoObject* liveObj, Activity_Type activityType, uint32 repeatCount))0x00440ca0)
