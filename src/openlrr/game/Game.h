@@ -214,7 +214,7 @@ enum BlockFlags1 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 	                                        // This flag is only checked in combination with other synthetic blocks (foundation, path, path stud).
 											// It's possible it's another unused type of synthetic block.
 	BLOCK1_UNUSED_2000000      = 0x2000000,
-	BLOCK1_EXPOSED             = 0x4000000,
+	BLOCK1_INITIALLYEXPOSED    = 0x4000000,
 	BLOCK1_BUSY_WALL           = 0x8000000,
 	BLOCK1_DOZERCLEARING       = 0x10000000,
 	BLOCK1_PATH                = 0x20000000,
@@ -1764,8 +1764,8 @@ void __cdecl Level_PowerGrid_ClearDrainPowerBlocks(void);
 //bool32 __cdecl Level_Block_IsCorner(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432dc0>
-#define Level_Block_IsExposed ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432dc0)
-//bool32 __cdecl Level_Block_IsExposed(const Point2I* blockPos);
+//#define Level_Block_IsInitiallyExposed ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432dc0)
+bool32 __cdecl Level_Block_IsInitiallyExposed(const Point2I* blockPos);
 
 // <LegoRR.exe @00432df0>
 #define Level_Block_IsImmovable ((bool32 (__cdecl* )(const Point2I* blockPos))0x00432df0)

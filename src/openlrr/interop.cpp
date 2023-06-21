@@ -2680,6 +2680,9 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: Construction_PowerGrid_DrainAdjacentBlocks
 	result &= hook_write_jmpret(0x00432230, LegoRR::Level_PowerGrid_ClearDrainPowerBlocks);
 
+	// used by: Fallin_CanLandSlideAtBlock
+	result &= hook_write_jmpret(0x00432dc0, LegoRR::Level_Block_IsInitiallyExposed);
+
 	// used by: LegoObject_AttackPath
 	result &= hook_write_jmpret(0x00435160, LegoRR::Level_GenerateLandSlideNearBlock);
 

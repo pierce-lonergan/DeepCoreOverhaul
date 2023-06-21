@@ -3432,7 +3432,10 @@ void __cdecl LegoRR::Level_PowerGrid_ClearDrainPowerBlocks(void)
 //bool32 __cdecl LegoRR::Level_Block_IsCorner(uint32 bx, uint32 by);
 
 // <LegoRR.exe @00432dc0>
-//bool32 __cdecl LegoRR::Level_Block_IsExposed(const Point2I* blockPos);
+bool32 __cdecl LegoRR::Level_Block_IsInitiallyExposed(const Point2I* blockPos)
+{
+	return (blockValue(Lego_GetLevel(), blockPos->x, blockPos->y).flags1 & BLOCK1_INITIALLYEXPOSED);
+}
 
 // <LegoRR.exe @00432df0>
 //bool32 __cdecl LegoRR::Level_Block_IsImmovable(const Point2I* blockPos);

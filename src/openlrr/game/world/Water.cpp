@@ -309,7 +309,7 @@ void __cdecl LegoRR::Water_InitVertices(Gods98::Container* contRoot, Lego_Level*
 
 				/// CHANGE: Properly check for exposed walls (predug won't tell us that info).
 				const Point2I blockOff = Point2I { static_cast<sint32>(bxOff), static_cast<sint32>(byOff) };
-				const bool exposed = Level_Block_IsExposed(&blockOff);
+				const bool exposed = Level_Block_IsInitiallyExposed(&blockOff);
 
 				if ((exposed  && Level_Block_IsWall(bxOff, byOff)) ||
 					(!exposed && blockValue(level, bxOff, byOff).predug == Lego_PredugType_Wall))
