@@ -84,6 +84,7 @@ bool32 __cdecl LegoRR::Fallin_TryGenerateLandSlide(const Point2I* blockPos, bool
 					notSolidOrReinforced = false;
 				}
 
+				/// FIXME: Don't animate fallins coming from reinforced blocks.
 				fallinDirs |= DirectionToFlag(i); // (1 << i);
 
 				if (!Level_Block_IsCorner(blockOffPos.x, blockOffPos.y)) {
@@ -110,7 +111,7 @@ bool32 __cdecl LegoRR::Fallin_CanLandSlideAtBlock(const Point2I* blockPos)
 			terrain != Lego_SurfaceType_Lake &&
 			terrain != Lego_SurfaceType_Water)
 		{
-			if (level->SafeCaverns == BOOL3_FALSE || !Level_Block_IsExposed(blockPos)) {
+			if (level->SafeCaverns == BOOL3_FALSE || Level_Block_IsExposed(blockPos)) {
 				return true;
 			}
 		}
