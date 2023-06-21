@@ -336,7 +336,7 @@ struct Lego_Block // [LegoRR/Lego.c|struct:0x48|pack:1]
 	/*03,1*/	uint8 direction; // clockwise (does not determine corner/wall type)
 	/*04,1*/	uint8 blockpointer;
 	/*05,1*/	Lego_CryOreType cryOre;
-	/*06,1*/	uint8 erodeSpeed; // (Lego_ErodeType >> 1, 0 = v.slow, 1 = slow, 2 = med, 3 = fast, 4 = v.fast)
+	/*06,1*/	uint8 erodeSpeed; // ((Lego_ErodeType + 1) / 2, 1 = v.slow, 2 = slow, 3 = med, 4 = fast, 5 = v.fast)
 	/*07,1*/	uint8 erodeStage; // 0 = low, 1 = med, 2 = high, 3 = max, 4 = lava
 	/*08,4*/	BlockFlags1 flags1;
 	/*0c,4*/	BlockFlags2 flags2;
@@ -346,15 +346,15 @@ struct Lego_Block // [LegoRR/Lego.c|struct:0x48|pack:1]
 	/*1c,4*/	Smoke* smoke;
 	/*20,2*/	sint16 randomness;
 	/*22,2*/	uint16 seamDigCount; // Number of times a crystal/ore seam has been dug (destroyed at 4).
-	/*24,4*/	uint32 numLandSlides;
+	/*24,4*/	uint32 numLandSlides; // Number of landslides that have occurred when cave-ins were allowed.
 	/*28,4*/	uint32 clickCount;
 	/*2c,4*/	sint32 generateCrystals;
 	/*30,4*/	sint32 generateOre;
 	/*34,1*/	uint8 aiNode;
 	/*35,3*/	undefined field_0x35_0x37[3];
-	/*38,4*/	bool32 fallinUpper; // (fallin upper: 1 if fallin > 4)
-	/*3c,4*/	uint32 fallinIntensity; // (fallin scale: 1-4)
-	/*40,4*/	real32 fallinTimer; // (randomized with full fallin value)
+	/*38,4*/	bool32 fallinCaveIns; // (Lego_FallInType > 4)
+	/*3c,4*/	uint32 fallinWaitTime; // (Lego_FallInType or Lego_FallInType - 4: 1-4) Timeout multiplier in seconds.
+	/*40,4*/	real32 fallinTimer; // Count-down timer until next fallin. Randomly initialised at level generation.
 	/*44,4*/	bool32 tutoHighlightState; // Tutorial block highlight color (false = tutorial color, true = normal).
 	/*48*/
 };
@@ -390,7 +390,7 @@ struct Lego_Level // [LegoRR/Lego.c|struct:0x284]
 	/*024,4*/       real32 RoofHeight;
 	/*028,4*/       real32 RoughLevel;
 	/*02c,4*/       BoolTri UseRoof;
-	/*030,4*/       BoolTri SafeCaverns;
+	/*030,4*/       BoolTri safeCaverns; // (cfg: Level::SafeCaverns) Fallins cannot occur in starting caverns (defaults to TRUE).
 	/*034,4*/       real32 SelBoxHeight;
 	/*038,4*/       undefined4 field_0x38;
 	/*03c,4*/       undefined4 field_0x3c;
@@ -615,7 +615,7 @@ struct Lego_Globs // [LegoRR/Lego.c|struct:0xf00|tags:GLOBS]
 	/*df4,4*/       char* langCarryObject_toolTip; // (cfg: ToolTipInfo::CarryObjectText)
 	/*df8,4*/       char* langDrivenBy_toolTip; // (cfg: ToolTipInfo::DrivenByText)
 	/*dfc,4*/       char* langOreRequired_toolTip; // (cfg: ToolTipInfo::OreRequiredText)
-	/*e00,4*/       bool32 IsFallinsEnabled; // (cfg not: Level::NoFallins)
+	/*e00,4*/       bool32 randomFallins; // (cfg not: Level::NoFallins) Fallins will occur at randomly selected blocks.
 	/*e04,4*/       real32 MinDistFor3DSoundsOnTopView; // (cfg: Main::MinDistFor3DSoundsOnTopView)
 	/*e08,4*/       ViewMode viewMode; // FirstPerson or TopDown
 	/*e0c,4*/       GameFlags1 flags1;
@@ -634,8 +634,8 @@ struct Lego_Globs // [LegoRR/Lego.c|struct:0xf00|tags:GLOBS]
 	/*e48,4*/       uint32 ReinforceHits; // (cfg: Main::ReinforceHits)
 	/*e4c,4*/       uint32 CDStartTrack; // (cfg: Main::CDStartTrack)
 	/*e50,4*/       uint32 CDTracks; // (cfg: Main::CDTracks)
-	/*e54,4*/       uint32 FallinMultiplier; // (cfg: Level::FallinMultiplier)
-	/*e58,4*/       bool32 hasFallins;
+	/*e54,4*/       uint32 fallinGlobalWaitTime; // (cfg: Level::FallinMultiplier) Wait time multiplier in seconds for fallin map blocks.
+	/*e58,4*/       bool32 fallinMapUsed; // A fallin map is used and individual blocks have defined fallin behaviour.
 	/*e5c,8*/       Point2F menuNextPoint;
 	/*e64,8*/       Point2F menuPrevPoint;
 	/*e6c,c*/       ColourRGBF DragBoxRGB; // (cfg: Level::DragBoxRGB)
@@ -959,8 +959,8 @@ inline bool Lego_IsNoMultiSelect() { return (legoGlobs.flags2 & GAME2_NOMULTISEL
 void Lego_SetNoMultiSelect(bool on);
 
 // <inlined>
-inline bool Lego_IsFallinsOn() { return legoGlobs.IsFallinsEnabled; }
-inline void Lego_SetFallinsOn(bool on) { legoGlobs.IsFallinsEnabled = on; }
+inline bool Lego_IsRandomFallinsOn() { return legoGlobs.randomFallins; }
+inline void Lego_SetRandomFallinsOn(bool on) { legoGlobs.randomFallins = on; }
 
 
 

@@ -1244,6 +1244,8 @@ enum Lego_ErodeType : uint8 // [LegoRR/Lego.c|enum:0x1|type:byte|tags:MAPFILE]
 	Lego_ErodeType_Source_Fast       = 8,
 	Lego_ErodeType_Adjacent_VeryFast = 9,
 	Lego_ErodeType_Source_VeryFast   = 10,
+	// Any values after this will not behave normally,
+	//  as the timer uses the multiplier (6 - (value + 1) / 2).
 };
 assert_sizeof(Lego_ErodeType, 0x1);
 
@@ -1251,14 +1253,16 @@ assert_sizeof(Lego_ErodeType, 0x1);
 enum Lego_FallInType : uint8 // [LegoRR/Lego.c|enum:0x1|type:byte|tags:MAPFILE]
 {
 	Lego_FallInType_None            = 0,
-	Lego_FallInType_Normal_Low      = 1,
-	Lego_FallInType_Normal_Medium   = 2,
-	Lego_FallInType_Normal_High     = 3,
-	Lego_FallInType_Normal_VeryHigh = 4,
-	Lego_FallInType_Danger_Low      = 5,
-	Lego_FallInType_Danger_Medium   = 6,
-	Lego_FallInType_Danger_High     = 7,
-	Lego_FallInType_Danger_VeryHigh = 8,
+	Lego_FallInType_Normal_VeryFast = 1, // waitTime: x1, allowCaveIns: false
+	Lego_FallInType_Normal_Fast     = 2, // waitTime: x2, allowCaveIns: false
+	Lego_FallInType_Normal_Medium   = 3, // waitTime: x3, allowCaveIns: false
+	Lego_FallInType_Normal_Slow     = 4, // waitTime: x4, allowCaveIns: false
+	Lego_FallInType_CaveIn_VeryFast = 5, // waitTime: x1, allowCaveIns: true
+	Lego_FallInType_CaveIn_Fast     = 6, // waitTime: x2, allowCaveIns: true
+	Lego_FallInType_CaveIn_Medium   = 7, // waitTime: x3, allowCaveIns: true
+	Lego_FallInType_CaveIn_Slow     = 8, // waitTime: x4, allowCaveIns: true
+	// Any values after this should behave as such:
+	// waitTime: x(value - 4), allowCaveIns: true
 };
 assert_sizeof(Lego_FallInType, 0x1);
 

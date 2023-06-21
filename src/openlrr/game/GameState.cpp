@@ -1122,16 +1122,16 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 	Info_FUN_0041a1f0(elapsedReal);
 
-	if (legoGlobs.IsFallinsEnabled) {
+	if (legoGlobs.randomFallins) {
 		Fallin_Update(elapsedWorld);
 	}
 
 	// IsKeyPressed(KEY_F6) (64)
 	//  "Toggles fallin mode."
 	if (Lego_IsAllowDebugKeys() && Shortcut_IsPressed(ShortcutID::Debug_ToggleFallins)) {
-		legoGlobs.IsFallinsEnabled = !legoGlobs.IsFallinsEnabled;
+		legoGlobs.randomFallins = !legoGlobs.randomFallins;
 
-		const char* fallinMode = (legoGlobs.IsFallinsEnabled ? "On" : "Off");
+		const char* fallinMode = (legoGlobs.randomFallins ? "On" : "Off");
 		Gods98::TextWindow_PrintF(legoGlobs.textOnlyWindow, "\nFallin Mode %s", fallinMode);
 	}
 

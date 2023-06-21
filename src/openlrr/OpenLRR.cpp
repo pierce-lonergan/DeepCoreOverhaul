@@ -299,7 +299,7 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_ALLOWRENAME,		(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsAllowRename()));
 	Menu_CheckButton(IDM_GENERATESPIDERS,	(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsGenerateSpiders()));
 	Menu_CheckButton(IDM_NOAUTOEAT,			(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsNoAutoEat()));
-	Menu_CheckButton(IDM_NOFALLINS,			(LegoRR::Lego_IsInLevel() && !LegoRR::Lego_IsFallinsOn()));
+	Menu_CheckButton(IDM_NOFALLINS,			(LegoRR::Lego_IsInLevel() && !LegoRR::Lego_IsRandomFallinsOn()));
 	Menu_CheckButton(IDM_NOMULTISELECT,		(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsNoMultiSelect()));
 	Menu_CheckButton(IDM_SEETHROUGHWALLS,	(LegoRR::Lego_IsInLevel() && LegoRR::Lego_IsSeeThroughWalls()));
 
@@ -857,7 +857,7 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
 		break;
 	case IDM_NOFALLINS:
 		//std::printf("IDM_NOFALLINS\n");
-		LegoRR::Lego_SetFallinsOn(!LegoRR::Lego_IsFallinsOn());
+		LegoRR::Lego_SetRandomFallinsOn(!LegoRR::Lego_IsRandomFallinsOn());
 		break;
 	case IDM_NOMULTISELECT:
 		//std::printf("IDM_NOMULTISELECT\n");

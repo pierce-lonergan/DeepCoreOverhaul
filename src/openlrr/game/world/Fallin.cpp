@@ -113,7 +113,7 @@ bool32 __cdecl LegoRR::Fallin_CanLandSlideAtBlock(const Point2I* blockPos)
 		{
 			// When SafeCaverns is TRUE, fallins will not occur in starting caverns, only discovered caverns.
 			/// FIXME: SafeCaverns prevents explicit Fallin map blocks from working...
-			if (level->SafeCaverns == BOOL3_FALSE || !Level_Block_IsInitiallyExposed(blockPos)) {
+			if (level->safeCaverns == BOOL3_FALSE || !Level_Block_IsInitiallyExposed(blockPos)) {
 				return true;
 			}
 		}

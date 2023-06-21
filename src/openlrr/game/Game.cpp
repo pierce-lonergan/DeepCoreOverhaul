@@ -2814,7 +2814,7 @@ bool32 __cdecl LegoRR::Level_HandleEmergeTriggers(Lego_Level* level, const Point
 bool32 __cdecl LegoRR::Lego_LoadFallinMap(Lego_Level* level, const char* filename)
 {
 	// Don't use fallin data for blocks unless we successfully load the map file.
-	legoGlobs.hasFallins = false;
+	legoGlobs.fallinMapUsed = false;
 
 	if (filename == nullptr)
 		return false;
@@ -2829,30 +2829,33 @@ bool32 __cdecl LegoRR::Lego_LoadFallinMap(Lego_Level* level, const char* filenam
 	const bool sizeMatches = (width == level->width && height == level->height);
 	if (sizeMatches) {
 		// Use fallin data for blocks.
-		legoGlobs.hasFallins = true;
+		legoGlobs.fallinMapUsed = true;
 
 		for (uint32 by = 0; by < height; by++) {
 			for (uint32 bx = 0; bx < width; bx++) {
 				Lego_Block* block = &blockValue(level, bx, by);
 
-				block->fallinIntensity = 0; // No fallins for this block.
+				block->fallinWaitTime = 0; // No fallins for this block.
 
 				// type: Lego_FallInType
 				const uint32 fallinType = MapShared_GetBlock(handle, bx, by);
 				if (fallinType != Lego_FallInType_None) {
 
-					if (fallinType >= Lego_FallInType_Danger_Low) {
-						block->fallinIntensity = (uint32)(fallinType - Lego_FallInType_Danger_Low) + 1; // [1,4]
-						block->fallinUpper = true;
+					if (fallinType >= Lego_FallInType_CaveIn_VeryFast) {
+						block->fallinWaitTime = (uint32)(fallinType - Lego_FallInType_CaveIn_VeryFast) + 1; // [1,4]
+						block->fallinCaveIns = true;
 					}
 					else {
-						block->fallinIntensity = fallinType; // [1,4]
-						block->fallinUpper = false;
+						block->fallinWaitTime = (uint32)(fallinType - Lego_FallInType_Normal_VeryFast) + 1; // [1,4]
+						block->fallinCaveIns = false;
 					}
 
-					/// FIX APPLY: Properly use fallinIntensity for maxTime instead of fallinType, which might be higher.
-					///            As seen in Lego_UpdateFallins.
-					const uint32 maxTime = (block->fallinIntensity * legoGlobs.FallinMultiplier * STANDARD_FRAMERATEI);
+					/// TODO: Properly use fallinWaitTime for maxTime instead of fallinType, which might be higher.
+					///       As seen in Lego_UpdateFallins.
+					/// NOTE: This has been reverted for now because it's possible map makers or official level
+					///        designs may have taken advantage of cave-in fallins starting later than normal fallins.
+					const uint32 maxTime = (fallinType * legoGlobs.fallinGlobalWaitTime * STANDARD_FRAMERATEI);
+					//const uint32 maxTime = (block->fallinWaitTime * legoGlobs.fallinGlobalWaitTime * STANDARD_FRAMERATEI);
 					block->fallinTimer = (real32)((uint32)block->randomness % maxTime);
 				}
 			}
@@ -2866,21 +2869,22 @@ bool32 __cdecl LegoRR::Lego_LoadFallinMap(Lego_Level* level, const char* filenam
 // <LegoRR.exe @0042caa0>
 void __cdecl LegoRR::Lego_UpdateFallins(real32 elapsedWorld)
 {
-	if (legoGlobs.hasFallins) {
+	if (legoGlobs.fallinMapUsed) {
 		Lego_Level* level = Lego_GetLevel();
 
 		for (uint32 by = 0; by < level->height; by++) {
 			for (uint32 bx = 0; bx < level->width; bx++) {
 				Lego_Block* block = &blockValue(level, bx, by);
 
-				if (block->fallinIntensity != 0) {
+				if (block->fallinWaitTime != 0) {
+					const uint32 maxTime = (block->fallinWaitTime * legoGlobs.fallinGlobalWaitTime * STANDARD_FRAMERATEI);
+
 					block->fallinTimer += elapsedWorld;
-					const uint32 maxTime = block->fallinIntensity * legoGlobs.FallinMultiplier * STANDARD_FRAMERATEI;
 					if (block->fallinTimer > (real32)maxTime) {
 						block->fallinTimer = 0.0f;
-						const Point2I blockPos = { (sint32)bx, (sint32)by };
 
-						if (Fallin_TryGenerateLandSlide(&blockPos, block->fallinUpper)) {
+						const Point2I blockPos = { (sint32)bx, (sint32)by };
+						if (Fallin_TryGenerateLandSlide(&blockPos, block->fallinCaveIns)) {
 							Info_Send(Info_Landslide, nullptr, nullptr, &blockPos);
 						}
 					}
