@@ -2675,7 +2675,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 
 	if (liveObj->flags2 & LIVEOBJ2_UNK_200000) {
 		if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
-			LegoObject_FUN_0043aeb0(liveObj);
+			LegoObject_AttackPath(liveObj);
 		}
 
 		if (liveObj->animTime > 0.0f) {
@@ -2683,7 +2683,7 @@ bool32 __cdecl LegoRR::LegoObject_Callback_Update(LegoObject* liveObj, void* pEl
 
 			AITask_LiveObject_SetAITaskUnk(liveObj, AITask_Type_AttackPath, nullptr, true);
 			if (!(liveObj->flags2 & LIVEOBJ2_UNK_20000)) {
-				LegoObject_FUN_0043aeb0(liveObj);
+				LegoObject_AttackPath(liveObj);
 			}
 		}
 		goto objectupdate_end;
