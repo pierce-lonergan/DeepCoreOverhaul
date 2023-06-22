@@ -3168,6 +3168,11 @@ void __cdecl LegoRR::Lego_PTL_RockFall(uint32 bx, uint32 by, Direction direction
 	{
 		blockValue(Lego_GetLevel(), bx, by).flags1 |= BLOCK1_ROCKFALLFX;
 	}
+	else {
+		/// FIX APPLY: Instantly submit a RockFallComplete message because we failed to spawn the effect.
+		///            We don't want to lose the RockFallComplete message entirely.
+		Message_PostEvent(Message_RockFallComplete, nullptr, Message_Argument(0), &blockPos);
+	}
 }
 
 // <LegoRR.exe @004318e0>
