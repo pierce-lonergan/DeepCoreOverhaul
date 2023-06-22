@@ -3163,6 +3163,8 @@ void __cdecl LegoRR::Lego_PTL_RockFall(uint32 bx, uint32 by, Direction direction
 	//sfxPos.z = Map3D_GetWorldZ(Lego_GetMap(), sfxPos.x, sfxPos.y);
 	SFX_Random_PlaySound3DOnContainer(nullptr, SFX_RockBreak, false, false, &sfxPos);
 
+	const Point2I blockPos = { (sint32)bx, (sint32)by };
+
 	if (Effect_Spawn_RockFall(rockFallType, bx, by, wPos.x, wPos.y, wPos.z,
 							  EFFECT_DIRECTIONS[direction].x, EFFECT_DIRECTIONS[direction].y))
 	{
