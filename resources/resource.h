@@ -160,6 +160,7 @@
 #define IDM_BLOCKFADE					321
 #define IDM_DDRAWCLEAR					322
 #define IDM_WOBBLYWORLD					323
+#define IDM_RESOURCETUMBLE				324
 // &Debug > Info
 #define IDM_FPSMONITOR					331
 #define IDM_MEMORYMONITOR				332

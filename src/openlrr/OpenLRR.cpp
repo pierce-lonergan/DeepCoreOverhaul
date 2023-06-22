@@ -268,6 +268,7 @@ void __cdecl OpenLRR_UpdateMenuItems(void)
 	Menu_CheckButton(IDM_BLOCKFADE,     Gods98::Main_IsCLBlockFade());
 	Menu_CheckButton(IDM_DDRAWCLEAR,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsDDrawClear()));
 	Menu_CheckButton(IDM_WOBBLYWORLD,   OpenLRR_IsWobblyWorld());
+	Menu_CheckButton(IDM_RESOURCETUMBLE,LegoRR::Lego_IsResourceTumbleOn());
 
 	Menu_CheckButton(IDM_FPSMONITOR,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsFPSMonitorOn()));
 	Menu_CheckButton(IDM_MEMORYMONITOR,	(LegoRR::Lego_IsInit() && LegoRR::Lego_IsMemoryMonitorOn()));
@@ -713,6 +714,11 @@ void __cdecl OpenLRR_HandleCommand(HWND hWnd, uint16 wmId, uint16 wmSrc)
     case IDM_WOBBLYWORLD:
         //std::printf("IDM_WOBBLYWORLD\n");
 		OpenLRR_SetWobblyWorld(!OpenLRR_IsWobblyWorld());
+        break;
+
+    case IDM_RESOURCETUMBLE:
+        //std::printf("IDM_RESOURCETUMBLE\n");
+		LegoRR::Lego_SetResourceTumbleOn(!LegoRR::Lego_IsResourceTumbleOn());
         break;
 
 	case IDM_FPSMONITOR:

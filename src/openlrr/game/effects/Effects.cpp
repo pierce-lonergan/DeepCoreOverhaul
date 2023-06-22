@@ -178,9 +178,6 @@ bool32 __cdecl LegoRR::Effect_Load_RockFallStyle(Gods98::Container* contRoot, co
 		Gods98::Container_SearchTree(rockFall->cont, partName, Gods98::Container_SearchMode::MatchCount, &tumbleNullFrames);
 		rockFall->tumbleNullFrames = tumbleNullFrames;
 
-		/// TODO: Comment out once resource tumble has been implemented, it can't be used as things currently are.
-		rockFall->tumbleNullFrames = 0;
-
 
 		/// FIX APPLY: Don't store a temporary string variable here!!!
 		rockFall->tumbleNullName = Gods98::Util_StrCpy(tumbleNullName);

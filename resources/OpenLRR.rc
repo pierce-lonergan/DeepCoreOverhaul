@@ -227,6 +227,7 @@ BEGIN
             MENUITEM "Clear",                   IDM_DDRAWCLEAR,CHECKED
 //#endif
             MENUITEM "Wobbly World",            IDM_WOBBLYWORLD
+            MENUITEM "Resource Tumble",         IDM_RESOURCETUMBLE
         END
 //#if 0  // not ready yet
         POPUP "&Info"

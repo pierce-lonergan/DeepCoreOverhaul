@@ -31,6 +31,7 @@
 #include "mission/NERPsFile.h"
 #include "mission/NERPsFunctions.h"
 #include "mission/Objective.h"
+#include "mission/PTL.h"
 #include "object/AITask.h"
 #include "object/Dependencies.h"
 #include "object/Object.h"
@@ -882,12 +883,14 @@ void __cdecl LegoRR::Level_UpdateEffects(Lego_Level* level, real32 elapsedWorld)
 
 		if (!(block->flags1 & BLOCK1_LANDSLIDING)) {
 			// This is a rockfall effect generated from drilling a wall.
-			/// FIXME: This can trigger if multiple landslides occur on the same block at once.
-			///        As can be noticed with the A debug key generating CryOre when spammed.
-			Message_PostEvent(Message_RockFallComplete, nullptr, Message_Argument(0), &blockPos);
+			// Don't generate RockFallComplete message again if we did it earlier.
+			if (!(block->flags2 & BLOCK2_CUSTOM_NOROCKFALLCOMPLETE)) {
+				Message_PostEvent(Message_RockFallComplete, nullptr, Message_Argument(0), &blockPos);
+			}
 		}
 
 		block->flags1 &= ~(BLOCK1_LANDSLIDING | BLOCK1_BUSY_WALL);
+		block->flags2 &= ~BLOCK2_CUSTOM_NOROCKFALLCOMPLETE;
 	}
 }
 
@@ -3163,12 +3166,40 @@ void __cdecl LegoRR::Lego_PTL_RockFall(uint32 bx, uint32 by, Direction direction
 	//sfxPos.z = Map3D_GetWorldZ(Lego_GetMap(), sfxPos.x, sfxPos.y);
 	SFX_Random_PlaySound3DOnContainer(nullptr, SFX_RockBreak, false, false, &sfxPos);
 
+
 	const Point2I blockPos = { (sint32)bx, (sint32)by };
+	Lego_Block* block = &blockValue(Lego_GetLevel(), bx, by);
 
 	if (Effect_Spawn_RockFall(rockFallType, bx, by, wPos.x, wPos.y, wPos.z,
 							  EFFECT_DIRECTIONS[direction].x, EFFECT_DIRECTIONS[direction].y))
 	{
-		blockValue(Lego_GetLevel(), bx, by).flags1 |= BLOCK1_ROCKFALLFX;
+		block->flags1 |= BLOCK1_ROCKFALLFX;
+		/// FIX APPLY: Cancel and prevent landslides from happening so that RockFallComplete messages will correctly generate.
+		block->flags1 &= ~BLOCK1_LANDSLIDING; // Ensure we can generate a rockfall message
+		Level_Block_SetBusy(&blockPos, true);
+
+		/// CUSTOM: Proper support for resource tumbling.
+		if (Lego_IsResourceTumbleOn()) {
+			// Check if the PTL defines CryOre generation when a rockfall effect completes.
+			// If so, then we can go through with generating the resources early to make them tumble out with the effect.
+			bool isRockFallCryOre = false;
+			Message_Event message = { Message_RockFallComplete, nullptr, Message_Argument(0), { 0, 0 } };
+			PTL_TranslateEvent(&message);
+			switch (message.type) {
+			case Message_GenerateCrystal:
+			case Message_GenerateOre:
+			case Message_GenerateCrystalAndOre:
+			case Message_GenerateFromCryOre:
+				isRockFallCryOre = true;
+				break;
+			}
+
+			if (isRockFallCryOre) {
+				// Prevent the RockFallComplete message from generating again when the effect is finished.
+				block->flags2 |= BLOCK2_CUSTOM_NOROCKFALLCOMPLETE;
+				Message_PostEvent(Message_RockFallComplete, nullptr, Message_Argument(0), &blockPos);
+			}
+		}
 	}
 	else {
 		/// FIX APPLY: Instantly submit a RockFallComplete message because we failed to spawn the effect.

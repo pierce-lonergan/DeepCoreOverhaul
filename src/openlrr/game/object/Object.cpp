@@ -5060,14 +5060,13 @@ void __cdecl LegoRR::LegoObject_UpdateWorldStickyPosition(LegoObject* liveObj, r
 			Point2I blockPos = { 0, 0 }; // dummy init
 			LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
 
-			/// FIXME: Don't tumble resources from landslide rockfalls, only dug wall rockfalls.
-			/// FIXME: Don't tumble resources from landslide rockfalls, only dug wall rockfalls.
-			/// TODO: Consider changing it so only Crystals and Ore use tumble nulls.
-			//if ((liveObj->type == LegoObject_PowerCrystal || liveObj->type == LegoObject_Ore) &&
-			if (liveObj->type != LegoObject_Barrier &&
+			/// FIX APPLY: Don't tumble resources from landslide rockfalls, only dug wall rockfalls.
+			/// FIX APPLY: Only tumble Crystals and Ore.
+			if ((liveObj->type == LegoObject_PowerCrystal || liveObj->type == LegoObject_Ore) &&
+			//if (liveObj->type != LegoObject_Barrier &&
 				Level_Block_IsRockFallFX(blockPos.x, blockPos.y) &&
-				//!(blockValue(Lego_GetLevel(), blockPos.x, blockPos.y).flags1 & BLOCK1_LANDSLIDING) &&
-				liveObj->cameraNull == nullptr)
+				!(blockValue(Lego_GetLevel(), blockPos.x, blockPos.y).flags1 & BLOCK1_LANDSLIDING) &&
+				liveObj->cameraNull == nullptr && Lego_IsResourceTumbleOn())
 			{
 				liveObj->cameraNull = Effect_GetTumbleNull_RockFall(blockPos.x, blockPos.y);
 				// Store blockPos for duration of rockfall tumbling.
@@ -5076,18 +5075,14 @@ void __cdecl LegoRR::LegoObject_UpdateWorldStickyPosition(LegoObject* liveObj, r
 				liveObj->flags3 &= ~LIVEOBJ3_ALLOWCULLING_UNK;
 			}
 
-			//blockPos = Point2I {
-			//	(sint32)liveObj->targetBlockPos.x,
-			//	(sint32)liveObj->targetBlockPos.y,
-			//};
 			const Point2I target = {
 				(sint32)liveObj->targetBlockPos.x,
 				(sint32)liveObj->targetBlockPos.y,
 			};
 
-			/// FIXME: Don't tumble resources from landslide rockfalls, only dug wall rockfalls.
-			if (liveObj->cameraNull != nullptr && Level_Block_IsRockFallFX(target.x, target.y)) //&&
-				//!(blockValue(Lego_GetLevel(), target.x, target.y).flags1 & BLOCK1_LANDSLIDING))
+			/// FIX APPLY: Don't tumble resources from landslide rockfalls, only dug wall rockfalls.
+			if (liveObj->cameraNull != nullptr && Level_Block_IsRockFallFX(target.x, target.y) &&
+				!(blockValue(Lego_GetLevel(), target.x, target.y).flags1 & BLOCK1_LANDSLIDING))
 			{
 				// Tumble null positioning.
 				Vector3F wPos;
@@ -5097,18 +5092,18 @@ void __cdecl LegoRR::LegoObject_UpdateWorldStickyPosition(LegoObject* liveObj, r
 				zPos -= 1.2285f;
 				if (wPos.z > zPos) wPos.z = zPos;
 
-				/// FIXME: Don't tumble a resource over an inaccessible block.
+				/// FIX APPLY: Don't tumble a resource over an inaccessible block.
 				// Unfortunately we can't prevent resources from landing on walls because it visually breaks the animation.
 				Point2I newBlockPos = { 0, 0 }; // dummy init
 				Map3D_WorldToBlockPos_NoZ(Lego_GetMap(), wPos.x, wPos.y, &newBlockPos.x, &newBlockPos.y);
-				//const Lego_SurfaceType terrain = (Lego_SurfaceType)blockValue(Lego_GetLevel(), newBlockPos.x, newBlockPos.y).terrain;
-				//if (terrain != Lego_SurfaceType_Lava &&
-				//	terrain != Lego_SurfaceType_Lake &&
-				//	terrain != Lego_SurfaceType_Water)
-				//	//!Level_Block_IsWall(newBlockPos.x, newBlockPos.y))
-				//{
+				const Lego_SurfaceType terrain = (Lego_SurfaceType)blockValue(Lego_GetLevel(), newBlockPos.x, newBlockPos.y).terrain;
+				if (terrain != Lego_SurfaceType_Lava &&
+					terrain != Lego_SurfaceType_Lake &&
+					terrain != Lego_SurfaceType_Water)
+					//!Level_Block_IsWall(newBlockPos.x, newBlockPos.y))
+				{
 					Gods98::Container_SetPosition(liveObj->other, nullptr, wPos.x, wPos.y, wPos.z);
-				//}
+				}
 
 				Gods98::Container_SetOrientation(liveObj->other, liveObj->cameraNull, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
 			}

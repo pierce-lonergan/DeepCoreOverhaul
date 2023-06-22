@@ -239,6 +239,9 @@ enum BlockFlags2 : uint32 // [LegoRR/Lego.c|flags:0x4|type:uint]
 	BLOCK2_SLUGHOLE_HIDDEN   = 0x200,
 	BLOCK2_PATHSBUILTCOUNTED = 0x400, // A block is flagged with this if it's currently registered as a "built object".
 	                                  // This is then used to increment the number of paths built or destroyed in the level during Level_BlockUpdateSurface.
+
+	/// CUSTOM:
+	BLOCK2_CUSTOM_NOROCKFALLCOMPLETE = 0x80000000, // Set when a block should not generate a RockFallComplete message after the effect is finished.
 };
 flags_end(BlockFlags2, 0x4);
 
@@ -725,6 +728,8 @@ struct Lego_Globs2
 
 	// Level properties:
 	bool seeThroughWalls; // (cfg: Level::SeeThroughWalls)
+
+	bool resourceTumble; // Crystals and ore generated from rockfalls will tumble out of the wall.
 };
 
 #pragma endregion
@@ -860,6 +865,11 @@ inline void Lego_SetTopdownFogOn(bool on) { legoGlobs2.topdownFogOn = on; }
 inline bool Lego_IsTopdownFPControlsOn() { return legoGlobs2.topdownFPControlsOn; }
 /// CUSTOM: FP controls for units all the time.
 inline void Lego_SetTopdownFPControlsOn(bool on) { legoGlobs2.topdownFPControlsOn = on; }
+
+/// CUSTOM: Crystals and ore generated from rockfalls will tumble out of the wall.
+inline bool Lego_IsResourceTumbleOn() { return legoGlobs2.resourceTumble; }
+/// CUSTOM: Crystals and ore generated from rockfalls will tumble out of the wall.
+inline void Lego_SetResourceTumbleOn(bool on) { legoGlobs2.resourceTumble = on; }
 
 /// CUSTOM: cfg: Main::ShowDebugToolTips
 inline bool Lego_IsShowDebugToolTips() { return (legoGlobs.flags2 & GAME2_SHOWDEBUGTOOLTIPS); }
