@@ -279,6 +279,13 @@ enum PointerSFX_Type : uint32 // [LegoRR/Lego.c|enum:0x4|type:uint] Argument for
 };
 assert_sizeof(PointerSFX_Type, 0x4);
 
+enum BlockActivity_Type : uint32  // [LegoRR/Lego.c|enum:0x4|type:uint]
+{
+	BlockActivity_ReinforcementPillar = 0,
+	BlockActivity_RechargeSparkle     = 1,
+};
+assert_sizeof(BlockActivity_Type, 0x4);
+
 #pragma endregion
 
 /**********************************************************************************
@@ -373,7 +380,7 @@ struct Lego_BlockActivity // [LegoRR/Lego.c|struct:0x1c] An effect or activity c
 	///*0d,3*/    uint8 padding1[3];
 	/*10,4*/	Lego_BlockActivity* next;
 	/*14,4*/	Lego_BlockActivity* previous;
-	/*18,4*/	bool32 staticEffect; // When false, effect is treated as an activity with "Build","Stand","Destroy" animatinos.
+	/*18,4*/	BlockActivity_Type type; // 0 = Reinforcement pillar with Build/Stand/Destroy activities, 1 = Recharge seam sparkle.
 	/*1c*/
 };
 assert_sizeof(Lego_BlockActivity, 0x1c);
@@ -1420,8 +1427,8 @@ bool32 __cdecl Level_HandleEmergeTriggers(Lego_Level* level, const Point2I* bloc
 //void __cdecl Level_Emerge_FUN_0042c370(Lego_Level* level, real32 elapsedAbs);
 
 // <LegoRR.exe @0042c3b0>
-#define Lego_LoadTerrainMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename, sint32 modifier))0x0042c3b0)
-//bool32 __cdecl Lego_LoadTerrainMap(Lego_Level* level, const char* filename, sint32 modifier);
+//#define Lego_LoadTerrainMap ((bool32 (__cdecl* )(Lego_Level* level, const char* filename, sint32 modifier))0x0042c3b0)
+bool32 __cdecl Lego_LoadTerrainMap(Lego_Level* level, const char* filename, sint32 modifier);
 
 // <LegoRR.exe @0042c4e0>
 #define Lego_GetBlockCryOre ((bool32 (__cdecl* )(const Point2I* blockPos, OUT uint32* crystalLv0, OUT uint32* crystalLv1, OUT uint32* oreLv0, OUT uint32* oreLv1))0x0042c4e0)
@@ -1559,35 +1566,36 @@ const char* __cdecl Level_Free(void);
 //bool32 __cdecl Level_DestroyWallConnection(Lego_Level* level, uint32 bx, uint32 by);
 
 // <LegoRR.exe @00431020>
-#define Level_Block_RemoveReinforcement ((void (__cdecl* )(const Point2I* blockPos))0x00431020)
-//void __cdecl Level_Block_RemoveReinforcement(const Point2I* blockPos);
+//#define Level_Block_RemoveReinforcement ((void (__cdecl* )(const Point2I* blockPos))0x00431020)
+void __cdecl Level_Block_RemoveReinforcement(const Point2I* blockPos);
 
 // <LegoRR.exe @00431070>
-#define Level_Block_Reinforce ((void (__cdecl* )(sint32 bx, sint32 by))0x00431070)
-//void __cdecl Level_Block_Reinforce(sint32 bx, sint32 by);
+//#define Level_Block_Reinforce ((void (__cdecl* )(uint32 bx, uint32 by))0x00431070)
+void __cdecl Level_Block_Reinforce(uint32 bx, uint32 by);
 
 // staticEffect states that the block does not perform specific activities, but simply exists with
 //  the block. When false, the block will use Build/Stand/Destroy activities.
 // <LegoRR.exe @00431100>
-#define Level_BlockActivity_Create ((void (__cdecl* )(Lego_Level* level, const Point2I* blockPos, bool32 staticEffect))0x00431100)
-//void __cdecl Level_BlockActivity_Create(Lego_Level* level, const Point2I* blockPos, bool32 staticEffect);
+//#define Level_BlockActivity_Create ((void (__cdecl* )(Lego_Level* level, const Point2I* blockPos, BlockActivity_Type blockActType))0x00431100)
+void __cdecl Level_BlockActivity_Create(Lego_Level* level, const Point2I* blockPos, BlockActivity_Type blockActType);
 
 // <LegoRR.exe @004312e0>
-#define Level_BlockActivity_UpdateAll ((void (__cdecl* )(Lego_Level* level, real32 elapsedGame))0x004312e0)
-//void __cdecl Level_BlockActivity_UpdateAll(Lego_Level* level, real32 elapsedGame);
+//#define Level_BlockActivity_UpdateAll ((void (__cdecl* )(Lego_Level* level, real32 elapsedWorld))0x004312e0)
+void __cdecl Level_BlockActivity_UpdateAll(Lego_Level* level, real32 elapsedWorld);
 
 // NOTE: This does not DIRECTLY remove the block activity.
 //       But it will subsequently mark it for removal in the next UpdateAll loop.
-#define Level_BlockActivity_Destroy ((void (__cdecl* )(Lego_Level* level, const Point2I* blockPos, bool32 wallDestroyed))0x00431380)
-//void __cdecl Level_BlockActivity_Destroy(Lego_Level* level, const Point2I* blockPos, bool32 wallDestroyed);
+// <LegoRR.exe @00431380>
+//#define Level_BlockActivity_Destroy ((void (__cdecl* )(Lego_Level* level, const Point2I* blockPos, bool32 wallDestroyed))0x00431380)
+void __cdecl Level_BlockActivity_Destroy(Lego_Level* level, const Point2I* blockPos, bool32 wallDestroyed);
 
 // <LegoRR.exe @004313f0>
-#define Level_BlockActivity_Remove ((void (__cdecl* )(Lego_BlockActivity* blockAct))0x004313f0)
-//void __cdecl Level_BlockActivity_Remove(Lego_BlockActivity* blockAct);
+//#define Level_BlockActivity_Remove ((void (__cdecl* )(Lego_BlockActivity* blockAct))0x004313f0)
+void __cdecl Level_BlockActivity_Remove(Lego_BlockActivity* blockAct);
 
 // <LegoRR.exe @00431460>
-#define Level_BlockActivity_RemoveAll ((void (__cdecl* )(Lego_Level* level))0x00431460)
-//void __cdecl Level_BlockActivity_RemoveAll(Lego_Level* level);
+//#define Level_BlockActivity_RemoveAll ((void (__cdecl* )(Lego_Level* level))0x00431460)
+void __cdecl Level_BlockActivity_RemoveAll(Lego_Level* level);
 
 // <LegoRR.exe @00431490>
 //Lego_Level* __cdecl noinline(Lego_GetLevel)(void);

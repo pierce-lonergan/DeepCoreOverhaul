@@ -2824,7 +2824,52 @@ bool32 __cdecl LegoRR::Level_HandleEmergeTriggers(Lego_Level* level, const Point
 //void __cdecl LegoRR::Level_Emerge_FUN_0042c370(Lego_Level* level, real32 elapsedAbs);
 
 // <LegoRR.exe @0042c3b0>
-//bool32 __cdecl LegoRR::Lego_LoadTerrainMap(Lego_Level* level, const char* filename, sint32 modifier);
+bool32 __cdecl LegoRR::Lego_LoadTerrainMap(Lego_Level* level, const char* filename, sint32 modifier)
+{
+	uint32 fileSize;
+	const uint32 handle = Gods98::File_LoadBinaryHandle(filename, &fileSize);
+	if (handle == (uint32)MEMORY_HANDLE_INVALID)
+		return false;
+
+	uint32 width, height;
+	MapShared_GetDimensions(handle, &width, &height);
+	const bool sizeMatches = (width == level->width && height == level->height);
+	if (sizeMatches) {
+
+		for (uint32 by = 0; by < height; by++) {
+			for (uint32 bx = 0; bx < width; bx++) {
+				const Point2I blockPos = { (sint32)bx, (sint32)by };
+				Lego_Block* block = &blockValue(level, bx, by);
+
+				// type: Lego_SurfaceType
+				uint32 terrain = MapShared_GetBlock(handle, bx, by);
+
+				// Subtract optional (unused) value appended after map filename in the config.
+				terrain -= modifier;
+
+				// Soil SurfaceType was removed, change to Dirt.
+				if (terrain == Lego_SurfaceType_Soil) {
+					terrain = Lego_SurfaceType_Loose; // Loose is Dirt, Medium is Loose.
+				}
+
+				block->terrain = (uint8)terrain;
+				if (block->terrain == Lego_SurfaceType_Lava) {
+					// Set erode stage to lava.
+					/// NOTE: Lego_LoadTerrainMap must be called AFTER Lego_LoadErodeMap to prevent erodeStage from getting overwritten.
+					block->erodeStage = 4;
+				}
+				else if (block->terrain == Lego_SurfaceType_RechargeSeam) {
+					// Register location for units to recharge crystals and create a sparkle effect over the block.
+					LegoObject_RegisterRechargeSeam(&blockPos);
+					Level_BlockActivity_Create(level, &blockPos, BlockActivity_RechargeSparkle);
+				}
+			}
+		}
+	}
+
+	Gods98::Mem_FreeHandle(handle);
+	return sizeMatches;
+}
 
 // <LegoRR.exe @0042c4e0>
 //bool32 __cdecl LegoRR::Lego_GetBlockCryOre(const Point2I* blockPos, OUT uint32* crystalLv0, OUT uint32* crystalLv1, OUT uint32* oreLv0, OUT uint32* oreLv1);
@@ -3097,22 +3142,198 @@ const char* __cdecl LegoRR::Level_Free(void)
 //bool32 __cdecl LegoRR::Level_DestroyWallConnection(Lego_Level* level, uint32 bx, uint32 by);
 
 // <LegoRR.exe @00431020>
-//void __cdecl LegoRR::Level_Block_RemoveReinforcement(const Point2I* blockPos);
+void __cdecl LegoRR::Level_Block_RemoveReinforcement(const Point2I* blockPos)
+{
+	Lego_Level* level = Lego_GetLevel();
+	Level_BlockActivity_Destroy(level, blockPos, false);
+
+	blockValue(level, blockPos->x, blockPos->y).flags1 &= ~BLOCK1_REINFORCED;
+
+	Level_BlockUpdateSurface(level, blockPos->x, blockPos->y, 0);
+}
 
 // <LegoRR.exe @00431070>
-//void __cdecl LegoRR::Level_Block_Reinforce(sint32 bx, sint32 by);
+void __cdecl LegoRR::Level_Block_Reinforce(uint32 bx, uint32 by)
+{
+	Lego_Level* level = Lego_GetLevel();
+	Lego_Block* block = &blockValue(level, bx, by);
+	const Point2I blockPos = { (sint32)bx, (sint32)by };
+
+	if ((block->flags1 & BLOCK1_WALL) && !(block->flags1 & (BLOCK1_REINFORCED|BLOCK1_INCORNER|BLOCK1_OUTCORNER))) {
+		block->flags1 |= BLOCK1_REINFORCED;
+		Level_BlockUpdateSurface(level, bx, by, 0);
+
+		Level_BlockActivity_Create(level, &blockPos, BlockActivity_ReinforcementPillar);
+		AITask_RemoveReinforceReferences(&blockPos);
+		Info_Send(Info_WallReinforced, nullptr, nullptr, &blockPos);
+	}
+}
 
 // <LegoRR.exe @00431100>
-//void __cdecl LegoRR::Level_BlockActivity_Create(Lego_Level* level, const Point2I* blockPos, bool32 staticEffect);
+void __cdecl LegoRR::Level_BlockActivity_Create(Lego_Level* level, const Point2I* blockPos, BlockActivity_Type blockActType)
+{
+	// This could be swapped for a 2D list, and dir.z could be replaced with 0.0f, like most other functions.
+	Vector3F DIRECTIONS[DIRECTION__COUNT] = {
+		{  0.0f,  1.0f,  0.0f },
+		{  1.0f,  0.0f,  0.0f },
+		{  0.0f, -1.0f,  0.0f },
+		{ -1.0f,  0.0f,  0.0f },
+	};
+
+	Gods98::Container* sourceCont = nullptr;
+	switch (blockActType) {
+	case BlockActivity_ReinforcementPillar:
+		// Support for reinforcement block activities was either ditched, or never finished.
+		// Exit function here.
+		return;
+	case BlockActivity_RechargeSparkle:
+		sourceCont = legoGlobs.contRechargeSparkle;
+		break;
+	}
+
+	Lego_Block* block = &blockValue(level, blockPos->x, blockPos->y);
+
+	if (block->activity != nullptr && block->activity->type != blockActType) {
+		/// FIX APPLY: We need a different activity type for this block, so remove the current type.
+		Level_BlockActivity_Remove(block->activity);
+	}
+
+	if (block->activity == nullptr) {
+		// No source container so we can't create a new activity.
+		if (sourceCont == nullptr)
+			return;
+
+		// Create a new block activity if one doesn't already exist.
+		Lego_BlockActivity* blockAct = (Lego_BlockActivity*)Gods98::Mem_Alloc(sizeof(Lego_BlockActivity));
+		std::memset(blockAct, 0, sizeof(Lego_BlockActivity));
+
+		blockAct->blockPos = *blockPos;
+		blockAct->flags = BLOCKACT_FLAG_NONE;
+		blockAct->type = blockActType;
+
+		blockAct->cont = Gods98::Container_Clone(sourceCont);
+		if (blockAct->type == BlockActivity_ReinforcementPillar) {
+			// Reinforcement pillars start with a build animation.
+			Gods98::Container_SetActivity(blockAct->cont, "Activity_Build");
+		}
+		Gods98::Container_SetAnimationTime(blockAct->cont, 0.0f);
+
+		// Insert in to double-linked list.
+		blockAct->next = nullptr;
+		blockAct->previous = level->blockActLast;
+		if (level->blockActLast != nullptr) {
+			level->blockActLast->next = blockAct;
+		}
+		level->blockActLast = blockAct;
+
+		block->activity = blockAct;
+	}
+
+	Vector3F wPos = { 0.0f, 0.0f, 0.0f }; // dummy init
+	Map3D_BlockToWorldPos(level->map, blockPos->x, blockPos->y, &wPos.x, &wPos.y);
+	wPos.z = Map3D_GetWorldZ(level->map, wPos.x, wPos.y);
+
+	const Vector3F dir = DIRECTIONS[block->direction];
+	Gods98::Container_SetPosition(block->activity->cont, nullptr, wPos.x, wPos.y, wPos.z);
+	Gods98::Container_SetOrientation(block->activity->cont, nullptr, dir.x, dir.y, dir.z, 0.0f, 0.0f, -1.0f);
+}
 
 // <LegoRR.exe @004312e0>
-//void __cdecl LegoRR::Level_BlockActivity_UpdateAll(Lego_Level* level, real32 elapsedGame);
+void __cdecl LegoRR::Level_BlockActivity_UpdateAll(Lego_Level* level, real32 elapsedWorld)
+{
+	Lego_BlockActivity* blockAct = level->blockActLast;
+	while (blockAct != nullptr) {
+		// Store previous now, in-case the block activity gets removed.
+		Lego_BlockActivity* previous = blockAct->previous;
+
+		const real32 overrun = Gods98::Container_MoveAnimation(blockAct->cont, elapsedWorld);
+
+		switch (blockAct->type) {
+		case BlockActivity_ReinforcementPillar:
+			/// CHANGE: overrun > 0.0f instead of != 0.0f.
+			if (!(blockAct->flags & BLOCKACT_FLAG_STANDING) && overrun > 0.0f) {
+				// Build animation finished, switch to idle animation.
+				blockAct->flags |= BLOCKACT_FLAG_STANDING;
+				Gods98::Container_SetActivity(blockAct->cont, "Activity_Stand");
+			}
+			else if (!(blockAct->flags & BLOCKACT_FLAG_REMOVING)) {
+				/// CHANGE: overrun > 0.0f instead of != 0.0f.
+				if ((blockAct->flags & BLOCKACT_FLAG_DESTROYING) && overrun > 0.0f) {
+					// Destroy animation finished, mark for removal.
+					blockAct->flags |= BLOCKACT_FLAG_REMOVING;
+				}
+			}
+			else {
+				Level_BlockActivity_Remove(blockAct);
+			}
+			break;
+		case BlockActivity_RechargeSparkle:
+			/// FIXME: No logic for removal handled here.
+			break;
+		}
+
+		blockAct = previous;
+	}
+}
+
+// <LegoRR.exe @00431380>
+void __cdecl LegoRR::Level_BlockActivity_Destroy(Lego_Level* level, const Point2I* blockPos, bool32 wallDestroyed)
+{
+	Lego_BlockActivity* blockAct = blockValue(level, blockPos->x, blockPos->y).activity;
+	if (blockAct != nullptr) {
+		if (!wallDestroyed && blockAct->type == BlockActivity_ReinforcementPillar) {
+			// Only play the destroy animation if the wall hasn't been destroyed.
+			// i.e. When a rock monster enters this wall.
+			Gods98::Container_SetActivity(blockAct->cont, "Activity_Destroy");
+			Gods98::Container_SetAnimationTime(blockAct->cont, 0.0f);
+
+			blockAct->flags |= BLOCKACT_FLAG_DESTROYING;
+		}
+		else {
+			blockAct->flags |= BLOCKACT_FLAG_REMOVING;
+		}
+	}
+}
 
 // <LegoRR.exe @004313f0>
-//void __cdecl LegoRR::Level_BlockActivity_Remove(Lego_BlockActivity* blockAct);
+void __cdecl LegoRR::Level_BlockActivity_Remove(Lego_BlockActivity* blockAct)
+{
+	Gods98::Container_Remove(blockAct->cont);
+	blockAct->cont = nullptr;
+
+	Lego_Level* level = Lego_GetLevel();
+	blockValue(level, blockAct->blockPos.x, blockAct->blockPos.y).activity = nullptr;
+
+	// Remove this item from the double-linked list.
+	if (blockAct->next == nullptr) {
+		level->blockActLast = blockAct->previous;
+	}
+	else {
+		blockAct->next->previous = blockAct->previous;
+	}
+	if (blockAct->previous != nullptr) {
+		blockAct->previous->next = blockAct->next;
+	}
+	else {
+		// There is no tail stored for the list.
+	}
+
+	Gods98::Mem_Free(blockAct);
+}
 
 // <LegoRR.exe @00431460>
-//void __cdecl LegoRR::Level_BlockActivity_RemoveAll(Lego_Level* level);
+void __cdecl LegoRR::Level_BlockActivity_RemoveAll(Lego_Level* level)
+{
+	Lego_BlockActivity* blockAct = level->blockActLast;
+	while (blockAct != nullptr) {
+		// Store previous before removal, because the memory will be freed up.
+		Lego_BlockActivity* previous = blockAct->previous;
+
+		Level_BlockActivity_Remove(blockAct);
+
+		blockAct = previous;
+	}
+}
 
 // <LegoRR.exe @004314b0>
 //void __cdecl LegoRR::Level_UncoverHiddenCavern(uint32 bx, uint32 by);

@@ -2717,12 +2717,30 @@ bool interop_hook_LegoRR_Game(void)
 	result &= hook_write_jmpret(0x0042c260, LegoRR::Level_HandleEmergeTriggers);
 
 	// used by: Lego_LoadMapSet
+	result &= hook_write_jmpret(0x0042c3b0, LegoRR::Lego_LoadTerrainMap);
+
+	// used by: Lego_LoadMapSet
 	result &= hook_write_jmpret(0x0042c900, LegoRR::Lego_LoadFallinMap);
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x0042caa0, LegoRR::Lego_UpdateFallins);
 
 	// used by: Front_RestartLevel, Lego_Shutdown_Full, Lego_EndLevel
 	result &= hook_write_jmpret(0x0042eff0, LegoRR::Level_Free);
+
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00431020, LegoRR::Level_Block_RemoveReinforcement);
+	// used by: LegoObject_Update_Reinforcing
+	result &= hook_write_jmpret(0x00431070, LegoRR::Level_Block_Reinforce);
+	// used by: Lego_LoadTerrainMap, Level_Block_Reinforce
+	result &= hook_write_jmpret(0x00431100, LegoRR::Level_BlockActivity_Create);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x004312e0, LegoRR::Level_BlockActivity_UpdateAll);
+	// used by: Level_BlockUpdateSurface, Level_DestroyWall, Level_Block_RemoveReinforcement
+	result &= hook_write_jmpret(0x00431380, LegoRR::Level_BlockActivity_Destroy);
+	// used by: Level_BlockActivity_UpdateAll, Level_BlockActivity_RemoveAll
+	result &= hook_write_jmpret(0x004313f0, LegoRR::Level_BlockActivity_Remove);
+	// used by: Level_Free
+	result &= hook_write_jmpret(0x00431460, LegoRR::Level_BlockActivity_RemoveAll);
 
 	// used by: Message_Update
 	result &= hook_write_jmpret(0x004316b0, LegoRR::Lego_PTL_RockFall);

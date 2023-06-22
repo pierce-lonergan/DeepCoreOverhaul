@@ -29,6 +29,7 @@ LegoRR::Effect_Globs & LegoRR::effectGlobs = *(LegoRR::Effect_Globs*)0x004c8180;
 #define MiscObjects_ID(...) Config_ID(gameName, "MiscObjects", __VA_ARGS__ )
 
 #pragma endregion
+
 /**********************************************************************************
  ******** Functions
  **********************************************************************************/
