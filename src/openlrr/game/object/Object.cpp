@@ -4987,7 +4987,168 @@ void __cdecl LegoRR::LegoObject_SetPositionAndHeading(LegoObject* liveObj, real3
 //sint32 __cdecl LegoRR::LegoObject_FP_UpdateMovement(LegoObject* liveObj, real32 elapsed, OUT real32* transSpeed);
 
 // <LegoRR.exe @00443240>
-//void __cdecl LegoRR::LegoObject_UpdateWorldStickyPosition(LegoObject* liveObj, real32 elapsed);
+void __cdecl LegoRR::LegoObject_UpdateWorldStickyPosition(LegoObject* liveObj, real32 elapsed)
+{
+	AITask_LiveObject_FUN_00403a70(liveObj);
+
+	switch (liveObj->type) {
+	case LegoObject_Vehicle:
+		{
+			Point2F wPos2D = { 0.0f, 0.0f }; // dummy init
+			LegoObject_GetPosition(liveObj, &wPos2D.x, &wPos2D.y);
+			Vehicle_SetPosition(liveObj->vehicle, wPos2D.x, wPos2D.y, LegoObject_GetWorldZCallback, Lego_GetMap());
+		}
+		break;
+
+	case LegoObject_Building:
+		{
+			Point2F wPos2D = { 0.0f, 0.0f }; // dummy init
+			LegoObject_GetPosition(liveObj, &wPos2D.x, &wPos2D.y);
+			Building_SetPosition(liveObj->building, wPos2D.x, wPos2D.y, LegoObject_GetWorldZCallback, Lego_GetMap());
+		}
+		break;
+
+	case LegoObject_RockMonster:
+		{
+			Point2F wPos2D = { 0.0f, 0.0f }; // dummy init
+			LegoObject_GetPosition(liveObj, &wPos2D.x, &wPos2D.y);
+			Creature_SetPosition(liveObj->rockMonster, wPos2D.x, wPos2D.y, LegoObject_GetWorldZCallback, Lego_GetMap());
+		}
+		break;
+
+	case LegoObject_MiniFigure:
+		{
+			Vector3F wPos;
+			Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+			Gods98::Container_GetPosition(cont, nullptr, &wPos);
+			Vector3F newPos = { wPos.x, wPos.y, 0.0f };
+
+			Point2I blockPos = { 0, 0 }; // dummy init
+			LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+
+			if (Level_Block_IsWall(blockPos.x, blockPos.y) && !Level_Block_IsSeamWall(blockPos.x, blockPos.y)) {
+				const bool32 isGap = Level_Block_IsGap(blockPos.x, blockPos.y);
+				Point2F dir = { 0.0f, 0.0f }; // dummy init
+				Map3D_FUN_0044fe50(Lego_GetMap(), wPos.x, wPos.y, isGap, 0.0f, &dir.x, &dir.y);
+
+				Gods98::Maths_Vector2DSubtract(&dir, &dir, &newPos.vec2);
+
+				const real32 timeValue = (elapsed / 2.0f);
+				const real32 dist = Gods98::Maths_Vector2DModulus(&dir);
+				if (dist > timeValue) {
+					Gods98::Maths_Vector2DScale(&dir, &dir, (timeValue / dist));
+					Gods98::Maths_Vector2DAdd(&newPos.vec2, &newPos.vec2, &dir);
+				}
+			}
+
+			newPos.z = LegoObject_GetWorldZCallback(newPos.x, newPos.y, Lego_GetMap());
+			if (wPos.x != newPos.x || wPos.y != newPos.y || wPos.z != newPos.z) {
+				// Only update if position has changed. Why only do this for MiniFigures...?
+				Creature_SetPosition(liveObj->miniFigure, newPos.x, newPos.y, LegoObject_GetWorldZCallback_Lake, Lego_GetMap());
+			}
+		}
+		break;
+
+	case LegoObject_PowerCrystal:
+	case LegoObject_Ore:
+	case LegoObject_Barrier:
+	case LegoObject_Dynamite:
+	case LegoObject_ElectricFence:
+	case LegoObject_OohScary:
+		// Don't update sticky position if it's already handled by the unit carrying this object.
+		if (liveObj->carryingThisObject == nullptr) {
+			Point2I blockPos = { 0, 0 }; // dummy init
+			LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
+
+			/// FIXME: Don't tumble resources from landslide rockfalls, only dug wall rockfalls.
+			/// FIXME: Don't tumble resources from landslide rockfalls, only dug wall rockfalls.
+			/// TODO: Consider changing it so only Crystals and Ore use tumble nulls.
+			//if ((liveObj->type == LegoObject_PowerCrystal || liveObj->type == LegoObject_Ore) &&
+			if (liveObj->type != LegoObject_Barrier &&
+				Level_Block_IsRockFallFX(blockPos.x, blockPos.y) &&
+				//!(blockValue(Lego_GetLevel(), blockPos.x, blockPos.y).flags1 & BLOCK1_LANDSLIDING) &&
+				liveObj->cameraNull == nullptr)
+			{
+				liveObj->cameraNull = Effect_GetTumbleNull_RockFall(blockPos.x, blockPos.y);
+				// Store blockPos for duration of rockfall tumbling.
+				liveObj->targetBlockPos.x = (real32)(uint32)blockPos.x;
+				liveObj->targetBlockPos.y = (real32)(uint32)blockPos.y;
+				liveObj->flags3 &= ~LIVEOBJ3_ALLOWCULLING_UNK;
+			}
+
+			//blockPos = Point2I {
+			//	(sint32)liveObj->targetBlockPos.x,
+			//	(sint32)liveObj->targetBlockPos.y,
+			//};
+			const Point2I target = {
+				(sint32)liveObj->targetBlockPos.x,
+				(sint32)liveObj->targetBlockPos.y,
+			};
+
+			/// FIXME: Don't tumble resources from landslide rockfalls, only dug wall rockfalls.
+			if (liveObj->cameraNull != nullptr && Level_Block_IsRockFallFX(target.x, target.y)) //&&
+				//!(blockValue(Lego_GetLevel(), target.x, target.y).flags1 & BLOCK1_LANDSLIDING))
+			{
+				// Tumble null positioning.
+				Vector3F wPos;
+				Gods98::Container_GetPosition(liveObj->cameraNull, nullptr, &wPos);
+				real32 zPos = Map3D_GetWorldZ(Lego_GetMap(), wPos.x, wPos.y);
+				/// TODO: What is this constant?
+				zPos -= 1.2285f;
+				if (wPos.z > zPos) wPos.z = zPos;
+
+				/// FIXME: Don't tumble a resource over an inaccessible block.
+				// Unfortunately we can't prevent resources from landing on walls because it visually breaks the animation.
+				Point2I newBlockPos = { 0, 0 }; // dummy init
+				Map3D_WorldToBlockPos_NoZ(Lego_GetMap(), wPos.x, wPos.y, &newBlockPos.x, &newBlockPos.y);
+				//const Lego_SurfaceType terrain = (Lego_SurfaceType)blockValue(Lego_GetLevel(), newBlockPos.x, newBlockPos.y).terrain;
+				//if (terrain != Lego_SurfaceType_Lava &&
+				//	terrain != Lego_SurfaceType_Lake &&
+				//	terrain != Lego_SurfaceType_Water)
+				//	//!Level_Block_IsWall(newBlockPos.x, newBlockPos.y))
+				//{
+					Gods98::Container_SetPosition(liveObj->other, nullptr, wPos.x, wPos.y, wPos.z);
+				//}
+
+				Gods98::Container_SetOrientation(liveObj->other, liveObj->cameraNull, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
+			}
+			else {
+				// Standard positioning.
+				liveObj->cameraNull = nullptr;
+
+				Vector3F wPos;
+				Gods98::Container_GetPosition(liveObj->other, nullptr, &wPos);
+				real32 zPos = Map3D_GetWorldZ(Lego_GetMap(), wPos.x, wPos.y);
+				/// TODO: What is this constant?
+				zPos -= 1.2285f;
+				if (wPos.z < (zPos - 0.5f)) {
+					wPos.z += elapsed;
+					if (wPos.z > zPos) wPos.z = zPos;
+					Gods98::Container_SetPosition(liveObj->other, nullptr, wPos.x, wPos.y, wPos.z);
+				}
+				if (wPos.z > (zPos + 0.5f)) {
+					wPos.z -= elapsed;
+					if (wPos.z < zPos) wPos.z = zPos;
+					Gods98::Container_SetPosition(liveObj->other, nullptr, wPos.x, wPos.y, wPos.z);
+				}
+
+				Vector3F dir, up;
+				Gods98::Container_GetOrientation(liveObj->other, nullptr, &dir, &up);
+				if (dir.z > 0.0f) {
+					dir.z -= (elapsed / 20.0f);
+					if (dir.z < 0.0f) dir.z = 0.0f;
+					Gods98::Container_SetOrientation(liveObj->other, nullptr, dir.x, dir.y, dir.z, 0.0f, 0.0f, -1.0f);
+				}
+				else if (dir.z < 0.0f) {
+					dir.z += (elapsed / 20.0f);
+					if (dir.z > 0.0f) dir.z = 0.0f;
+					Gods98::Container_SetOrientation(liveObj->other, nullptr, dir.x, dir.y, dir.z, 0.0f, 0.0f, -1.0f);
+				}
+			}
+		}
+		break;
+	}
+}
 
 // <LegoRR.exe @004437d0>
 //void __cdecl LegoRR::LegoObject_UpdateDriverStickyPosition(LegoObject* drivenVehicleObj);

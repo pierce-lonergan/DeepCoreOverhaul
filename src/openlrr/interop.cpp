@@ -3580,6 +3580,9 @@ bool interop_hook_LegoRR_Object(void)
 	//          LegoObject_SimpleObject_MoveAnimation, LegoObject_UpdatePushing
 	result &= hook_write_jmpret(0x00442b60, LegoRR::LegoObject_SetPositionAndHeading);
 
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00443240, LegoRR::LegoObject_UpdateWorldStickyPosition);
+
 	// used by: LegoObject_Callback_ScareUnitWithBigBang, LegoObject_Callback_ScareTrainedMiniFiguresAwayFromTickingDynamite,
 	//          LegoObject_Callback_SlipAndScare
 	result &= hook_write_jmpret(0x00444720, LegoRR::LegoObject_TryRunAway);

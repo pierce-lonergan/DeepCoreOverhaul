@@ -1281,8 +1281,8 @@ void __cdecl LegoObject_SetPositionAndHeading(LegoObject* liveObj, real32 xPos, 
 // This refers to behaviours that have objects snap to certain planes and face certain directions.
 // Example: All units' Z positions try to match the world's surface Z position.
 // <LegoRR.exe @00443240>
-#define LegoObject_UpdateWorldStickyPosition ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x00443240)
-//void __cdecl LegoObject_UpdateWorldStickyPosition(LegoObject* liveObj, real32 elapsed);
+//#define LegoObject_UpdateWorldStickyPosition ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x00443240)
+void __cdecl LegoObject_UpdateWorldStickyPosition(LegoObject* liveObj, real32 elapsed);
 
 // Updates the sticky position/orientation of a vehicle's driver to match that of the vehicle.
 // REQUIRES: liveObj->vehicle != NULL and liveObj->driveObject != NULL
