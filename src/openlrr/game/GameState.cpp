@@ -673,7 +673,7 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 		}*/
 
 		Smoke_LoadTextures("MiscAnims\\Smoke", "Smoke", 3);
-		DamageFont_LoadFrames("Interface\\FONTS\\HealthFont", "a000_");
+		DamageText_LoadTextures("Interface\\FONTS\\HealthFont", "a000_");
 
 
 		Point2F Dialog_center = Point2F { 0.0f, 0.0f };
@@ -1058,7 +1058,7 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 	AITask_UpdateAll(elapsedWorld);
 	Level_UpdateEffects(legoGlobs.currLevel, elapsedWorld);
 
-	DamageFont_UpdateAll(elapsedInterface);
+	DamageText_UpdateAll(elapsedInterface);
 
 	LegoObject_UpdateAll(elapsedWorld);
 	Weapon_Update(elapsedWorld);

@@ -90,7 +90,7 @@ void __cdecl LegoRR::ObjInfo_DrawHealthBar(LegoObject* liveObj, sint32 screenX, 
 	if (!(objinfoGlobs.flags & OBJINFO_GLOB_FLAG_HEALTHBAR))
 		return; // No drawing health bars.
 
-	if (!DamageFont_LiveObject_CheckCanShowDamage_Unk(liveObj))
+	if (!DamageText_CanShow(liveObj))
 		return; // Don't draw health bars for this unit.
 
 	const ColourRGBF rcfColour = objinfoGlobs.HealthBarRGB;

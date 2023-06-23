@@ -151,8 +151,9 @@ enum LiveFlags2 : uint32 // [LegoRR/LegoObject.c|flags:0x4|type:uint]
 	LIVEOBJ2_BUILDPATH            = 0x200,
 	LIVEOBJ2_TRAINING             = 0x400,
 	LIVEOBJ2_UNK_800              = 0x800, // Related to eating.
-	LIVEOBJ2_DAMAGE_UNK_1000      = 0x1000,
-	LIVEOBJ2_SHOWDAMAGENUMBERS    = 0x2000,
+	LIVEOBJ2_SHOWDAMAGEDELAY      = 0x1000, // Flag is set while taking damage, and is unset when trying to display damage.
+											// Damage is not displayed unless this flag is unset for one tick without taking damage.
+	LIVEOBJ2_SHOWDAMAGENUMBERS    = 0x2000, // Object has taken damage and needs to show it.
 	LIVEOBJ2_PUSHED               = 0x4000,
 	LIVEOBJ2_UPGRADING            = 0x8000,
 	LIVEOBJ2_TRIGGERFRAMECALLBACK = 0x10000, // What this actually does isn't clear.

@@ -564,6 +564,9 @@ Container* __cdecl Container_MakeMesh2(Container* parent, Container_MeshType typ
 // <LegoRR.exe @00473940>
 IDirect3DRMFrame3* __cdecl Container_GetMasterFrame(Container* cont);
 
+// <inlined>
+IDirect3DRMFrame3* Container_GetActivityFrame(Container* cont);
+
 // <LegoRR.exe @00473950>
 Container* __cdecl Container_Clone(Container* orig);
 

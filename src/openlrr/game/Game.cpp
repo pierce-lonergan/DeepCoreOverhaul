@@ -1650,7 +1650,7 @@ LegoRR::ToolTip_Type LegoRR::Lego_PrepareObjectToolTip(LegoObject* liveObj)
 				std::sprintf(buffVal, "\n%s: %i", legoGlobs.langEnergy_toolTip, energy);
 				std::strcat(buffText, buffVal);
 			}
-			else if (DamageFont_LiveObject_CheckCanShowDamage_Unk(liveObj) &&
+			else if (DamageText_CanShow(liveObj) &&
 					 (liveObj->type != LegoObject_MiniFigure && liveObj->type != LegoObject_RockMonster))
 			{
 				// Vehicles, buildings, etc. show "Energy" as their health.
@@ -2415,7 +2415,7 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 					if (Input_IsKeyDown(Keys::KEY_RIGHTCTRL))
 						unit->flags2 |= (LIVEOBJ2_SHOWDAMAGENUMBERS);
 					else
-						unit->flags2 |= (LIVEOBJ2_DAMAGE_UNK_1000|LIVEOBJ2_SHOWDAMAGENUMBERS);
+						unit->flags2 |= (LIVEOBJ2_SHOWDAMAGEDELAY|LIVEOBJ2_SHOWDAMAGENUMBERS);
 					unit->damageNumbers += healAmount; // += will show a negative number, but that's because positive numbers are blocked.
 				}
 				Bubble_ShowHealthBar(unit); // Show the healthbar as feedback that the unit was healed.
@@ -3382,7 +3382,7 @@ const char* __cdecl LegoRR::Level_Free(void)
 		Panel_ResetAll();
 		Advisor_Stop();
 		Gods98::Sound3D_StopAllSounds();
-		DamageFont_Cleanup();
+		DamageText_RemoveAll();
 	}
 	legoGlobs.currLevel = nullptr;
 	return nextLevelName;

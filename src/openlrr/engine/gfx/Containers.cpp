@@ -951,6 +951,12 @@ IDirect3DRMFrame3* __cdecl Gods98::Container_GetMasterFrame(Container* cont)
 	return cont->masterFrame;
 }
 
+// <inlined>
+IDirect3DRMFrame3* Gods98::Container_GetActivityFrame(Container* cont)
+{
+	return cont->activityFrame;
+}
+
 // <LegoRR.exe @00473950>
 Gods98::Container* __cdecl Gods98::Container_Clone(Container* orig)
 {

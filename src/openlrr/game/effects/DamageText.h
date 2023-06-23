@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include "../../engine/gfx/Containers.h"
+#include "../../engine/gfx/Mesh.h"
+
 #include "../GameCommon.h"
 
 
@@ -23,6 +26,13 @@ namespace LegoRR
 
 #pragma region Constants
 
+#define DAMAGETEXT_DURATION			(STANDARD_FRAMERATE * 0.6f) // 0.6 seconds (15.0 standard units).
+#define DAMAGETEXT_MAXCHARS			4		// Max number of digit and minus symbol characters per damage text.
+#define DAMAGETEXT_MAXVALUE			999		// Cannot have more than (MAXCHARS - 1) digits.
+#define DAMAGETEXT_DIGITS			10		// Number of digit textures in array, must be 10 or more.
+#define DAMAGETEXT_MAXSHOWN			10		// Number of damage texts that can be shown at once.
+											// Not to be confused with digits.
+
 #pragma endregion
 
 /**********************************************************************************
@@ -30,6 +40,13 @@ namespace LegoRR
  **********************************************************************************/
 
 #pragma region Enums
+
+enum DamageTextFlags : uint32 // [LegoRR/DamageFont.c|flags:0x4|type:uint]
+{
+	DAMAGETEXT_FLAG_NONE = 0,
+	DAMAGETEXT_FLAG_USED = 0x1,
+};
+flags_end(DamageTextFlags, 0x4);
 
 #pragma endregion
 
@@ -39,29 +56,27 @@ namespace LegoRR
 
 #pragma region Structs
 
-struct DamageFontData // [LegoRR/DamageFont.c|struct:0x20]
+struct DamageTextData // [LegoRR/DamageFont.c|struct:0x20]
 {
-	/*00,4*/	Gods98::Container* ownerCont;
-	/*04,4*/	Gods98::Mesh* mesh;
-	/*08,4*/	uint32 groupCount;
-	/*0c,4*/	real32 float_c;
-	/*10,4*/	real32 float_10;
-	/*14,4*/	real32 timerDown;
-	/*18,4*/	real32 timerUp;
-	/*1c,4*/	uint32 flags;
+	/*00,4*/	Gods98::Container* cont;
+	/*04,4*/	Gods98::Mesh* mesh; // Mesh with MAXCHARS groups.
+	/*08,4*/	uint32 charCount; // Number of mesh groups currently being used.
+	/*0c,c*/	Vector3F offsetPos;
+	/*18,4*/	real32 timer; // Count-up timer to DAMAGETEXT_DURATION.
+	/*1c,4*/	DamageTextFlags flags;
 	/*20*/
 };
-assert_sizeof(DamageFontData, 0x20);
+assert_sizeof(DamageTextData, 0x20);
 
 
-struct DamageFont_Globs // [LegoRR/DamageFont.c|struct:0x16c|tags:GLOBS]
+struct DamageText_Globs // [LegoRR/DamageFont.c|struct:0x16c|tags:GLOBS]
 {
-	/*000,28*/	Gods98::Container_Texture* fontTextDigitsTable[10];
-	/*028,4*/	Gods98::Container_Texture* fontTextMinus;
-	/*02c,140*/	DamageFontData instanceTable[10];
+	/*000,28*/	Gods98::Mesh_Texture* fontTextDigitsTable[DAMAGETEXT_DIGITS];
+	/*028,4*/	Gods98::Mesh_Texture* fontTextMinus;
+	/*02c,140*/	DamageTextData table[DAMAGETEXT_MAXSHOWN];
 	/*16c*/
 };
-assert_sizeof(DamageFont_Globs, 0x16c);
+assert_sizeof(DamageText_Globs, 0x16c);
 
 #pragma endregion
 
@@ -72,7 +87,7 @@ assert_sizeof(DamageFont_Globs, 0x16c);
 #pragma region Globals
 
 // <LegoRR.exe @004b9a58>
-extern DamageFont_Globs & dmgfontGlobs;
+extern DamageText_Globs & damageTextGlobs;
 
 #pragma endregion
 
@@ -91,40 +106,40 @@ extern DamageFont_Globs & dmgfontGlobs;
 #pragma region Functions
 
 // <LegoRR.exe @0040a300>
-#define DamageFont_Cleanup ((void (__cdecl* )(void))0x0040a300)
-//void __cdecl DamageFont_Cleanup(void);
+//#define DamageText_RemoveAll ((void (__cdecl* )(void))0x0040a300)
+void __cdecl DamageText_RemoveAll(void);
 
 // <LegoRR.exe @0040a330>
-#define DamageFont_LoadFrames ((void (__cdecl* )(const char* dirName, const char* fileBaseName))0x0040a330)
-//void __cdecl DamageFont_LoadFrames(const char* dirName, const char* fileBaseName);
+//#define DamageText_LoadTextures ((void (__cdecl* )(const char* dirName, const char* fileBaseName))0x0040a330)
+void __cdecl DamageText_LoadTextures(const char* dirName, const char* fileBaseName);
 
 // <LegoRR.exe @0040a3e0>
-#define DamageFont_DisplayDamage_OverLiveObject ((void (__cdecl* )(LegoObject* liveObj, uint32 displayNumber))0x0040a3e0)
-//void __cdecl DamageFont_DisplayDamage_OverLiveObject(LegoObject* liveObj, uint32 displayNumber);
+//#define DamageText_ShowNumber ((void (__cdecl* )(LegoObject* liveObj, uint32 displayNumber))0x0040a3e0)
+void __cdecl DamageText_ShowNumber(LegoObject* liveObj, uint32 displayNumber);
 
 // <LegoRR.exe @0040a4f0>
-#define DamageFont_GetNextFree ((DamageFontData* (__cdecl* )(void))0x0040a4f0)
-//DamageFontData* __cdecl DamageFont_GetNextFree(void);
+//#define DamageText_GetNextFree ((DamageTextData* (__cdecl* )(void))0x0040a4f0)
+DamageTextData* __cdecl DamageText_GetNextFree(void);
 
 // <LegoRR.exe @0040a510>
-#define DamageFont_SetDisplayNumber ((void (__cdecl* )(DamageFontData* healthFont, uint32 displayNumber))0x0040a510)
-//void __cdecl DamageFont_SetDisplayNumber(DamageFontData* healthFont, uint32 displayNumber);
+//#define DamageText_SetNumber ((void (__cdecl* )(DamageTextData* damageText, uint32 displayNumber))0x0040a510)
+void __cdecl DamageText_SetNumber(DamageTextData* damageText, uint32 displayNumber);
 
 // <LegoRR.exe @0040a670>
-#define DamageFont_MeshRenderCallback ((void (__cdecl* )(Gods98::Mesh* mesh, DamageFontData* healthFont, Gods98::Viewport* view))0x0040a670)
-//void __cdecl DamageFont_MeshRenderCallback(Gods98::Mesh* mesh, DamageFontData* healthFont, Gods98::Viewport* view);
+//#define DamageText_MeshRenderCallback ((void (__cdecl* )(Gods98::Mesh* mesh, DamageTextData* damageText, Gods98::Viewport* view))0x0040a670)
+void __cdecl DamageText_MeshRenderCallback(Gods98::Mesh* mesh, void* pDamageText, Gods98::Viewport* view);
 
 // <LegoRR.exe @0040a940>
-#define DamageFont_UpdateAll ((void (__cdecl* )(real32 elapsedAbs))0x0040a940)
-//void __cdecl DamageFont_UpdateAll(real32 elapsedAbs);
+//#define DamageText_UpdateAll ((void (__cdecl* )(real32 elapsedInterface))0x0040a940)
+void __cdecl DamageText_UpdateAll(real32 elapsedInterface);
 
 // <LegoRR.exe @0040a970>
-#define DamageFont_UpdateSingle ((void (__cdecl* )(DamageFontData* healthFont, real32 elapsedAbs))0x0040a970)
-//void __cdecl DamageFont_UpdateSingle(DamageFontData* healthFont, real32 elapsedAbs);
+//#define DamageText_Update ((void (__cdecl* )(DamageTextData* damageText, real32 elapsedInterface))0x0040a970)
+void __cdecl DamageText_Update(DamageTextData* damageText, real32 elapsedInterface);
 
 // <LegoRR.exe @0040aa10>
-#define DamageFont_LiveObject_CheckCanShowDamage_Unk ((bool32 (__cdecl* )(LegoObject* liveObj))0x0040aa10)
-//bool32 __cdecl DamageFont_LiveObject_CheckCanShowDamage_Unk(LegoObject* liveObj);
+//#define DamageText_CanShow ((bool32 (__cdecl* )(LegoObject* liveObj))0x0040aa10)
+bool32 __cdecl DamageText_CanShow(LegoObject* liveObj);
 
 #pragma endregion
 

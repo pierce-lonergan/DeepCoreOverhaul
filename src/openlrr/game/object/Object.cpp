@@ -3830,7 +3830,7 @@ void __cdecl LegoRR::LegoObject_AddDamage2(LegoObject* liveObj, real32 damage, b
 
 		if (LegoObject_IsRockMonsterCanGather(liveObj)) {
 			// I have no idea what these numbers are trying to say.
-			// Note that teh first number is 10,010 (with a ten at the end), while the second is a flat 10,000.
+			// Note that the first number is 10,010 (with a ten at the end), while the second is a flat 10,000.
 			const real32 healthDecayRate = StatsObject_GetHealthDecayRate(liveObj);
 			const uint32 decayVal = (uint32)(sint32)(healthDecayRate / STANDARD_FRAMERATE * elapsed * 10010.0f);
 			const uint32 decayCap = (uint32)(sint32)(damage * 10000.0f);
@@ -3848,7 +3848,10 @@ void __cdecl LegoRR::LegoObject_AddDamage2(LegoObject* liveObj, real32 damage, b
 		
 		if (damage > 0.0f) {
 			if (showVisual) {
-				liveObj->flags2 |= (LIVEOBJ2_DAMAGE_UNK_1000|LIVEOBJ2_SHOWDAMAGENUMBERS);
+				// Mark damage numbers to be shown, but use the delay flag so that numbers
+				//  will not be shown until the unit hasn't taken damage for one tick.
+				// (We don't want damage numbers getting spammed while walking across lava, etc.)
+				liveObj->flags2 |= (LIVEOBJ2_SHOWDAMAGEDELAY|LIVEOBJ2_SHOWDAMAGENUMBERS);
 				liveObj->damageNumbers += damage;
 				Bubble_ShowHealthBar(liveObj);
 			}
@@ -3974,14 +3977,16 @@ void __cdecl LegoRR::LegoObject_UpdateEnergyHealthAndLavaContact(LegoObject* liv
 		// This only does something when damage is non-zero.
 		LegoObject_MiniFigurePlayHurtSound(liveObj, elapsed, damage);
 
-		if ((liveObj->flags2 & LIVEOBJ2_SHOWDAMAGENUMBERS) &&
-			!(liveObj->flags2 & LIVEOBJ2_DAMAGE_UNK_1000))
-		{
-			DamageFont_DisplayDamage_OverLiveObject(liveObj, (uint32)(sint32)liveObj->damageNumbers);
+		if ((liveObj->flags2 & LIVEOBJ2_SHOWDAMAGENUMBERS) && !(liveObj->flags2 & LIVEOBJ2_SHOWDAMAGEDELAY)) {
+			// Damage numbers should be shown, and one tick has passed without the unit taking damage.
+			DamageText_ShowNumber(liveObj, (uint32)(sint32)liveObj->damageNumbers);
 			liveObj->damageNumbers = 0.0f;
 			liveObj->flags2 &= ~LIVEOBJ2_SHOWDAMAGENUMBERS;
 		}
-		liveObj->flags2 &= ~LIVEOBJ2_DAMAGE_UNK_1000;
+
+		// Unset delay flag, if the unit doesn't receive more damage next tick then
+		//  we can show the damage numbers.
+		liveObj->flags2 &= ~LIVEOBJ2_SHOWDAMAGEDELAY;
 	}
 }
 

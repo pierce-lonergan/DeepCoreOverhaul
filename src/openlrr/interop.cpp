@@ -39,6 +39,7 @@
 #include "engine/Init.h"
 
 #include "game/audio/SFX.h"
+#include "game/effects/DamageText.h"
 #include "game/effects/Effects.h"
 #include "game/effects/LightEffects.h"
 #include "game/effects/Smoke.h"
@@ -1521,7 +1522,7 @@ bool interop_hook_Gods98_Viewports(void)
 	// used by: Lego_SetViewMode
 	result &= hook_write_jmpret(0x00477210, Gods98::Viewport_SetCamera);
 
-	// used by: DamageFont_MeshRenderCallback, SaveMenu_FUN_00412b30
+	// used by: DamageText_MeshRenderCallback, SaveMenu_FUN_00412b30
 	//           Smoke_Group_MeshRenderCallback
 	result &= hook_write_jmpret(0x00477230, Gods98::Viewport_GetCamera);
 	// used by: Lego_Initialise, Lego_SetViewMode
@@ -1990,6 +1991,33 @@ bool interop_hook_LegoRR_BezierCurve(void)
 	result &= hook_write_jmpret(0x004066e0, LegoRR::BezierCurve_UpdateDistances);
 	result &= hook_write_jmpret(0x00406750, LegoRR::BezierCurve_BuildPoints);
 	result &= hook_write_jmpret(0x004067f0, LegoRR::BezierCurve_Interpolate);
+	
+	return_interop(result);
+}
+
+bool interop_hook_LegoRR_DamageText(void)
+{
+	bool result = true;
+
+	// used by: Level_Free
+	result &= hook_write_jmpret(0x0040a300, LegoRR::DamageText_RemoveAll);
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x0040a330, LegoRR::DamageText_LoadTextures);
+	// used by: LegoObject_UpdateEnergyHealthAndLavaContact
+	result &= hook_write_jmpret(0x0040a3e0, LegoRR::DamageText_ShowNumber);
+	// used by: DamageText_ShowNumber
+	result &= hook_write_jmpret(0x0040a4f0, LegoRR::DamageText_GetNextFree);
+	// used by: DamageText_ShowNumber
+	result &= hook_write_jmpret(0x0040a510, LegoRR::DamageText_SetNumber);
+	// used by: DamageText_ShowNumber
+	result &= hook_write_jmpret(0x0040a670, LegoRR::DamageText_MeshRenderCallback);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0040a940, LegoRR::DamageText_UpdateAll);
+	// used by: DamageText_UpdateAll
+	result &= hook_write_jmpret(0x0040a970, LegoRR::DamageText_Update);
+	// used by: DamageText_ShowNumber, Lego_ShowObjectToolTip,
+	//          ObjInfo_DrawHealthBar
+	result &= hook_write_jmpret(0x0040aa10, LegoRR::DamageText_CanShow);
 	
 	return_interop(result);
 }
@@ -4303,6 +4331,7 @@ bool interop_hook_all(void)
 	result &= interop_hook_LegoRR_Construction();
 	result &= interop_hook_LegoRR_Creature();
 	result &= interop_hook_LegoRR_Credits();
+	result &= interop_hook_LegoRR_DamageText();
 	result &= interop_hook_LegoRR_Effect();
 	result &= interop_hook_LegoRR_ElectricFence();
 	result &= interop_hook_LegoRR_Encyclopedia();
