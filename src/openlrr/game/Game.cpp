@@ -3542,7 +3542,10 @@ void __cdecl LegoRR::Level_BlockActivity_UpdateAll(Lego_Level* level, real32 ela
 			}
 			break;
 		case BlockActivity_RechargeSparkle:
-			/// FIXME: No logic for removal handled here.
+			/// FIX APPLY: Properly handle removal of recharge sparkles.
+			if (blockAct->flags & BLOCKACT_FLAG_REMOVING) {
+				Level_BlockActivity_Remove(blockAct);
+			}
 			break;
 		}
 
