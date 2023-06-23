@@ -1070,35 +1070,35 @@ __inline real32 __cdecl Lego_GetGameSpeed(void) { return legoGlobs.gameSpeed; }
 bool32 __cdecl Lego_Initialise(void);
 
 // <LegoRR.exe @00422780>
-#define Lego_LoadMiscObjects ((void (__cdecl* )(const Gods98::Config* config))0x00422780)
-//void __cdecl Lego_LoadMiscObjects(const Gods98::Config* config);
+//#define Lego_LoadMiscObjects ((void (__cdecl* )(const Gods98::Config* config))0x00422780)
+void __cdecl Lego_LoadMiscObjects(const Gods98::Config* config);
 
 // <LegoRR.exe @00422fb0>
-#define Lego_GetCurrentCamera_Container ((Gods98::Container* (__cdecl* )(void))0x00422fb0)
-//Gods98::Container* __cdecl Lego_GetCurrentCamera_Container(void);
+//#define Lego_GetCurrentCamera_Container ((Gods98::Container* (__cdecl* )(void))0x00422fb0)
+Gods98::Container* __cdecl Lego_GetCurrentCamera_Container(void);
 
 // <LegoRR.exe @00422fe0>
 //#define Lego_GetElapsedAbs ((real32 (__cdecl* )(void))0x00422fe0)
 __inline real32 __cdecl Lego_GetElapsedAbs(void) { return legoGlobs.elapsedAbs; }
 
 // <LegoRR.exe @00422ff0>
-#define Lego_DrawRenameInput ((void (__cdecl* )(real32 elapsedAbs))0x00422ff0)
-//void __cdecl Lego_DrawRenameInput(real32 elapsedAbs);
+//#define Lego_DrawRenameInput ((void (__cdecl* )(real32 elapsedInterface))0x00422ff0)
+void __cdecl Lego_DrawRenameInput(real32 elapsedInterface);
 
 // This function also has the essential behaviour of clearing INPUT.Key_Map.
 // Which prevents any functions called after this during the main loop from
 // triggering debug keys.
 // <LegoRR.exe @00423120>
-//#define Lego_HandleRenameInput ((void (__cdecl* )(real32 elapsedAbs))0x00423120)
-void __cdecl Lego_HandleRenameInput(real32 elapsedAbs);
+//#define Lego_HandleRenameInput ((void (__cdecl* )(real32 elapsedInterface))0x00423120)
+void __cdecl Lego_HandleRenameInput(real32 elapsedInterface);
 
 // <LegoRR.exe @00423210>
 //#define Lego_MainLoop ((bool32 (__cdecl* )(real32 elapsed))0x00423210)
 bool32 __cdecl Lego_MainLoop(real32 elapsed);
 
 // <LegoRR.exe @00424490>
-#define Level_ConsumeObjectOxygen ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x00424490)
-//void __cdecl Level_ConsumeObjectOxygen(LegoObject* liveObj, real32 elapsed);
+//#define Level_ConsumeObjectOxygen ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x00424490)
+void __cdecl Level_ConsumeObjectOxygen(LegoObject* liveObj, real32 elapsed);
 
 // <LegoRR.exe @00424530>
 //#define Level_UpdateEffects ((void (__cdecl* )(Lego_Level* level, real32 elapsedWorld))0x00424530)
@@ -1178,16 +1178,17 @@ __declspec(noreturn) void __cdecl Lego_Exit(void);
 bool32 __cdecl Lego_HandleKeys(real32 elapsedGame, real32 elapsedInterface, OUT bool32* keyDownT, OUT bool32* keyDownR, OUT bool32* keyDownAddSelection);
 
 // <LegoRR.exe @00425a70>
-#define Lego_UpdateAll3DSounds ((bool32 (__cdecl* )(bool32 stopAll))0x00425a70)
-//bool32 __cdecl Lego_UpdateAll3DSounds(bool32 stopAll);
+//#define Lego_UpdateAll3DSounds ((bool32 (__cdecl* )(bool32 stopAll))0x00425a70)
+bool32 __cdecl Lego_UpdateAll3DSounds(bool32 stopAll);
 
 // <LegoRR.exe @00425a90>
-#define Lego_UpdateObject3DSounds ((bool32 (__cdecl* )(LegoObject* liveObj, bool32* pStopAll))0x00425a90)
-//bool32 __cdecl Lego_UpdateObject3DSounds(LegoObject* liveObj, bool32* pStopAll);
+//#define Lego_Callback_UpdateObject3DSounds ((bool32 (__cdecl* )(LegoObject* liveObj, bool32* pStopAll))0x00425a90)
+bool32 __cdecl Lego_Callback_UpdateObject3DSounds(LegoObject* liveObj, void* pStopAll);
 
+// The first boolean is only true when opening the options menu (via Options button or pressing P).
 // <LegoRR.exe @00425b60>
-#define Lego_SetPaused ((void (__cdecl* )(bool32 checkCamDisableFlag, bool32 paused))0x00425b60)
-//void __cdecl Lego_SetPaused(bool32 checkCamDisableFlag, bool32 paused);
+//#define Lego_SetPaused ((void (__cdecl* )(bool32 toggle, bool32 paused))0x00425b60)
+void __cdecl Lego_SetPaused(bool32 toggle, bool32 paused);
 
 // When set to TRUE, game speed can only be lowered, not raised.
 // <LegoRR.exe @00425c00>
@@ -1197,12 +1198,12 @@ __inline void __cdecl Lego_LockGameSpeed(bool32 locked) { gamectrlGlobs.isGameSp
 // Set new game speed and update front end speed slider.
 //  If GameSpeedLocked global is true, game speed can only be lowered, not raised.
 // <LegoRR.exe @00425c10>
-#define Lego_SetGameSpeed ((void (__cdecl* )(real32 newGameSpeed))0x00425c10)
-//void __cdecl Lego_SetGameSpeed(real32 newGameSpeed);
+//#define Lego_SetGameSpeed ((void (__cdecl* )(real32 newGameSpeed))0x00425c10)
+void __cdecl Lego_SetGameSpeed(real32 newGameSpeed);
 
 // <LegoRR.exe @00425c80>
-#define Lego_TrackObjectInRadar ((void (__cdecl* )(LegoObject* liveObj))0x00425c80)
-//void __cdecl Lego_TrackObjectInRadar(LegoObject* liveObj);
+//#define Lego_TrackObjectInRadar ((void (__cdecl* )(LegoObject* liveObj))0x00425c80)
+void __cdecl Lego_TrackObjectInRadar(LegoObject* liveObj);
 
 // <LegoRR.exe @00425cb0>
 //#define Lego_IsFirstPersonView ((bool32 (__cdecl* )(void))0x00425cb0)

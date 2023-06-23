@@ -2663,10 +2663,18 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x0041f9b0, LegoRR::Lego_QuitLevel);
 
+	// used by: Lego_Initialise
+	result &= hook_write_jmpret(0x00422780, LegoRR::Lego_LoadMiscObjects);
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00422fb0, LegoRR::Lego_GetCurrentCamera_Container);
 
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x00422ff0, LegoRR::Lego_DrawRenameInput);
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00423120, LegoRR::Lego_HandleRenameInput);
 
+	// used by: LegoObject_Callback_Update
+	result &= hook_write_jmpret(0x00424490, LegoRR::Level_ConsumeObjectOxygen);
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00424530, LegoRR::Level_UpdateEffects);
 	// used by: Lego_MainLoop
@@ -2682,6 +2690,18 @@ bool interop_hook_LegoRR_Game(void)
 
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00424ff0, LegoRR::Lego_HandleKeys);
+	// used by: Lego_SetPaused, LegoObject_UpdateAll
+	result &= hook_write_jmpret(0x00425a70, LegoRR::Lego_UpdateAll3DSounds);
+	// used by: Lego_UpdateAll3DSounds
+	result &= hook_write_jmpret(0x00425a90, LegoRR::Lego_Callback_UpdateObject3DSounds);
+	// used by: FrontEnd, HelpWindow, Lego, NERPs, Objective, Panels
+	result &= hook_write_jmpret(0x00425b60, LegoRR::Lego_SetPaused);
+
+	// used by: Info_Send, Lego_Initialise, Lego_MainLoop, Lego_HandleKeys,
+	//          Level_Free, NERPFunc__SetGameSpeed
+	result &= hook_write_jmpret(0x00425c10, LegoRR::Lego_SetGameSpeed);
+	// used by: Interface_DoAction_FUN_0041dbd0, Message_Update
+	result &= hook_write_jmpret(0x00425c80, LegoRR::Lego_TrackObjectInRadar);
 
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x00426180, LegoRR::Lego_DrawRadarMap);

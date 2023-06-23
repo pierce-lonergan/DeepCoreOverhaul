@@ -173,6 +173,16 @@ static std::vector<Point2I> _unpoweredBlockList;
 #pragma endregion
 
 /**********************************************************************************
+ ******** Macros
+ **********************************************************************************/
+
+#pragma region Macros
+
+#define MiscObjects_ID(...) Config_ID(legoGlobs.gameName, "MiscObjects", __VA_ARGS__ )
+
+#pragma endregion
+
+/**********************************************************************************
  ******** Functions
  **********************************************************************************/
 
@@ -800,17 +810,175 @@ void __cdecl LegoRR::Lego_QuitLevel(void)
 // Lego_Initialise
 
 // <LegoRR.exe @00422780>
-//void __cdecl LegoRR::Lego_LoadMiscObjects(const Gods98::Config* config);
+void __cdecl LegoRR::Lego_LoadMiscObjects(const Gods98::Config* config)
+{
+	const char* filename;
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("Boulder"));
+	legoGlobs.contBoulder = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWOSTRING, true);
+	if (legoGlobs.contBoulder == nullptr) {
+		legoGlobs.contBoulder = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_MESHSTRING, true);
+	}
+	Gods98::Container_Hide(legoGlobs.contBoulder, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("BoulderExplodeIce"));
+	legoGlobs.contBoulderExplodeIce = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWSSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contBoulderExplodeIce, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("BoulderExplode"));
+	legoGlobs.contBoulderExplode = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWSSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contBoulderExplode, true);
+
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("SmashPath"));
+	legoGlobs.contSmashPath = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWSSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contSmashPath, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("Explosion"));
+	Effect_Load_Explosion(legoGlobs.rootCont, filename);
+
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("Crystal"));
+	legoGlobs.contCrystal = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWOSTRING, true);
+	if (legoGlobs.contCrystal == nullptr) {
+		legoGlobs.contCrystal = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_MESHSTRING, true);
+	}
+	Gods98::Container_Hide(legoGlobs.contCrystal, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("Dynamite"));
+	legoGlobs.contDynamite = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_ACTIVITYSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contDynamite, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("OohScary"));
+	legoGlobs.contOohScary = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_ACTIVITYSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contOohScary, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("Barrier"));
+	legoGlobs.contBarrier = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_ACTIVITYSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contBarrier, true);
+
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("Ore"));
+	legoGlobs.contOresTable[LegoObject_ID_Ore] = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWOSTRING, true);
+	if (legoGlobs.contOresTable[LegoObject_ID_Ore] == nullptr) {
+		legoGlobs.contOresTable[LegoObject_ID_Ore] = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_MESHSTRING, true);
+	}
+	Gods98::Container_Hide(legoGlobs.contOresTable[LegoObject_ID_Ore], true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("ProcessedOre"));
+	legoGlobs.contOresTable[LegoObject_ID_ProcessedOre] = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWOSTRING, true);
+	if (legoGlobs.contOresTable[LegoObject_ID_ProcessedOre] == nullptr) {
+		legoGlobs.contOresTable[LegoObject_ID_ProcessedOre] = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_MESHSTRING, true);
+	}
+	Gods98::Container_Hide(legoGlobs.contOresTable[LegoObject_ID_ProcessedOre], true);
+
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("ElectricFence"));
+	legoGlobs.contElectricFence = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWOSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contElectricFence, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("ElectricFenceStud"));
+	legoGlobs.contElectricFenceStud = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWSSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contElectricFenceStud, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("ShortElectricFenceBeam"));
+	Effect_Load_ElectricFenceBeam(legoGlobs.rootCont, filename, false); // short
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("LongElectricFenceBeam"));
+	Effect_Load_ElectricFenceBeam(legoGlobs.rootCont, filename, true); // long
+
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("SpiderWeb"));
+	legoGlobs.contSpiderWeb = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_ACTIVITYSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contSpiderWeb, true);
+
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("RechargeSparkle"));
+	legoGlobs.contRechargeSparkle = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWSSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contRechargeSparkle, true);
+
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("MiniTeleportUp"));
+	legoGlobs.contMiniTeleportUp = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWSSTRING, false);
+	Gods98::Container_Hide(legoGlobs.contMiniTeleportUp, true);
+
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("IceCube"));
+	legoGlobs.contIceCube = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_ACTIVITYSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contIceCube, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("Pusher"));
+	legoGlobs.contPusher = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWSSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contPusher, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("Freezer"));
+	legoGlobs.contFreezer = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWSSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contFreezer, true);
+
+	filename = Gods98::Config_GetTempStringValue(config, MiscObjects_ID("LaserShot"));
+	legoGlobs.contLaserShot = Gods98::Container_Load(legoGlobs.rootCont, filename, CONTAINER_LWSSTRING, true);
+	Gods98::Container_Hide(legoGlobs.contLaserShot, true);
+
+
+	Effect_Initialise(config, legoGlobs.gameName, legoGlobs.rootCont);
+}
 
 // <LegoRR.exe @00422fb0>
-//Gods98::Container* __cdecl LegoRR::Lego_GetCurrentCamera_Container(void);
+Gods98::Container* __cdecl LegoRR::Lego_GetCurrentCamera_Container(void)
+{
+	switch (legoGlobs.viewMode) {
+	case ViewMode_Top:
+		return legoGlobs.cameraMain->contCam;
+	case ViewMode_FP:
+		return legoGlobs.cameraFP->contCam;
+	default:
+		return nullptr;
+	}
+}
 
 
 // <LegoRR.exe @00422ff0>
-//void __cdecl LegoRR::Lego_DrawRenameInput(real32 elapsedAbs);
+void __cdecl LegoRR::Lego_DrawRenameInput(real32 elapsedInterface)
+{
+	updateGlobs.renameInputTimer -= elapsedInterface;
+	if (updateGlobs.renameInputTimer <= 0.0f) {
+		updateGlobs.renameInputTimer += (STANDARD_FRAMERATE / 2.0f); // Half a second.
+		gamectrlGlobs.renameUseQuotes = !gamectrlGlobs.renameUseQuotes;
+	}
+
+	if (legoGlobs.renameInput != nullptr) {
+		const char* text = legoGlobs.renameInput;
+		if (legoGlobs.renameInput[0] == '\0' && Message_GetPrimarySelectedUnit() != nullptr) {
+			text = LegoObject_GetLangName(Message_GetPrimarySelectedUnit());
+		}
+
+		sint32 xPos = (sint32)legoGlobs.renamePosition.x;
+		sint32 yPos = (sint32)legoGlobs.renamePosition.y;
+
+		// strWidth includes quotes, so that we don't need to count those in the comparison.
+		const uint32 strWidth = Gods98::Font_GetStringWidth(legoGlobs.fontToolTip, "\"%s\"", text);
+		if ((xPos + (sint32)strWidth) > (Gods98::appWidth() - 40)) {
+			xPos -= strWidth;
+		}
+
+		const uint32 quoteWidth = Gods98::Font_GetCharWidth(legoGlobs.fontToolTip, '\"');
+		if (!gamectrlGlobs.renameUseQuotes) {
+			// x position includes quotes -x offset.
+			//xPos + (~-(uint32)(gamectrlGlobs.renameUseQuotes != 0) & quoteWidth)
+			xPos += quoteWidth;
+		}
+
+		const uint32 fontHeight = Gods98::Font_GetHeight(legoGlobs.fontToolTip);
+
+		const char* quote = (gamectrlGlobs.renameUseQuotes ? "\"" : "");
+		Gods98::Font_PrintF(legoGlobs.fontToolTip,
+							xPos,// + (~-(uint32)(gamectrlGlobs.renameUseQuotes != 0) & quoteWidth),
+							yPos - (fontHeight / 2), "%s%s%s", quote, text, quote);
+	}
+}
 
 // <LegoRR.exe @00423120>
-void __cdecl LegoRR::Lego_HandleRenameInput(real32 elapsedAbs)
+void __cdecl LegoRR::Lego_HandleRenameInput(real32 elapsedInterface)
 {
 	if (legoGlobs.renameInput != nullptr) {
 		uint32 inputLength = std::strlen(legoGlobs.renameInput);
@@ -865,7 +1033,33 @@ void __cdecl LegoRR::Lego_HandleRenameInput(real32 elapsedAbs)
 
 
 // <LegoRR.exe @00424490>
-//void __cdecl LegoRR::Level_ConsumeObjectOxygen(LegoObject* liveObj, real32 elapsed);
+void __cdecl LegoRR::Level_ConsumeObjectOxygen(LegoObject* liveObj, real32 elapsed)
+{
+	// Buildings don't produce (or consume) oxygen unless powered.
+	if (liveObj->type != LegoObject_Building || (liveObj->flags3 & LIVEOBJ3_HASPOWER)) {
+		Lego_Level* level = Lego_GetLevel();
+		const real32 oxygenCoef = StatsObject_GetOxygenCoef(liveObj);
+
+		// Oxygen rate/coef is stored in units per 1000 seconds.
+		// If Mini-Figure O2 coef is -1.0 ...
+		// If the O2Rate is 10 and you have 10 Mini-Figures, your O2 will last 0:16:40.
+		// If the O2Rate is 40 and you have 1 Mini-Figure, your O2 will last 0:41:40.
+		level->oxygenLevel += (elapsed / STANDARD_FRAMERATE) * level->OxygenRate * oxygenCoef;
+
+		if (level->oxygenLevel > 100.0f) {
+			level->oxygenLevel = 100.0f;
+		}
+		else if (level->oxygenLevel <= 0.0f) {
+			level->oxygenLevel = 0.0f;
+
+			/// FIXME: If a large amount of units consuming O2 are ordered before O2 producing
+			///         buildings, then you could fail the level just from O2 being low.
+			if (!(legoGlobs.flags1 & GAME1_LEVELENDING)) {
+				Objective_SetStatus(LEVELSTATUS_FAILED);
+			}
+		}
+	}
+}
 
 // <LegoRR.exe @00424530>
 void __cdecl LegoRR::Level_UpdateEffects(Lego_Level* level, real32 elapsedWorld)
@@ -1215,19 +1409,99 @@ void LegoRR::Lego_EndDrawSelectionBoxes()
 
 
 // <LegoRR.exe @00425a70>
-//bool32 __cdecl LegoRR::Lego_UpdateAll3DSounds(bool32 stopAll);
+bool32 __cdecl LegoRR::Lego_UpdateAll3DSounds(bool32 stopAll)
+{
+	// This function can probably have its return removed.
+	for (auto obj : objectListSet.EnumerateSkipUpgradeParts()) {
+		Lego_Callback_UpdateObject3DSounds(obj, &stopAll);
+	}
+	return false;
+	//return LegoObject_RunThroughListsSkipUpgradeParts(Lego_Callback_UpdateObject3DSounds, &stopAll);
+}
 
 // <LegoRR.exe @00425a90>
-//bool32 __cdecl LegoRR::Lego_UpdateObject3DSounds(LegoObject* liveObj, bool32* pStopAll);
+bool32 __cdecl LegoRR::Lego_Callback_UpdateObject3DSounds(LegoObject* liveObj, void* pStopAll)
+{
+	const bool32 stopAll = *(bool32*)pStopAll;
+
+	Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
+	if (cont != nullptr) {
+		if (!(liveObj->flags4 & LIVEOBJ4_UNK_20000)) {
+			// Update drill sound.
+			if (stopAll) {
+				/// TODO: We should really make sure the sound handle is cleared when stopped.
+				///       Otherwise we could be interrupting other random sounds.
+				SFX_Sound3D_StopSound(liveObj->drillSoundHandle);
+			}
+			if (liveObj->flags1 & LIVEOBJ1_DRILLING) {
+				const SFX_ID drillSFXID = StatsObject_GetDrillSoundType(liveObj, false);
+				liveObj->drillSoundHandle = SFX_Random_PlaySound3DOnContainer(cont, drillSFXID, true, true, nullptr);
+				liveObj->flags4 |= LIVEOBJ4_DRILLSOUNDPLAYING;
+			}
+		}
+
+		// Update engine sound.
+		if (stopAll) {
+			/// TODO: We should really make sure the sound handle is cleared when stopped.
+			///       Otherwise we could be interrupting other random sounds.
+			SFX_Sound3D_StopSound(liveObj->engineSoundHandle);
+		}
+		const SFX_ID engineSFXID = StatsObject_GetEngineSound(liveObj);
+		if (engineSFXID != SFX_NULL) {
+			liveObj->engineSoundHandle = SFX_Random_PlaySound3DOnContainer(cont, engineSFXID, true, true, nullptr);
+			liveObj->flags4 |= LIVEOBJ4_ENGINESOUNDPLAYING;
+		}
+	}
+	return false;
+}
 
 // <LegoRR.exe @00425b60>
-//void __cdecl LegoRR::Lego_SetPaused(bool32 checkCamDisableFlag, bool32 paused);
+void __cdecl LegoRR::Lego_SetPaused(bool32 toggle, bool32 paused)
+{
+	if (!(legoGlobs.flags2 & GAME2_LEVELEXITING)) {
+		if (toggle) {
+			paused = !(legoGlobs.flags1 & GAME1_FREEZEINTERFACE);
+		}
+
+		if (paused) {
+			if (!(legoGlobs.flags1 & GAME1_FREEZEINTERFACE)) {
+				Gods98::Sound3D_StopAllSounds();
+			}
+			legoGlobs.flags1 |= GAME1_FREEZEINTERFACE;
+			legoGlobs.flags2 |= GAME2_INMENU;
+		}
+		else {
+			Lego_UpdateAll3DSounds(false);
+			SFX_Random_PlaySoundNormal(SFX_AmbientLoop, true);
+			legoGlobs.flags1 &= ~GAME1_FREEZEINTERFACE;
+			legoGlobs.flags2 &= ~GAME2_INMENU;
+		}
+	}
+}
+
 
 // <LegoRR.exe @00425c10>
-//void __cdecl LegoRR::Lego_SetGameSpeed(real32 newGameSpeed);
+void __cdecl LegoRR::Lego_SetGameSpeed(real32 newGameSpeed)
+{
+	// When game speed is locked, the speed can only be lowered.
+	if (legoGlobs.gameSpeed <= newGameSpeed || !gamectrlGlobs.isGameSpeedLocked) {
+		Front_UpdateSliderGameSpeed();
+
+		// Debug mode allows game speeds up to 300%.
+		legoGlobs.gameSpeed = std::clamp(newGameSpeed, 0.0f, 3.0f);
+	}
+}
 
 // <LegoRR.exe @00425c80>
-//void __cdecl LegoRR::Lego_TrackObjectInRadar(LegoObject* liveObj);
+void __cdecl LegoRR::Lego_TrackObjectInRadar(LegoObject* liveObj)
+{
+	const real32 zoomSpeed = 2.0f;
+	const real32 rotationSpeed = 0.01f;
+	const real32 tilt = 0.7f;
+	const real32 dist = StatsObject_GetTrackDist(liveObj);
+	Camera_TrackObject(legoGlobs.cameraTrack, liveObj, zoomSpeed, dist, tilt, rotationSpeed);
+}
+
 
 // <LegoRR.exe @00425cc0>
 //void __cdecl LegoRR::Lego_HandleRadarInput(void);
