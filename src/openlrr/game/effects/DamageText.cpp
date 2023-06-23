@@ -195,10 +195,10 @@ void __cdecl LegoRR::DamageText_SetNumber(DamageTextData* damageText, uint32 dis
 
 	// Set the next character mesh group to the minus symbol.
 	Gods98::Mesh_SetGroupTexture(damageText->mesh, digitCount, damageTextGlobs.fontTextMinus);
-	/// FIXME: Unhide the minus symbol, which may be hidden or unhidden
-	///         depending on the last usage of this damageText.
-	// Don't show minus symbol if zero.
-	//Gods98::Mesh_HideGroup(damageText->mesh, digitCount, (displayNumber == 0));
+	/// FIX APPLY: Unhide the minus sign, which may be hidden or unhidden
+	///             depending on the last usage of this damageText.
+	// Don't show minus sign if zero.
+	Gods98::Mesh_HideGroup(damageText->mesh, digitCount, (displayNumber == 0));
 
 	// Hide all remaining unused character mesh groups.
 	for (uint32 i = digitCount + 1; i < DAMAGETEXT_MAXCHARS; i++) {
