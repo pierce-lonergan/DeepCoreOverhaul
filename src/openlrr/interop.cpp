@@ -1765,7 +1765,7 @@ bool interop_hook_LegoRR_Building(void)
 	result &= hook_write_jmpret(0x00407c90, LegoRR::Building_Load);
 	// used by: LegoObject_ProccessCarriedObjects
 	result &= hook_write_jmpret(0x00408210, LegoRR::Building_ChangePowerLevel);
-	// used by: Construction_CleanupBuildingFoundation, ElectricFence_Callback_FUN_0040d510,
+	// used by: Construction_CleanupBuildingFoundation, ElectricFence_Callback_ChainBeamsFromBuilding,
 	//          Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_Callback_PickSphereSelection,
 	//          LegoObject_Callback_HideCertainObjects, LegoObject_UpdateBuildingPlacement
 	result &= hook_write_jmpret(0x00408290, LegoRR::Building_GetShapePoints);
@@ -2003,7 +2003,7 @@ bool interop_hook_LegoRR_DamageText(void)
 	result &= hook_write_jmpret(0x0040a300, LegoRR::DamageText_RemoveAll);
 	// used by: Lego_Initialise
 	result &= hook_write_jmpret(0x0040a330, LegoRR::DamageText_LoadTextures);
-	// used by: LegoObject_UpdateEnergyHealthAndLavaContact
+	// used by: LegoObject_UpdateEnergyHealthAndContact
 	result &= hook_write_jmpret(0x0040a3e0, LegoRR::DamageText_ShowNumber);
 	// used by: DamageText_ShowNumber
 	result &= hook_write_jmpret(0x0040a4f0, LegoRR::DamageText_GetNextFree);
@@ -2046,7 +2046,7 @@ bool interop_hook_LegoRR_Effect(void)
 	result &= hook_write_jmpret(0x0040c0e0, LegoRR::Effect_Load_ElectricFenceBeam);
 	// used by: Fallin_GenerateLandSlide, Lego_PTL_RockFall
 	result &= hook_write_jmpret(0x0040c160, LegoRR::Effect_Spawn_RockFall);
-	// used by: ElectricFence_Block_UnkAreaDistanceBetweenBlocks, ElectricFence_SparkObjectAndCreateBeam
+	// used by: ElectricFence_TrySpawnBeamBetweenBlocks, ElectricFence_SparkObject
 	result &= hook_write_jmpret(0x0040c220, LegoRR::Effect_Spawn_ElectricFenceBeam);
 	// used by: Effect_StopAll, Level_UpdateEffects
 	result &= hook_write_jmpret(0x0040c2d0, LegoRR::Effect_UpdateAll);
@@ -2633,24 +2633,58 @@ bool interop_hook_LegoRR_ElectricFence(void)
 
 	// used by: Lego_LoadLevel, Lego_LoadMapSet
 	result &= hook_write_jmpret(0x0040cdb0, LegoRR::ElectricFence_Restart);
-
+	// used by: Construction_Zone_CompleteBuilding, Construction_CleanupBuildingFoundation,
+	//          ElectricFence_Create, ElectricFence_Remove
+	result &= hook_write_jmpret(0x0040cdd0, LegoRR::ElectricFence_UpdateConnectionEStuds);
 	// used by: Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_SimpleObject_MoveAnimation
 	result &= hook_write_jmpret(0x0040ce80, LegoRR::ElectricFence_CreateFence);
-
 	// used by: ElectricFence_CreateFence, ElectricFence_Debug_PlaceFence
 	result &= hook_write_jmpret(0x0040ceb0, LegoRR::ElectricFence_Create);
-
 	// internal, no need to hook these
 	//result &= hook_write_jmpret(0x0040cf60, LegoRR::ElectricFence_AddList);
-
 	// used by: ElectricFence_Debug_RemoveFence, LegoObject_UpdateRemoval, Message_Debug_DestroySelectedUnits
 	result &= hook_write_jmpret(0x0040cfd0, LegoRR::ElectricFence_RemoveFence);
-
 	// used by: ElectricFence_RemoveFence
 	//result &= hook_write_jmpret(0x0040d030, LegoRR::ElectricFence_Remove);
-
-	// used by: ElectricFence_UpdateAll, ElectricFence_FUN_0040d420
+	// used by: Lego_HandleWorldDebugKeys
+	result &= hook_write_jmpret(0x0040d0a0, LegoRR::ElectricFence_Debug_PlaceFence);
+	// used by: Lego_HandleWorldDebugKeys
+	result &= hook_write_jmpret(0x0040d120, LegoRR::ElectricFence_Debug_RemoveFence);
+	// used by: ElectricFence_Debug_PlaceFence, Interface_HandleMenuItem,
+	//          LegoObject_TryElecFence_FUN_00448d20
+	result &= hook_write_jmpret(0x0040d170, LegoRR::ElectricFence_CanPlaceFenceAtBlock);
+	// used by: ElectricFence_CanPlaceFenceAtBlock, ElectricFence_ChainBeamsFromBuildingOrBlock,
+	//          ElectricFence_Callback_ChainBeamsFromBuilding, ElectricFence_ChainBeams_Recurse,
+	//          ElectricFence_TrySparkObject, ElectricFence_IsBlockBetweenConnection
+	result &= hook_write_jmpret(0x0040d320, LegoRR::ElectricFence_BlockHasBuilding);
+	// used by: Lego_MainLoop
+	result &= hook_write_jmpret(0x0040d380, LegoRR::ElectricFence_UpdateAll);
+	// used by: ElectricFence_UpdateAll, ElectricFence_ChainBeamsFromBuildingOrBlock
 	result &= hook_write_jmpret(0x0040d3c0, LegoRR::ElectricFence_RunThroughLists);
+	// used by: ElectricFence_TrySparkObject, Lego_HandleWorldDebugKeys
+	result &= hook_write_jmpret(0x0040d420, LegoRR::ElectricFence_ChainBeamsFromBuildingOrBlock);
+	// used by: ElectricFence_UpdateAll
+	result &= hook_write_jmpret(0x0040d510, LegoRR::ElectricFence_Callback_ChainBeamsFromBuilding);
+	// used by: ElectricFence_UpdateAll, ElectricFence_ChainBeamsFromBuildingOrBlock
+	result &= hook_write_jmpret(0x0040d650, LegoRR::ElectricFence_Callback_ResetBuildingVisited);
+	// used by: ElectricFence_UpdateAll, ElectricFence_ChainBeamsFromBuildingOrBlock
+	result &= hook_write_jmpret(0x0040d6a0, LegoRR::ElectricFence_Callback_ResetVisitedAndUpdateTimer);
+	// used by: ElectricFence_ChainBeamsFromBuildingOrBlock, ElectricFence_Callback_ChainBeamsFromBuilding
+	result &= hook_write_jmpret(0x0040d780, LegoRR::ElectricFence_ChainBeams_Recurse);
+	// used by: ElectricFence_ChainBeams_Recurse
+	result &= hook_write_jmpret(0x0040db50, LegoRR::ElectricFence_TrySpawnBeamBetweenBlocks);
+	// used by: ElectricFence_TrySpawnBeamBetweenBlocks
+	result &= hook_write_jmpret(0x0040dcc0, LegoRR::ElectricFence_GetDirectionBetweenBlocks);
+	// used by: LegoObject_UpdateEnergyHealthAndContact
+	result &= hook_write_jmpret(0x0040dd70, LegoRR::ElectricFence_TrySparkObject);
+	// used by: ElectricFence_TrySparkObject
+	result &= hook_write_jmpret(0x0040dff0, LegoRR::ElectricFence_SparkObject);
+	// used by: Level_BlockUpdateSurface
+	result &= hook_write_jmpret(0x0040e110, LegoRR::ElectricFence_IsBlockBetweenConnection);
+	// used by: Level_BlockUpdateSurface
+	result &= hook_write_jmpret(0x0040e280, LegoRR::ElectricFence_AddOrRemoveEStud);
+	// used by: Lego_HandleWorldDebugKeys, Level_CanBuildOnBlock
+	result &= hook_write_jmpret(0x0040e390, LegoRR::ElectricFence_BlockHasFence);
 
 	return_interop(result);
 }
@@ -2674,7 +2708,7 @@ bool interop_hook_LegoRR_Game(void)
 	// used by: Interface_DoSomethingWithRenameReplace, LegoObject_GetBuildingUpgradeCost,
 	//          LegoObject_HasEnoughOreToUpgrade, LegoObject_CanSpawnCarryableObject, LegoObject_Callback_Update
 	result &= hook_write_jmpret(0x0041f830, LegoRR::Level_GetOreCount);
-	// used by: LegoObject_FinishEnteringWallHole, LegoObject_UpdateEnergyHealthAndLavaContact
+	// used by: LegoObject_FinishEnteringWallHole, LegoObject_UpdateEnergyHealthAndContact
 	result &= hook_write_jmpret(0x0041f850, LegoRR::Level_AddStolenCrystals);
 	// used by: Camera_Update
 	result &= hook_write_jmpret(0x0041f870, LegoRR::Lego_SetRadarNoTrackObject);
@@ -2798,7 +2832,7 @@ bool interop_hook_LegoRR_Game(void)
 
 	// used by: Construction_PowerGrid_PowerAdjacentBlocks
 	result &= hook_write_jmpret(0x00432030, LegoRR::Level_PowerGrid_AddPoweredBlock);
-	// used by: Construction_PowerGrid_PowerAdjacentBlocks, ElectricFence_CheckBuildingAtBlock,
+	// used by: Construction_PowerGrid_PowerAdjacentBlocks, ElectricFence_BlockHasBuilding,
 	//          RadarMap_GetBlockColour
 	result &= hook_write_jmpret(0x004320a0, LegoRR::Level_Block_IsPowered);
 	// used by: LegoObject_UpdateAll
@@ -3593,13 +3627,13 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: AITask_LiveObject_SetAITaskUnk, Lego_LoadOLObjectList, HiddenObject_ExposeBlock
 	result &= hook_write_jmpret(0x0043f870, LegoRR::LegoObject_TrainMiniFigure_instantunk);
 	// used by: Lego_HandleWorldDebugKeys, LegoObject_Callback_Update,
-	//          LegoObject_UpdateEnergyHealthAndLavaContact, LegoObject_Callback_DynamiteExplosion,
+	//          LegoObject_UpdateEnergyHealthAndContact, LegoObject_Callback_DynamiteExplosion,
 	//          LegoObject_Callback_SlipAndScare, LegoObject_BumpDamageRouteObject, LegoObject_FUN_00447880,
 	//          Weapon_GenericDamageObject, Weapon_GunDamageObject
 	result &= hook_write_jmpret(0x0043f960, LegoRR::LegoObject_AddDamage2);
 	// used by: LegoObject_Callback_Update
-	result &= hook_write_jmpret(0x0043fa90, LegoRR::LegoObject_UpdateEnergyHealthAndLavaContact);
-	// used by: LegoObject_UpdateEnergyHealthAndLavaContact
+	result &= hook_write_jmpret(0x0043fa90, LegoRR::LegoObject_UpdateEnergyHealthAndContact);
+	// used by: LegoObject_UpdateEnergyHealthAndContact
 	result &= hook_write_jmpret(0x0043fe00, LegoRR::LegoObject_MiniFigurePlayHurtSound);
 
 	// used by: Lego_HandleKeys, LegoObject
@@ -3616,13 +3650,13 @@ bool interop_hook_LegoRR_Object(void)
 	// used by: AITask, Lego, LegoObject, Message, NERPs
 	result &= hook_write_jmpret(0x00441c00, LegoRR::LegoObject_Route_End);
 
-	// used by: ElectricFence_SparkObjectAndCreateBeam, LegoObject_UpdateRemoval
+	// used by: ElectricFence_SparkObject, LegoObject_UpdateRemoval
 	result &= hook_write_jmpret(0x004424d0, LegoRR::LegoObject_StartCrumbling);
 	// used by: AITask, Construction, Effect, ElectricFence, Lego, LegoObject, Message,
 	//          NERPs, RadarMap, Teleporter, Weapon
 	result &= hook_write_jmpret(0x00442520, LegoRR::LegoObject_GetPosition);
 	// used by: AITask_FUN_00405b40, Construction_CleanupBuildingFoundation,
-	//          ElectricFence_Callback_FUN_0040d510, LegoObject_GetHeading,
+	//          ElectricFence_Callback_ChainBeamsFromBuilding, LegoObject_GetHeading,
 	//          LegoObject_Callback_HideCertainObjects, SpiderWeb_CheckCollision
 	result &= hook_write_jmpret(0x00442560, LegoRR::LegoObject_GetFaceDirection);
 	// used by: LegoObject_UpdateTeleporter, LegoObject_FireBeamWeaponAtObject
@@ -3846,7 +3880,7 @@ bool interop_hook_LegoRR_SelectPlace(void)
 	
 	// used by: Lego_Initialise
 	result &= hook_write_jmpret(0x004641c0, LegoRR::SelectPlace_Create);
-	// used by: Construction_CleanupBuildingFoundation, ElectricFence_Callback_FUN_0040d510,
+	// used by: Construction_CleanupBuildingFoundation, ElectricFence_Callback_ChainBeamsFromBuilding,
 	//          Lego_LoadOLObjectList, HiddenObject_ExposeBlock, LegoObject_Callback_PickSphereSelection,
 	//          LegoObject_Callback_HideCertainObjects, SelectPlace_CheckAndUpdate
 	result &= hook_write_jmpret(0x004643d0, LegoRR::SelectPlace_TransformShapePoints);

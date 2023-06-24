@@ -2504,12 +2504,12 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 	if (Message_AnyUnitSelected() && Message_GetPrimarySelectedUnit()->type == LegoObject_Building &&
 		Shortcut_IsPressed(ShortcutID::Debug_Unknown_ElectricFence))
 	{
-		ElectricFence_FUN_0040d420(Message_GetPrimarySelectedUnit(), 0, 0);
+		ElectricFence_ChainBeamsFromBuildingOrBlock(Message_GetPrimarySelectedUnit(), 0, 0);
 	}
 
 	/// EDIT KEYBIND: [J]  "Place an electric fence at mousepoint."
 	if (Lego_IsAllowEditMode() && Shortcut_IsPressed(ShortcutID::Edit_PlaceElectricFence)) {
-		if (!ElectricFence_Block_IsFence(mbx, mby)) {
+		if (!ElectricFence_BlockHasFence(mbx, mby)) {
 			ElectricFence_Debug_PlaceFence(mbx, mby);
 		}
 		else {
@@ -3779,7 +3779,7 @@ bool32 __cdecl LegoRR::Level_CanBuildOnBlock(sint32 bx, sint32 by, bool32 isPath
 	if (Construction_Zone_ExistsAtBlock(&blockPos))
 		return false; // Can't build over construction zones (including layed paths).
 
-	if (ElectricFence_Block_IsFence(bx, by))
+	if (ElectricFence_BlockHasFence(bx, by))
 		return false; // Can't build over Electric Fences.
 
 

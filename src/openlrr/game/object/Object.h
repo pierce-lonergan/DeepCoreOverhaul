@@ -1132,8 +1132,8 @@ void __cdecl LegoObject_TrainMiniFigure_instantunk(LegoObject* liveObj, LegoObje
 void __cdecl LegoObject_AddDamage2(LegoObject* liveObj, real32 damage, bool32 showVisual, real32 elapsed);
 
 // <LegoRR.exe @0043fa90>
-//#define LegoObject_UpdateEnergyHealthAndLavaContact ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x0043fa90)
-void __cdecl LegoObject_UpdateEnergyHealthAndLavaContact(LegoObject* liveObj, real32 elapsed);
+//#define LegoObject_UpdateEnergyHealthAndContact ((void (__cdecl* )(LegoObject* liveObj, real32 elapsed))0x0043fa90)
+void __cdecl LegoObject_UpdateEnergyHealthAndContact(LegoObject* liveObj, real32 elapsed);
 
 // <LegoRR.exe @0043fe00>
 //#define LegoObject_MiniFigurePlayHurtSound ((bool32 (__cdecl* )(LegoObject* liveObj, real32 elapsed, real32 damage))0x0043fe00)

@@ -3531,7 +3531,7 @@ objectupdate_end:
 
 	LegoObject_UpdateSlipAndScare(liveObj, elapsed);
 	LegoObject_Flocks_FUN_0044bef0(liveObj, elapsed);
-	LegoObject_UpdateEnergyHealthAndLavaContact(liveObj, elapsed);
+	LegoObject_UpdateEnergyHealthAndContact(liveObj, elapsed);
 
 	if (liveObj->flags2 & LIVEOBJ2_TRIGGERFRAMECALLBACK) {
 		liveObj->flags2 &= ~LIVEOBJ2_TRIGGERFRAMECALLBACK;
@@ -3864,7 +3864,7 @@ void __cdecl LegoRR::LegoObject_AddDamage2(LegoObject* liveObj, real32 damage, b
 }
 
 // <LegoRR.exe @0043fa90>
-void __cdecl LegoRR::LegoObject_UpdateEnergyHealthAndLavaContact(LegoObject* liveObj, real32 elapsed)
+void __cdecl LegoRR::LegoObject_UpdateEnergyHealthAndContact(LegoObject* liveObj, real32 elapsed)
 {
 	const Point2I DIRECTIONS[DIRECTION__COUNT] = {
 		{  0, -1 },

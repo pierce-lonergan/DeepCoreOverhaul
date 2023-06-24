@@ -930,7 +930,7 @@ LegoRR::LegoObject* __cdecl LegoRR::Construction_Zone_CompleteBuilding(Construct
 				}
 				Construction_DeselectAdjacentWalls(&shapeBlock);
 			}
-			ElectricFence_UpdateBlockConnections(shapeBlock.x, shapeBlock.y);
+			ElectricFence_UpdateConnectionEStuds(shapeBlock.x, shapeBlock.y);
 		}
 	}
 
@@ -1030,7 +1030,7 @@ void __cdecl LegoRR::Construction_CleanupBuildingFoundation(LegoObject* liveObj)
 			AITask_DoClearTypeAction(&shapeBlock, Message_ClearBuildingComplete);
 		}
 
-		ElectricFence_UpdateBlockConnections(shapeBlock.x, shapeBlock.y);
+		ElectricFence_UpdateConnectionEStuds(shapeBlock.x, shapeBlock.y);
 
 		//if (skipPoint) {
 		//	i++;
