@@ -194,8 +194,8 @@ bool32 __cdecl ElectricFence_Debug_RemoveFence(sint32 bx, sint32 by);
 bool32 __cdecl ElectricFence_CanPlaceFenceAtBlock(sint32 bx, sint32 by);
 
 // <LegoRR.exe @0040d320>
-//#define ElectricFence_BlockHasBuilding ((bool32 (__cdecl* )(Lego_Level* level, sint32 bx, sint32 by, bool32 checkPowered))0x0040d320)
-bool32 __cdecl ElectricFence_BlockHasBuilding(Lego_Level* level, sint32 bx, sint32 by, bool32 checkPowered);
+//#define ElectricFence_HasBuilding ((bool32 (__cdecl* )(Lego_Level* level, sint32 bx, sint32 by, bool32 checkPowered))0x0040d320)
+bool32 __cdecl ElectricFence_HasBuilding(Lego_Level* level, sint32 bx, sint32 by, bool32 checkPowered);
 
 // <LegoRR.exe @0040d380>
 //#define ElectricFence_UpdateAll ((void (__cdecl* )(real32 elapsedWorld))0x0040d380)
@@ -225,6 +225,7 @@ bool32 __cdecl ElectricFence_Callback_ResetBuildingVisited(LegoObject* liveObj, 
 //#define ElectricFence_Callback_ResetVisitedAndUpdateTimer ((void (__cdecl* )(ElectricFence_Block* efence, OPTIONAL void* pElapsedWorld))0x0040d6a0)
 void __cdecl ElectricFence_Callback_ResetVisitedAndUpdateTimer(ElectricFence_Block* efence, OPTIONAL void* pElapsedWorld);
 
+// Now 100% RECURSION FREE!
 // <LegoRR.exe @0040d780>
 //#define ElectricFence_ChainBeams_Recurse ((void (__cdecl* )(uint32 bx, uint32 by, bool32 forceSpawnBeam, real32 elapsedWorld))0x0040d780)
 void __cdecl ElectricFence_ChainBeams_Recurse(uint32 bx, uint32 by, bool32 forceSpawnBeam, real32 elapsedWorld);
@@ -255,8 +256,8 @@ bool32 __cdecl ElectricFence_IsBlockBetweenConnection(Lego_Level* level, uint32 
 void __cdecl ElectricFence_AddOrRemoveEStud(Lego_Level* level, uint32 bx, uint32 by, bool32 addNew);
 
 // <LegoRR.exe @0040e390>
-//#define ElectricFence_BlockHasFence ((bool32 (__cdecl* )(sint32 bx, sint32 by))0x0040e390)
-bool32 __cdecl ElectricFence_BlockHasFence(sint32 bx, sint32 by);
+//#define ElectricFence_HasFence ((bool32 (__cdecl* )(sint32 bx, sint32 by))0x0040e390)
+bool32 __cdecl ElectricFence_HasFence(sint32 bx, sint32 by);
 
 #pragma endregion
 

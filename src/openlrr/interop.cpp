@@ -2656,7 +2656,7 @@ bool interop_hook_LegoRR_ElectricFence(void)
 	// used by: ElectricFence_CanPlaceFenceAtBlock, ElectricFence_ChainBeamsFromBuildingOrBlock,
 	//          ElectricFence_Callback_ChainBeamsFromBuilding, ElectricFence_ChainBeams_Recurse,
 	//          ElectricFence_TrySparkObject, ElectricFence_IsBlockBetweenConnection
-	result &= hook_write_jmpret(0x0040d320, LegoRR::ElectricFence_BlockHasBuilding);
+	result &= hook_write_jmpret(0x0040d320, LegoRR::ElectricFence_HasBuilding);
 	// used by: Lego_MainLoop
 	result &= hook_write_jmpret(0x0040d380, LegoRR::ElectricFence_UpdateAll);
 	// used by: ElectricFence_UpdateAll, ElectricFence_ChainBeamsFromBuildingOrBlock
@@ -2684,7 +2684,7 @@ bool interop_hook_LegoRR_ElectricFence(void)
 	// used by: Level_BlockUpdateSurface
 	result &= hook_write_jmpret(0x0040e280, LegoRR::ElectricFence_AddOrRemoveEStud);
 	// used by: Lego_HandleWorldDebugKeys, Level_CanBuildOnBlock
-	result &= hook_write_jmpret(0x0040e390, LegoRR::ElectricFence_BlockHasFence);
+	result &= hook_write_jmpret(0x0040e390, LegoRR::ElectricFence_HasFence);
 
 	return_interop(result);
 }
@@ -2832,7 +2832,7 @@ bool interop_hook_LegoRR_Game(void)
 
 	// used by: Construction_PowerGrid_PowerAdjacentBlocks
 	result &= hook_write_jmpret(0x00432030, LegoRR::Level_PowerGrid_AddPoweredBlock);
-	// used by: Construction_PowerGrid_PowerAdjacentBlocks, ElectricFence_BlockHasBuilding,
+	// used by: Construction_PowerGrid_PowerAdjacentBlocks, ElectricFence_HasBuilding,
 	//          RadarMap_GetBlockColour
 	result &= hook_write_jmpret(0x004320a0, LegoRR::Level_Block_IsPowered);
 	// used by: LegoObject_UpdateAll

@@ -212,8 +212,8 @@ bool32 __cdecl LegoRR::ElectricFence_CanPlaceFenceAtBlock(sint32 bx, sint32 by)
 		block->terrain == Lego_SurfaceType_Lava ||  // Invalid surface types.
 		//block->terrain == Lego_SurfaceType_Lake ||
 		block->terrain == Lego_SurfaceType_Water ||
-		ElectricFence_BlockHasFence(bx, by) ||      // Fence already exists.
-		ElectricFence_BlockHasBuilding(efenceGlobs.level, bx, by, false)) // Occupied by building.
+		ElectricFence_HasFence(bx, by) ||      // Fence already exists.
+		ElectricFence_HasBuilding(efenceGlobs.level, bx, by, false)) // Occupied by building.
 	{
 		return false;
 	}
@@ -227,10 +227,10 @@ bool32 __cdecl LegoRR::ElectricFence_CanPlaceFenceAtBlock(sint32 bx, sint32 by)
 		};
 
 		if (Map3D_IsInsideDimensions(efenceGlobs.level->map, blockOffPos.x, blockOffPos.y)) {
-			if (ElectricFence_BlockHasFence(blockOffPos.x, blockOffPos.y)) {
+			if (ElectricFence_HasFence(blockOffPos.x, blockOffPos.y)) {
 				return true; // A fence is nearby, we can connect to that.
 			}
-			if (ElectricFence_BlockHasBuilding(efenceGlobs.level, blockOffPos.x, blockOffPos.y, false)) {
+			if (ElectricFence_HasBuilding(efenceGlobs.level, blockOffPos.x, blockOffPos.y, false)) {
 				return true; // A building is nearby, we can connect to that.
 			}
 		}
@@ -239,7 +239,7 @@ bool32 __cdecl LegoRR::ElectricFence_CanPlaceFenceAtBlock(sint32 bx, sint32 by)
 }
 
 // <LegoRR.exe @0040d320>
-bool32 __cdecl LegoRR::ElectricFence_BlockHasBuilding(Lego_Level* level, sint32 bx, sint32 by, bool32 checkPowered)
+bool32 __cdecl LegoRR::ElectricFence_HasBuilding(Lego_Level* level, sint32 bx, sint32 by, bool32 checkPowered)
 {
 	/// FIXME: This function check is very lazy, and doesn't account for secondary building blocks.
 
@@ -282,27 +282,25 @@ void __cdecl LegoRR::ElectricFence_RunThroughLists(ElectricFence_RunThroughLists
 // <LegoRR.exe @0040d420>
 bool32 __cdecl LegoRR::ElectricFence_ChainBeamsFromBuildingOrBlock(OPTIONAL LegoObject* liveObj, uint32 bx, uint32 by)
 {
+	// Reset visited nodes for our upcoming recursive function.
 	for (auto efence : efenceListSet.EnumerateAlive()) {
-		ElectricFence_Callback_ResetVisitedAndUpdateTimer(efence, nullptr);
+		ElectricFence_Callback_ResetVisitedAndUpdateTimer(efence, nullptr); // nullptr to skip updating timers.
 	}
 	//ElectricFence_RunThroughLists(ElectricFence_Callback_ResetVisitedAndUpdateTimer, nullptr);
-
 	for (auto obj : objectListSet.EnumerateSkipUpgradeParts()) {
 		ElectricFence_Callback_ResetBuildingVisited(obj, nullptr);
 	}
 	//LegoObject_RunThroughListsSkipUpgradeParts(ElectricFence_Callback_ResetBuildingVisited, nullptr);
 
 	if (liveObj == nullptr) {
-		if (ElectricFence_BlockHasFence(bx, by) ||
-			ElectricFence_BlockHasBuilding(efenceGlobs.level, bx, by, false))
-		{
+		if (ElectricFence_HasFence(bx, by) || ElectricFence_HasBuilding(efenceGlobs.level, bx, by, false)) {
+
 			ElectricFence_ChainBeams_Recurse(bx, by, true, 0.0f);
 			return true;
 		}
 	}
 	else {
 		/// FIXME: This function doesn't account for secondary building blocks.
-
 		Point2F wPos2D = { 0.0f, 0.0f }; // dummy init
 		LegoObject_GetPosition(liveObj, &wPos2D.x, &wPos2D.y);
 
@@ -330,7 +328,7 @@ bool32 __cdecl LegoRR::ElectricFence_Callback_ChainBeamsFromBuilding(LegoObject*
 		LegoObject_GetBlockPos(liveObj, &blockPos.x, &blockPos.y);
 
 		// The building at this block is powered.
-		if (ElectricFence_BlockHasBuilding(efenceGlobs.level, blockPos.x, blockPos.y, true)) {
+		if (ElectricFence_HasBuilding(efenceGlobs.level, blockPos.x, blockPos.y, true)) {
 
 			// Get rotation for building shape.
 			Point2F faceDir;
@@ -438,7 +436,99 @@ void __cdecl LegoRR::ElectricFence_ChainBeams_Recurse(uint32 bx, uint32 by, bool
 	static_assert(_countof(DIRECTIONS_SHORT) == _countof(DIRECTIONS_LONG), "ElectricFence direction array lengths don't match");
 
 
-	efenceBlockValue(bx, by).flags |= FENCEGRID_FLAG_POWERED; // Mark as visited and powered.
+	/// NEW: Recursion-free implementation.
+	std::queue<Point2I> blocks;
+	blocks.push(Point2I { (sint32)bx, (sint32)by });
+
+	while (!blocks.empty()) {
+		const Point2I b = blocks.front(); // Origin blockPos.
+		blocks.pop();
+
+		efenceBlockValue(b.x, b.y).flags |= FENCEGRID_FLAG_POWERED; // Mark as visited and powered.
+
+		for (uint32 i = 0; i < _countof(DIRECTIONS_SHORT); i++) {
+			/// REFACTOR: Swap shortBeam bool to match Effect_Spawn_ElectricFenceBeam input.
+			bool connectionFound = false;
+			bool longBeam = false; // dummy init
+			Point2I found = { 0, 0 }; // dummy init
+
+			const Point2I S = { // Short connection blockOffPos.
+				b.x + DIRECTIONS_SHORT[i].x,
+				b.y + DIRECTIONS_SHORT[i].y,
+			};
+			const Point2I L = { // Long  connection blockOffPos.
+				b.x + DIRECTIONS_LONG[i].x,
+				b.y + DIRECTIONS_LONG[i].y,
+			};
+
+			if (Map3D_IsInsideDimensions(efenceGlobs.level->map, S.x, S.y)) {
+				if (ElectricFence_HasFence(S.x, S.y) || (ElectricFence_HasBuilding(efenceGlobs.level, S.x, S.y, true) &&
+														 !ElectricFence_HasBuilding(efenceGlobs.level, b.x, b.y, false)))
+				{
+					connectionFound = true;
+					longBeam = false;
+					found = S;
+				}
+			}
+
+			if (!connectionFound && Map3D_IsInsideDimensions(efenceGlobs.level->map, L.x, L.y)) {
+				if (!ElectricFence_HasBuilding(efenceGlobs.level, S.x, S.y, false) ||
+					!ElectricFence_HasBuilding(efenceGlobs.level, b.x, b.y, false))
+				{
+					if (ElectricFence_HasFence(L.x, L.y) || (ElectricFence_HasBuilding(efenceGlobs.level, L.x, L.y, true) &&
+															 !ElectricFence_HasBuilding(efenceGlobs.level, b.x, b.y, false)))
+					{
+						connectionFound = true;
+						longBeam = true;
+						found = L;
+					}
+				}
+			}
+
+			if (connectionFound) {
+				if (longBeam) {
+					// Mark gap between fences/buildings as visited and powered.
+					efenceBlockValue(S.x, S.y).flags |= FENCEGRID_FLAG_POWERED;
+				}
+
+				// Check if the fence has finished recharging.
+				if (efenceBlockValue(found.x, found.y).efence == nullptr ||
+					efenceBlockValue(found.x, found.y).efence->timer <= 0.0f)
+				{
+					// Check if a beam has been spawned from found to b. If so, then don't try to spawn another.
+					if (!(efenceBlockValue(found.x, found.y).flags & DirectionToFlag(i))) {
+						// We tried to spawn a beam from b to found.
+						efenceBlockValue(b.x, b.y).flags |= (ElectricFence_GridFlags)DirectionToFlag(DirectionFlip(i)); // Rotate 180.
+
+						if (forceSpawnBeam) {
+							ElectricFence_TrySpawnBeamBetweenBlocks(b.x, b.y, found.x, found.y);
+						}
+						else if (elapsedWorld > 0.0f) {
+							/// SANITY: Check if elapsedWorld is > 0.0f instead of != 0.0f.
+							const real32 FREQUENCY = (STANDARD_FRAMERATE * 8.0f); // About a 1/8 chance per second.
+							const uint32 rng = (uint32)Gods98::Maths_Rand();
+							const uint32 chance = std::max(1u, (uint32)(FREQUENCY / std::min(FREQUENCY, elapsedWorld)));
+							if ((rng % chance) == 0) {
+								ElectricFence_TrySpawnBeamBetweenBlocks(b.x, b.y, found.x, found.y);
+							}
+						}
+					}
+
+					// Only recurse over non-visited, non-building blocks.
+					// Apparently you can't recurse through fences that are recharging... is this intentional?
+					if (!ElectricFence_HasBuilding(efenceGlobs.level, found.x, found.y, false) &&
+						!(efenceBlockValue(found.x, found.y).flags & FENCEGRID_FLAG_POWERED))
+					{
+						// Add the found block to the queue.
+						blocks.push(found);
+					}
+				}
+			}
+		}
+	}
+
+	/// OLD: Recursion method.
+	/*efenceBlockValue(bx, by).flags |= FENCEGRID_FLAG_POWERED; // Mark as visited and powered.
 
 	for (uint32 i = 0; i < _countof(DIRECTIONS_SHORT); i++) {
 		/// REFACTOR: Swap shortBeam bool to match Effect_Spawn_ElectricFenceBeam input.
@@ -454,8 +544,8 @@ void __cdecl LegoRR::ElectricFence_ChainBeams_Recurse(uint32 bx, uint32 by, bool
 		const uint32 byL = by + DIRECTIONS_LONG[i].y;
 
 		if (Map3D_IsInsideDimensions(efenceGlobs.level->map, bxS, byS)) {
-			if (ElectricFence_BlockHasFence(bxS, byS) || (ElectricFence_BlockHasBuilding(efenceGlobs.level, bxS, byS, true) &&
-														  !ElectricFence_BlockHasBuilding(efenceGlobs.level, bx, by, false)))
+			if (ElectricFence_HasFence(bxS, byS) || (ElectricFence_HasBuilding(efenceGlobs.level, bxS, byS, true) &&
+													 !ElectricFence_HasBuilding(efenceGlobs.level, bx, by, false)))
 			{
 				connectionFound = true;
 				longBeam = false;
@@ -465,11 +555,11 @@ void __cdecl LegoRR::ElectricFence_ChainBeams_Recurse(uint32 bx, uint32 by, bool
 		}
 
 		if (!connectionFound && Map3D_IsInsideDimensions(efenceGlobs.level->map, bxL, byL)) {
-			if (!ElectricFence_BlockHasBuilding(efenceGlobs.level, bxS, byS, false) ||
-				!ElectricFence_BlockHasBuilding(efenceGlobs.level, bx, by, false))
+			if (!ElectricFence_HasBuilding(efenceGlobs.level, bxS, byS, false) ||
+				!ElectricFence_HasBuilding(efenceGlobs.level, bx, by, false))
 			{
-				if (ElectricFence_BlockHasFence(bxL, byL) || (ElectricFence_BlockHasBuilding(efenceGlobs.level, bxL, byL, true) &&
-															  !ElectricFence_BlockHasBuilding(efenceGlobs.level, bx, by, false)))
+				if (ElectricFence_HasFence(bxL, byL) || (ElectricFence_HasBuilding(efenceGlobs.level, bxL, byL, true) &&
+														 !ElectricFence_HasBuilding(efenceGlobs.level, bx, by, false)))
 				{
 					connectionFound = true;
 					longBeam = true;
@@ -510,7 +600,7 @@ void __cdecl LegoRR::ElectricFence_ChainBeams_Recurse(uint32 bx, uint32 by, bool
 
 				// Only recurse over non-visited, non-building blocks.
 				// Apparently you can't recurse through fences that are recharging...  this intentional?
-				if (!ElectricFence_BlockHasBuilding(efenceGlobs.level, bxFound, byFound, false) &&
+				if (!ElectricFence_HasBuilding(efenceGlobs.level, bxFound, byFound, false) &&
 					!(efenceBlockValue(bxFound, byFound).flags & FENCEGRID_FLAG_POWERED))
 				{
 					// Recursion...
@@ -518,7 +608,7 @@ void __cdecl LegoRR::ElectricFence_ChainBeams_Recurse(uint32 bx, uint32 by, bool
 				}
 			}
 		}
-	}
+	}*/
 }
 
 // <LegoRR.exe @0040db50>
@@ -602,7 +692,7 @@ bool32 __cdecl LegoRR::ElectricFence_TrySparkObject(LegoObject* liveObj)
 
 	// Is this block guarded by a powered fence?
 	if ((efenceBlockValue(blockPos.x, blockPos.y).flags & FENCEGRID_FLAG_POWERED) &&
-		!ElectricFence_BlockHasBuilding(efenceGlobs.level, blockPos.x, blockPos.y, false))
+		!ElectricFence_HasBuilding(efenceGlobs.level, blockPos.x, blockPos.y, false))
 	{
 		bool fenceFound = false;
 		Point2I fenceBlockPos = blockPos;
@@ -703,9 +793,7 @@ bool32 __cdecl LegoRR::ElectricFence_IsBlockBetweenConnection(Lego_Level* level,
 		{ -1,  0 },
 	};
 
-	if (efenceGlobs.fenceGrid == nullptr || ElectricFence_BlockHasFence(bx, by) ||
-		ElectricFence_BlockHasBuilding(level, bx, by, false))
-	{
+	if (efenceGlobs.fenceGrid == nullptr || ElectricFence_HasFence(bx, by) || ElectricFence_HasBuilding(level, bx, by, false)) {
 		return false;
 	}
 
@@ -717,8 +805,8 @@ bool32 __cdecl LegoRR::ElectricFence_IsBlockBetweenConnection(Lego_Level* level,
 
 		/// FIX APPLY: Check bounds.
 		if (Map3D_IsInsideDimensions(efenceGlobs.level->map, blockOffPos.x, blockOffPos.y) &&
-			(ElectricFence_BlockHasFence(blockOffPos.x, blockOffPos.y) ||
-			 ElectricFence_BlockHasBuilding(level, blockOffPos.x, blockOffPos.y, false)))
+			(ElectricFence_HasFence(blockOffPos.x, blockOffPos.y) ||
+			 ElectricFence_HasBuilding(level, blockOffPos.x, blockOffPos.y, false)))
 		{
 			const Point2I blockOffPos2 = { // Rotate 180.
 				(sint32)bx + DIRECTIONS[(uint32)DirectionFlip(i)].x,
@@ -727,9 +815,9 @@ bool32 __cdecl LegoRR::ElectricFence_IsBlockBetweenConnection(Lego_Level* level,
 
 			/// FIX APPLY: Check bounds.
 			if (Map3D_IsInsideDimensions(efenceGlobs.level->map, blockOffPos2.x, blockOffPos2.y) &&
-				(ElectricFence_BlockHasFence(blockOffPos2.x, blockOffPos2.y) ||
-				 (ElectricFence_BlockHasBuilding(level, blockOffPos2.x, blockOffPos2.y, false) &&
-				  !ElectricFence_BlockHasBuilding(level, blockOffPos.x, blockOffPos.y, false))))
+				(ElectricFence_HasFence(blockOffPos2.x, blockOffPos2.y) ||
+				 (ElectricFence_HasBuilding(level, blockOffPos2.x, blockOffPos2.y, false) &&
+				  !ElectricFence_HasBuilding(level, blockOffPos.x, blockOffPos.y, false))))
 			{
 				return true;
 			}
@@ -765,7 +853,7 @@ void __cdecl LegoRR::ElectricFence_AddOrRemoveEStud(Lego_Level* level, uint32 bx
 }
 
 // <LegoRR.exe @0040e390>
-bool32 __cdecl LegoRR::ElectricFence_BlockHasFence(sint32 bx, sint32 by)
+bool32 __cdecl LegoRR::ElectricFence_HasFence(sint32 bx, sint32 by)
 {
 	return (efenceBlockValue(bx, by).efence != nullptr);
 }
