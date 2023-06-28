@@ -304,7 +304,7 @@ struct ObjectiveData // [LegoRR/???|struct:0x54]
 	/*1c,8*/        Point2F failedImagePosition; // (cfg: ObjectiveFailedImage<W>x<H>[1,2]) unused
 	/*24,4*/        char* achievedVideoName; // (cfg: ObjectiveAcheivedAVI[0])
 	/*28,8*/        Point2F achievedVideoPosition; // (cfg: ObjectiveAcheivedAVI[1,2]) 
-	/*30,4*/        bool32 noAchievedVideo; // True if cfg:ObjectiveAcheivedAVI was not parsed correctly (or does not eixst?)
+	/*30,4*/        bool32 noAchievedVideoPosition; // True if cfg:ObjectiveAcheivedAVI does not have an x,y position.
 	/*34,4*/        bool32 achievedVideoPlayed;
 	/*38,4*/        uint32 crystals; // (cfg: CrystalObjective) number of crystals needed if non-zero
 	/*3c,4*/        uint32 ore; // (cfg: OreObjective) number of ore needed if non-zero

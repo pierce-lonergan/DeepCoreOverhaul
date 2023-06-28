@@ -3730,6 +3730,10 @@ bool interop_hook_LegoRR_Objective(void)
 	bool result = true;
 
 	// used by: Objective_LoadLevel
+	result &= hook_write_jmpret(0x004577a0, LegoRR::Objective_LoadObjectiveText);
+	// used by: Lego_LoadLevel
+	result &= hook_write_jmpret(0x00458000, LegoRR::Objective_LoadLevel);
+	// used by: Objective_LoadLevel
 	result &= hook_write_jmpret(0x00458840, LegoRR::Objective_SetCryOreObjectives);
 	// used by: Objective_LoadLevel
 	result &= hook_write_jmpret(0x00458880, LegoRR::Objective_SetBlockObjective);

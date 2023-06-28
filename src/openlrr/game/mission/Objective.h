@@ -25,6 +25,8 @@ struct ObjectiveData;
 
 #pragma region Constants
 
+#define OBJECTIVE_MESSAGECOUNT			4
+
 #pragma endregion
 
 /**********************************************************************************
@@ -65,17 +67,19 @@ struct Objective_Globs // [LegoRR/Objective.c|struct:0x28c|tags:GLOBS] Globals f
 	/*000,4*/	Objective_GlobFlags flags;
 	/*004,4*/	Gods98::File* file;
 	/*008,80*/	char filename[128];
-	/*088,10*/	char* messages[4]; // [Briefing,Completion,Failure,CrystalFailure] Strings containing text of entire status message (pages are separated with '\a').
+	/*088,10*/	char* messages[OBJECTIVE_MESSAGECOUNT]; // [Briefing,Completion,Failure,CrystalFailure] Strings containing text of entire status message (pages are separated with '\a').
 	/*098,180*/	undefined reserved1[384]; // (possibly unused array of char[3][128])
-	/*218,10*/	uint32 currentPages[4]; // (1-indexed) Current page number of the displayed status type.
-	/*228,10*/	uint32 currentPageStates[4]; // (1-indexed) State tracking for page to switch to (this is only used to check if the above field needs to trigger an update).
-	/*238,10*/	uint32 pageCounts[4]; // Number of pages for the specific status.
-	/*248,10*/	Gods98::TextWindow* textWindows[4]; // Text windows for the specific status.
-	/*258,c*/	Gods98::TextWindow* pageTextWindows[3];
+	/*218,10*/	uint32 currentPages[OBJECTIVE_MESSAGECOUNT]; // (1-indexed) Current page number of the displayed status type.
+	/*228,10*/	uint32 currentPageStates[OBJECTIVE_MESSAGECOUNT]; // (1-indexed) State tracking for page to switch to (this is only used to check if the above field needs to trigger an update).
+	/*238,10*/	uint32 pageCounts[OBJECTIVE_MESSAGECOUNT]; // Number of pages for the specific status.
+	/*248,10*/	Gods98::TextWindow* textWindows[OBJECTIVE_MESSAGECOUNT]; // Text windows for the specific status.
+	/*258,4*/	Gods98::TextWindow* briefingTitleTextWindow;
+	/*25c,4*/	Gods98::TextWindow* completedTitleTextWindow;
+	/*260,4*/	Gods98::TextWindow* failedTitleTextWindow;
 	/*264,4*/	Gods98::TextWindow* beginTextWindow; // Unknown usage, only worked with when line "[BEGIN]" is found.
 	/*268,4*/	undefined4 reserved2;
 	/*26c,4*/	bool32 hasBeginText; // True when text has been assigned to beginTextWindow.
-	/*270,4*/	bool32 achieved; // True if the level was has ended successfully.
+	/*270,4*/	bool32 achieved; // True if the level was ended successfully.
 	/*274,4*/	bool32 objectiveSwitch; // (see: NERPFunc__SetObjectiveSwitch)
 	/*278,4*/	char* soundName;
 	/*27c,4*/	sint32 soundHandle; // (init: -1 when unused)
@@ -84,6 +88,7 @@ struct Objective_Globs // [LegoRR/Objective.c|struct:0x28c|tags:GLOBS] Globals f
 	/*288,4*/	bool32 endTeleportEnabled; // (cfg: ! DisableEndTeleport, default: false (enabled))
 	/*28c*/
 };
+assert_sizeof(Objective_Globs, 0x28c);
 
 #pragma endregion
 
@@ -113,12 +118,12 @@ extern Objective_Globs & objectiveGlobs;
 #pragma region Functions
 
 // <LegoRR.exe @004577a0>
-#define Objective_LoadObjectiveText ((void (__cdecl* )(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, const char* filename))0x004577a0)
-//void __cdecl Objective_LoadObjectiveText(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, const char* filename);
+//#define Objective_LoadObjectiveText ((void (__cdecl* )(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, const char* filename))0x004577a0)
+void __cdecl Objective_LoadObjectiveText(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, const char* filename);
 
 // <LegoRR.exe @00458000>
-#define Objective_LoadLevel ((void (__cdecl* )(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, uint32 screenWidth, uint32 screenHeight))0x00458000)
-//void __cdecl Objective_LoadLevel(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, uint32 screenWidth, uint32 screenHeight);
+//#define Objective_LoadLevel ((void (__cdecl* )(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, uint32 screenWidth, uint32 screenHeight))0x00458000)
+void __cdecl Objective_LoadLevel(const Gods98::Config* config, const char* gameName, const char* levelName, Lego_Level* level, uint32 screenWidth, uint32 screenHeight);
 
 // <LegoRR.exe @00458840>
 //#define Objective_SetCryOreObjectives ((void (__cdecl* )(Lego_Level* level, uint32 crystals, uint32 ore))0x00458840)

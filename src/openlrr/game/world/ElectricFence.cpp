@@ -241,8 +241,6 @@ bool32 __cdecl LegoRR::ElectricFence_CanPlaceFenceAtBlock(sint32 bx, sint32 by)
 // <LegoRR.exe @0040d320>
 bool32 __cdecl LegoRR::ElectricFence_HasBuilding(Lego_Level* level, sint32 bx, sint32 by, bool32 checkPowered)
 {
-	/// FIXME: This function check is very lazy, and doesn't account for secondary building blocks.
-
 	// Level parameter isn't even used...
 	const Point2I blockPos = { bx, by };
 	return (Level_Block_IsSolidBuilding(bx, by, true) && (!checkPowered || Level_Block_IsPowered(&blockPos)));
@@ -304,6 +302,8 @@ bool32 __cdecl LegoRR::ElectricFence_ChainBeamsFromBuildingOrBlock(OPTIONAL Lego
 		Point2F wPos2D = { 0.0f, 0.0f }; // dummy init
 		LegoObject_GetPosition(liveObj, &wPos2D.x, &wPos2D.y);
 
+		// The self-powered flag allows sending an electric signal out even when there's no power.
+		// This can be used to eliminate targets by activating this while they're in the guarded area.
 		if ((StatsObject_GetStatsFlags2(liveObj) & STATS2_SELFPOWERED) ||
 			(liveObj->flags3 & LIVEOBJ3_HASPOWER))
 		{
