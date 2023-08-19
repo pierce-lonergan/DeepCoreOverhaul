@@ -200,14 +200,14 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 
 	ColourRGBF ToolTipRGB = { 0.0f }; // dummy init
 
-	if (!Gods98::Config_GetRGBValue(legoConfig, Main_ID("ToolTipRGB"), &ToolTipRGB.red, &ToolTipRGB.green, &ToolTipRGB.blue)) {
-		ToolTipRGB.red   = (83.0f / 255.0f);// 0.3254902f;
-		ToolTipRGB.green = (83.0f / 255.0f);// 0.3254902f;
-		ToolTipRGB.blue  = (83.0f / 255.0f);// 0.3254902f;
+	if (!Gods98::Config_GetRGBValue(legoConfig, Main_ID("ToolTipRGB"), &ToolTipRGB.r, &ToolTipRGB.g, &ToolTipRGB.b)) {
+		ToolTipRGB.r = (83.0f / 255.0f);// 0.3254902f;
+		ToolTipRGB.g = (83.0f / 255.0f);// 0.3254902f;
+		ToolTipRGB.b = (83.0f / 255.0f);// 0.3254902f;
 	}
 
 	ToolTip_Initialise(legoGlobs.fontToolTip, 2, 1, 1.0f, Gods98::appWidth(), Gods98::appHeight(),
-					   32, ToolTipRGB.red, ToolTipRGB.green, ToolTipRGB.blue);
+					   32, ToolTipRGB.r, ToolTipRGB.g, ToolTipRGB.b);
 
 	/// FIX APPLY: Move Interface_Initialise after ToolTip_Initialise so that the SetRightAlign call actually works.
 	Info_Initialise(legoGlobs.fontStandard); // This font is never used by the Info module.
@@ -410,10 +410,10 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 
 
 	Gods98::Config_GetRGBValue(legoConfig, Main_ID("PowerCrystalRGB"),
-							   &legoGlobs.PowerCrystalRGB.red, &legoGlobs.PowerCrystalRGB.green, &legoGlobs.PowerCrystalRGB.blue);
+							   &legoGlobs.PowerCrystalRGB.r, &legoGlobs.PowerCrystalRGB.g, &legoGlobs.PowerCrystalRGB.b);
 
 	Gods98::Config_GetRGBValue(legoConfig, Main_ID("UnpoweredCrystalRGB"),
-							   &legoGlobs.UnpoweredCrystalRGB.red, &legoGlobs.UnpoweredCrystalRGB.green, &legoGlobs.UnpoweredCrystalRGB.blue);
+							   &legoGlobs.UnpoweredCrystalRGB.r, &legoGlobs.UnpoweredCrystalRGB.g, &legoGlobs.UnpoweredCrystalRGB.b);
 
 
 	Lego_LoadSamples(legoConfig, !Gods98::Graphics_IsReduceSamples());

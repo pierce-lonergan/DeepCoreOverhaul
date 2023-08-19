@@ -262,8 +262,8 @@ void __cdecl LegoRR::Interface_DrawHoverOutline(const Area2F* area)
 		prerendered = Gods98::Image_CreateNew(sizePair.first, sizePair.second);
 		ColourRGBF trans;
 		Gods98::Image_FindTransColour(prerendered, &colour, 1, &trans);
-		Gods98::Image_SetupTrans2(prerendered, trans.red, trans.green, trans.blue,
-									trans.red, trans.green, trans.blue, false); // Don't truncate to 16-bit colour.
+		Gods98::Image_SetupTrans2(prerendered, trans.r, trans.g, trans.b,
+								  trans.r, trans.g, trans.b, false); // Don't truncate to 16-bit colour.
 
 		_interfaceHoverOutlinesCache[sizePair] = prerendered;
 		#endif
@@ -311,7 +311,7 @@ void __cdecl LegoRR::Interface_DrawHoverOutline(const Area2F* area)
 				rectLinesTo[(i*4) + j] = rectLinesFrom[(i*4) + ((j+1)%4)];
 			}
 		}
-		Gods98::Draw_LineListEx(rectLinesFrom, rectLinesTo, THICKNESS*4, colour.red, colour.green, colour.blue, Gods98::DrawEffect::None);
+		Gods98::Draw_LineListEx(rectLinesFrom, rectLinesTo, THICKNESS*4, colour.r, colour.g, colour.b, Gods98::DrawEffect::None);
 
 		#else
 		Point2F rectLines[5] = { 0.0f }; // dummy init
@@ -333,7 +333,7 @@ void __cdecl LegoRR::Interface_DrawHoverOutline(const Area2F* area)
 			rectLines[3] = Point2F { start.x,   end.y };
 			rectLines[4] = rectLines[0];
 
-			Gods98::Draw_LineListEx(rectLines, rectLines + 1, 4, colour.red, colour.green, colour.blue, Gods98::DrawEffect::None);
+			Gods98::Draw_LineListEx(rectLines, rectLines + 1, 4, colour.r, colour.g, colour.b, Gods98::DrawEffect::None);
 		}
 		#endif
 

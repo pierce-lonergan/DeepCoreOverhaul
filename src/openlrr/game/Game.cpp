@@ -1108,7 +1108,7 @@ void __cdecl LegoRR::Lego_UpdateSceneFog(bool32 fogEnabled, real32 elapsed)
 				const real32 range = (legoGlobs.HighFogColourRGB.channels[i] - legoGlobs.FogColourRGB.channels[i]) * 0.5f;
 				fogRGB.channels[i] += range * waveDelta;
 			}
-			Gods98::Container_SetFogColour(fogRGB.red, fogRGB.green, fogRGB.blue);
+			Gods98::Container_SetFogColour(fogRGB.r, fogRGB.g, fogRGB.b);
 		}
 	}
 }
@@ -1160,7 +1160,7 @@ void __cdecl LegoRR::Lego_DrawAllSelectedUnitBoxes(Gods98::Viewport* viewMain)
 	for (uint32 i = 0; i < unitCount; i++) {
 		const ColourRGBF colour = (i == 0 ? PRIMARY : SECONDARY);
 		
-		Lego_DrawObjectSelectionBox(units[i], viewMain, colour.red, colour.green, colour.blue);
+		Lego_DrawObjectSelectionBox(units[i], viewMain, colour.r, colour.g, colour.b);
 	}
 }
 
@@ -2743,9 +2743,9 @@ void __cdecl LegoRR::Lego_DrawDragSelectionBox(Lego_Level* level)
 		if (!Gods98::Draw_IsLocked() && LEGO_DRAWFILL_SELECTIONBOXES && !Lego_IsTransparentMultiSelectBox()) {
 			Area2F window;
 
-			const real32 r = legoGlobs.DragBoxRGB.red;
-			const real32 g = legoGlobs.DragBoxRGB.green;
-			const real32 b = legoGlobs.DragBoxRGB.blue;
+			const real32 r = legoGlobs.DragBoxRGB.r;
+			const real32 g = legoGlobs.DragBoxRGB.g;
+			const real32 b = legoGlobs.DragBoxRGB.b;
 
 			// We need to draw boxes with positive dimensions, so convert start/end to min/max coords.
 			const Point2F min = {
@@ -2795,8 +2795,8 @@ void __cdecl LegoRR::Lego_DrawDragSelectionBox(Lego_Level* level)
 			if (!Lego_IsTransparentMultiSelectBox())
 				effect = Gods98::DrawEffect::None;
 
-			Gods98::Draw_LineListEx(lineList, lineList + 1, 4, legoGlobs.DragBoxRGB.red,
-									legoGlobs.DragBoxRGB.green, legoGlobs.DragBoxRGB.blue,
+			Gods98::Draw_LineListEx(lineList, lineList + 1, 4, legoGlobs.DragBoxRGB.r,
+									legoGlobs.DragBoxRGB.g, legoGlobs.DragBoxRGB.b,
 									effect);
 		}
 	}

@@ -116,9 +116,9 @@ LegoRR::Smoke* __cdecl LegoRR::Smoke_CreateSmokeArea(OPTIONAL IN Gods98::Contain
 	Gods98::Maths_Vector3DNormalize(&smoke->dirVec);
 
 
-	smoke->colour.red   = r;
-	smoke->colour.green = g;
-	smoke->colour.blue  = b;
+	smoke->colour.r = r;
+	smoke->colour.g = g;
+	smoke->colour.b = b;
 
 
 	if (smokeType == Smoke_Type_Dissipate) {

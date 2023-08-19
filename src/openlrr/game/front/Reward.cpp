@@ -255,8 +255,8 @@ void __cdecl LegoRR::Reward_DrawItem(RewardLevelItem* rewardItem, RewardItemFlag
 
 				const bool halfTrans = (flags & REWARDITEM_FLAG_NAMETEXT_HALFTRANS);
 
-				ToolTip_DrawBox(destArea, rc.red, rc.green, rc.blue, ln1.red, ln1.green, ln1.blue,
-								ln2.red, ln2.green, ln2.blue, halfTrans);
+				ToolTip_DrawBox(destArea, rc.r, rc.g, rc.b, ln1.r, ln1.g, ln1.b,
+								ln2.r, ln2.g, ln2.b, halfTrans);
 
 				Gods98::Font_PrintF(rewardItem->Font, rewardItem->TextPosition.x - (width/2), rewardItem->TextPosition.y, rewardItem->valueText);
 
@@ -277,8 +277,8 @@ void __cdecl LegoRR::Reward_DrawItem(RewardLevelItem* rewardItem, RewardItemFlag
 					static_cast<real32>(Gods98::Font_GetHeight(rewardGlobs.titleFont)),
 				};
 
-				ToolTip_DrawBox(destArea, rc.red, rc.green, rc.blue, ln1.red, ln1.green, ln1.blue,
-								ln2.red, ln2.green, ln2.blue, false);
+				ToolTip_DrawBox(destArea, rc.r, rc.g, rc.b, ln1.r, ln1.g, ln1.b,
+								ln2.r, ln2.g, ln2.b, false);
 
 				Gods98::Font_PrintF(rewardGlobs.titleFont, rewardGlobs.textPos.x - (width/2), rewardGlobs.textPos.y, text);
 			}

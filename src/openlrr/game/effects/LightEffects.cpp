@@ -94,8 +94,8 @@ void __cdecl LegoRR::LightEffects_ResetSpotlightColour(void)
 {
 	/// SANITY: Null check, since its done elsewhere.
 	if (lightGlobs.rootSpotlight != nullptr) {
-		Gods98::Container_SetColourAlpha(lightGlobs.rootSpotlight, lightGlobs.initialRGB.red,
-										 lightGlobs.initialRGB.green, lightGlobs.initialRGB.blue, 1.0f);
+		Gods98::Container_SetColourAlpha(lightGlobs.rootSpotlight, lightGlobs.initialRGB.r,
+										 lightGlobs.initialRGB.g, lightGlobs.initialRGB.b, 1.0f);
 	}
 }
 
@@ -140,7 +140,7 @@ bool32 __cdecl LegoRR::LightEffects_Load(const Gods98::Config* config, const cha
 bool32 __cdecl LegoRR::LightEffects_LoadBlink(const Gods98::Config* config, const char* gameName)
 {
 	ColourRGBF rgbMax = { 0.0f }; // dummy init
-	if (!Gods98::Config_GetRGBValue(config, LightEffects_ID("BlinkRGBMax"), &rgbMax.red, &rgbMax.green, &rgbMax.blue))
+	if (!Gods98::Config_GetRGBValue(config, LightEffects_ID("BlinkRGBMax"), &rgbMax.r, &rgbMax.g, &rgbMax.b))
 		return false;
 
 	real32 maxChange = Config_GetRealValue(config, LightEffects_ID("MaxChangeAllowed"));
@@ -152,10 +152,10 @@ bool32 __cdecl LegoRR::LightEffects_LoadBlink(const Gods98::Config* config, cons
 		return false;
 
 	// Seconds to standard framerate.
-	Gods98::Maths_Vector2DScale(&wait.vec2, &wait.vec2, STANDARD_FRAMERATE);
+	Gods98::Maths_Vector2DScale(&wait.xy, &wait.xy, STANDARD_FRAMERATE);
 
 
-	LightEffects_SetBlink(rgbMax.red, rgbMax.green, rgbMax.blue,
+	LightEffects_SetBlink(rgbMax.r, rgbMax.g, rgbMax.b,
 						  maxChange, wait.min, wait.max);
 
 	return true;
@@ -175,11 +175,11 @@ void __cdecl LegoRR::LightEffects_SetBlink(real32 redMax, real32 greenMax, real3
 bool32 __cdecl LegoRR::LightEffects_LoadFade(const Gods98::Config* config, const char* gameName)
 {
 	ColourRGBF rgbMin = { 0.0f }; // dummy init
-	if (!Gods98::Config_GetRGBValue(config, LightEffects_ID("FadeRGBMin"), &rgbMin.red, &rgbMin.green, &rgbMin.blue))
+	if (!Gods98::Config_GetRGBValue(config, LightEffects_ID("FadeRGBMin"), &rgbMin.r, &rgbMin.g, &rgbMin.b))
 		return false;
 
 	ColourRGBF rgbMax = { 0.0f }; // dummy init
-	if (!Gods98::Config_GetRGBValue(config, LightEffects_ID("FadeRGBMax"), &rgbMax.red, &rgbMax.green, &rgbMax.blue))
+	if (!Gods98::Config_GetRGBValue(config, LightEffects_ID("FadeRGBMax"), &rgbMax.r, &rgbMax.g, &rgbMax.b))
 		return false;
 
 	Range2F wait;
@@ -195,13 +195,13 @@ bool32 __cdecl LegoRR::LightEffects_LoadFade(const Gods98::Config* config, const
 		return false;
 
 	// Seconds to standard framerate.
-	Gods98::Maths_Vector2DScale(&wait.vec2, &wait.vec2, STANDARD_FRAMERATE);
-	Gods98::Maths_Vector2DScale(&speed.vec2, &speed.vec2, STANDARD_FRAMERATE);
-	Gods98::Maths_Vector2DScale(&hold.vec2, &hold.vec2, STANDARD_FRAMERATE);
+	Gods98::Maths_Vector2DScale(&wait.xy, &wait.xy, STANDARD_FRAMERATE);
+	Gods98::Maths_Vector2DScale(&speed.xy, &speed.xy, STANDARD_FRAMERATE);
+	Gods98::Maths_Vector2DScale(&hold.xy, &hold.xy, STANDARD_FRAMERATE);
 
 
-	LightEffects_SetFade(rgbMin.red, rgbMin.green, rgbMin.blue,
-						 rgbMax.red, rgbMax.green, rgbMax.blue,
+	LightEffects_SetFade(rgbMin.r, rgbMin.g, rgbMin.b,
+						 rgbMax.r, rgbMax.g, rgbMax.b,
 						 wait.min, wait.max,
 						 speed.min, speed.max,
 						 hold.min, hold.max);
@@ -241,8 +241,8 @@ bool32 __cdecl LegoRR::LightEffects_LoadMove(const Gods98::Config* config, const
 		return false;
 
 	// Seconds to standard framerate (only wait and speed are time units).
-	Gods98::Maths_Vector2DScale(&wait.vec2, &wait.vec2, STANDARD_FRAMERATE);
-	Gods98::Maths_Vector2DScale(&speed.vec2, &speed.vec2, STANDARD_FRAMERATE);
+	Gods98::Maths_Vector2DScale(&wait.xy, &wait.xy, STANDARD_FRAMERATE);
+	Gods98::Maths_Vector2DScale(&speed.xy, &speed.xy, STANDARD_FRAMERATE);
 
 
 	LightEffects_SetMove(wait.min, wait.max,
@@ -296,9 +296,9 @@ void __cdecl LegoRR::LightEffects_Update(real32 elapsed)
 // <LegoRR.exe @0044d2b0>
 void __cdecl LegoRR::LightEffects_UpdateSpotlightColour(void)
 {
-	const real32 r = std::clamp(lightGlobs.currentRGB.red,   0.0f, 1.0f);
-	const real32 g = std::clamp(lightGlobs.currentRGB.green, 0.0f, 1.0f);
-	const real32 b = std::clamp(lightGlobs.currentRGB.blue,  0.0f, 1.0f);
+	const real32 r = std::clamp(lightGlobs.currentRGB.r, 0.0f, 1.0f);
+	const real32 g = std::clamp(lightGlobs.currentRGB.g, 0.0f, 1.0f);
+	const real32 b = std::clamp(lightGlobs.currentRGB.b, 0.0f, 1.0f);
 
 	Gods98::Container_SetColourAlpha(lightGlobs.rootSpotlight, r, g, b, 1.0f);
 }
@@ -323,23 +323,23 @@ void __cdecl LegoRR::LightEffects_UpdateBlink(real32 elapsed)
 	// Range between [-Max,+Max]
 	// rgb = randRange(blinkRGBMax * 2) - blinkRGBMax
 	ColourRGBF rgb = { 0.0f }; // dummy init
-	Gods98::Maths_Vector3DScale(&rgb.vec3, &lightGlobs.blinkRGBMax.vec3, (value * 2.0f));
-	Gods98::Maths_Vector3DSubtract(&rgb.vec3, &rgb.vec3, &lightGlobs.blinkRGBMax.vec3);
+	Gods98::Maths_Vector3DScale(&rgb.xyz, &lightGlobs.blinkRGBMax.xyz, (value * 2.0f));
+	Gods98::Maths_Vector3DSubtract(&rgb.xyz, &rgb.xyz, &lightGlobs.blinkRGBMax.xyz);
 
 	// Yup, it's just red...
-	if (lightGlobs.blinkChangeMax <= std::abs(rgb.red + lightGlobs.blinkChange)) {
-		Gods98::Maths_Vector3DNegate(&rgb.vec3);
-		//LightEffects_FlipSign(&rgb.red);
-		//LightEffects_FlipSign(&rgb.green);
-		//LightEffects_FlipSign(&rgb.blue);
+	if (lightGlobs.blinkChangeMax <= std::abs(rgb.r + lightGlobs.blinkChange)) {
+		Gods98::Maths_Vector3DNegate(&rgb.xyz);
+		//LightEffects_FlipSign(&rgb.r);
+		//LightEffects_FlipSign(&rgb.g);
+		//LightEffects_FlipSign(&rgb.b);
 
 		// Red again...
-		if (lightGlobs.blinkChangeMax <= std::abs(rgb.red + lightGlobs.blinkChange))
+		if (lightGlobs.blinkChangeMax <= std::abs(rgb.r + lightGlobs.blinkChange))
 			return;
 	}
 
-	Gods98::Maths_Vector3DAdd(&lightGlobs.currentRGB.vec3, &lightGlobs.currentRGB.vec3, &rgb.vec3);
-	lightGlobs.blinkChange += rgb.red; // Yep, still only red...
+	Gods98::Maths_Vector3DAdd(&lightGlobs.currentRGB.xyz, &lightGlobs.currentRGB.xyz, &rgb.xyz);
+	lightGlobs.blinkChange += rgb.r; // Yep, still only red...
 }
 
 // <LegoRR.exe @0044d510>
@@ -374,12 +374,12 @@ void __cdecl LegoRR::LightEffects_UpdateFade(real32 elapsed)
 		//const real32 value = ((sint32)Gods98::Maths_Rand() % 1000) / 1000.0f;
 
 		// fadeDestRGB = randRange(abs(fadeRGBMax - fadeRGBMin)) + fadeRGBMin;
-		Gods98::Maths_Vector3DSubtract(&lightGlobs.fadeDestRGB.vec3, &lightGlobs.fadeRGBMax.vec3, &lightGlobs.fadeRGBMin.vec3);
-		Gods98::Maths_Vector3DAbs(&lightGlobs.fadeDestRGB.vec3);
+		Gods98::Maths_Vector3DSubtract(&lightGlobs.fadeDestRGB.xyz, &lightGlobs.fadeRGBMax.xyz, &lightGlobs.fadeRGBMin.xyz);
+		Gods98::Maths_Vector3DAbs(&lightGlobs.fadeDestRGB.xyz);
 
-		Gods98::Maths_RayEndPoint(&lightGlobs.fadeDestRGB.vec3, &lightGlobs.fadeRGBMin.vec3, &lightGlobs.fadeDestRGB.vec3, value);
-		//Gods98::Maths_Vector3DScale(&lightGlobs.fadeDestRGB.vec3, &lightGlobs.fadeDestRGB.vec3, value);
-		//Gods98::Maths_Vector3DAdd(&lightGlobs.fadeDestRGB.vec3, &lightGlobs.fadeDestRGB.vec3, &lightGlobs.fadeRGBMin.vec3);
+		Gods98::Maths_RayEndPoint(&lightGlobs.fadeDestRGB.xyz, &lightGlobs.fadeRGBMin.xyz, &lightGlobs.fadeDestRGB.xyz, value);
+		//Gods98::Maths_Vector3DScale(&lightGlobs.fadeDestRGB.xyz, &lightGlobs.fadeDestRGB.xyz, value);
+		//Gods98::Maths_Vector3DAdd(&lightGlobs.fadeDestRGB.xyz, &lightGlobs.fadeDestRGB.xyz, &lightGlobs.fadeRGBMin.xyz);
 
 		LightEffects_RandomizeFadeSpeedRGB();
 		lightGlobs.flags |= (LIGHTFX_GLOB_FLAG_FADE_FORWARD|LIGHTFX_GLOB_FLAG_FADING);
@@ -388,30 +388,30 @@ void __cdecl LegoRR::LightEffects_UpdateFade(real32 elapsed)
 		/// STATE: 2 FADING FORWARD
 
 		// currentRGB += elapsed * fadeSpeedRGB;
-		Gods98::Maths_RayEndPoint(&lightGlobs.currentRGB.vec3, &lightGlobs.currentRGB.vec3, &lightGlobs.fadeSpeedRGB.vec3, elapsed);
+		Gods98::Maths_RayEndPoint(&lightGlobs.currentRGB.xyz, &lightGlobs.currentRGB.xyz, &lightGlobs.fadeSpeedRGB.xyz, elapsed);
 
 		// fadePosRGB += elapsed * fadeSpeedRGB;
-		Gods98::Maths_RayEndPoint(&lightGlobs.fadePosRGB.vec3, &lightGlobs.fadePosRGB.vec3, &lightGlobs.fadeSpeedRGB.vec3, elapsed);
+		Gods98::Maths_RayEndPoint(&lightGlobs.fadePosRGB.xyz, &lightGlobs.fadePosRGB.xyz, &lightGlobs.fadeSpeedRGB.xyz, elapsed);
 
 		// Is negative speed?
-		if ((elapsed * lightGlobs.fadeSpeedRGB.red) < 0.0f) {
+		if ((elapsed * lightGlobs.fadeSpeedRGB.r) < 0.0f) {
 
-			if (lightGlobs.fadePosRGB.red <= lightGlobs.fadeDestRGB.red) {
+			if (lightGlobs.fadePosRGB.r <= lightGlobs.fadeDestRGB.r) {
 				// Count up to fadeDestRGB.
 				// currentRGB += (fadeDestRGB - fadePosRGB);
-				Gods98::Maths_Vector3DAdd(&lightGlobs.currentRGB.vec3, &lightGlobs.currentRGB.vec3, &lightGlobs.fadeDestRGB.vec3);
-				Gods98::Maths_Vector3DSubtract(&lightGlobs.currentRGB.vec3, &lightGlobs.currentRGB.vec3, &lightGlobs.fadePosRGB.vec3);
+				Gods98::Maths_Vector3DAdd(&lightGlobs.currentRGB.xyz, &lightGlobs.currentRGB.xyz, &lightGlobs.fadeDestRGB.xyz);
+				Gods98::Maths_Vector3DSubtract(&lightGlobs.currentRGB.xyz, &lightGlobs.currentRGB.xyz, &lightGlobs.fadePosRGB.xyz);
 
 				lightGlobs.flags &= ~LIGHTFX_GLOB_FLAG_FADE_FORWARD;
 			}
 		}
 		else {
-			if (lightGlobs.fadePosRGB.red >= lightGlobs.fadeDestRGB.red) {
+			if (lightGlobs.fadePosRGB.r >= lightGlobs.fadeDestRGB.r) {
 				// Count down to fadeDestRGB.
 				// currentRGB -= (fadePosRGB - fadeDestRGB);
 				// It's the exact same result as above, just with extra steps.
-				Gods98::Maths_Vector3DSubtract(&lightGlobs.currentRGB.vec3, &lightGlobs.currentRGB.vec3, &lightGlobs.fadePosRGB.vec3);
-				Gods98::Maths_Vector3DAdd(&lightGlobs.currentRGB.vec3, &lightGlobs.currentRGB.vec3, &lightGlobs.fadeDestRGB.vec3);
+				Gods98::Maths_Vector3DSubtract(&lightGlobs.currentRGB.xyz, &lightGlobs.currentRGB.xyz, &lightGlobs.fadePosRGB.xyz);
+				Gods98::Maths_Vector3DAdd(&lightGlobs.currentRGB.xyz, &lightGlobs.currentRGB.xyz, &lightGlobs.fadeDestRGB.xyz);
 
 				lightGlobs.flags &= ~LIGHTFX_GLOB_FLAG_FADE_FORWARD;
 			}
@@ -434,30 +434,30 @@ void __cdecl LegoRR::LightEffects_UpdateFade(real32 elapsed)
 		/// STATE: 4 FADING REVERSE
 
 		// currentRGB -= elapsed * fadeSpeedRGB;
-		Gods98::Maths_RayEndPoint(&lightGlobs.currentRGB.vec3, &lightGlobs.currentRGB.vec3, &lightGlobs.fadeSpeedRGB.vec3, -elapsed);
+		Gods98::Maths_RayEndPoint(&lightGlobs.currentRGB.xyz, &lightGlobs.currentRGB.xyz, &lightGlobs.fadeSpeedRGB.xyz, -elapsed);
 
 		// fadePosRGB -= elapsed * fadeSpeedRGB;
-		Gods98::Maths_RayEndPoint(&lightGlobs.fadePosRGB.vec3, &lightGlobs.fadePosRGB.vec3, &lightGlobs.fadeSpeedRGB.vec3, -elapsed);
+		Gods98::Maths_RayEndPoint(&lightGlobs.fadePosRGB.xyz, &lightGlobs.fadePosRGB.xyz, &lightGlobs.fadeSpeedRGB.xyz, -elapsed);
 
 		// Is negative speed?
-		if ((elapsed * lightGlobs.fadeSpeedRGB.red) < 0.0f) {
+		if ((elapsed * lightGlobs.fadeSpeedRGB.r) < 0.0f) {
 
-			if (lightGlobs.fadePosRGB.red >= 0.0f) {
+			if (lightGlobs.fadePosRGB.r >= 0.0f) {
 				// Count down to zero.
-				Gods98::Maths_Vector3DSubtract(&lightGlobs.currentRGB.vec3, &lightGlobs.currentRGB.vec3, &lightGlobs.fadePosRGB.vec3);
-				//lightGlobs.currentRGB.red   -= lightGlobs.fadePosRGB.red;
-				//lightGlobs.currentRGB.green -= lightGlobs.fadePosRGB.green;
-				//lightGlobs.currentRGB.blue  -= lightGlobs.fadePosRGB.blue;
+				Gods98::Maths_Vector3DSubtract(&lightGlobs.currentRGB.xyz, &lightGlobs.currentRGB.xyz, &lightGlobs.fadePosRGB.xyz);
+				//lightGlobs.currentRGB.r -= lightGlobs.fadePosRGB.r;
+				//lightGlobs.currentRGB.g -= lightGlobs.fadePosRGB.g;
+				//lightGlobs.currentRGB.b -= lightGlobs.fadePosRGB.b;
 				lightGlobs.flags &= ~(LIGHTFX_GLOB_FLAG_FADE_REVERSE|LIGHTFX_GLOB_FLAG_FADING);
 			}
 		}
 		else {
-			if (lightGlobs.fadePosRGB.red <= 0.0f) {
+			if (lightGlobs.fadePosRGB.r <= 0.0f) {
 				// Count up to zero.
-				Gods98::Maths_Vector3DSubtract(&lightGlobs.currentRGB.vec3, &lightGlobs.currentRGB.vec3, &lightGlobs.fadePosRGB.vec3);
-				//lightGlobs.currentRGB.red   -= lightGlobs.fadePosRGB.red;
-				//lightGlobs.currentRGB.green -= lightGlobs.fadePosRGB.green;
-				//lightGlobs.currentRGB.blue  -= lightGlobs.fadePosRGB.blue;
+				Gods98::Maths_Vector3DSubtract(&lightGlobs.currentRGB.xyz, &lightGlobs.currentRGB.xyz, &lightGlobs.fadePosRGB.xyz);
+				//lightGlobs.currentRGB.r -= lightGlobs.fadePosRGB.r;
+				//lightGlobs.currentRGB.g -= lightGlobs.fadePosRGB.g;
+				//lightGlobs.currentRGB.b -= lightGlobs.fadePosRGB.b;
 				lightGlobs.flags &= ~(LIGHTFX_GLOB_FLAG_FADE_REVERSE|LIGHTFX_GLOB_FLAG_FADING);
 			}
 		}
@@ -474,7 +474,7 @@ void __cdecl LegoRR::LightEffects_RandomizeFadeSpeedRGB(void)
 	if (value <= 0.0f) value = 0.000001f;
 
 	// fadeSpeedRGB = fadeDestRGB / value;
-	Gods98::Maths_Vector3DScale(&lightGlobs.fadeSpeedRGB.vec3, &lightGlobs.fadeDestRGB.vec3, (1.0f / value));
+	Gods98::Maths_Vector3DScale(&lightGlobs.fadeSpeedRGB.xyz, &lightGlobs.fadeDestRGB.xyz, (1.0f / value));
 }
 
 // <LegoRR.exe @0044da20>
@@ -577,11 +577,11 @@ void __cdecl LegoRR::LightEffects_UpdateDimmer(real32 elapsed)
 		if (!(lightGlobs.flags & LIGHTFX_GLOB_FLAG_DIMIN_DONE)) {
 			// currentRGB += (elapsed * 0.1);
 			const real32 diminAmount = (elapsed / 0.1f);
-			lightGlobs.currentRGB.red   += diminAmount;
-			lightGlobs.currentRGB.green += diminAmount;
-			lightGlobs.currentRGB.blue  += diminAmount;
+			lightGlobs.currentRGB.r += diminAmount;
+			lightGlobs.currentRGB.g += diminAmount;
+			lightGlobs.currentRGB.b += diminAmount;
 
-			if (lightGlobs.currentRGB.red >= lightGlobs.initialRGB.red) {
+			if (lightGlobs.currentRGB.r >= lightGlobs.initialRGB.r) {
 				/// FIX APPLY: Original code was assigning blue to red, after bounds check...
 				/// CHANGE: Assign all channels to initialRGB instead of just red.
 				// For all intents and purposes, there is no distinction between setting this now vs. during the 'done' update.
@@ -599,11 +599,11 @@ void __cdecl LegoRR::LightEffects_UpdateDimmer(real32 elapsed)
 		if (!(lightGlobs.flags & LIGHTFX_GLOB_FLAG_DIMOUT_DONE)) {
 			// currentRGB -= (elapsed * 0.1);
 			const real32 dimoutAmount = (elapsed / 0.1f);
-			lightGlobs.currentRGB.red   -= dimoutAmount;
-			lightGlobs.currentRGB.green -= dimoutAmount;
-			lightGlobs.currentRGB.blue  -= dimoutAmount;
+			lightGlobs.currentRGB.r -= dimoutAmount;
+			lightGlobs.currentRGB.g -= dimoutAmount;
+			lightGlobs.currentRGB.b -= dimoutAmount;
 
-			if (lightGlobs.currentRGB.red <= 0.0f) {
+			if (lightGlobs.currentRGB.r <= 0.0f) {
 				/// CHANGE: Assign all channels to zero instead of just red.
 				/// CHANGE: Move zero assignment here instead of in the else block.
 				// For all intents and purposes, there is no distinction between setting this now vs. during the 'done' update.

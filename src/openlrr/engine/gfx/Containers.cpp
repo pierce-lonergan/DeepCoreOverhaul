@@ -1545,7 +1545,7 @@ IDirectDrawSurface4* __cdecl Gods98::Container_LoadTextureSurface(const char* fn
 									if (copy) {
 										Error_FatalF(decalColour > 256, "Decal colour index is greater than 256: %s", fname);
 										const BMP_PaletteEntry entry = image.palette[decalColour];
-										decalColour = DirectDraw_ToColourFromRGB(surface, entry.red, entry.green, entry.blue);
+										decalColour = DirectDraw_ToColourFromRGB(surface, entry.r, entry.g, entry.b);
 									}
 									uint32 low = decalColour, high = decalColour;
 

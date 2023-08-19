@@ -333,7 +333,7 @@ void __cdecl LegoRR::Water_InitVertices(Gods98::Container* contRoot, Lego_Level*
 			const uint32 groupID = Gods98::Container_Mesh_AddGroup(pool->contMeshTrans, 4, 2, 3, FACEDATA);
 
 			const ColourRGBAF rgba = WATER_COLOURRGBA;
-			Gods98::Container_Mesh_SetColourAlpha(pool->contMeshTrans, groupID, rgba.red, rgba.green, rgba.blue, rgba.alpha);
+			Gods98::Container_Mesh_SetColourAlpha(pool->contMeshTrans, groupID, rgba.r, rgba.g, rgba.b, rgba.a);
 
 			Vector3F vertPoses[4];
 			Vertex vertices[4] = { 0.0f }; // dummy init
@@ -524,8 +524,8 @@ void __cdecl LegoRR::Water_Update(Lego_Level* level, real32 elapsedGame)
 			}
 
 			const ColourRGBAF rgba = WATER_COLOURRGBA;
-			const real32 alpha = std::max(0.0f, rgba.alpha - waterLevelDiff * 0.4f);
-			Gods98::Container_SetColourAlpha(pool->contMeshTrans, rgba.red, rgba.green, rgba.blue, alpha);
+			const real32 alpha = std::max(0.0f, rgba.a - waterLevelDiff * 0.4f);
+			Gods98::Container_SetColourAlpha(pool->contMeshTrans, rgba.r, rgba.g, rgba.b, alpha);
 
 			for (uint32 j = 0; j < pool->blockCount; j++) {
 

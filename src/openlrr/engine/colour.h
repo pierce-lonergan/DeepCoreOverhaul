@@ -12,12 +12,6 @@
 struct ColourRGBI {
 	union {
 		struct {
-			/*0,4*/ uint32 red;
-			/*4,4*/ uint32 green;
-			/*8,4*/ uint32 blue;
-			/*c*/
-		};
-		struct {
 			/*0,4*/ uint32 r;
 			/*4,4*/ uint32 g;
 			/*8,4*/ uint32 b;
@@ -32,18 +26,12 @@ struct ColourRGBI {
 struct ColourRGBF {
 	union {
 		struct {
-			/*0,4*/ real32 red;
-			/*4,4*/ real32 green;
-			/*8,4*/ real32 blue;
-			/*c*/
-		};
-		struct {
 			/*0,4*/ real32 r;
 			/*4,4*/ real32 g;
 			/*8,4*/ real32 b;
 			/*c*/
 		};
-		/*0,c*/		Vector3F vec3;
+		/*0,c*/		Vector3F xyz;
 		/*0,c*/		std::array<real32, 3> channels;
 		/*c*/
 	};
@@ -52,13 +40,6 @@ struct ColourRGBF {
 
 struct ColourRGBAI {
 	union {
-		struct {
-			/*00,4*/ uint32 red;
-			/*04,4*/ uint32 green;
-			/*08,4*/ uint32 blue;
-			/*0c,4*/ uint32 alpha;
-			/*10*/
-		};
 		struct {
 			/*00,4*/ uint32 r;
 			/*04,4*/ uint32 g;
@@ -76,13 +57,6 @@ struct ColourRGBAI {
 struct ColourRGBAF {
 	union {
 		struct {
-			/*00,4*/ real32 red;
-			/*04,4*/ real32 green;
-			/*08,4*/ real32 blue;
-			/*0c,4*/ real32 alpha;
-			/*10*/
-		};
-		struct {
 			/*00,4*/ real32 r;
 			/*04,4*/ real32 g;
 			/*08,4*/ real32 b;
@@ -90,8 +64,8 @@ struct ColourRGBAF {
 			/*10*/
 		};
 		/*00,c*/	ColourRGBF rgb;
-		/*00,c*/	Vector3F vec3;
-		/*00,10*/	Vector4F vec4;
+		/*00,c*/	Vector3F xyz;
+		/*00,10*/	Vector4F xyzw;
 		/*00,10*/	std::array<real32, 4> channels;
 		/*10*/
 	};
@@ -103,12 +77,6 @@ struct ColourRGBAF {
 // 24-bit packed RGB-ordered colour channels
 struct ColourRGBPacked {
 	union {
-		struct {
-			/*0,1*/ uint8 red;
-			/*1,1*/ uint8 green;
-			/*2,1*/ uint8 blue;
-			/*3*/
-		};
 		struct {
 			/*0,1*/ uint8 r;
 			/*1,1*/ uint8 g;
@@ -123,13 +91,6 @@ struct ColourRGBPacked {
 // 32-bit packed RGBA-ordered colour channels
 struct ColourRGBAPacked {
 	union {
-		struct {
-			/*0,1*/ uint8 red;
-			/*1,1*/ uint8 green;
-			/*2,1*/ uint8 blue;
-			/*3,1*/ uint8 alpha;
-			/*4*/
-		};
 		struct {
 			/*0,1*/ uint8 r;
 			/*1,1*/ uint8 g;
@@ -149,12 +110,6 @@ struct ColourRGBAPacked {
 struct ColourBGRPacked {
 	union {
 		struct {
-			/*0,1*/ uint8 blue;
-			/*1,1*/ uint8 green;
-			/*2,1*/ uint8 red;
-			/*3*/
-		};
-		struct {
 			/*0,1*/ uint8 b;
 			/*1,1*/ uint8 g;
 			/*2,1*/ uint8 r;
@@ -168,13 +123,6 @@ struct ColourBGRPacked {
 // 32-bit packed BGRA-ordered colour channels
 struct ColourBGRAPacked {
 	union {
-		struct {
-			/*0,1*/ uint8 blue;
-			/*1,1*/ uint8 green;
-			/*2,1*/ uint8 red;
-			/*3,1*/ uint8 alpha;
-			/*4*/
-		};
 		struct {
 			/*0,1*/ uint8 b;
 			/*1,1*/ uint8 g;

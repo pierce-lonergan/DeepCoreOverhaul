@@ -160,8 +160,8 @@ Gods98::Image* Gods98::Image_LoadBMPScaled2(const char* fileName, uint32 width, 
 	BMP_Image image = { 0 };  // D3DRMIMAGE
 	BMP_Parse(buffer, fileSize, &image);
 	if (!image.rgb) {
-		penZero = Image_RGB2CR(image.palette[0].red, image.palette[0].green, image.palette[0].blue);
-		pen255 = Image_RGB2CR(image.palette[255].red, image.palette[255].green, image.palette[255].blue);
+		penZero = Image_RGB2CR(image.palette[0].r, image.palette[0].g, image.palette[0].b);
+		pen255 = Image_RGB2CR(image.palette[255].r, image.palette[255].g, image.palette[255].b);
 	}
 	BMP_SetupChannelMasks(&image, true); // BMP images treat 16-bit as 15-bit.
 
@@ -217,7 +217,7 @@ Gods98::Image* Gods98::Image_CreateNew(uint32 width, uint32 height)
 
 		Image* newImage;
 		if (newImage = Image_Create(surface, width, height, penZero, pen255)) {
-			//Image_ClearRGB(newImage, nullptr, penZero.red, penZero.green, penZero.blue, penZero.alpha);
+			//Image_ClearRGB(newImage, nullptr, penZero.r, penZero.g, penZero.b, penZero.a);
 			return newImage;
 		}
 		else Error_Warn(true, "Could not create image");
@@ -253,10 +253,10 @@ ColourRGBAPacked __cdecl Gods98::Image_RGBA2CR(uint8 r, uint8 g, uint8 b, uint8 
 	log_firstcall();
 
 	ColourRGBAPacked colour = { 0 }; // dummy init
-	colour.red   = r;
-	colour.green = g;
-	colour.blue  = b;
-	colour.alpha = a;
+	colour.r = r;
+	colour.g = g;
+	colour.b = b;
+	colour.a = a;
 	return colour;//.rgbaColour;
 }
 
@@ -734,10 +734,10 @@ void __cdecl Gods98::Image_CR2RGBA(ColourRGBAPacked cr, OPTIONAL OUT uint8* r, O
 {
 	log_firstcall();
 	
-	if (r) *r = cr.red;
-	if (g) *g = cr.green;
-	if (b) *b = cr.blue;
-	if (a) *a = cr.alpha;
+	if (r) *r = cr.r;
+	if (g) *g = cr.g;
+	if (b) *b = cr.b;
+	if (a) *a = cr.a;
 }
 
 
@@ -872,15 +872,15 @@ bool Gods98::Image_FindTransColour(Image* image, const ColourRGBF* colourList, u
 				for (uint32 i = 0; i < colourCount && !palette.empty(); i++) {
 					// It's imporant to truncate values to the proper bit counts so
 					//  that we don't return a false positive when in 16-bit colour mode.
-					const uint8 r = static_cast<uint8>(colourList[i].red   * 255.0f) >> (8 - rBitCount);
-					const uint8 g = static_cast<uint8>(colourList[i].green * 255.0f) >> (8 - gBitCount);
-					const uint8 b = static_cast<uint8>(colourList[i].blue  * 255.0f) >> (8 - bBitCount);
+					const uint8 r = static_cast<uint8>(colourList[i].r * 255.0f) >> (8 - rBitCount);
+					const uint8 g = static_cast<uint8>(colourList[i].g * 255.0f) >> (8 - gBitCount);
+					const uint8 b = static_cast<uint8>(colourList[i].b * 255.0f) >> (8 - bBitCount);
 
 					// Remove colours in the palette until there are none left.
 					for (uint32 j = 0; j < palette.size(); j++) {
-						const uint8 pr = static_cast<uint8>(palette[i].red   * 255.0f) >> (8 - rBitCount);
-						const uint8 pg = static_cast<uint8>(palette[i].green * 255.0f) >> (8 - gBitCount);
-						const uint8 pb = static_cast<uint8>(palette[i].blue  * 255.0f) >> (8 - bBitCount);
+						const uint8 pr = static_cast<uint8>(palette[i].r * 255.0f) >> (8 - rBitCount);
+						const uint8 pg = static_cast<uint8>(palette[i].g * 255.0f) >> (8 - gBitCount);
+						const uint8 pb = static_cast<uint8>(palette[i].b * 255.0f) >> (8 - bBitCount);
 
 						if (pr == r && pg == g && pb == b) {
 							palette.erase(palette.begin() + j);
@@ -892,9 +892,9 @@ bool Gods98::Image_FindTransColour(Image* image, const ColourRGBF* colourList, u
 				if (!palette.empty()) {
 					// An unused palette colour remains.
 					*transColour = {
-						static_cast<real32>(palette.front().red)   / 255.0f,
-						static_cast<real32>(palette.front().green) / 255.0f,
-						static_cast<real32>(palette.front().blue)  / 255.0f,
+						static_cast<real32>(palette.front().r) / 255.0f,
+						static_cast<real32>(palette.front().g) / 255.0f,
+						static_cast<real32>(palette.front().b) / 255.0f,
 					};
 					return true;
 				}
@@ -939,9 +939,9 @@ bool Gods98::Image_FindTransColour(Image* image, const ColourRGBF* colourList, u
 			for (uint32 i = 0; i < colourCount; i++) {
 				// It's imporant to truncate values to the proper bit counts so
 				//  that we don't return a false positive when in 16-bit colour mode.
-				const uint8 r = static_cast<uint8>(colourList[i].red   * 255.0f);
-				const uint8 g = static_cast<uint8>(colourList[i].green * 255.0f);
-				const uint8 b = static_cast<uint8>(colourList[i].blue  * 255.0f);
+				const uint8 r = static_cast<uint8>(colourList[i].r * 255.0f);
+				const uint8 g = static_cast<uint8>(colourList[i].g * 255.0f);
+				const uint8 b = static_cast<uint8>(colourList[i].b * 255.0f);
 
 				list[i] =
 					DirectDraw_ShiftChannelByte(r, rBitCount, rBitShift) |

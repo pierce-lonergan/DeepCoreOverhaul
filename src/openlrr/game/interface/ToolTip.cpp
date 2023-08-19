@@ -347,9 +347,9 @@ void __cdecl LegoRR::ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGr
 
 		if (_toolTipImageCache != nullptr &&
 			(size.width == _toolTipImageCacheSize.width && size.height == _toolTipImageCacheSize.height) &&
-			(rc.red  == _toolTipImageCacheRc.red  && rc.green  == _toolTipImageCacheRc.green  && rc.blue  == _toolTipImageCacheRc.blue) &&
-			(ln1.red == _toolTipImageCacheLn1.red && ln1.green == _toolTipImageCacheLn1.green && ln1.blue == _toolTipImageCacheLn1.blue) &&
-			(ln2.red == _toolTipImageCacheLn2.red && ln2.green == _toolTipImageCacheLn2.green && ln2.blue == _toolTipImageCacheLn2.blue) &&
+			(rc.r  == _toolTipImageCacheRc.r  && rc.g  == _toolTipImageCacheRc.g  && rc.b  == _toolTipImageCacheRc.b) &&
+			(ln1.r == _toolTipImageCacheLn1.r && ln1.g == _toolTipImageCacheLn1.g && ln1.b == _toolTipImageCacheLn1.b) &&
+			(ln2.r == _toolTipImageCacheLn2.r && ln2.g == _toolTipImageCacheLn2.g && ln2.b == _toolTipImageCacheLn2.b) &&
 			toolTipGlobs.borderThickness == _toolTipImageCacheThickness)
 		{
 			// This is the same tooltip image as last time.
@@ -388,14 +388,14 @@ void __cdecl LegoRR::ToolTip_DrawBox(Area2F valueRect, real32 rcRed, real32 rcGr
 		ColourRGBF trans;
 		Gods98::Image_FindTransColour(prerendered, colours, _countof(colours), &trans);
 		if (needsClear ||
-			(trans.red   != _toolTipImageCacheTrans.red) ||
-			(trans.green != _toolTipImageCacheTrans.green) ||
-			(trans.blue  != _toolTipImageCacheTrans.blue))
+			(trans.r != _toolTipImageCacheTrans.r) ||
+			(trans.g != _toolTipImageCacheTrans.g) ||
+			(trans.b != _toolTipImageCacheTrans.b))
 		{
-			Gods98::Image_ClearRGBF(prerendered, nullptr, trans.red, trans.green, trans.blue);
+			Gods98::Image_ClearRGBF(prerendered, nullptr, trans.r, trans.g, trans.b);
 		}
-		Gods98::Image_SetupTrans2(prerendered, trans.red, trans.green, trans.blue,
-									trans.red, trans.green, trans.blue, false); // Don't truncate to 16-bit colour.
+		Gods98::Image_SetupTrans2(prerendered, trans.r, trans.g, trans.b,
+								  trans.r, trans.g, trans.b, false); // Don't truncate to 16-bit colour.
 
 		_toolTipImageCache = prerendered;
 		_toolTipImageCacheSize  = size;

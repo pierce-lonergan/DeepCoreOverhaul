@@ -1186,8 +1186,8 @@ void __cdecl LegoRR::LegoObject_SetCrystalPoweredColour(LegoObject* liveObj, boo
 
 		for (uint32 groupID = 0; groupID < Gods98::Container_Mesh_GetGroupCount(liveObj->other); groupID++) {
 
-			Gods98::Container_Mesh_SetColourAlpha(liveObj->other, groupID, colour.red, colour.green, colour.blue, 1.0f);
-			Gods98::Container_Mesh_SetEmissive(liveObj->other, groupID, colour.red, colour.green, colour.blue);
+			Gods98::Container_Mesh_SetColourAlpha(liveObj->other, groupID, colour.r, colour.g, colour.b, 1.0f);
+			Gods98::Container_Mesh_SetEmissive(liveObj->other, groupID, colour.r, colour.g, colour.b);
 		}
 	}
 }
@@ -4746,7 +4746,7 @@ void __cdecl LegoRR::LegoObject_GetFaceDirection(LegoObject* liveObj, OUT Point2
 	Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
 	Vector3F dir3D;
 	Gods98::Container_GetOrientation(cont, nullptr, &dir3D, nullptr);
-	*dir2D = dir3D.vec2;
+	*dir2D = dir3D.xy;
 	Gods98::Maths_Vector2DNormalize(dir2D);
 }
 
@@ -5036,13 +5036,13 @@ void __cdecl LegoRR::LegoObject_UpdateWorldStickyPosition(LegoObject* liveObj, r
 				Point2F dir = { 0.0f, 0.0f }; // dummy init
 				Map3D_FUN_0044fe50(Lego_GetMap(), wPos.x, wPos.y, isGap, 0.0f, &dir.x, &dir.y);
 
-				Gods98::Maths_Vector2DSubtract(&dir, &dir, &newPos.vec2);
+				Gods98::Maths_Vector2DSubtract(&dir, &dir, &newPos.xy);
 
 				const real32 timeValue = (elapsed / 2.0f);
 				const real32 dist = Gods98::Maths_Vector2DModulus(&dir);
 				if (dist > timeValue) {
 					Gods98::Maths_Vector2DScale(&dir, &dir, (timeValue / dist));
-					Gods98::Maths_Vector2DAdd(&newPos.vec2, &newPos.vec2, &dir);
+					Gods98::Maths_Vector2DAdd(&newPos.xy, &newPos.xy, &dir);
 				}
 			}
 
@@ -5348,11 +5348,11 @@ bool32 __cdecl LegoRR::LegoObject_Callback_SlipAndScare(LegoObject* liveObj, voi
 					Vector3F dir;
 					Gods98::Container_GetOrientation(cont, nullptr, &dir, nullptr);
 
-					Gods98::Maths_Vector2DNormalize(&dir.vec2);
-					// This is Maths_RayEndPoint(&newPos, &otherPos, &dir.vec2, 15.0f) but 2D.
+					Gods98::Maths_Vector2DNormalize(&dir.xy);
+					// This is Maths_RayEndPoint(&newPos, &otherPos, &dir.xy, 15.0f) but 2D.
 					const Point2F newPos = {
-						otherPos.x + (dir.vec2.x * 15.0f),
-						otherPos.y + (dir.vec2.y * 15.0f),
+						otherPos.x + (dir.xy.x * 15.0f),
+						otherPos.y + (dir.xy.y * 15.0f),
 					};
 
 					Point2I blockPos = { 0, 0 }; // dummy init

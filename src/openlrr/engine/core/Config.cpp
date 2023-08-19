@@ -445,7 +445,7 @@ bool32 __cdecl Gods98::Config_GetRGBValue(const Config* root, const char* string
 /// CUSTOM:
 bool Gods98::Config_GetColourRGBF(const Config* root, const char* stringID, OUT ColourRGBF* colour)
 {
-	return Config_GetRGBValue(root, stringID, &colour->red, &colour->green, &colour->blue);
+	return Config_GetRGBValue(root, stringID, &colour->r, &colour->g, &colour->b);
 }
 
 

@@ -41,9 +41,9 @@ void __cdecl Gods98::BMP_Parse(const void* data, uint32 fileSize, OUT BMP_Image*
 		image->alpha_mask = 0xfc;
 		image->palette_size = (sint32)colourCount;
 		for (uint32 i = 0; i < colourCount; i++) {
-			const uint8 swap = palette[i].red; // Convert palette from BGR to RGB.
-			palette[i].red = palette[i].blue;
-			palette[i].blue = swap;
+			const uint8 swap = palette[i].r; // Convert palette from BGR to RGB.
+			palette[i].r = palette[i].b;
+			palette[i].b = swap;
 		}
 		image->palette = palette; // place in image structure
 	}
@@ -91,7 +91,7 @@ void Gods98::BMP_ParseInfoHeader(const void* data, OUT BMP_Image* image)
 		image->rgb = false;
 		image->palette_size = colourCount;
 		for (uint32 i = 0; i < colourCount; i++) {
-			std::swap(palette[i].red, palette[i].blue); // Convert palette from BGR to RGB.
+			std::swap(palette[i].r, palette[i].b); // Convert palette from BGR to RGB.
 		}
 		image->palette = palette; // Place in image structure.
 	}

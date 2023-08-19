@@ -152,8 +152,8 @@ void __cdecl LegoRR::ObjInfo_DrawHealthBar(LegoObject* liveObj, sint32 screenX, 
 	const ColourRGBF colours[4] = { rcfColour, rcbColour, ln1Colour, ln2Colour };
 	ColourRGBF trans;
 	Gods98::Image_FindTransColour(prerendered, colours, _countof(colours), &trans);
-	Gods98::Image_SetupTrans2(prerendered, trans.red, trans.green, trans.blue,
-							  trans.red, trans.green, trans.blue, false); // Don't truncate to 16-bit colour.
+	Gods98::Image_SetupTrans2(prerendered, trans.r, trans.g, trans.b,
+							  trans.r, trans.g, trans.b, false); // Don't truncate to 16-bit colour.
 
 	_objInfoHealthBarsCache[healthKey] = prerendered;
 	#endif
@@ -271,14 +271,14 @@ void __cdecl LegoRR::ObjInfo_DrawHealthBar(LegoObject* liveObj, sint32 screenX, 
 
 	// Draw health bar fill rects.
 	Gods98::Draw_RectList2Ex(healthRects, _countof(healthRects), Gods98::DrawEffect::None);
-	//Gods98::Draw_RectListEx(&healthRects[0].rect, 1, rcfColour.red, rcfColour.green, rcfColour.blue, Gods98::DrawEffect::None);
-	//Gods98::Draw_RectListEx(&healthRects[1].rect, 1, rcbColour.red, rcbColour.green, rcbColour.blue, Gods98::DrawEffect::None);
+	//Gods98::Draw_RectListEx(&healthRects[0].rect, 1, rcfColour.r, rcfColour.g, rcfColour.b, Gods98::DrawEffect::None);
+	//Gods98::Draw_RectListEx(&healthRects[1].rect, 1, rcbColour.r, rcbColour.g, rcbColour.b, Gods98::DrawEffect::None);
 
 	// Draw health bar border rects.
 	if (lineCount > 0) {
-		Gods98::Draw_LineListEx(ln1ListFrom, ln1ListTo, lineCount, ln1Colour.red, ln1Colour.green, ln1Colour.blue,
+		Gods98::Draw_LineListEx(ln1ListFrom, ln1ListTo, lineCount, ln1Colour.r, ln1Colour.g, ln1Colour.b,
 								Gods98::DrawEffect::None);
-		Gods98::Draw_LineListEx(ln2ListFrom, ln2ListTo, lineCount, ln2Colour.red, ln2Colour.green, ln2Colour.blue,
+		Gods98::Draw_LineListEx(ln2ListFrom, ln2ListTo, lineCount, ln2Colour.r, ln2Colour.g, ln2Colour.b,
 								Gods98::DrawEffect::None);
 	}
 

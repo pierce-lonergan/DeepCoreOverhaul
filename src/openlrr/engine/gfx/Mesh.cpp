@@ -540,20 +540,20 @@ bool32 __cdecl Gods98::Mesh_ParseLWO(const char* basePath, Mesh* mesh, APPOBJ* l
 
 		//SET COLOUR
 		Mesh_SetGroupDiffuse(mesh, group,
-							 mesh->lightWaveSurf[loop].colour.red   * mesh->lightWaveSurf[loop].diffuse,
-							 mesh->lightWaveSurf[loop].colour.green * mesh->lightWaveSurf[loop].diffuse,
-							 mesh->lightWaveSurf[loop].colour.blue  * mesh->lightWaveSurf[loop].diffuse);
+							 mesh->lightWaveSurf[loop].colour.r * mesh->lightWaveSurf[loop].diffuse,
+							 mesh->lightWaveSurf[loop].colour.g * mesh->lightWaveSurf[loop].diffuse,
+							 mesh->lightWaveSurf[loop].colour.b * mesh->lightWaveSurf[loop].diffuse);
 
 		Mesh_SetGroupEmissive(mesh, group,
-							  mesh->lightWaveSurf[loop].colour.red   * mesh->lightWaveSurf[loop].emissive,
-							  mesh->lightWaveSurf[loop].colour.green * mesh->lightWaveSurf[loop].emissive,
-							  mesh->lightWaveSurf[loop].colour.blue  * mesh->lightWaveSurf[loop].emissive);
+							  mesh->lightWaveSurf[loop].colour.r * mesh->lightWaveSurf[loop].emissive,
+							  mesh->lightWaveSurf[loop].colour.g * mesh->lightWaveSurf[loop].emissive,
+							  mesh->lightWaveSurf[loop].colour.b * mesh->lightWaveSurf[loop].emissive);
 
 		if (mesh->lightWaveSurf[loop].flags & LightWave_SurfFlags::SFM_COLORHIGHLIGHTS) {
 			Mesh_SetGroupSpecular(mesh, group,
-								  mesh->lightWaveSurf[loop].colour.red   * mesh->lightWaveSurf[loop].specular,
-								  mesh->lightWaveSurf[loop].colour.green * mesh->lightWaveSurf[loop].specular,
-								  mesh->lightWaveSurf[loop].colour.blue  * mesh->lightWaveSurf[loop].specular);
+								  mesh->lightWaveSurf[loop].colour.r * mesh->lightWaveSurf[loop].specular,
+								  mesh->lightWaveSurf[loop].colour.g * mesh->lightWaveSurf[loop].specular,
+								  mesh->lightWaveSurf[loop].colour.b * mesh->lightWaveSurf[loop].specular);
 		}
 		else {
 			Mesh_SetGroupSpecular(mesh, group,
@@ -660,23 +660,23 @@ void __cdecl Gods98::Mesh_GetSurfInfo(const char* basePath, APPOBJ* lightWaveObj
 
 			if (lightWaveObject->aoSurface[loopSurf].srfFlags & LightWave_SurfFlags::SFM_SHARPTERMINATOR) {
 				//IF SHARP TERMINATOR FLAG IS SET THEN MIX TEXTURE COLOUR WITH DIFFUSE
-				lightWaveSurf[loopSurf].colour.red   = lightWaveObject->aoSurface[loopSurf].srfCol.colRed   / 256.0f;
-				lightWaveSurf[loopSurf].colour.green = lightWaveObject->aoSurface[loopSurf].srfCol.colGreen / 256.0f;
-				lightWaveSurf[loopSurf].colour.blue  = lightWaveObject->aoSurface[loopSurf].srfCol.colBlue  / 256.0f;
-				//lightWaveSurf[loopSurf].colour.alpha = lightWaveObject->aoSurface[loopSurf].srfCol.colAlpha / 256.0f;
+				lightWaveSurf[loopSurf].colour.r = lightWaveObject->aoSurface[loopSurf].srfCol.colRed   / 256.0f;
+				lightWaveSurf[loopSurf].colour.g = lightWaveObject->aoSurface[loopSurf].srfCol.colGreen / 256.0f;
+				lightWaveSurf[loopSurf].colour.b = lightWaveObject->aoSurface[loopSurf].srfCol.colBlue  / 256.0f;
+				//lightWaveSurf[loopSurf].colour.a = lightWaveObject->aoSurface[loopSurf].srfCol.colAlpha / 256.0f;
 			}
 			else {
-				lightWaveSurf[loopSurf].colour.red   = 1.0f;
-				lightWaveSurf[loopSurf].colour.green = 1.0f;
-				lightWaveSurf[loopSurf].colour.blue  = 1.0f;
-				//lightWaveSurf[loopSurf].colour.alpha = 1.0f;
+				lightWaveSurf[loopSurf].colour.r = 1.0f;
+				lightWaveSurf[loopSurf].colour.g = 1.0f;
+				lightWaveSurf[loopSurf].colour.b = 1.0f;
+				//lightWaveSurf[loopSurf].colour.a = 1.0f;
 			}
 		}
 		else {
-			lightWaveSurf[loopSurf].colour.red   = lightWaveObject->aoSurface[loopSurf].srfCol.colRed / 256.0f;
-			lightWaveSurf[loopSurf].colour.green = lightWaveObject->aoSurface[loopSurf].srfCol.colGreen / 256.0f;
-			lightWaveSurf[loopSurf].colour.blue  = lightWaveObject->aoSurface[loopSurf].srfCol.colBlue / 256.0f;
-			//lightWaveSurf[loopSurf].colour.alpha = lightWaveObject->aoSurface[loopSurf].srfCol.colAlpha / 256.0f;
+			lightWaveSurf[loopSurf].colour.r = lightWaveObject->aoSurface[loopSurf].srfCol.colRed   / 256.0f;
+			lightWaveSurf[loopSurf].colour.g = lightWaveObject->aoSurface[loopSurf].srfCol.colGreen / 256.0f;
+			lightWaveSurf[loopSurf].colour.b = lightWaveObject->aoSurface[loopSurf].srfCol.colBlue  / 256.0f;
+			//lightWaveSurf[loopSurf].colour.a = lightWaveObject->aoSurface[loopSurf].srfCol.colAlpha / 256.0f;
 		}
 
 		lightWaveSurf[loopSurf].emissive = lightWaveObject->aoSurface[loopSurf].srfLuminous;

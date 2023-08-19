@@ -1505,12 +1505,12 @@ void __cdecl Lego_UpdateFallins(real32 elapsedWorld);
 //bool32 __cdecl Lego_LoadOLObjectList(Lego_Level* level, const char* filename);
 
 // <LegoRR.exe @0042e7e0>
-#define Lego_GetObjectByName ((bool32 (__cdecl* )(const char* objName, OUT LegoObject_Type* objType, OUT LegoObject_ID* objID, OUT ObjectModel** objModel))0x0042e7e0)
-//__inline bool32 __cdecl Lego_GetObjectByName(const char* objName, OUT LegoObject_Type* objType, OUT LegoObject_ID* objID, OPTIONAL OUT ObjectModel** objModel);
+#define Lego_GetObjectByName ((bool32 (__cdecl* )(const char* objName, OUT LegoObject_Type* objType, OUT LegoObject_ID* objID, OPTIONAL OUT ObjectModel** objModel))0x0042e7e0)
+//bool32 __cdecl Lego_GetObjectByName(const char* objName, OUT LegoObject_Type* objType, OUT LegoObject_ID* objID, OPTIONAL OUT ObjectModel** objModel);
 
 // <LegoRR.exe @0042eca0>
 #define Lego_GetObjectTypeModel ((bool32 (__cdecl* )(LegoObject_Type objType, LegoObject_ID objID, OUT ObjectModel** objModel))0x0042eca0)
-//__inline bool32 __cdecl Lego_GetObjectTypeModel(LegoObject_Type objType, LegoObject_ID objID, OUT ObjectModel** objModel);
+//bool32 __cdecl Lego_GetObjectTypeModel(LegoObject_Type objType, LegoObject_ID objID, OUT ObjectModel** objModel);
 
 // <LegoRR.exe @0042ee70>
 #define Lego_GetObjectTypeIDCount ((uint32 (__cdecl* )(LegoObject_Type objType))0x0042ee70)

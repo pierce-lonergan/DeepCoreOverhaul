@@ -812,9 +812,9 @@ bool Gods98::DirectDraw_CopySurface(const BMP_Image* dstImage, const BMP_Image* 
 				uint8 r, g, b;
 				if (srcBitDepth == 8) {
 					const uint8 index = *src++;
-					r = srcPalette[index].red;
-					g = srcPalette[index].green;
-					b = srcPalette[index].blue;
+					r = srcPalette[index].r;
+					g = srcPalette[index].g;
+					b = srcPalette[index].b;
 				}
 				else {
 					uint32 srcValue = 0;
@@ -982,7 +982,7 @@ void Gods98::DirectDraw_GetSurfaceInfo(const DDSURFACEDESC2* desc, OUT BMP_Image
 // <LegoRR.exe @0047d590>
 uint32 __cdecl Gods98::DirectDraw_GetColour(IDirectDrawSurface4* surf, ColourBGRAPacked bgrColour)
 {
-	return DirectDraw_ToColourFromRGB(surf, bgrColour.red, bgrColour.green, bgrColour.blue);
+	return DirectDraw_ToColourFromRGB(surf, bgrColour.r, bgrColour.g, bgrColour.b);
 }
 
 /// CUSTOM: Converts real RGB values to a surface colour value.
@@ -1030,10 +1030,7 @@ uint32 Gods98::DirectDraw_ToColourFromRGB(IDirectDrawSurface4* surf, uint8 r, ui
 			if (DirectDraw_GetPaletteEntries(surf, palette, 0, _countof(palette))) {
 
 				for (uint32 i = 0; i < _countof(palette); i++) {
-					if (palette[i].red   == r &&
-						palette[i].green == g &&
-						palette[i].blue  == b)
-					{
+					if (palette[i].r == r && palette[i].g == g && palette[i].b == b) {
 						return i;
 					}
 				}
@@ -1086,9 +1083,9 @@ bool Gods98::DirectDraw_FromColourToRGB(IDirectDrawSurface4* surf, uint32 surfCo
 			BMP_PaletteEntry entry;
 			if (DirectDraw_GetPaletteEntries(surf, &entry, surfColour, 1)) {
 
-				if (r) *r = entry.red;
-				if (g) *g = entry.green;
-				if (b) *b = entry.blue;
+				if (r) *r = entry.r;
+				if (g) *g = entry.g;
+				if (b) *b = entry.b;
 				if (a) *a = DirectDraw_UnshiftChannelByte(pf.dwRGBAlphaBitMask, aBitCount, aBitShift);
 
 				return true;

@@ -322,7 +322,7 @@ void LegoRR::_Debug_RouteVisual_Update(Debug_RouteVisual* routeVisual, real32 el
 						rgb = ColourRGBF { 0.0f, 0.0f, 1.0f }; // Blue: Curve line in-progress.
 
 					_Debug_RouteVisual_UpdateLine(routeVisual->contMeshCurve, groupID, thickness, &fromPos, &toPos,
-												  rgb.red, rgb.green, rgb.blue, 1.0f, visible);
+												  rgb.r, rgb.g, rgb.b, 1.0f, visible);
 					groupID++;
 				}
 				fromPos = toPos;
@@ -364,7 +364,7 @@ void LegoRR::_Debug_RouteVisual_Update(Debug_RouteVisual* routeVisual, real32 el
 						rgb = ColourRGBF { 1.0f, 0.0f, 0.0f }; // Red: Not yet started.
 
 					_Debug_RouteVisual_UpdateLine(routeVisual->contMeshLines, groupID, thickness, &fromPos, &toPos,
-												  rgb.red, rgb.green, rgb.blue, 1.0f, visible);
+												  rgb.r, rgb.g, rgb.b, 1.0f, visible);
 					groupID++;
 				}
 				fromPos = toPos;

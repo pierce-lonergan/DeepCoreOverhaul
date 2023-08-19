@@ -135,7 +135,7 @@ struct Vector3F {
 			/*8,4*/ real32 z;
 			/*c*/
 		};
-		/*0,8*/		Point2F vec2;
+		/*0,8*/		Point2F xy;
 		/*0,c*/		std::array<real32, 3> values;
 		/*c*/
 	};
@@ -152,8 +152,8 @@ struct Vector4F {
 			/*0c,4*/ real32 w;
 			/*10*/
 		};
-		/*00,8*/	Point2F vec2;
-		/*00,c*/	Vector3F vec3;
+		/*00,8*/	Point2F xy;
+		/*00,c*/	Vector3F xyz;
 		/*00,10*/	std::array<real32, 4> values;
 		/*10*/
 	};
@@ -214,7 +214,7 @@ struct Size2F {
 			/*4,4*/ real32 height;
 			/*8*/
 		};
-		/*0,8*/	Point2F vec2;
+		/*0,8*/	Point2F xy;
 		/*0,8*/	std::array<real32, 2> values;
 		/*8*/
 	};
@@ -254,7 +254,7 @@ struct Range2F {
 			/*4,4*/ real32 max;
 			/*8*/
 		};
-		/*0,8*/	Point2F vec2;
+		/*0,8*/	Point2F xy;
 		/*0,8*/	std::array<real32, 2> values;
 		/*8*/
 	};

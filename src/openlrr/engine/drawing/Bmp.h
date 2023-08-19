@@ -115,24 +115,12 @@ assert_sizeof(BMP_Header, 0x36);
 // PALETTEENTRY, D3DRMPALETTEENTRY
 struct BMP_PaletteEntry
 {
-	union {
-		struct { // D3DRMPALETTEENTRY field names
-			/*0,1*/ uint8 red;		// 0 .. 255
-			/*1,1*/ uint8 green;	// 0 .. 255
-			/*2,1*/ uint8 blue;		// 0 .. 255
-			/*3,1*/ uint8 flags;	// Only ever set to 0 in Gods98, no need to define these.
-									// NOTE: flags may differ between those used by D3DRM and DDRAW.
-			/*4*/
-		};
-		struct { // PALETTEENTRY field names
-			/*0,1*/ uint8 peRed;	// 0 .. 255
-			/*1,1*/ uint8 peGreen;	// 0 .. 255
-			/*2,1*/ uint8 peBlue;	// 0 .. 255
-			/*3,1*/ uint8 peFlags;	// Only ever set to 0 in Gods98, no need to define these.
-									// NOTE: flags may differ between those used by D3DRM and DDRAW.
-			/*4*/
-		};
-	};
+	/*0,1*/ uint8 r;		// 0 .. 255
+	/*1,1*/ uint8 g;	    // 0 .. 255
+	/*2,1*/ uint8 b;		// 0 .. 255
+	/*3,1*/ uint8 flags;	// Only ever set to 0 in Gods98, no need to define these.
+							// NOTE: flags may differ between those used by D3DRM and DDRAW.
+	/*4*/
 };
 assert_sizeof(BMP_PaletteEntry, 0x4);
 

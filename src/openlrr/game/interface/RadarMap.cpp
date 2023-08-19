@@ -246,9 +246,9 @@ void __cdecl LegoRR::RadarMap_Initialise(void)
 {
 	// Colours are stored at compile-time in [0.0f-255.0f] real channel values, convert them to [0.0f-1.0f] real values.
 	for (uint32 i = 0; i < RADARMAP_MAXTABLECOLOURS; i++) {
-		radarmapGlobs.colourTable[i].red   /= 255.0f;
-		radarmapGlobs.colourTable[i].green /= 255.0f;
-		radarmapGlobs.colourTable[i].blue  /= 255.0f;
+		radarmapGlobs.colourTable[i].r /= 255.0f;
+		radarmapGlobs.colourTable[i].g /= 255.0f;
+		radarmapGlobs.colourTable[i].b /= 255.0f;
 	}
 
 	// Do these have something to do with drawing the TV view arrow on the radar map??
@@ -337,7 +337,7 @@ void __cdecl LegoRR::RadarMap_DrawSurveyDotCircle(RadarMap* radarMap, const Poin
 		baseChannel * 1.0f,
 	};
 	Gods98::Draw_DotCircle(&rect.point, static_cast<uint32>(rect.width), (static_cast<uint32>(rect.width) * 2),
-						   rgb.red, rgb.green, rgb.blue, Gods98::DrawEffect::None);
+						   rgb.r, rgb.g, rgb.b, Gods98::DrawEffect::None);
 
 	Gods98::Draw_SetClipWindow(&oldClipWindow);
 }
@@ -448,7 +448,7 @@ void __cdecl LegoRR::RadarMap_Draw(RadarMap* radarMap, const Point2F* centerPos)
 
 	// Draw reinforcement yellow outlines around blocks.
 	const ColourRGBF reinforce = radarmapGlobs.colourTable[Radar_Colour::Reinforcement];
-	Gods98::Draw_LineListEx(reinforceListFrom, reinforceListTo, reinforceLineCount, reinforce.red, reinforce.green, reinforce.blue, Gods98::DrawEffect::None);
+	Gods98::Draw_LineListEx(reinforceListFrom, reinforceListTo, reinforceLineCount, reinforce.r, reinforce.g, reinforce.b, Gods98::DrawEffect::None);
 
 	/// TODO: Is this addition/subtraction correct??
 	radarMap->worldRect.left   = centerPos->x - worldRadius.x;
@@ -774,7 +774,7 @@ void __cdecl LegoRR::RadarMap_TransformRect(const RadarMap* radarMap, IN OUT Are
 	// rect *= (zoom / blockSize);
 	const real32 scalar = (_RadarMap_ScaledZoom(radarMap) / radarMap->blockSize);
 	Gods98::Maths_Vector2DScale(&rect->point, &rect->point, scalar);
-	Gods98::Maths_Vector2DScale(&rect->size.vec2, &rect->size.vec2, scalar);
+	Gods98::Maths_Vector2DScale(&rect->size.xy, &rect->size.xy, scalar);
 
 	// Move position from transformed origin to relative to the screen center.
 	// rect.point = screenRect.point + (screenRect.size * 0.5f) + {rect.x, -rect.y}

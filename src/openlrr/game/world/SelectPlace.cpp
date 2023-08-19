@@ -147,9 +147,9 @@ bool LegoRR::_SelectPlace_CreateArrow(SelectPlace* selectPlace, Gods98::Containe
 		Gods98::Container_Mesh_SetVertices(selectPlace->contMeshArrow, 0, 0, vertPoses.size(), vertices);
 
 		Gods98::Container_Mesh_SetColourAlpha(selectPlace->contMeshArrow, 0,
-											  rgba.red, rgba.green, rgba.blue, rgba.alpha);
+											  rgba.r, rgba.g, rgba.b, rgba.a);
 		Gods98::Container_Mesh_SetEmissive(selectPlace->contMeshArrow, 0,
-										   rgba.red * 0.5f, rgba.green * 0.5f, rgba.blue * 0.5f);
+										   rgba.r * 0.5f, rgba.g * 0.5f, rgba.b * 0.5f);
 
 		Gods98::Container_Mesh_SetQuality(selectPlace->contMeshArrow, 0, Gods98::Container_Quality::Gouraud);
 		Gods98::Container_Hide(selectPlace->contMeshArrow, true);
@@ -177,7 +177,7 @@ void LegoRR::_SelectPlace_UpdateArrow(SelectPlace* selectPlace, Direction direct
 		}
 
 		// Vertex 0 isn't always the lowest x,y value, so find which vertex is the lowest x,y and use that as our map position.
-		Point2F minVertPos = selectVertPoses[0].vec2; // dummy init
+		Point2F minVertPos = selectVertPoses[0].xy; // dummy init
 		for (uint32 i = 1; i < 4; i++) {
 			minVertPos.x = std::min(minVertPos.x, selectVertPoses[i].x);
 			minVertPos.y = std::min(minVertPos.y, selectVertPoses[i].y);
@@ -469,9 +469,9 @@ const Point2I* __cdecl LegoRR::SelectPlace_CheckAndUpdate(SelectPlace* selectPla
 			rgb = ColourRGBF { 0.0f, 0.7f, 0.1f }; // Green: Can place solid.
 		}
 		Gods98::Container_Mesh_SetColourAlpha(selectPlace->contMesh, tileIndex,
-											  rgb.red, rgb.green, rgb.blue, 0.2f);
+											  rgb.r, rgb.g, rgb.b, 0.2f);
 		Gods98::Container_Mesh_SetEmissive(selectPlace->contMesh, tileIndex,
-										   rgb.red * 0.5f, rgb.green * 0.5f, rgb.blue * 0.5f);
+										   rgb.r * 0.5f, rgb.g * 0.5f, rgb.b * 0.5f);
 
 
 		if (!Map3D_IsInsideDimensions(map, pShape[i].x, pShape[i].y)) {

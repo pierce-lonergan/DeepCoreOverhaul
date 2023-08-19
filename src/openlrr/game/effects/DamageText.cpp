@@ -153,8 +153,8 @@ void __cdecl LegoRR::DamageText_SetNumber(DamageTextData* damageText, uint32 dis
 		else {
 			col = ColourRGBF { 1.0f, 0.25f, 0.0f }; // Dark orange   [10,999]
 		}
-		Gods98::Mesh_SetGroupColour(damageText->mesh, i, col.red, col.green, col.blue, Gods98::Mesh_Colour::Diffuse);
-		Gods98::Mesh_SetGroupColour(damageText->mesh, i, col.red, col.green, col.blue, Gods98::Mesh_Colour::Emissive);
+		Gods98::Mesh_SetGroupColour(damageText->mesh, i, col.r, col.g, col.b, Gods98::Mesh_Colour::Diffuse);
+		Gods98::Mesh_SetGroupColour(damageText->mesh, i, col.r, col.g, col.b, Gods98::Mesh_Colour::Emissive);
 	}
 
 	/// CHANGE: Allow damage above the cap and just show the cap like many RPGs do.

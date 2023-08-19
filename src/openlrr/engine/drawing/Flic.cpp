@@ -1013,7 +1013,7 @@ void __cdecl Gods98::FlicCreateHiColorTable(Flic* fsp)
 
 	for (sint32 i = 0; i < 256; i++) {
 		uint16 col;
-		uint16 wrd = fsp->fsPalette256[i].red; // src[0];
+		uint16 wrd = fsp->fsPalette256[i].r; // src[0];
 		/// CHANGE: Palette colour channels were originally stored as 6-bit, change that and unlock the whole 8 bits.
 		wrd >>= 3;
 		//col >>= 1;
@@ -1021,14 +1021,14 @@ void __cdecl Gods98::FlicCreateHiColorTable(Flic* fsp)
 
 		col = wrd;
 
-		wrd = fsp->fsPalette256[i].green; // src[1];
+		wrd = fsp->fsPalette256[i].g; // src[1];
 		/// CHANGE: Palette colour channels were originally stored as 6-bit, change that and unlock the whole 8 bits.
 		wrd >>= 2;
 		wrd <<= 5;
 
 		col |= wrd;
 
-		wrd = fsp->fsPalette256[i].blue; // src[2];
+		wrd = fsp->fsPalette256[i].b; // src[2];
 		/// CHANGE: Palette colour channels were originally stored as 6-bit, change that and unlock the whole 8 bits.
 		wrd >>= 3;
 		//wrd >>= 1;
@@ -1073,9 +1073,9 @@ bool32 __cdecl Gods98::Flic_Palette256(Flic* fsp)
 			//uint8 col = *src++;
 			/// CHANGE: Palette colour channels were originally stored as 6-bit, change that and unlock the whole 8 bits.
 			//col >>= 2;
-			dst->red   = *src++;
-			dst->green = *src++;
-			dst->blue  = *src++;
+			dst->r = *src++;
+			dst->g = *src++;
+			dst->b = *src++;
 			dst++;
 			//*dst++ = col;
 			ccnt--;
@@ -1362,9 +1362,9 @@ uint16 __cdecl Gods98::getFlicCol(uint8 n, const Flic* fsp)
 ///         Returns the pointer to the next pixel in the target surface.
 uint8* Gods98::_Flic_WritePixel8(const Flic* fsp, uint8* dst, uint8 index)
 {
-	const uint8 r = fsp->fsPalette256[index].red;
-	const uint8 g = fsp->fsPalette256[index].green;
-	const uint8 b = fsp->fsPalette256[index].blue;
+	const uint8 r = fsp->fsPalette256[index].r;
+	const uint8 g = fsp->fsPalette256[index].g;
+	const uint8 b = fsp->fsPalette256[index].b;
 
 	return _Flic_WritePixelRGB(fsp, dst, r, g, b);
 }
