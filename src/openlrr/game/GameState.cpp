@@ -415,6 +415,14 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 	Gods98::Config_GetRGBValue(legoConfig, Main_ID("UnpoweredCrystalRGB"),
 							   &legoGlobs.UnpoweredCrystalRGB.r, &legoGlobs.UnpoweredCrystalRGB.g, &legoGlobs.UnpoweredCrystalRGB.b);
 
+	/// CUSTOM: Support for differentiating between Lv0 and Lv1 CryOre values.
+	if (!Gods98::Config_GetRGBValue(legoConfig, Main_ID("PowerCrystalLv1RGB"),
+								    &legoGlobs2.powerCrystalLv1RGB.r, &legoGlobs2.powerCrystalLv1RGB.g, &legoGlobs2.powerCrystalLv1RGB.b))
+	{
+		// Property not defined or invalid, fallback to default colour.
+		legoGlobs2.powerCrystalLv1RGB = legoGlobs.PowerCrystalRGB;
+	}
+
 
 	Lego_LoadSamples(legoConfig, !Gods98::Graphics_IsReduceSamples());
 

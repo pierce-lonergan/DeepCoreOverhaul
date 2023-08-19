@@ -1182,7 +1182,15 @@ void __cdecl LegoRR::LegoObject_SetNumBuildingsTeleported(uint32 numTeleported)
 void __cdecl LegoRR::LegoObject_SetCrystalPoweredColour(LegoObject* liveObj, bool32 powered)
 {
 	if (liveObj->type == LegoObject_PowerCrystal) {
-		const ColourRGBF colour = (powered ? legoGlobs.PowerCrystalRGB : legoGlobs.UnpoweredCrystalRGB);
+		ColourRGBF colour;
+		if (powered)
+		{
+			colour = (liveObj->objLevel == 0 ? legoGlobs.PowerCrystalRGB : legoGlobs2.powerCrystalLv1RGB);
+		}
+		else
+		{
+			colour = legoGlobs.UnpoweredCrystalRGB;
+		}
 
 		for (uint32 groupID = 0; groupID < Gods98::Container_Mesh_GetGroupCount(liveObj->other); groupID++) {
 

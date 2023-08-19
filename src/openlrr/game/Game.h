@@ -737,6 +737,8 @@ struct Lego_Globs2
 	bool seeThroughWalls; // (cfg: Level::SeeThroughWalls)
 
 	bool resourceTumble; // Crystals and ore generated from rockfalls will tumble out of the wall.
+
+	ColourRGBF powerCrystalLv1RGB; // (cfg: Main::PowerCrystalLv1RGB) Custom colour used for Lv1 CryOre-spawned crystals.
 };
 
 #pragma endregion
