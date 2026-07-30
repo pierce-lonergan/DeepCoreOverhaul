@@ -89,6 +89,40 @@ bool32 __cdecl LegoRR::Priorities_LoadLevel(const Gods98::Config* config, const 
 	AI_Priority locAiPro;
 	for (prop = Config_FindArray(config, arrayID); prop != nullptr; prop = Config_GetNextItem(prop)) {
 		if (AIPriority_GetType(Gods98::Config_GetItemName(prop), &locAiPro)) {
+
+			/// DEEPCORE: This loop's counter was never checked against the arrays it
+			/// indexes, and the resulting overflow is uniquely nasty: it overwrites its
+			/// own loop counter.
+			///
+			/// Every array here is AI_Priority_Count (27) entries inside Priorities_Globs
+			/// (Priorities.h:60-65), which is overlaid on the original executable at
+			/// 0x00501f00 (Priorities.cpp:31) and pinned by assert_sizeof(..., 0x4c0).
+			/// initialOff sits at offset 0x438 and is 0x6c bytes, so it ends at 0x4a4 --
+			/// and `count` itself is the field AT 0x4a4 (Priorities.h:65).
+			///
+			/// So on the 28th accepted entry, `initialOff[27] = TRUE` writes 1 into
+			/// `count`, and the following `count++` makes it 2. The 29th entry then
+			/// writes buttonTypes[2], quietly overwriting the third real priority. The
+			/// loop never leaves the struct and never fails: it just scrambles the
+			/// priority table and returns TRUE. The player gets wrong icons in wrong
+			/// slots and a Priorities_Reset that restores the wrong values, with nothing
+			/// logged anywhere.
+			///
+			/// Duplicates make this reachable without anyone doing something exotic --
+			/// AIPriority_GetType is a pure name match, so a level cfg that lists the
+			/// same priority 28 times is enough.
+			///
+			/// Unconditional, like the other overflow guards: the behaviour replaced is
+			/// memory corruption, so there is no vanilla semantics worth preserving.
+			if (prioritiesGlobs.count >= (uint32)AI_Priority_Count) {
+				Config_WarnItemF(true, prop,
+					"Priorities: more than %i entries in this level's Priorities block; "
+					"\"%s\" and any after it are ignored. Writing them would corrupt the "
+					"priority table.",
+					(sint32)AI_Priority_Count, Gods98::Config_GetItemName(prop));
+				break;
+			}
+
 			prioritiesGlobs.buttonTypes[prioritiesGlobs.count] = locAiPro;
 			prioritiesGlobs.initialTypes[prioritiesGlobs.count] = locAiPro;
 			// -FC, prios start at 80 and dec by 5 each
