@@ -75,6 +75,7 @@
 #include "world/Teleporter.h"
 #include "world/Water.h"
 #include "Debug.h"
+#include "DeepCore.hpp"
 #include "Shortcuts.hpp"
 #include "Game.h"
 
@@ -139,6 +140,10 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 	
 	Shortcuts::shortcutManager.Initialise();
 	Shortcuts::shortcutManager.Load();
+
+	// DeepCoreOverhaul feature gates. A missing DeepCore.cfg is not an error and
+	// leaves every feature off, i.e. stock OpenLRR behaviour.
+	DeepCore::Load();
 
 	//Gods98::TextWindow_Initialise(); // Determined using RockFall beta (function does nothing).
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -115,6 +115,7 @@
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>xcopy /y /d "$(SolutionDir)data\Settings\Shortcuts.cfg" "$(OutDir)Settings\"
+xcopy /y /d "$(SolutionDir)data\Settings\DeepCore.cfg" "$(OutDir)Settings\"
 xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
       <Outputs>$(OutDir)always_run_this_build_step.txt</Outputs>
       <Message>Copying OpenLRR data files</Message>
@@ -144,6 +145,7 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>xcopy /y /d "$(SolutionDir)data\Settings\Shortcuts.cfg" "$(OutDir)Settings\"
+xcopy /y /d "$(SolutionDir)data\Settings\DeepCore.cfg" "$(OutDir)Settings\"
 xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
       <Outputs>$(OutDir)always_run_this_build_step.txt</Outputs>
       <Message>Copying OpenLRR data files</Message>
@@ -253,6 +255,7 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     <ClInclude Include="game\interface\ScrollInfo.h" />
     <ClInclude Include="game\interface\TextMessages.h" />
     <ClInclude Include="game\interface\ToolTip.h" />
+    <ClInclude Include="game\DeepCore.hpp" />
     <ClInclude Include="game\Shortcuts.hpp" />
     <ClInclude Include="game\mission\Messages.h" />
     <ClInclude Include="game\mission\NERPsFile.h" />
@@ -378,6 +381,7 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     <ClCompile Include="game\interface\ScrollInfo.cpp" />
     <ClCompile Include="game\interface\TextMessages.cpp" />
     <ClCompile Include="game\interface\ToolTip.cpp" />
+    <ClCompile Include="game\DeepCore.cpp" />
     <ClCompile Include="game\Shortcuts.cpp" />
     <ClCompile Include="game\mission\Messages.cpp" />
     <ClCompile Include="game\mission\NERPsFile.cpp" />
