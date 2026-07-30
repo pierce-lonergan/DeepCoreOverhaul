@@ -23,6 +23,9 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "../engine/core/Config.h"
 
 
@@ -70,6 +73,16 @@ struct Settings
 	/// Allow different emerge triggers within one level to spawn different species.
 	bool multiSpeciesEmerge = false;
 
+	/// Monster type names eligible for multi-species emerges, in rotation order.
+	///
+	/// Deliberately EMPTY by default, which makes multiSpeciesEmerge a no-op. The
+	/// names that actually exist live in the user's own Lego.cfg RockMonsterTypes
+	/// block, which this project has never been able to read (no game installation
+	/// on the authoring machine). Guessing them here and silently falling back would
+	/// hide typos; requiring the user to name them means an unresolvable name gets
+	/// reported instead. Vanilla names are listed in DeepCore.cfg as a starting point.
+	std::vector<std::string> emergeSpeciesNames;
+
 	/// Enable the DLL-side spawn director (waves independent of map emerge triggers).
 	bool waveDirector = false;
 
@@ -88,8 +101,26 @@ struct Settings
 	// by level this way. So a 1.6x dark-red brute and a 0.6x pale sprite can be the
 	// same mesh -- apparent roster growth with zero new art and zero new object IDs.
 
-	/// Apply the per-(type,id) cosmetic variant table.
+	/// Apply the cosmetic variant table to spawned creatures.
 	bool creatureVariants = false;
+
+	/// One cosmetic variant: a scale and a tint applied to a creature at spawn.
+	struct Variant
+	{
+		std::string label;			// for diagnostics only
+		std::string speciesName;	// which RockMonster type this applies to
+		real32 scale = 1.0f;		// uniform model scale multiplier
+		real32 r = 1.0f;			// diffuse tint, 1:1:1 == untinted
+		real32 g = 1.0f;
+		real32 b = 1.0f;
+	};
+
+	/// Variants in declaration order. Instances of a species cycle through the
+	/// variants declared for that species, so the Nth monster of a species gets
+	/// variant N % count. Cycling rather than rolling dice is deliberate: it makes
+	/// a bug report reproducible, and guarantees the player actually sees every
+	/// variant instead of hitting an unlucky streak.
+	std::vector<Variant> variants;
 
 
 	// ---- Stability ------------------------------------------------------------
@@ -133,6 +164,29 @@ void Reset(void);
 /// True if any overhaul feature is enabled. Used to decide whether to announce the
 /// overhaul at startup, so a stock run stays visually identical to upstream.
 bool IsAnyFeatureEnabled(void);
+
+/// Choose which RockMonster type ID a given emerge trigger should spawn.
+///
+/// Returns `fallbackId` unchanged -- i.e. exact vanilla behaviour -- whenever the
+/// feature is off, the species pool is empty, or nothing in the pool resolved. The
+/// caller can therefore use the result unconditionally.
+///
+/// `fallbackId` is the level's own Lego_Level::EmergeCreature. `triggerIndex` is the
+/// index of the trigger within Lego_Level::emergeTriggers, so a given trigger always
+/// yields the same species for the whole mission rather than shuffling per wall hit.
+sint32 PickEmergeSpecies(sint32 fallbackId, uint32 triggerIndex);
+
+/// Drop cached name->ID resolutions. Call when the game's object tables may have been
+/// reloaded, so a stale ID can never be handed to the spawner.
+void InvalidateSpeciesCache(void);
+
+/// Apply a cosmetic variant (scale + tint) to a freshly created creature.
+///
+/// `creatureModel` is the per-instance CreatureModel clone owned by the live object,
+/// passed as void* so this header need not pull in the LegoRR object headers.
+/// `objID` is the creature's RockMonster type ID. Does nothing when the feature is
+/// off or no variant is declared for that species, so it is safe to call always.
+void ApplyCreatureVariant(void* creatureModel, sint32 objID);
 
 #pragma endregion
 

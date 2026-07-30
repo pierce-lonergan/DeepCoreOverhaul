@@ -46,6 +46,7 @@
 #include "world/SpiderWeb.h"
 #include "world/Teleporter.h"
 #include "world/Water.h"
+#include "DeepCore.hpp"
 #include "Debug.h"
 #include "Shortcuts.hpp"
 #include "Game.h"
@@ -3052,13 +3053,21 @@ bool32 __cdecl LegoRR::Level_HandleEmergeTriggers(Lego_Level* level, const Point
         if ((trigger->blockPos.x == blockPos->x && trigger->blockPos.y == blockPos->y) &&
             trigger->timeout == 0.0f)
         {
+            /// DEEPCORE: Vanilla passes level->EmergeCreature for every trigger, so a
+            /// mission can only ever emerge one species out of the eleven that exist.
+            /// PickEmergeSpecies returns the fallback unchanged when the feature is off,
+            /// and only ever returns an ID it has bounds-checked against both
+            /// legoGlobs.rockMonsterCount and the LegoObject_ID_Count ceiling.
+            const LegoObject_ID emergeCreature =
+                (LegoObject_ID)DeepCore::PickEmergeSpecies((sint32)level->EmergeCreature, i);
+
             for (uint32 j = 0; j < EMERGE_MAXPOINTS; j++) {
                 const EmergeBlock* emergePt = &trigger->emergePoints[j];
                 if (emergePt->used) {
 
                     LegoObject* legoObj = LegoObject_TryGenerateRMonster(
-                        &legoGlobs.rockMonsterData[level->EmergeCreature],
-                        LegoObject_RockMonster, level->EmergeCreature,
+                        &legoGlobs.rockMonsterData[emergeCreature],
+                        LegoObject_RockMonster, emergeCreature,
                         emergePt->blockPos.x, emergePt->blockPos.y);
                     
                     if (legoObj != nullptr) {

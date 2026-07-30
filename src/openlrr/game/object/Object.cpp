@@ -26,6 +26,7 @@
 #include "AITask.h"
 #include "Flocks.h"
 #include "Stats.h"
+#include "../DeepCore.hpp"
 #include "Object.h"
 
 
@@ -952,6 +953,12 @@ LegoRR::LegoObject* __cdecl LegoRR::LegoObject_Create(ObjectModel* objModel, Leg
 			Creature_SetOwnerObject(liveObj->rockMonster, liveObj);
 
 			liveObj->carryNullFrames = Creature_GetCarryNullFrames(liveObj->rockMonster);
+
+			/// DEEPCORE: Cosmetic variant (scale + tint) for this individual monster.
+			/// Applied after Creature_Clone so it touches only this instance's clone and
+			/// never the shared template in legoGlobs.rockMonsterData. No-op unless
+			/// CreatureVariants is on and a variant is declared for this species.
+			DeepCore::ApplyCreatureVariant(liveObj->rockMonster, (sint32)objID);
 
 			liveObj->flags3 |= (LIVEOBJ3_UNK_200|LIVEOBJ3_CANDAMAGE|LIVEOBJ3_AITASK_UNK_400000|LIVEOBJ3_MONSTER_UNK_8000000);
 
