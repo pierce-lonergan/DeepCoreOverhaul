@@ -1630,6 +1630,31 @@ LegoRR::LegoObject* LegoRR::LegoObject_TryGenerateSlugAtBlock(ObjectModel* objMo
 		slugObj->flags1 |= LIVEOBJ1_EXPANDING;
 		slugObj->flags3 &= ~LIVEOBJ3_POWEROFF;
 
+		/// DEEPCORE: Give the emerging object a real block to point at.
+		///
+		/// LegoObject_Create_internal zeroes every new object and then sets
+		/// targetBlockPos to (-1,-1) (Object.cpp:1163-1164). Nothing on this path ever
+		/// replaced it. The emerge-completion branch in LegoObject_Callback_Update
+		/// (Object.cpp:3214-3227) triggers on exactly the LIVEOBJ1_EXPANDING flag set
+		/// one line above, casts targetBlockPos to a Point2I and hands it to
+		/// Level_Block_SetBusy. With (-1,-1) that is a block index of -(width + 1) into
+		/// an array of 0x48-byte structs -- a negative-index write, i.e. heap corruption
+		/// rather than a graceful failure.
+		///
+		/// The branch is additionally gated on LegoObject_IsRockMonsterCanGather, which
+		/// is still an exe address macro (Object.cpp:5186), so whether a slug actually
+		/// reaches it is UNVERIFIED -- and unverifiable without running the game. Setting
+		/// a valid block costs nothing either way: if the branch is never reached this is
+		/// inert, and if it is, it turns corruption into the correct operation.
+		///
+		/// NOT also calling Level_Block_SetBusy(&blockPos, true) here, though the emerge
+		/// path presumably does. The only code that clears that flag is the very branch
+		/// whose reachability is unproven, so setting it could strand a block permanently
+		/// busy and make Rock Raiders refuse to work it forever. Defensive fix, yes;
+		/// speculative behaviour change on an unverifiable path, no.
+		slugObj->targetBlockPos.x = (real32)bx;
+		slugObj->targetBlockPos.y = (real32)by;
+
 		LegoObject_SetActivity(slugObj, Activity_Emerge, 0);
 		LegoObject_UpdateActivityChange(slugObj);
 		AITask_DoAnimationWait(slugObj);
