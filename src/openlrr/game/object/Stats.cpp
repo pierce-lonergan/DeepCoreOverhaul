@@ -140,6 +140,37 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
             continue;
         }
 
+		/// DEEPCORE: Bounds-check the indices BEFORE anything uses them to write.
+		///
+		/// `type` and `id` come straight out of Lego_GetObjectByName, which is still the
+		/// original executable's code (Game.h:1511) and returns whatever its own tables
+		/// happen to hold. Every write below indexes fixed-size arrays inside statsGlobs
+		/// -- a reference overlaid on the executable's data segment at 0x00503bd8
+		/// (Stats.cpp:41), pinned by assert_sizeof(Stats_Globs, 0x5b0).
+		///
+		/// Unchecked, an id of 15 makes `objectLevels[type][15]` alias the first element
+		/// of `objectLevels[type + 1]`, silently corrupting the NEXT object type's level
+		/// counts. A type or id past the end of the array walks off statsGlobs entirely;
+		/// per docs/ADDRESS-MAP.md the very next thing in memory is the live flag
+		/// g_Teleporter_BOOL_00504188, four bytes on, and then textGlobs.
+		///
+		/// Deliberately NOT behind a DeepCore gate: the behaviour this replaces is memory
+		/// corruption, so there is no vanilla semantics worth preserving, and any config
+		/// that reaches here is already broken. We both complain AND skip -- fatal
+		/// visibility is a runtime-toggleable log level (Errors.h), so the `continue` is
+		/// what actually guarantees the corrupting write never happens.
+		if ((uint32)type >= (uint32)LegoObject_Type_Count ||
+			(uint32)id   >= (uint32)LegoObject_ID_Count)
+		{
+			Config_FatalItemF(true, prop,
+				"Stats entry \"%s\" resolved to out-of-range indices (type %i, max %i; id %i, max %i). "
+				"Writing it would corrupt adjacent memory in the original executable. Entry skipped.",
+				Config_GetItemName(prop),
+				(sint32)type, (sint32)LegoObject_Type_Count,
+				(sint32)id,   (sint32)LegoObject_ID_Count);
+			continue;
+		}
+
         if (statsGlobs.objectStats[type] == nullptr) {
 			/// SANITY: Allocate size of max IDs for poorly written object type enumeration loops.
             //uint32 subtypeArraySize = Lego_GetObjectTypeIDCount(type) * sizeof(ObjectStats*);
