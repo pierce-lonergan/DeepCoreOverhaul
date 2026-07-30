@@ -118,3 +118,34 @@ hook) was available in C++ we already own, which is where it was built instead.
 
 The ambition redirects, it does not shrink: variety comes from density, per-instance
 differentiation, weapon identity, and level/campaign content — none of which is ID-capped.
+
+### Later in the day
+
+- **Verified by hand that there is no hook trampoline**, after `docs/DIRECTORY.md` raised it.
+  `hook_write_jmpret` (`hook.cpp:36`) overwrites a function prologue with `E9 rel32` + `C3`,
+  and every restore path in that file is commented out. Counted across the tree: **1515 hook
+  installations, zero passing a backup buffer.** There is no way to call an original
+  implementation, so any re-implementation must be complete rather than a wrapper. This is now
+  the primary argument against speculatively reimplementing exe functions.
+- **Fixed the `(-1,-1)` target block on emerging objects** (`Object.cpp:1632`). New objects get
+  `targetBlockPos = (-1,-1)` (`Object.cpp:1163-1164`) and the slug spawner never replaced it,
+  while setting `LIVEOBJ1_EXPANDING` — exactly the flag whose completion branch
+  (`Object.cpp:3214-3227`) casts that value to a `Point2I` and hands it to
+  `Level_Block_SetBusy`. At `(-1,-1)` that is index `-(width + 1)` into an array of `0x48`-byte
+  structs: a negative-index write. Took the defensive half of the recommended fix only —
+  see the commit for why adding `Level_Block_SetBusy(..., true)` would have risked a real
+  gameplay regression on an unverifiable path.
+- **Fixed the `sampleGroupTable` overflow** (`SFX.cpp:198`). `sampleGroupCount` accumulates
+  across every `Samples` line and was never checked against `SFX_MAXSAMPLEGROUPS` (200). Entry
+  200 overwrites `hashNameList`, entry 201 overwrites the counter itself, and — confirmed
+  against the generated `docs/ADDRESS-MAP.md` — `0x00502468 + 0x1770 == 0x00503bd8`, which is
+  `statsGlobs`. That is the **only exactly-adjacent region pair with zero slack in the entire
+  map**, so a big enough sound pack walks straight from the SFX globals into the object stats
+  pointer table. The audit found it; the address map independently confirmed the landing site.
+- Wrote `docs/HANDOFF-2026-07-30.md`.
+
+**Note for whoever reads the next entry:** the water-table relocation was in progress at the
+end of this session, in a separate working stream. If `Water.cpp`/`Water.h` look half-migrated
+in the tree, that is why — check `docs/research/water-relocation.md` for the design and the
+acceptance test (`addrlint` must still report 113 regions and 0 overlaps, and
+`docs/ADDRESS-MAP.md` must not change).
