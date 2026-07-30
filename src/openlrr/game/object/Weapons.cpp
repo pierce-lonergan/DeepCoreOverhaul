@@ -154,6 +154,37 @@ bool32 __cdecl LegoRR::Weapon_Initialise(const Gods98::Config* config, const cha
 						LegoObject_ID objID = (LegoObject_ID)0;
 						/// FIX APPLY: Don't infinite loop when failing to parse an object name...
 						if (Lego_GetObjectByName(Gods98::Config_GetItemName(stat), &objType, &objID, nullptr)) {
+
+							/// DEEPCORE: Bounds-check before these indices are used, exactly as in
+							/// Stats_Initialise. Lego_GetObjectByName is still the original
+							/// executable's code (Game.h:1511) and returns whatever its own tables
+							/// hold; nothing here validated it.
+							///
+							/// Two things go wrong without this check. Stats_GetLevels reads
+							/// statsGlobs.objectLevels[objType][objID] out of bounds -- and
+							/// statsGlobs is overlaid on the exe's data segment (Stats.cpp:41) --
+							/// and then objectCoefs[objType][objID][objLevel] is WRITTEN out of
+							/// bounds. objectCoefs is a [20][15][16] array inside a heap-allocated
+							/// WeaponStats (Weapons.cpp:56), so an overflow walks into the next
+							/// weapon's coefficient table or past the allocation entirely.
+							///
+							/// Unconditional, not gated: the behaviour it replaces is memory
+							/// corruption, so there is no vanilla semantics worth keeping. We
+							/// complain AND skip, because fatal visibility is a runtime-toggleable
+							/// log level (Errors.h) -- the `continue` is what actually prevents it.
+							if ((uint32)objType >= (uint32)LegoObject_Type_Count ||
+								(uint32)objID   >= (uint32)LegoObject_ID_Count)
+							{
+								Config_FatalItemF(true, stat,
+									"WeaponTypes object coef \"%s\" resolved to out-of-range indices "
+									"(type %i, max %i; id %i, max %i). Writing it would corrupt the "
+									"weapon coefficient table. Entry skipped.",
+									Gods98::Config_GetItemName(stat),
+									(sint32)objType, (sint32)LegoObject_Type_Count,
+									(sint32)objID,   (sint32)LegoObject_ID_Count);
+								continue;
+							}
+
 							const uint32 objLevelCount = Stats_GetLevels(objType, objID);
 
 							/// FIX APPLY: Don't modify the config strings. BAD! NO TOUCH!

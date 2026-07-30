@@ -74,3 +74,47 @@ source — it never means the behaviour was observed in a running game.
     from the mandate is now enforced by machine rather than by memory.
 - Wrote `docs/DIRECTORY.md` (full recursive inventory with per-module ownership: implemented
   C++ vs still-exe address macros).
+- **Fixed a memory-corruption bug in `Stats_Initialise`.** `type` and `id` came from
+  `Lego_GetObjectByName` (exe code, `Game.h:1511`) and indexed fixed arrays inside the
+  exe-overlaid `statsGlobs` with no bounds check whatsoever. Now checked once before any
+  write, with the entry skipped and a `Config_FatalItemF` naming file, line and both indices.
+  Unconditional, not gated — the behaviour replaced is corruption, so there is no vanilla
+  semantics to preserve.
+- **Fixed the same defect in `Weapon_Initialise`** (`Weapons.cpp:156`), where `objType`/`objID`
+  fed both `Stats_GetLevels` (an out-of-bounds *read* of the overlaid `statsGlobs`) and an
+  out-of-bounds *write* to `objectCoefs[20][15][16]` inside a heap-allocated `WeaponStats`.
+- **Shipped per-weapon beam appearance.** Weapon types were already uncapped, but every laser
+  rendered identically because the appearance was hardcoded in `Weapon_Lazer_Add`, so a bigger
+  roster read as one weapon. New `Weapon_Lazer_AddStyled` carries the weapon identity;
+  `Weapon_Lazer_Add` keeps its exact hooked signature (`interop.cpp:4369`) and forwards -1,
+  so exe-originated lasers stay stock. Styles live DLL-side keyed by weapon index — no
+  exe-overlaid struct touched.
+
+### Tier 3 (raising `LegoObject_ID_Count`) is a proven dead end. Recorded so nobody retries it.
+
+Full analysis in `docs/research/type-loader-reimplementation.md` §4. Two findings settle it:
+
+1. **A 16th monster does not overflow — it aliases the Tool Store.** In a `[20][15]` table the
+   linear index of `[3][15]` is `3*15 + 15 = 60`, which is `[4][0]`. `LegoObject_Building == 4`
+   (`GameCommon.h:1075`), so every RockMonster ID-15 access silently reads and writes
+   **Building ID 0's row** — the Tool Store in stock data. No crash, no warning, no
+   `assert_sizeof` trip. Just a Tool Store whose stats drift as monsters spawn. This is a
+   far nastier failure than "writes past the end", and it is exactly what the two bounds
+   checks above now refuse.
+2. **The price of a usable ID 15 is ~200 exe functions**, not a design change. A DLL-side
+   mirror only works if every toucher of a table is C++. Of the six tables a monster ID
+   reaches, three are ours — but `Dependencies` (0 of 11 implemented), `Interface` (3 of 99)
+   and `AITask` (9 of 105) are not, and they are fed by `Lego_GetObjectByName`, which is exe
+   code with seven exe callers. You cannot mirror a table whose writer is 1999 machine code,
+   and there is no "safe" index to hand those consumers, because every index ≥ 15 aliases
+   Building 0.
+
+Also rejected, deliberately: **reimplementing `Lego_LoadRockMonsterTypes` in C++.** It unlocks
+nothing — the free ID slots below 15 already work with no code at all, because
+`Lego_GetObjectByName` and `Stats_Initialise` are count-driven — while carrying the one risk
+this project cannot absorb: an unverifiable behavioural regression in startup code on a project
+that cannot run the game. Every gain attributed to it (validation, loud errors, a load-time
+hook) was available in C++ we already own, which is where it was built instead.
+
+The ambition redirects, it does not shrink: variety comes from density, per-instance
+differentiation, weapon identity, and level/campaign content — none of which is ID-capped.
