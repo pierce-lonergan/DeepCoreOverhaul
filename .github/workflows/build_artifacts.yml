@@ -1,77 +1,105 @@
-name: Compile Debug and Release OpenLRR
+name: Build DeepCoreOverhaul (Debug and Release)
+
+# NOTE ON THE ARTIFACT CONTENTS
+# The produced artifact contains ONLY the DLL and the settings/data files -- it is
+# deliberately NOT runnable on its own. Upstream's workflow also moved an OpenLRR.exe
+# from the repo root into the artifact; that file was the original 1999 game executable
+# with an import appended, so it was removed from this fork (see NOTICE.md) and those
+# Move-Item steps were deleted. Users generate their own launcher from their own copy
+# of the game with OpenLRR-MakeExe, or use the injector.
 
 on:
   push:
     paths:
-      - src/openlrr/**
+      - src/**
       - resources/**
+      - data/**
+      - tools/**
+      - .github/workflows/**
     tags: 'v*'
+    branches: '**'
+  pull_request:
     branches: '**'
 
 jobs:
-  Nightly_release_build:
-    runs-on: windows-latest
+  # Runs first and gates everything else: if the exe's data-segment layout is
+  # inconsistent, nothing built on top of it can be trusted.
+  Address_space_lint:
+    runs-on: ubuntu-latest
     steps:
       - name: Clone repo
-        uses: actions/checkout@v3
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1
-      - name: Build OpenLRR for x86 Release
-        run: msbuild openlrr.sln /t:openlrr /p:Configuration=Release /p:Platform=x86
-      - name: Rerrange files to easily use OpenLRR
-        run: |
-          mkdir OpenLRR/OpenLRR/
-          Move-Item bin/openlrr.dll OpenLRR/OpenLRR/
-          Move-Item OpenLRR.exe OpenLRR/OpenLRR/
-          Move-Item data/* OpenLRR/OpenLRR/
-      - name: Upload OpenLRR Release build
-        uses: actions/upload-artifact@v3
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          name: OpenLRR-Release
-          path: |
-            OpenLRR/
+          python-version: '3.x'
+      - name: addrlint self-tests
+        run: python tools/addrlint/test_addrlint.py
+      - name: No overlapping exe-overlaid regions
+        run: python tools/addrlint/addrlint.py --check
+      - name: docs/ADDRESS-MAP.md is up to date
+        run: |
+          python tools/addrlint/addrlint.py --markdown /tmp/ADDRESS-MAP.md --quiet
+          diff -u docs/ADDRESS-MAP.md /tmp/ADDRESS-MAP.md \
+            || (echo "::error::docs/ADDRESS-MAP.md is stale. Regenerate with: python tools/addrlint/addrlint.py --markdown docs/ADDRESS-MAP.md" && exit 1)
 
-  Nightly_debug_build:
-    runs-on: windows-latest
+  # The repository must never distribute game content. This is a hard line in the
+  # project mandate, so it is enforced mechanically rather than by memory.
+  No_game_binaries:
+    runs-on: ubuntu-latest
     steps:
       - name: Clone repo
-        uses: actions/checkout@v3
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1
-      - name: Build OpenLRR for x86 Debug
-        run: msbuild openlrr.sln /t:openlrr /p:Configuration=Debug /p:Platform=x86
-      - name: Rerrange files to easily use OpenLRR
+        uses: actions/checkout@v4
+      - name: Reject tracked executables and game archives
         run: |
-          mkdir OpenLRR/OpenLRR/
-          Move-Item bin/openlrr-d.dll OpenLRR/OpenLRR/
-          Move-Item OpenLRR.exe OpenLRR/OpenLRR/
-          Move-Item data/* OpenLRR/OpenLRR/
-      - name: Upload OpenLRR Debug build
-        uses: actions/upload-artifact@v3
-        with:
-          name: OpenLRR-Debug
-          path: |
-            OpenLRR/
-  
-  Prepare_release:
-    runs-on: "ubuntu-latest" # Zip action only works on Ubuntu
-    needs: Nightly_release_build
-    # Trigger when a new tag is pusht
-    if: startsWith(github.ref, 'refs/tags/')
+          BAD=$(git ls-files | grep -iE '\.(exe|dll|wad)$' || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::Tracked binaries that must never be committed:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "No tracked .exe/.dll/.wad files."
+
+  Release_build:
+    runs-on: windows-latest
+    needs: [Address_space_lint, No_game_binaries]
     steps:
-      - name: Set tag in env # Extract the pusht tag into a variable for later use
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      - name: Get artifact # Faster to download instead of recompile
-        uses: actions/download-artifact@v2
+      - name: Clone repo
+        uses: actions/checkout@v4
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+      - name: Build x86 Release
+        run: msbuild openlrr.sln /t:openlrr /p:Configuration=Release /p:Platform=x86
+      - name: Stage artifact
+        run: |
+          mkdir -p artifact/DeepCoreOverhaul
+          Move-Item bin/openlrr.dll artifact/DeepCoreOverhaul/
+          Copy-Item -Recurse data/* artifact/DeepCoreOverhaul/
+          Copy-Item NOTICE.md artifact/DeepCoreOverhaul/
+      - name: Upload Release build
+        uses: actions/upload-artifact@v4
         with:
-          name: OpenLRR-Release
-      - name: Zip artifact
-        uses: montudor/action-zip@v1
+          name: DeepCoreOverhaul-Release
+          path: artifact/
+
+  Debug_build:
+    runs-on: windows-latest
+    needs: [Address_space_lint, No_game_binaries]
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+      - name: Build x86 Debug
+        run: msbuild openlrr.sln /t:openlrr /p:Configuration=Debug /p:Platform=x86
+      - name: Stage artifact
+        run: |
+          mkdir -p artifact/DeepCoreOverhaul
+          Move-Item bin/openlrr-d.dll artifact/DeepCoreOverhaul/
+          Copy-Item -Recurse data/* artifact/DeepCoreOverhaul/
+          Copy-Item NOTICE.md artifact/DeepCoreOverhaul/
+      - name: Upload Debug build
+        uses: actions/upload-artifact@v4
         with:
-          args: zip -qq -r OpenLRR-${{ env.RELEASE_VERSION }}.zip OpenLRR/
-      - name: Draft Public Release
-        uses: "softprops/action-gh-release@v1"
-        with:
-          name: "Draft Release ${{ env.RELEASE_VERSION }}"
-          draft: true
-          files: OpenLRR-${{ env.RELEASE_VERSION }}.zip
+          name: DeepCoreOverhaul-Debug
+          path: artifact/

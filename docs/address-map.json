@@ -1,0 +1,1481 @@
+{
+ "regions": [
+  {
+   "name": "Idl::IID_IDirect3DRMViewport2",
+   "type": "IID",
+   "addr": 4852056,
+   "where": "src/openlrr/platform/d3drm.cpp:16",
+   "size": 16,
+   "size_src": "primitive"
+  },
+  {
+   "name": "Idl::IID_IDirect3DRMFrame",
+   "type": "IID",
+   "addr": 4852072,
+   "where": "src/openlrr/platform/d3drm.cpp:19",
+   "size": 16,
+   "size_src": "primitive"
+  },
+  {
+   "name": "Idl::IID_IDirect3DRMFrame3",
+   "type": "IID",
+   "addr": 4852104,
+   "where": "src/openlrr/platform/d3drm.cpp:22",
+   "size": 16,
+   "size_src": "primitive"
+  },
+  {
+   "name": "Idl::IID_IDirect3DRMMesh",
+   "type": "IID",
+   "addr": 4852136,
+   "where": "src/openlrr/platform/d3drm.cpp:25",
+   "size": 16,
+   "size_src": "primitive"
+  },
+  {
+   "name": "Idl::IID_IDirect3DRMMeshBuilder2",
+   "type": "IID",
+   "addr": 4852168,
+   "where": "src/openlrr/platform/d3drm.cpp:28",
+   "size": 16,
+   "size_src": "primitive"
+  },
+  {
+   "name": "Idl::IID_IDirect3DRMTexture",
+   "type": "IID",
+   "addr": 4852248,
+   "where": "src/openlrr/platform/d3drm.cpp:31",
+   "size": 16,
+   "size_src": "primitive"
+  },
+  {
+   "name": "Idl::IID_IDirect3DRMMaterial",
+   "type": "IID",
+   "addr": 4852312,
+   "where": "src/openlrr/platform/d3drm.cpp:34",
+   "size": 16,
+   "size_src": "primitive"
+  },
+  {
+   "name": "Idl::IID_IDirect3DRMUserVisual",
+   "type": "IID",
+   "addr": 4852552,
+   "where": "src/openlrr/platform/d3drm.cpp:37",
+   "size": 16,
+   "size_src": "primitive"
+  },
+  {
+   "name": "Idl::IID_IDirect3DRM3",
+   "type": "IID",
+   "addr": 4852696,
+   "where": "src/openlrr/platform/d3drm.cpp:40",
+   "size": 16,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::fallinGlobs",
+   "type": "Fallin_Globs",
+   "addr": 4861668,
+   "where": "src/openlrr/game/world/Fallin.cpp:20",
+   "size": 4,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::g_frontSelectHoverIndex",
+   "type": "sint32",
+   "addr": 4861768,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:39",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::g_saveMenuSelectedIndex",
+   "type": "sint32",
+   "addr": 4861772,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:42",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::g_saveMenuOverlayState",
+   "type": "sint32",
+   "addr": 4861776,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:45",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::g_saveMenuSelectingIndex",
+   "type": "sint32",
+   "addr": 4861780,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:48",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::g_saveMenuOverwriteResult",
+   "type": "sint32",
+   "addr": 4861784,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:51",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::g_saveMenuOutputSelectedIndex",
+   "type": "sint32",
+   "addr": 4861788,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:54",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::g_Interface_TIMER_004a3b58",
+   "type": "real32",
+   "addr": 4864856,
+   "where": "src/openlrr/game/interface/Interface.cpp:35",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::g_Interface_UINT_004a3b5c",
+   "type": "uint32",
+   "addr": 4864860,
+   "where": "src/openlrr/game/interface/Interface.cpp:38",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::updateGlobs",
+   "type": "LegoUpdate_Globs",
+   "addr": 4867416,
+   "where": "src/openlrr/game/Game.cpp:142",
+   "size": 20,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::s_objectDamageShakeTimer",
+   "type": "real32",
+   "addr": 4872368,
+   "where": "src/openlrr/game/object/Object.cpp:53",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::nerpsHasNextButton",
+   "type": "bool32",
+   "addr": 4880188,
+   "where": "src/openlrr/game/mission/NERPsFile.cpp:40",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::nerpsBOOL_004a7740",
+   "type": "bool32",
+   "addr": 4880192,
+   "where": "src/openlrr/game/mission/NERPsFile.cpp:43",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::nerpsIconPos",
+   "type": "Point2F",
+   "addr": 4880216,
+   "where": "src/openlrr/game/mission/NERPsFile.cpp:51",
+   "size": 8,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::nerpsIconWidth",
+   "type": "sint32",
+   "addr": 4880224,
+   "where": "src/openlrr/game/mission/NERPsFile.cpp:54",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::nerpsIconSpace",
+   "type": "sint32",
+   "addr": 4880228,
+   "where": "src/openlrr/game/mission/NERPsFile.cpp:57",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::nerpsUnkSampleIndex",
+   "type": "sint32",
+   "addr": 4880232,
+   "where": "src/openlrr/game/mission/NERPsFile.cpp:60",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::s_PriorityList_Index",
+   "type": "uint32",
+   "addr": 4890344,
+   "where": "src/openlrr/game/interface/Priorities.cpp:25",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::radarmapGlobs",
+   "type": "RadarMap_Globs",
+   "addr": 4890408,
+   "where": "src/openlrr/game/interface/RadarMap.cpp:100",
+   "size": 1012,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::c_ObjectStats_Upgrade",
+   "type": "ObjectStats",
+   "addr": 4892576,
+   "where": "src/openlrr/game/object/Stats.cpp:47",
+   "size": 336,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::c_ObjectStats_Dynamite",
+   "type": "ObjectStats",
+   "addr": 4892912,
+   "where": "src/openlrr/game/object/Stats.cpp:50",
+   "size": 336,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::c_ObjectStats_Barrier",
+   "type": "ObjectStats",
+   "addr": 4893248,
+   "where": "src/openlrr/game/object/Stats.cpp:53",
+   "size": 336,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::c_ObjectStats_Other",
+   "type": "ObjectStats",
+   "addr": 4893584,
+   "where": "src/openlrr/game/object/Stats.cpp:56",
+   "size": 336,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::teleporterGlobs",
+   "type": "Teleporter_Globs",
+   "addr": 4895824,
+   "where": "src/openlrr/game/world/Teleporter.cpp:14",
+   "size": 16,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::s_ToolTip_sfxStopped",
+   "type": "bool32",
+   "addr": 4896332,
+   "where": "src/openlrr/game/interface/ToolTip.cpp:30",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "Gods98::currWadHandle",
+   "type": "sint32",
+   "addr": 4898560,
+   "where": "src/openlrr/engine/core/Files.cpp:22",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "Gods98::gLCGState",
+   "type": "uint32",
+   "addr": 4918472,
+   "where": "src/openlrr/engine/core/Maths.cpp:36",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "legacy::g_pcharwidth",
+   "type": "sint32",
+   "addr": 4919156,
+   "where": "src/openlrr/legacy.cpp:33",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::advisorGlobs",
+   "type": "Advisor_Globs",
+   "addr": 4930992,
+   "where": "src/openlrr/game/interface/Advisor.cpp:27",
+   "size": 1040,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::aiGlobs",
+   "type": "AITask_Globs",
+   "addr": 4932040,
+   "where": "src/openlrr/game/object/AITask.cpp:17",
+   "size": 20124,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::s_Bubble_PowerOffFlashTimer",
+   "type": "real32",
+   "addr": 4954648,
+   "where": "src/openlrr/game/interface/hud/Bubbles.cpp:39",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::constructionGlobs",
+   "type": "Construction_Globs",
+   "addr": 4954656,
+   "where": "src/openlrr/game/world/Construction.cpp:27",
+   "size": 56,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::damageTextGlobs",
+   "type": "DamageText_Globs",
+   "addr": 4954712,
+   "where": "src/openlrr/game/effects/DamageText.cpp:21",
+   "size": 364,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::dependencyGlobs",
+   "type": "Dependencies_Globs",
+   "addr": 4955080,
+   "where": "src/openlrr/game/object/Dependencies.cpp:14",
+   "size": 58804,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::effectGlobs",
+   "type": "Effect_Globs",
+   "addr": 5013888,
+   "where": "src/openlrr/game/effects/Effects.cpp:19",
+   "size": 3192,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::efenceGlobs",
+   "type": "ElectricFence_Globs",
+   "addr": 5017080,
+   "where": "src/openlrr/game/world/ElectricFence.cpp:22",
+   "size": 144,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::encyclopediaGlobs",
+   "type": "Encyclopedia_Globs",
+   "addr": 5017224,
+   "where": "src/openlrr/game/interface/Encyclopedia.cpp:36",
+   "size": 36,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::erosionGlobs",
+   "type": "Erosion_Globs",
+   "addr": 5017264,
+   "where": "src/openlrr/game/world/Erosion.cpp:21",
+   "size": 64020,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::s_fallinUpdateTimer",
+   "type": "real32",
+   "addr": 5081284,
+   "where": "src/openlrr/game/world/Fallin.cpp:23",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::g_saveMenuOverwriteShowing",
+   "type": "bool32",
+   "addr": 5097660,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:88",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::g_saveMenuOverlayPlaying",
+   "type": "bool32",
+   "addr": 5097664,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:91",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::g_levelSelectPrinting",
+   "type": "bool32",
+   "addr": 5097668,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:94",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::s_LevelSelectNameCount",
+   "type": "uint32",
+   "addr": 5097680,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:103",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::s_frontMousePressedState",
+   "type": "bool32",
+   "addr": 5097684,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:106",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::s_frontTextInputCaretBlinker",
+   "type": "sint32",
+   "addr": 5097692,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:110",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::helpwindowGlobs",
+   "type": "HelpWindow_Globs",
+   "addr": 5097704,
+   "where": "src/openlrr/game/interface/HelpWindow.cpp:14",
+   "size": 3436,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::infoGlobs",
+   "type": "Info_Globs",
+   "addr": 5101144,
+   "where": "src/openlrr/game/interface/InfoMessages.cpp:14",
+   "size": 1780,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::s_interfaceObjID",
+   "type": "LegoObject_ID",
+   "addr": 5102928,
+   "where": "src/openlrr/game/interface/Interface.cpp:42",
+   "size": 4,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::interfaceGlobs",
+   "type": "Interface_Globs",
+   "addr": 5102936,
+   "where": "src/openlrr/game/interface/Interface.cpp:45",
+   "size": 5292,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::s_ShowBlockToolTip_MousePos",
+   "type": "Point2I",
+   "addr": 5108232,
+   "where": "src/openlrr/game/Game.cpp:146",
+   "size": 8,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::gamectrlGlobs",
+   "type": "GameControl_Globs",
+   "addr": 5108752,
+   "where": "src/openlrr/game/Game.cpp:149",
+   "size": 384,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::objectGlobs",
+   "type": "LegoObject_Globs",
+   "addr": 5109648,
+   "where": "src/openlrr/game/object/Object.cpp:56",
+   "size": 50756,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::lightGlobs",
+   "type": "LightEffects_Globs",
+   "addr": 5160408,
+   "where": "src/openlrr/game/effects/LightEffects.cpp:19",
+   "size": 244,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::messageGlobs",
+   "type": "Message_Globs",
+   "addr": 5160736,
+   "where": "src/openlrr/game/mission/Messages.cpp:34",
+   "size": 82816,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::nerpsruntimeGlobs",
+   "type": "NERPsRuntime_Globs",
+   "addr": 5245272,
+   "where": "src/openlrr/game/mission/NERPsFile.cpp:66",
+   "size": 104,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::objectiveGlobs",
+   "type": "Objective_Globs",
+   "addr": 5245888,
+   "where": "src/openlrr/game/mission/Objective.cpp:32",
+   "size": 652,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::objectRecallGlobs",
+   "type": "ObjectRecall_Globs",
+   "addr": 5246544,
+   "where": "src/openlrr/game/object/ObjectRecall.cpp:17",
+   "size": 24,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::objinfoGlobs",
+   "type": "ObjInfo_Globs",
+   "addr": 5246568,
+   "where": "src/openlrr/game/interface/hud/ObjInfo.cpp:31",
+   "size": 120,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::panelGlobs",
+   "type": "Panel_Globs",
+   "addr": 5247200,
+   "where": "src/openlrr/game/interface/Panels.cpp:16",
+   "size": 1976,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::pointerGlobs",
+   "type": "Pointer_Globs",
+   "addr": 5249688,
+   "where": "src/openlrr/game/interface/Pointers.cpp:19",
+   "size": 1128,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::prioritiesGlobs",
+   "type": "Priorities_Globs",
+   "addr": 5250816,
+   "where": "src/openlrr/game/interface/Priorities.cpp:31",
+   "size": 1216,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::s_ScrollInfo_BOOL_005023c0",
+   "type": "bool32",
+   "addr": 5252032,
+   "where": "src/openlrr/game/interface/ScrollInfo.cpp:14",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::sfxGlobs",
+   "type": "SFX_Globs",
+   "addr": 5252200,
+   "where": "src/openlrr/game/audio/SFX.cpp:21",
+   "size": 6000,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::statsGlobs",
+   "type": "Stats_Globs",
+   "addr": 5258200,
+   "where": "src/openlrr/game/object/Stats.cpp:41",
+   "size": 1456,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::g_Teleporter_BOOL_00504188",
+   "type": "bool32",
+   "addr": 5259656,
+   "where": "src/openlrr/game/world/Teleporter.cpp:17",
+   "size": 4,
+   "size_src": "primitive"
+  },
+  {
+   "name": "LegoRR::textGlobs",
+   "type": "Text_Globs",
+   "addr": 5259664,
+   "where": "src/openlrr/game/interface/TextMessages.cpp:24",
+   "size": 1244,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::weaponGlobs",
+   "type": "Weapon_Globs",
+   "addr": 5261424,
+   "where": "src/openlrr/game/object/Weapons.cpp:27",
+   "size": 7056,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::mainGlobs",
+   "type": "Main_Globs",
+   "addr": 5269504,
+   "where": "src/openlrr/engine/Main.cpp:75",
+   "size": 2200,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::configGlobs",
+   "type": "Config_Globs",
+   "addr": 5271704,
+   "where": "src/openlrr/engine/core/Config.cpp:21",
+   "size": 1164,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::fontGlobs",
+   "type": "Font_Globs",
+   "addr": 5272872,
+   "where": "src/openlrr/engine/drawing/Fonts.cpp:19",
+   "size": 140,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::sound3DGlobs",
+   "type": "Sound3D_Globs",
+   "addr": 5273016,
+   "where": "src/openlrr/engine/audio/3DSound.cpp:32",
+   "size": 185164,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::imageGlobs",
+   "type": "Image_Globs",
+   "addr": 5458184,
+   "where": "src/openlrr/engine/drawing/Images.cpp:26",
+   "size": 140,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::animationGlobs",
+   "type": "Animation_Globs",
+   "addr": 5458328,
+   "where": "src/openlrr/engine/video/Animation.cpp:25",
+   "size": 8,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::fileGlobs",
+   "type": "File_Globs",
+   "addr": 5458336,
+   "where": "src/openlrr/engine/core/Files.cpp:25",
+   "size": 2592,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::meshGlobs",
+   "type": "Mesh_Globs",
+   "addr": 5460928,
+   "where": "src/openlrr/engine/gfx/Mesh.cpp:29",
+   "size": 49692,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::drawGlobs",
+   "type": "Draw_Globs",
+   "addr": 5511144,
+   "where": "src/openlrr/engine/drawing/Draw.cpp:27",
+   "size": 76,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::lwsGlobs",
+   "type": "Lws_Globs",
+   "addr": 5511224,
+   "where": "src/openlrr/engine/gfx/Lws.cpp:25",
+   "size": 16428,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::soundGlobs",
+   "type": "Sound_Globs",
+   "addr": 5527656,
+   "where": "src/openlrr/engine/audio/Sound.cpp:37",
+   "size": 440,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::memGlobs",
+   "type": "Mem_Globs",
+   "addr": 5528096,
+   "where": "src/openlrr/engine/core/Memory.cpp:16",
+   "size": 16004,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::dxbugGlobs",
+   "type": "Dxbug_Globs",
+   "addr": 5544104,
+   "where": "src/openlrr/engine/util/Dxbug.cpp:24",
+   "size": 2072,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::waterGlobs",
+   "type": "Water_Globs",
+   "addr": 5547296,
+   "where": "src/openlrr/game/world/Water.cpp:19",
+   "size": 10732,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::toolTipGlobs",
+   "type": "ToolTip_Globs",
+   "addr": 5558048,
+   "where": "src/openlrr/game/interface/ToolTip.cpp:33",
+   "size": 25028,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::spiderwebGlobs",
+   "type": "SpiderWeb_Globs",
+   "addr": 5583080,
+   "where": "src/openlrr/game/world/SpiderWeb.cpp:14",
+   "size": 8,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::smokeGlobs",
+   "type": "Smoke_Globs",
+   "addr": 5583104,
+   "where": "src/openlrr/game/effects/Smoke.cpp:25",
+   "size": 52,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::roofGlobs",
+   "type": "Roof_Globs",
+   "addr": 5583232,
+   "where": "src/openlrr/game/world/Roof.cpp:16",
+   "size": 2032,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::rewardGlobs",
+   "type": "Reward_Globs",
+   "addr": 5585280,
+   "where": "src/openlrr/game/front/Reward.cpp:24",
+   "size": 12880,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::ptlGlobs",
+   "type": "PTL_Globs",
+   "addr": 5598176,
+   "where": "src/openlrr/game/mission/PTL.cpp:23",
+   "size": 324,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::nerpsfileGlobs",
+   "type": "NERPsFile_Globs",
+   "addr": 5598528,
+   "where": "src/openlrr/game/mission/NERPsFile.cpp:69",
+   "size": 180,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::loaderGlobs",
+   "type": "Loader_Globs",
+   "addr": 5598720,
+   "where": "src/openlrr/game/front/Loader.cpp:18",
+   "size": 656,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::cameraGlobs",
+   "type": "Camera_Globs",
+   "addr": 5599392,
+   "where": "src/openlrr/game/world/Camera.cpp:25",
+   "size": 16,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::legoGlobs",
+   "type": "Lego_Globs",
+   "addr": 5599424,
+   "where": "src/openlrr/game/Game.cpp:152",
+   "size": 3840,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::frontGlobs",
+   "type": "Front_Globs",
+   "addr": 5603264,
+   "where": "src/openlrr/game/front/FrontEnd.cpp:120",
+   "size": 2180,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::flocksGlobs",
+   "type": "Flocks_Globs",
+   "addr": 5605456,
+   "where": "src/openlrr/game/object/Flocks.cpp:14",
+   "size": 16,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "LegoRR::bubbleGlobs",
+   "type": "Bubble_Globs",
+   "addr": 5605472,
+   "where": "src/openlrr/game/interface/hud/Bubbles.cpp:42",
+   "size": 1268,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::rncGlobs",
+   "type": "RNC_Globs",
+   "addr": 5606760,
+   "where": "src/openlrr/engine/util/Compress.cpp:37",
+   "size": 812,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::initGlobs",
+   "type": "Init_Globs",
+   "addr": 5607584,
+   "where": "src/openlrr/engine/Init.cpp:43",
+   "size": 119876,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::wadGlobs",
+   "type": "Wad_Globs",
+   "addr": 5727476,
+   "where": "src/openlrr/engine/core/Wad.cpp:19",
+   "size": 2028,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::errorGlobs",
+   "type": "Error_Globs",
+   "addr": 5729504,
+   "where": "src/openlrr/engine/core/Errors.cpp:24",
+   "size": 2072,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::keyGlobs",
+   "type": "Key_Globs",
+   "addr": 5731808,
+   "where": "src/openlrr/engine/input/Keys.cpp:16",
+   "size": 1024,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::checkGlobs",
+   "type": "FileCheck_Globs",
+   "addr": 5732832,
+   "where": "src/openlrr/engine/core/Files.cpp:28",
+   "size": 2048004,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::INPUT",
+   "type": "Input_Globs",
+   "addr": 7780864,
+   "where": "src/openlrr/engine/input/Input.cpp:20",
+   "size": 640,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::directDrawGlobs",
+   "type": "DirectDraw_Globs",
+   "addr": 7781504,
+   "where": "src/openlrr/engine/drawing/DirectDraw.cpp:35",
+   "size": 72,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::viewportGlobs",
+   "type": "Viewport_Globs",
+   "addr": 7781600,
+   "where": "src/openlrr/engine/gfx/Viewports.cpp:25",
+   "size": 140,
+   "size_src": "assert_sizeof"
+  },
+  {
+   "name": "Gods98::containerGlobs",
+   "type": "Container_Globs",
+   "addr": 7781760,
+   "where": "src/openlrr/engine/gfx/Containers.cpp:44",
+   "size": 8216,
+   "size_src": "assert_sizeof"
+  }
+ ],
+ "unsized": [
+  {
+   "name": "LegoRR::c_NERPsRuntime_TutorialActionCallback",
+   "type": "NERPsBlockPointerCallback",
+   "addr": 4880236,
+   "where": "src/openlrr/game/mission/NERPsFile.cpp:63",
+   "size": null,
+   "size_src": "UNKNOWN"
+  }
+ ],
+ "overlaps": [],
+ "gaps": [
+  {
+   "after": "Idl::IID_IDirect3DRMViewport2",
+   "before": "Idl::IID_IDirect3DRMFrame",
+   "slack": 0
+  },
+  {
+   "after": "Idl::IID_IDirect3DRMFrame",
+   "before": "Idl::IID_IDirect3DRMFrame3",
+   "slack": 16
+  },
+  {
+   "after": "Idl::IID_IDirect3DRMFrame3",
+   "before": "Idl::IID_IDirect3DRMMesh",
+   "slack": 16
+  },
+  {
+   "after": "Idl::IID_IDirect3DRMMesh",
+   "before": "Idl::IID_IDirect3DRMMeshBuilder2",
+   "slack": 16
+  },
+  {
+   "after": "Idl::IID_IDirect3DRMMeshBuilder2",
+   "before": "Idl::IID_IDirect3DRMTexture",
+   "slack": 64
+  },
+  {
+   "after": "Idl::IID_IDirect3DRMTexture",
+   "before": "Idl::IID_IDirect3DRMMaterial",
+   "slack": 48
+  },
+  {
+   "after": "Idl::IID_IDirect3DRMMaterial",
+   "before": "Idl::IID_IDirect3DRMUserVisual",
+   "slack": 224
+  },
+  {
+   "after": "Idl::IID_IDirect3DRMUserVisual",
+   "before": "Idl::IID_IDirect3DRM3",
+   "slack": 128
+  },
+  {
+   "after": "Idl::IID_IDirect3DRM3",
+   "before": "LegoRR::fallinGlobs",
+   "slack": 8956
+  },
+  {
+   "after": "LegoRR::fallinGlobs",
+   "before": "LegoRR::g_frontSelectHoverIndex",
+   "slack": 96
+  },
+  {
+   "after": "LegoRR::g_frontSelectHoverIndex",
+   "before": "LegoRR::g_saveMenuSelectedIndex",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::g_saveMenuSelectedIndex",
+   "before": "LegoRR::g_saveMenuOverlayState",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::g_saveMenuOverlayState",
+   "before": "LegoRR::g_saveMenuSelectingIndex",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::g_saveMenuSelectingIndex",
+   "before": "LegoRR::g_saveMenuOverwriteResult",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::g_saveMenuOverwriteResult",
+   "before": "LegoRR::g_saveMenuOutputSelectedIndex",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::g_saveMenuOutputSelectedIndex",
+   "before": "LegoRR::g_Interface_TIMER_004a3b58",
+   "slack": 3064
+  },
+  {
+   "after": "LegoRR::g_Interface_TIMER_004a3b58",
+   "before": "LegoRR::g_Interface_UINT_004a3b5c",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::g_Interface_UINT_004a3b5c",
+   "before": "LegoRR::updateGlobs",
+   "slack": 2552
+  },
+  {
+   "after": "LegoRR::updateGlobs",
+   "before": "LegoRR::s_objectDamageShakeTimer",
+   "slack": 4932
+  },
+  {
+   "after": "LegoRR::s_objectDamageShakeTimer",
+   "before": "LegoRR::nerpsHasNextButton",
+   "slack": 7816
+  },
+  {
+   "after": "LegoRR::nerpsHasNextButton",
+   "before": "LegoRR::nerpsBOOL_004a7740",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::nerpsBOOL_004a7740",
+   "before": "LegoRR::nerpsIconPos",
+   "slack": 20
+  },
+  {
+   "after": "LegoRR::nerpsIconPos",
+   "before": "LegoRR::nerpsIconWidth",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::nerpsIconWidth",
+   "before": "LegoRR::nerpsIconSpace",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::nerpsIconSpace",
+   "before": "LegoRR::nerpsUnkSampleIndex",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::nerpsUnkSampleIndex",
+   "before": "LegoRR::s_PriorityList_Index",
+   "slack": 10108
+  },
+  {
+   "after": "LegoRR::s_PriorityList_Index",
+   "before": "LegoRR::radarmapGlobs",
+   "slack": 60
+  },
+  {
+   "after": "LegoRR::radarmapGlobs",
+   "before": "LegoRR::c_ObjectStats_Upgrade",
+   "slack": 1156
+  },
+  {
+   "after": "LegoRR::c_ObjectStats_Upgrade",
+   "before": "LegoRR::c_ObjectStats_Dynamite",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::c_ObjectStats_Dynamite",
+   "before": "LegoRR::c_ObjectStats_Barrier",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::c_ObjectStats_Barrier",
+   "before": "LegoRR::c_ObjectStats_Other",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::c_ObjectStats_Other",
+   "before": "LegoRR::teleporterGlobs",
+   "slack": 1904
+  },
+  {
+   "after": "LegoRR::teleporterGlobs",
+   "before": "LegoRR::s_ToolTip_sfxStopped",
+   "slack": 492
+  },
+  {
+   "after": "LegoRR::s_ToolTip_sfxStopped",
+   "before": "Gods98::currWadHandle",
+   "slack": 2224
+  },
+  {
+   "after": "Gods98::currWadHandle",
+   "before": "Gods98::gLCGState",
+   "slack": 19908
+  },
+  {
+   "after": "Gods98::gLCGState",
+   "before": "legacy::g_pcharwidth",
+   "slack": 680
+  },
+  {
+   "after": "legacy::g_pcharwidth",
+   "before": "LegoRR::advisorGlobs",
+   "slack": 11832
+  },
+  {
+   "after": "LegoRR::advisorGlobs",
+   "before": "LegoRR::aiGlobs",
+   "slack": 8
+  },
+  {
+   "after": "LegoRR::aiGlobs",
+   "before": "LegoRR::s_Bubble_PowerOffFlashTimer",
+   "slack": 2484
+  },
+  {
+   "after": "LegoRR::s_Bubble_PowerOffFlashTimer",
+   "before": "LegoRR::constructionGlobs",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::constructionGlobs",
+   "before": "LegoRR::damageTextGlobs",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::damageTextGlobs",
+   "before": "LegoRR::dependencyGlobs",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::dependencyGlobs",
+   "before": "LegoRR::effectGlobs",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::effectGlobs",
+   "before": "LegoRR::efenceGlobs",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::efenceGlobs",
+   "before": "LegoRR::encyclopediaGlobs",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::encyclopediaGlobs",
+   "before": "LegoRR::erosionGlobs",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::erosionGlobs",
+   "before": "LegoRR::s_fallinUpdateTimer",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::s_fallinUpdateTimer",
+   "before": "LegoRR::g_saveMenuOverwriteShowing",
+   "slack": 16372
+  },
+  {
+   "after": "LegoRR::g_saveMenuOverwriteShowing",
+   "before": "LegoRR::g_saveMenuOverlayPlaying",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::g_saveMenuOverlayPlaying",
+   "before": "LegoRR::g_levelSelectPrinting",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::g_levelSelectPrinting",
+   "before": "LegoRR::s_LevelSelectNameCount",
+   "slack": 8
+  },
+  {
+   "after": "LegoRR::s_LevelSelectNameCount",
+   "before": "LegoRR::s_frontMousePressedState",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::s_frontMousePressedState",
+   "before": "LegoRR::s_frontTextInputCaretBlinker",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::s_frontTextInputCaretBlinker",
+   "before": "LegoRR::helpwindowGlobs",
+   "slack": 8
+  },
+  {
+   "after": "LegoRR::helpwindowGlobs",
+   "before": "LegoRR::infoGlobs",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::infoGlobs",
+   "before": "LegoRR::s_interfaceObjID",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::s_interfaceObjID",
+   "before": "LegoRR::interfaceGlobs",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::interfaceGlobs",
+   "before": "LegoRR::s_ShowBlockToolTip_MousePos",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::s_ShowBlockToolTip_MousePos",
+   "before": "LegoRR::gamectrlGlobs",
+   "slack": 512
+  },
+  {
+   "after": "LegoRR::gamectrlGlobs",
+   "before": "LegoRR::objectGlobs",
+   "slack": 512
+  },
+  {
+   "after": "LegoRR::objectGlobs",
+   "before": "LegoRR::lightGlobs",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::lightGlobs",
+   "before": "LegoRR::messageGlobs",
+   "slack": 84
+  },
+  {
+   "after": "LegoRR::messageGlobs",
+   "before": "LegoRR::nerpsruntimeGlobs",
+   "slack": 1720
+  },
+  {
+   "after": "LegoRR::nerpsruntimeGlobs",
+   "before": "LegoRR::objectiveGlobs",
+   "slack": 512
+  },
+  {
+   "after": "LegoRR::objectiveGlobs",
+   "before": "LegoRR::objectRecallGlobs",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::objectRecallGlobs",
+   "before": "LegoRR::objinfoGlobs",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::objinfoGlobs",
+   "before": "LegoRR::panelGlobs",
+   "slack": 512
+  },
+  {
+   "after": "LegoRR::panelGlobs",
+   "before": "LegoRR::pointerGlobs",
+   "slack": 512
+  },
+  {
+   "after": "LegoRR::pointerGlobs",
+   "before": "LegoRR::prioritiesGlobs",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::prioritiesGlobs",
+   "before": "LegoRR::s_ScrollInfo_BOOL_005023c0",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::s_ScrollInfo_BOOL_005023c0",
+   "before": "LegoRR::sfxGlobs",
+   "slack": 164
+  },
+  {
+   "after": "LegoRR::sfxGlobs",
+   "before": "LegoRR::statsGlobs",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::statsGlobs",
+   "before": "LegoRR::g_Teleporter_BOOL_00504188",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::g_Teleporter_BOOL_00504188",
+   "before": "LegoRR::textGlobs",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::textGlobs",
+   "before": "LegoRR::weaponGlobs",
+   "slack": 516
+  },
+  {
+   "after": "LegoRR::weaponGlobs",
+   "before": "Gods98::mainGlobs",
+   "slack": 1024
+  },
+  {
+   "after": "Gods98::mainGlobs",
+   "before": "Gods98::configGlobs",
+   "slack": 0
+  },
+  {
+   "after": "Gods98::configGlobs",
+   "before": "Gods98::fontGlobs",
+   "slack": 4
+  },
+  {
+   "after": "Gods98::fontGlobs",
+   "before": "Gods98::sound3DGlobs",
+   "slack": 4
+  },
+  {
+   "after": "Gods98::sound3DGlobs",
+   "before": "Gods98::imageGlobs",
+   "slack": 4
+  },
+  {
+   "after": "Gods98::imageGlobs",
+   "before": "Gods98::animationGlobs",
+   "slack": 4
+  },
+  {
+   "after": "Gods98::animationGlobs",
+   "before": "Gods98::fileGlobs",
+   "slack": 0
+  },
+  {
+   "after": "Gods98::fileGlobs",
+   "before": "Gods98::meshGlobs",
+   "slack": 0
+  },
+  {
+   "after": "Gods98::meshGlobs",
+   "before": "Gods98::drawGlobs",
+   "slack": 524
+  },
+  {
+   "after": "Gods98::drawGlobs",
+   "before": "Gods98::lwsGlobs",
+   "slack": 4
+  },
+  {
+   "after": "Gods98::lwsGlobs",
+   "before": "Gods98::soundGlobs",
+   "slack": 4
+  },
+  {
+   "after": "Gods98::soundGlobs",
+   "before": "Gods98::memGlobs",
+   "slack": 0
+  },
+  {
+   "after": "Gods98::memGlobs",
+   "before": "Gods98::dxbugGlobs",
+   "slack": 4
+  },
+  {
+   "after": "Gods98::dxbugGlobs",
+   "before": "LegoRR::waterGlobs",
+   "slack": 1120
+  },
+  {
+   "after": "LegoRR::waterGlobs",
+   "before": "LegoRR::toolTipGlobs",
+   "slack": 20
+  },
+  {
+   "after": "LegoRR::toolTipGlobs",
+   "before": "LegoRR::spiderwebGlobs",
+   "slack": 4
+  },
+  {
+   "after": "LegoRR::spiderwebGlobs",
+   "before": "LegoRR::smokeGlobs",
+   "slack": 16
+  },
+  {
+   "after": "LegoRR::smokeGlobs",
+   "before": "LegoRR::roofGlobs",
+   "slack": 76
+  },
+  {
+   "after": "LegoRR::roofGlobs",
+   "before": "LegoRR::rewardGlobs",
+   "slack": 16
+  },
+  {
+   "after": "LegoRR::rewardGlobs",
+   "before": "LegoRR::ptlGlobs",
+   "slack": 16
+  },
+  {
+   "after": "LegoRR::ptlGlobs",
+   "before": "LegoRR::nerpsfileGlobs",
+   "slack": 28
+  },
+  {
+   "after": "LegoRR::nerpsfileGlobs",
+   "before": "LegoRR::loaderGlobs",
+   "slack": 12
+  },
+  {
+   "after": "LegoRR::loaderGlobs",
+   "before": "LegoRR::cameraGlobs",
+   "slack": 16
+  },
+  {
+   "after": "LegoRR::cameraGlobs",
+   "before": "LegoRR::legoGlobs",
+   "slack": 16
+  },
+  {
+   "after": "LegoRR::legoGlobs",
+   "before": "LegoRR::frontGlobs",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::frontGlobs",
+   "before": "LegoRR::flocksGlobs",
+   "slack": 12
+  },
+  {
+   "after": "LegoRR::flocksGlobs",
+   "before": "LegoRR::bubbleGlobs",
+   "slack": 0
+  },
+  {
+   "after": "LegoRR::bubbleGlobs",
+   "before": "Gods98::rncGlobs",
+   "slack": 20
+  },
+  {
+   "after": "Gods98::rncGlobs",
+   "before": "Gods98::initGlobs",
+   "slack": 12
+  },
+  {
+   "after": "Gods98::initGlobs",
+   "before": "Gods98::wadGlobs",
+   "slack": 16
+  },
+  {
+   "after": "Gods98::wadGlobs",
+   "before": "Gods98::errorGlobs",
+   "slack": 0
+  },
+  {
+   "after": "Gods98::errorGlobs",
+   "before": "Gods98::keyGlobs",
+   "slack": 232
+  },
+  {
+   "after": "Gods98::keyGlobs",
+   "before": "Gods98::checkGlobs",
+   "slack": 0
+  },
+  {
+   "after": "Gods98::checkGlobs",
+   "before": "Gods98::INPUT",
+   "slack": 28
+  },
+  {
+   "after": "Gods98::INPUT",
+   "before": "Gods98::directDrawGlobs",
+   "slack": 0
+  },
+  {
+   "after": "Gods98::directDrawGlobs",
+   "before": "Gods98::viewportGlobs",
+   "slack": 24
+  },
+  {
+   "after": "Gods98::viewportGlobs",
+   "before": "Gods98::containerGlobs",
+   "slack": 20
+  }
+ ]
+}
