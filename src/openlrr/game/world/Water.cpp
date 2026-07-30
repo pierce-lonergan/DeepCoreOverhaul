@@ -5,6 +5,7 @@
 
 #include "../Game.h"
 
+#include "../DeepCore.hpp"
 #include "Water.h"
 
 
@@ -51,6 +52,9 @@ void LegoRR::Water_AddPoolFloodFill(Lego_Level* level, uint32 bxStart, uint32 by
 		return; // Already filled by another pool.
 
 	// Add a new pool.
+	/// DEEPCORE: skip the extra pool rather than terminating the process.
+	if (waterGlobs.poolCount >= WATER_MAXPOOLS && DeepCore::WaterOverflow("water pools"))
+		return;
 	Error_Fatal(waterGlobs.poolCount >= WATER_MAXPOOLS, "Ran out of water pools");
 
 	Water_Pool* pool = &waterGlobs.poolList[waterGlobs.poolCount++];
@@ -183,6 +187,11 @@ void __cdecl LegoRR::Water_Initialise(Gods98::Container* contRoot, Lego_Level* l
 		Water_Pool* removed = waterGlobs.mergeList[i].removedPool;
 
 		if (removed->blockCount != 0) {
+			/// DEEPCORE: leave the pools unmerged rather than terminating. They stay
+			/// two separate bodies of water, which is cosmetically wrong but playable.
+			if (main->blockCount + removed->blockCount > WATER_MAXPOOLBLOCKS &&
+				DeepCore::WaterOverflow("blocks in a merged water pool"))
+				continue;
 			Error_Fatal(main->blockCount + removed->blockCount > WATER_MAXPOOLBLOCKS,
 						"Can't merge water pools because there isn't enough blocks");
 			// Some form of overlapped copying...?
@@ -252,6 +261,9 @@ void __cdecl LegoRR::Water_InitPoolDrains(Gods98::Container* contRoot, Lego_Leve
 					(blockValue(level, bx, by).terrain != Lego_SurfaceType_Water) &&
 					(blockValue(level, bx, by).terrain != Lego_SurfaceType_Immovable))
 				{
+					/// DEEPCORE: stop adding drains for this pool rather than terminating.
+					if (pool->drainCount >= WATER_MAXPOOLDRAINS && DeepCore::WaterOverflow("water pool drains"))
+						break;
 					Error_FatalF(pool->drainCount >= WATER_MAXPOOLDRAINS, "Ran out of water pool drains for pool at index %i", i);
 					
 					Error_DebugF("Adding drain (%i,%i) %s\n", bx, by, legoGlobs.surfaceName[blockValue(level, bx, by).terrain]);
@@ -668,6 +680,10 @@ LegoRR::Water_Pool* __cdecl LegoRR::Water_FindPoolAndMergeRows(uint32 by, uint32
 						mainPool = pool;
 					}
 					else if (mainPool != pool) {
+						/// DEEPCORE: skip registering this merge rather than terminating.
+						if (waterGlobs.mergeCount >= WATER_MAXMERGEPOOLS &&
+							DeepCore::WaterOverflow("water merge pairs"))
+							continue;
 						Error_Fatal(waterGlobs.mergeCount >= WATER_MAXMERGEPOOLS, "Ran out of water merge pairs");
 
 						// Register this pool to be merged with mainPool at the end of Initialise.
@@ -686,6 +702,10 @@ LegoRR::Water_Pool* __cdecl LegoRR::Water_FindPoolAndMergeRows(uint32 by, uint32
 void __cdecl LegoRR::Water_AddPoolRowBlocks(Water_Pool* pool, uint32 by, uint32 bxRowStart, uint32 bxRowEnd)
 {
 	for (uint32 bx = bxRowStart; bx < bxRowEnd; bx++) {
+		/// DEEPCORE: stop growing this pool rather than terminating. The remaining
+		/// tiles simply are not part of the simulated body of water.
+		if (pool->blockCount >= WATER_MAXPOOLBLOCKS && DeepCore::WaterOverflow("blocks in one water pool"))
+			break;
 		Error_FatalF(pool->blockCount >= WATER_MAXPOOLBLOCKS, "Ran out of water pool blocks for pool at index %i",
 					 poolIndex(pool));
 
@@ -699,6 +719,9 @@ void __cdecl LegoRR::Water_AddPoolRowBlocks(Water_Pool* pool, uint32 by, uint32 
 // <LegoRR.exe @0046edf0>
 void __cdecl LegoRR::Water_AddPool(uint32 by, uint32 bxRowStart, uint32 bxRowEnd)
 {
+	/// DEEPCORE: skip the extra pool rather than terminating the process.
+	if (waterGlobs.poolCount >= WATER_MAXPOOLS && DeepCore::WaterOverflow("water pool entries"))
+		return;
 	Error_Fatal(waterGlobs.poolCount >= WATER_MAXPOOLS, "Ran out of pool entries");
 
 	Water_Pool* pool = &waterGlobs.poolList[waterGlobs.poolCount];

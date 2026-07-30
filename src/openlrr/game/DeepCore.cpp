@@ -55,7 +55,7 @@ bool DeepCore::IsAnyFeatureEnabled(void)
 	return (settings.multiSpeciesEmerge
 		|| settings.waveDirector
 		|| settings.creatureVariants
-		|| settings.unlimitWater);
+		|| settings.surviveWaterOverflow);
 }
 
 
@@ -241,9 +241,31 @@ void DeepCore::ApplyCreatureVariant(void* creatureModel, sint32 objID)
 }
 
 
+/// Distinct overflow kinds already reported, so each warns exactly once per run.
+static std::map<std::string, bool> _waterOverflowWarned;
+
+
+bool DeepCore::WaterOverflow(const char* what)
+{
+	if (!settings.surviveWaterOverflow) {
+		return false; // fall through to the original Error_Fatal
+	}
+
+	const std::string key = (what != nullptr ? what : "?");
+	if (!_waterOverflowWarned[key]) {
+		_waterOverflowWarned[key] = true;
+		DeepCore_WarnF(true, "map exceeds the engine's fixed limit for %s. The excess is being "
+			"skipped so the level can still load; some water will not be simulated. This limit "
+			"lives in the original executable's data layout and cannot be raised.", key.c_str());
+	}
+	return true;
+}
+
+
 bool DeepCore::Load(void)
 {
 	InvalidateSpeciesCache();
+	_waterOverflowWarned.clear();
 	for (sint32 i = 0; i < (sint32)LegoRR::LegoObject_ID_Count; i++) {
 		_speciesSpawnCount[i] = 0;
 	}
@@ -383,7 +405,7 @@ bool DeepCore::Load(void)
 
 	// ---- Stability ------------------------------------------------------------
 
-	settings.unlimitWater     = Config_GetBoolOrFalse(config, DeepCore_ID("UnlimitWater"));
+	settings.surviveWaterOverflow = Config_GetBoolOrFalse(config, DeepCore_ID("SurviveWaterOverflow"));
 
 	Gods98::Config_Free(config);
 
@@ -394,7 +416,7 @@ bool DeepCore::Load(void)
 		DeepCore_LogF("  WaveIntervalSeconds = %f", settings.waveIntervalSeconds);
 		DeepCore_LogF("  WaveMaxAlive        = %i", settings.waveMaxAlive);
 		DeepCore_LogF("  CreatureVariants    = %s", settings.creatureVariants ? "true" : "false");
-		DeepCore_LogF("  UnlimitWater        = %s", settings.unlimitWater ? "true" : "false");
+		DeepCore_LogF("  SurviveWaterOverflow= %s", settings.surviveWaterOverflow ? "true" : "false");
 	}
 
 	return true;

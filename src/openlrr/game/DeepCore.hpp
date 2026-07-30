@@ -130,8 +130,16 @@ struct Settings
 	// twenty-five years. Water_Globs is exe-overlaid (Water.cpp:18, assert_sizeof
 	// 0x29ec) so the arrays CANNOT be grown; the fix is DLL-side storage.
 
-	/// Replace the fixed water pool/block tables with unbounded DLL-side storage.
-	bool unlimitWater = false;
+	/// Degrade instead of dying when a map exceeds the engine's fixed water tables.
+	///
+	/// This does NOT raise the caps. Water_Globs is a reference overlaid on the
+	/// original executable's data segment (Water.cpp:18, address 0x0054a520) and is
+	/// pinned by assert_sizeof(Water_Globs, 0x29ec), so poolList[10] and
+	/// blocks[100] cannot grow without corrupting whatever the exe keeps next door.
+	/// What this does is convert six Error_Fatal calls -- which terminate the
+	/// process outright -- into a warning plus a skip. An oversized map then loads
+	/// and plays with some water left unsimulated, instead of crashing to desktop.
+	bool surviveWaterOverflow = false;
 };
 
 #pragma endregion
@@ -187,6 +195,15 @@ void InvalidateSpeciesCache(void);
 /// `objID` is the creature's RockMonster type ID. Does nothing when the feature is
 /// off or no variant is declared for that species, so it is safe to call always.
 void ApplyCreatureVariant(void* creatureModel, sint32 objID);
+
+/// Called at a point where the engine would otherwise call Error_Fatal because a
+/// fixed-size water table is full.
+///
+/// Returns true if the caller should SKIP the operation and keep going; false if it
+/// should fall through to the original fatal error (i.e. the feature is disabled and
+/// vanilla behaviour is preserved exactly). Warns once per distinct `what`, so a
+/// large map does not emit thousands of identical lines.
+bool WaterOverflow(const char* what);
 
 #pragma endregion
 
