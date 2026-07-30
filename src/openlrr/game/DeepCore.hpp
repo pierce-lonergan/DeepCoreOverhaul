@@ -166,6 +166,25 @@ struct Settings
 	/// process outright -- into a warning plus a skip. An oversized map then loads
 	/// and plays with some water left unsimulated, instead of crashing to desktop.
 	bool surviveWaterOverflow = false;
+
+	/// Relocate the water tables to DLL-side storage, removing the caps entirely.
+	///
+	/// Supersedes surviveWaterOverflow: instead of skipping the water a map cannot fit
+	/// into WATER_MAXPOOLS/WATER_MAXPOOLBLOCKS, all of it is simulated. Water_Globs
+	/// itself is UNCHANGED -- still 0x29ec bytes at 0x0054a520, still pinned by its
+	/// assert_sizeof -- and is simply left zeroed while this is on, so any original
+	/// executable code that reads it sees "no pools" and does nothing.
+	///
+	/// Side effect: the [W] debug keybind is disabled while this is on, because it
+	/// enters original 1999 machine code at 0x004303a0 that would read a Water_Pool out
+	/// of the executable's data segment. See docs/research/water-relocation.md.
+	bool relocateWaterTables = false;
+
+	/// Sanity ceilings, NOT engine limits. They exist only so that a corrupt surface
+	/// map cannot make the loader allocate without bound. Chosen high enough to be
+	/// irrelevant to any real map. Ignored unless relocateWaterTables.
+	uint32 waterMaxPools      = 4096;
+	uint32 waterMaxPoolBlocks = 65536;
 };
 
 #pragma endregion
@@ -230,6 +249,15 @@ void ApplyCreatureVariant(void* creatureModel, sint32 objID);
 /// vanilla behaviour is preserved exactly). Warns once per distinct `what`, so a
 /// large map does not emit thousands of identical lines.
 bool WaterOverflow(const char* what);
+
+/// Report, once per run, that a debug keybind had to be declined because the water
+/// tables have been relocated DLL-side.
+///
+/// The [W] debug key calls straight into original 1999 machine code that expects a
+/// Water_Pool to live in the executable's own data segment. With relocateWaterTables on
+/// there is no such pool, and that code was never decompiled, so it is declined rather
+/// than guessed at. Does nothing at all while relocateWaterTables is off.
+void WarnOnce_DebugWaterKeyDisabled(void);
 
 /// Beam appearance for a weapon index, or nullptr to use the stock hardcoded look.
 ///

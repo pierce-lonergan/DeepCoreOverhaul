@@ -57,7 +57,8 @@ bool DeepCore::IsAnyFeatureEnabled(void)
 		|| settings.waveDirector
 		|| settings.creatureVariants
 		|| settings.weaponBeamStyles
-		|| settings.surviveWaterOverflow);
+		|| settings.surviveWaterOverflow
+		|| settings.relocateWaterTables);
 }
 
 
@@ -333,10 +334,28 @@ bool DeepCore::WaterOverflow(const char* what)
 }
 
 
+/// Whether the declined-debug-key notice has already been printed this run.
+static bool _debugWaterKeyWarned = false;
+
+
+void DeepCore::WarnOnce_DebugWaterKeyDisabled(void)
+{
+	if (!settings.relocateWaterTables || _debugWaterKeyWarned) {
+		return;
+	}
+	_debugWaterKeyWarned = true;
+	DeepCore_WarnF(true, "%s", "the [W] debug keybind is disabled while RelocateWaterTables is on. "
+		"That key calls straight into original 1999 machine code which expects to find a water pool "
+		"inside the executable's own data segment, and with the tables relocated there is no such "
+		"pool. What that code does was never worked out, so it is declined rather than guessed at.");
+}
+
+
 bool DeepCore::Load(void)
 {
 	InvalidateSpeciesCache();
 	_waterOverflowWarned.clear();
+	_debugWaterKeyWarned = false;
 	for (sint32 i = 0; i < (sint32)LegoRR::LegoObject_ID_Count; i++) {
 		_speciesSpawnCount[i] = 0;
 	}
@@ -505,6 +524,31 @@ bool DeepCore::Load(void)
 	// ---- Stability ------------------------------------------------------------
 
 	settings.surviveWaterOverflow = Config_GetBoolOrFalse(config, DeepCore_ID("SurviveWaterOverflow"));
+	settings.relocateWaterTables  = Config_GetBoolOrFalse(config, DeepCore_ID("RelocateWaterTables"));
+
+	// Sanity ceilings for the relocated tables. Only overridden when the key is
+	// actually present, so a partial config file cannot silently zero them.
+	if (Gods98::Config_FindItem(config, DeepCore_ID("WaterMaxPools")) != nullptr) {
+		const sint32 value = Config_GetIntValue(config, DeepCore_ID("WaterMaxPools"));
+		if (value > 0) {
+			settings.waterMaxPools = (uint32)value;
+		}
+		else {
+			DeepCore_WarnF(true, "WaterMaxPools must be > 0 (got %i), keeping default %i",
+				value, (sint32)settings.waterMaxPools);
+		}
+	}
+
+	if (Gods98::Config_FindItem(config, DeepCore_ID("WaterMaxPoolBlocks")) != nullptr) {
+		const sint32 value = Config_GetIntValue(config, DeepCore_ID("WaterMaxPoolBlocks"));
+		if (value > 0) {
+			settings.waterMaxPoolBlocks = (uint32)value;
+		}
+		else {
+			DeepCore_WarnF(true, "WaterMaxPoolBlocks must be > 0 (got %i), keeping default %i",
+				value, (sint32)settings.waterMaxPoolBlocks);
+		}
+	}
 
 	Gods98::Config_Free(config);
 
@@ -516,6 +560,9 @@ bool DeepCore::Load(void)
 		DeepCore_LogF("  WaveMaxAlive        = %i", settings.waveMaxAlive);
 		DeepCore_LogF("  CreatureVariants    = %s", settings.creatureVariants ? "true" : "false");
 		DeepCore_LogF("  SurviveWaterOverflow= %s", settings.surviveWaterOverflow ? "true" : "false");
+		DeepCore_LogF("  RelocateWaterTables = %s", settings.relocateWaterTables ? "true" : "false");
+		DeepCore_LogF("  WaterMaxPools       = %i", (sint32)settings.waterMaxPools);
+		DeepCore_LogF("  WaterMaxPoolBlocks  = %i", (sint32)settings.waterMaxPoolBlocks);
 	}
 
 	return true;

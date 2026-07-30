@@ -2220,7 +2220,17 @@ void __cdecl LegoRR::Lego_HandleWorldDebugKeys(sint32 mbx, sint32 mby, LegoObjec
 
 	/// DEBUG KEYBIND: [W]  "Performs unknown behaviour with the unfinished 'flood water' surface."
 	if (Shortcut_IsDown(ShortcutID::Debug_Unknown_Water)) {
-		Level_Debug_WKey_NeedsBlockFlags1_8_FUN_004303a0(legoGlobs.currLevel, 0, mbx, mby); // 0 = unused parameter
+		/// DEEPCORE: 0x004303a0 is still original 1999 machine code, and it is the only
+		/// consumer of a Water_Pool* outside this DLL. With RelocateWaterTables on there
+		/// is no executable-resident Water_Pool for it to read. This keybind's exact
+		/// behaviour was never decompiled ("unknown"), so we do not attempt to emulate
+		/// it -- we decline it and say so, once.
+		if (!DeepCore::settings.relocateWaterTables) {
+			Level_Debug_WKey_NeedsBlockFlags1_8_FUN_004303a0(legoGlobs.currLevel, 0, mbx, mby); // 0 = unused parameter
+		}
+		else {
+			DeepCore::WarnOnce_DebugWaterKeyDisabled();
+		}
 	}
 
 	/// DEBUG KEYBIND: [C]  "Tell selected unit carrying dynamite drop it where they are and set it off."

@@ -1829,25 +1829,33 @@ bool32 __cdecl LegoRR::Lego_MainLoop(real32 elapsed)
 
 				uint32 row = 0;
 				Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "[Water]");
-				if (waterGlobs.poolCount == 0) {
+				/// CHANGE: Read the pool through the water module's accessors rather than
+				/// through waterGlobs directly. DeepCore's RelocateWaterTables can move the
+				/// pool storage into the DLL, at which point waterGlobs is deliberately left
+				/// zeroed and there is no Water_Pool to point at.
+				Water_PoolView pool = {};
+				if (!Water_GetPoolView(0, &pool)) {
 					Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "No pools of water in this level");
 				}
 				else {
 					// Only show the first pool of water, any more and we'd run out of screen.
-					auto pool = &waterGlobs.poolList[0];
-					Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Water Level %0.1f/%0.1f", (double)pool->currWaterLevel, (double)pool->highWaterLevel);
+					Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Water Level %0.1f/%0.1f", (double)pool.currWaterLevel, (double)pool.highWaterLevel);
 					row++;
-					for (uint32 j = 0; j < pool->drainCount; j++) {
-						auto drain = &pool->drainList[j];
-						const sint32 drainX = static_cast<sint32>(pool->blocks[drain->blockIndex].x + DIRS[drain->direction].x);
-						const sint32 drainY = static_cast<sint32>(pool->blocks[drain->blockIndex].y + DIRS[drain->direction].y);
+					for (uint32 j = 0; j < pool.drainCount; j++) {
+						Water_PoolDrain drain = {};
+						Point2F block = {};
+						if (!Water_GetPoolDrain(0, j, &drain) ||
+							!Water_GetPoolBlock(0, drain.blockIndex, &block))
+							continue;
+						const sint32 drainX = static_cast<sint32>(block.x + DIRS[drain.direction].x);
+						const sint32 drainY = static_cast<sint32>(block.y + DIRS[drain.direction].y);
 						Gods98::Font_PrintF(legoGlobs.fontToolTip, dbgX, dbgY+r*(row++), "Drain (%i,%i) Level %0.1f  [%0.1f, %0.1f]  '%c'%s",
 											drainX, drainY,
-											(double)drain->drainWaterLevel,
-											(double)drain->elapsedUp_c,
-											(double)drain->elapsedDown_10,
-											DIRCHARS[drain->direction],
-											(drain->active ? " (Active)" : ""));
+											(double)drain.drainWaterLevel,
+											(double)drain.elapsedUp_c,
+											(double)drain.elapsedDown_10,
+											DIRCHARS[drain.direction],
+											(drain.active ? " (Active)" : ""));
 					}
 				}
 			}

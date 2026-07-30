@@ -103,6 +103,22 @@ struct Water_Globs // [LegoRR/Water.c|struct:0x29ec|tags:GLOBS] Module globals f
 };
 assert_sizeof(Water_Globs, 0x29ec);
 
+
+/// CUSTOM: Read-only snapshot of one pool, for code outside this module.
+///
+/// NOT an overlaid struct -- this is DLL-side only, has no fixed address, no
+/// assert_sizeof, and is safe to change. It exists so that callers outside Water.cpp
+/// never need a Water_Pool*, which may not exist at all once DeepCore's
+/// RelocateWaterTables moves the pool storage into the DLL.
+struct Water_PoolView
+{
+	uint32     blockCount;
+	uint32     drainCount;
+	real32     highWaterLevel;
+	real32     currWaterLevel;
+	WaterFlags flags;
+};
+
 #pragma endregion
 
 /**********************************************************************************
@@ -189,6 +205,28 @@ void __cdecl Water_AddPoolRowBlocks(Water_Pool* pool, uint32 by, uint32 bxRowSta
 // <LegoRR.exe @0046edf0>
 //#define Water_AddPool ((void (__cdecl* )(uint32 by, uint32 bxRowStart, uint32 bxRowEnd))0x0046edf0)
 void __cdecl Water_AddPool(uint32 by, uint32 bxRowStart, uint32 bxRowEnd);
+
+
+/// CUSTOM: Index forms of the three functions whose ABI carries a Water_Pool*.
+///
+/// The three original signatures above are hooked over the executable and therefore
+/// cannot change shape, but a Water_Pool* is meaningless once DeepCore's
+/// RelocateWaterTables has moved the pools into DLL-side storage. Each of those three
+/// is now a thin wrapper over the matching index form here, and the index forms are
+/// what the water module itself uses. Both forms work whether or not the tables have
+/// been relocated.
+bool Water_FindPoolDrainIndex(uint32 bx, uint32 by, OUT uint32* poolIndex,
+							  OPTIONAL OUT uint32* drainIndex);
+uint32 Water_FindPoolAndMergeRowsIndex(uint32 by, uint32 bxRowStart, uint32 bxRowEnd);
+void Water_AddPoolRowBlocksIndex(uint32 poolIndex, uint32 by, uint32 bxRowStart, uint32 bxRowEnd);
+
+/// CUSTOM: Pool accessors for code outside this module. Valid whether or not the
+/// tables have been relocated. Every getter returns false and writes nothing when the
+/// requested pool, block or drain does not exist.
+uint32 Water_GetPoolCount(void);
+bool   Water_GetPoolView (uint32 poolIndex, OUT Water_PoolView* view);
+bool   Water_GetPoolBlock(uint32 poolIndex, uint32 blockIndex, OUT Point2F* block);
+bool   Water_GetPoolDrain(uint32 poolIndex, uint32 drainIndex, OUT Water_PoolDrain* drain);
 
 #pragma endregion
 
