@@ -1,4 +1,21 @@
-# OpenLRR ![app icon](resources/logo/icon.png)
+# DeepCoreOverhaul ![app icon](resources/logo/icon.png)
+
+> **This is a fan fork of [OpenLRR by trigger-segfault][Upstream].** Nearly all code here is
+> upstream's work, and the full upstream commit history is preserved so authorship stays
+> attributable. Upstream carries no license, so this fork claims no rights over the inherited
+> code — please read **[NOTICE.md](NOTICE.md)** before using, forking, or contributing.
+>
+> **Status: groundwork.** The overhaul goals — a larger creature roster, more equipment, visual
+> work, expanded campaign — are being scoped against what this codebase can actually support.
+> Nothing beyond upstream parity is implemented yet, and this README will not claim otherwise.
+> Verified so far: the solution builds clean (0 errors, 44 warnings) with the v142 toolset.
+>
+> This project contains **no game assets** and is not playable on its own. It loads alongside
+> your own legally obtained copy of the original game.
+>
+> As upstream requires, the **L in "LRR" is never expanded** anywhere in this project.
+
+## Upstream description
 
 An open source re-implementation of [LEGO Rock Raiders (PC)][Wikipedia_LRR]. This is created by slowly implementing and replacing game functionality, while relying on the original executable and game assets for everything else.
 
@@ -47,6 +64,8 @@ Submitting decompiled functions for game code is a very involved process. Most g
 
 
 <!-- REFERENCES -->
+
+[Upstream]: <https://github.com/trigger-segfault/OpenLRR> "trigger-segfault/OpenLRR: the upstream project this fork is derived from"
 
 [Page_RRU]: <https://rockraidersunited.com/> "Rock Raiders United"
 [Page_RRUKB]: <https://kb.rockraidersunited.com/Main_Page> "Rock Raiders United: Knowledge Base"
