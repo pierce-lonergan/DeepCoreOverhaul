@@ -20,7 +20,7 @@ data segment and pinned by `assert_sizeof`, and **no struct carrying `assert_siz
 change layout**. The address-space linter agrees the current layout is self-consistent —
 113 sized overlaid regions, 0 overlaps (`docs/ADDRESS-MAP.md:15-17`). *The wave director
 proposed here adds zero bytes to any overlaid struct.* All of its state is DLL-side, the
-pattern already used for the PowerGrid vectors at `Game.cpp:168-170`.
+pattern already used for the PowerGrid vectors at `Game.cpp:168-172`.
 
 We also cannot run the game. **Compile-verified is the ceiling.** Nothing below has been
 play-tested and nothing below may be described as play-tested.
@@ -33,10 +33,10 @@ play-tested and nothing below may be described as play-tested.
 | --- | --- |
 | Is a from-scratch monster spawn possible? | **Yes.** The recipe is proven in-tree by `LegoObject_TryGenerateSlugAtBlock` (`Object.cpp:1602-1639`). Four of its five calls are already ours; only `AITask_DoAnimationWait` and `Info_Send` are still exe address macros. |
 | Can we reuse that function directly? | **No.** It hard-refuses any block that is not a registered slug hole (`Object.cpp:1608-1616`). A sibling function is required. |
-| Can we find a legal spawn block? | **Yes**, from `Lego_Block::flags1/flags2` directly (`Game.h:341-368`, `Game.h:184-245`). `BLOCK1_WALL` vs `BLOCK1_HIDDEN` is exactly the "exposed wall vs undiscovered rock" distinction (`Game.cpp:1912-1916`). |
+| Can we find a legal spawn block? | **Yes**, from `Lego_Block::flags1/flags2` directly (`Game.h:341-371`, `Game.h:184-245`). `BLOCK1_WALL` vs `BLOCK1_HIDDEN` is exactly the "exposed wall vs undiscovered rock" distinction (`Game.cpp:1912-1916`). |
 | Can we count living monsters? | **Yes.** `objectListSet.EnumerateSkipUpgradeParts()` is a real C++ range-for and is already used from eight other translation units. `.Count()` exists (`GameState.cpp:1791`). |
 | Where does it tick? | `OpenLRR_MainLoop_Wrapper` post-MainLoop, `OpenLRR.cpp:970-985`, gated on `Lego_IsInLevel()` (`Game.h:812`). Front-end menus run *inside* `Lego_MainLoop`, so the guard is mandatory, not decorative. |
-| Time unit? | "Standard units", 25.0 == 1 second (`common.h:109`), hard-capped at 3.0 per tick (`Main.cpp:395`, `Main.cpp:440-446`). |
+| Time unit? | "Standard units", 25.0 == 1 second (`common.h:109`), hard-capped at 3.0 per tick (`Main.cpp:395`, `Main.cpp:438-443`). |
 | Telegraphing? | Four implemented channels: `Info_Send` (exe macro, panel message with a block position), `SFX_Random_PlaySoundNormal` (**ours**, `SFX.cpp:311`), `Camera_Shake` (**ours**, `Camera.cpp:192`), `Smoke_CreateSmokeArea` (**ours**, `Smoke.cpp:68`). |
 | New hooks needed? | **None.** No new `hook_write_jmpret`. The director is called only from our own code. |
 | Build-contract risk | Two new files must be added to `openlrr.vcxproj` (`ClInclude`/`ClCompile`, mirroring `game\DeepCore.hpp` at line 258 and `game\DeepCore.cpp` at line 384). Warning-count risk is discussed in §9. |
@@ -106,7 +106,7 @@ follows.
 | 2 | slug-hole membership scan | **This is the part the director must NOT copy.** It rejects every block that is not in `objectGlobs.slugHoleBlocks`. | `Object.cpp:1608-1616` |
 | 3 | random heading | `Maths_RandRange(0, 2π)`. `Maths_RandRange` is `Gods98::` (`Maths.h:47`); `Maths_Sin`/`Maths_Cos` are plain `#define`s over `std::sin/cos` and are namespace-agnostic (`Maths.h:99-100`). | `Object.cpp:1618-1621` |
 | 4 | `Map3D_BlockToWorldPos` → world 2D | Converts block indices to a world position. Elsewhere the unmodified result of this call is used directly as a *building's* spawn position (`Construction.cpp:895-901`), so it is the block **centre**, not a corner. | `Object.cpp:1624` |
-| 5 | `+= sin/cos(heading) * 12.75f` | Pushes the spawn off dead-centre along the facing direction. **UNDETERMINED:** I could not derive `12.75` from any constant in the tree. `Map3D_BlockSize` is still an exe macro (`Map3D.h:345`) and the config `BlockSize` is per-level (`Game.h:400`, `Map3D.h:117`), so I cannot confirm this is "a fixed fraction of a block". Treat 12.75 as an empirical magic number that is known to look right for slugs and *unverified* for anything else. | `Object.cpp:1625-1626` |
+| 5 | `+= sin/cos(heading) * 12.75f` | Pushes the spawn off dead-centre along the facing direction. **UNDETERMINED:** I could not derive `12.75` from any constant in the tree. `Map3D_BlockSize` is still an exe macro (`Map3D.h:345`) and the config `BlockSize` is per-level (`Game.h:398`, `Map3D.h:117`), so I cannot confirm this is "a fixed fraction of a block". Treat 12.75 as an empirical magic number that is known to look right for slugs and *unverified* for anything else. | `Object.cpp:1625-1626` |
 | 6 | `LegoObject_CreateInWorld` | `LegoObject_Create` + `LegoObject_SetPositionAndHeading(..., assignHeading = true)`. Returns `nullptr` if creation failed. | `Object.cpp:1628`; impl `Object.cpp:1294-1305` |
 | 7 | `flags1 \|= LIVEOBJ1_EXPANDING` | Marks the object as mid-emerge. While set, `LegoObject_IsActive` returns false (`Object.cpp:1283-1284`), so the monster cannot be shot, damaged or tasked until the emerge animation has produced a positive `animTime`. It is cleared in `LegoObject_Callback_Update` at `Object.cpp:3214-3227`. | `Object.cpp:1630` |
 | 8 | `flags3 &= ~LIVEOBJ3_POWEROFF` | `LegoObject_Create` **sets** `LIVEOBJ3_POWEROFF` on every RockMonster (`Object.cpp:990`). `LegoObject_IsActive(obj, /*ignoreUnpowered=*/false)` requires it clear (`Object.cpp:1281-1287`). Clearing it is what makes the creature count as a live, active thing. **Skipping this step yields an inert monster.** | `Object.cpp:1631` |
@@ -159,7 +159,7 @@ site needs `using namespace LegoRR;` in scope. That trap is already documented i
 | `Lego_GetCrossTerrainType` | **exe macro** `0x00431cd0` | `Game.h:1645-1646` |
 | `Lego_SetCallToArmsOn` | **exe macro** `0x004359d0` | `Game.h:1990-1991` |
 | `Level_BlockUpdateSurface` | **exe macro** `0x0042f620` | `Game.h:1545-1546` |
-| `Lego_GetObjectByName` | **exe macro** `0x0042e7e0` | `Game.cpp:3291`; already used from DeepCore via a function-scope `using` (`DeepCore.cpp:83`) |
+| `Lego_GetObjectByName` | **exe macro** `0x0042e7e0` | `Game.cpp:3290`; already used from DeepCore via a function-scope `using` (`DeepCore.cpp:83`) |
 
 `Lego_GetLevel()` and `Lego_GetMap()` are plain `__inline` functions, not macros
 (`Game.h:1606`, `Game.h:1610`), so they are safe anywhere.
@@ -197,7 +197,7 @@ This is the single most important finding in this document.
 If `LegoObject_IsRockMonsterCanGather` returns true and `targetBlockPos` is still
 `(-1,-1)`, `Level_Block_SetBusy` receives block `(-1,-1)`. `Level_Block_SetBusy` is an exe
 macro (`Game.h:1781`), so I cannot read its body, but every in-tree block accessor resolves
-through `blockValue(l,bx,by) == l->blocks[l->width*by + bx]` (`Game.h:781-784`), which for
+through `blockValue(l,bx,by) == l->blocks[l->width*by + bx]` (`Game.h:780-786`), which for
 `(-1,-1)` is index `-(width+1)` — a **write** through a negative index into a `0x48`-byte
 struct array. That is heap corruption, not a graceful failure.
 
@@ -213,7 +213,7 @@ and should mirror what the vanilla emerge path presumably does by marking that b
 	obj->targetBlockPos.x = (real32)bx;
 	obj->targetBlockPos.y = (real32)by;
 	const Point2I blockPos = { (sint32)bx, (sint32)by };
-	Level_Block_SetBusy(&blockPos, true);   // cleared again by Object.cpp:3221 on emerge completion
+	Level_Block_SetBusy(&blockPos, true);   // cleared again by Object.cpp:3214-3226 on emerge completion
 ```
 
 The busy flag is `BLOCK1_BUSY_FLOOR` / `BLOCK1_BUSY_WALL` (`Game.h:207`, `Game.h:218`) and
@@ -239,7 +239,7 @@ gate is what keeps vanilla slug behaviour correct. The director needs a sibling.
 ### 2.1 What a block is
 
 `Lego_Block` is 0x48 bytes, `#pragma pack(1)`, and is `assert_sizeof`-pinned
-(`Game.h:340-369`). Fields the director cares about:
+(`Game.h:340-371`). Fields the director cares about:
 
 ```cpp
 	/*02,1*/	uint8 terrain;      // as Lego_SurfaceType
@@ -249,7 +249,7 @@ gate is what keeps vanilla slug behaviour correct. The director needs a sibling.
 ```
 
 The grid lives at `Lego_Level::blocks` (`Game.h:436`), sized `width` × `height`
-(`Game.h:395-396`). Access macros, `Game.h:781-787`:
+(`Game.h:396-397`). Access macros, `Game.h:780-787`:
 
 ```cpp
 #define blockIndex(l, bx, by)     (((l)->width*(by))+(bx))
@@ -259,7 +259,7 @@ The grid lives at `Lego_Level::blocks` (`Game.h:436`), sized `width` × `height`
 ```
 
 **`blockValue` does not bounds-check.** `blockInBounds` must be called first, every time.
-`Lego_IsBuildableSurface`-style code in-tree does exactly this (`Game.cpp:3747-3750`).
+`Lego_IsBuildableSurface`-style code in-tree does exactly this (`Game.cpp:3744-3749`).
 
 ### 2.2 Wall vs floor vs undiscovered — the flags, cited
 
@@ -293,7 +293,7 @@ The grid lives at `Lego_Level::blocks` (`Game.h:436`), sized `width` × `height`
 | `BLOCK2_SLUGHOLE_HIDDEN` | `0x200` | hidden slug hole |
 
 **How the game itself distinguishes the three states** — this is the decisive citation,
-from the block tooltip at `Game.cpp:1911-1925`:
+from the block tooltip at `Game.cpp:1912-1925`:
 
 ```cpp
 	if (!(block->flags1 & BLOCK1_FLOOR)) {
@@ -320,7 +320,7 @@ hide unexplored terrain (`RadarMap.cpp:868-872`).
 (`0x0042f620`, `Game.h:1545`), which is still an exe macro. I read its call sites, not its
 body. I am inferring "exposed" from the tooltip semantics above and from the fact that the
 engine re-runs it on a block and its neighbours whenever terrain changes
-(`Game.cpp:2535`, `Game.cpp:3823`, `Game.cpp:3840-3849`, `OpenLRR.cpp:927-929`). The
+(`Game.cpp:2535`, `Game.cpp:3823`, `Game.cpp:3840-3849`, `OpenLRR.cpp:926-928`). The
 inference is strong but it is an inference.
 
 ### 2.3 Available block query functions
@@ -348,7 +348,7 @@ callable — but each needs `using namespace LegoRR;` in scope, and the ones tak
 | `Level_Block_IsRockFallFX(bx, by)` | **ours** | `Game.h:1746` |
 | `Level_Block_IsPowered(blockPos)` | **ours**, impl `Game.cpp:3826-3830` | `Game.h:1654` |
 | `Construction_Zone_ExistsAtBlock(blockPos)` | **ours** | used at `Game.cpp:3789` |
-| `ElectricFence_HasFence(bx, by)` | **ours** | used at `Game.cpp:3792` |
+| `ElectricFence_HasFence(bx, by)` | **ours** | used at `Game.cpp:3791` |
 
 **Recommendation: read the flags directly, do not go through the exe macros where a flag
 test will do.** Reasons: (a) we can see the flag test in our own source and reason about
@@ -359,8 +359,8 @@ exception is `Level_Block_SetBusy`, which is a *setter* and must be called.
 
 ### 2.4 Adjacency and the four-direction convention
 
-The tree has a single consistent idiom for orthogonal neighbours, e.g. `Game.cpp:3638-3644`
-and `Game.cpp:3736-3742`:
+The tree has a single consistent idiom for orthogonal neighbours, e.g. `Game.cpp:3639-3644`
+and `Game.cpp:3733-3742`:
 
 ```cpp
 	const Point2I DIRECTIONS[DIRECTION__COUNT] = {
@@ -371,7 +371,7 @@ and `Game.cpp:3736-3742`:
 	};
 ```
 
-`DIRECTION__COUNT == 4` (`geometry.h:17`). `Game.cpp:3646-3656` shows the exact
+`DIRECTION__COUNT == 4` (`geometry.h:17`). `Game.cpp:3646-3657` shows the exact
 count-adjacent-floors pattern the director will reuse.
 
 ### 2.5 Reachability
@@ -379,15 +379,19 @@ count-adjacent-floors pattern the director will reuse.
 Two options.
 
 **(a) The engine's own pathfinder.** `LegoObject_Route_BuildListToTarget`
-(`Object.h:1200-1201`, impl `Object.cpp` — a one-line forward to
-`LegoObject_Route_BuildList`) is **ours**. But it:
-- requires a live `LegoObject*` (it calls `Lego_GetCrossTerrainType(liveObj, …)` to decide
-  passability per-unit, `Object.cpp` inside `Route_BuildList`);
-- allocates the output lists with `Gods98::Mem_Alloc` which the caller must free — and
-  `Object.cpp:4744-4750` documents a past double-free bug (#66) from exactly this;
-- has a hard frontier cap of `Point2I blockList[2][250]` per wave with no overflow check,
-  already flagged in `docs/OVERHAUL-PLAN.md:206`;
-- reallocates and zeroes a `width*height` float grid per call.
+(`Object.h:1200-1201`, impl `Object.cpp:4123-4126` — a one-line forward to
+`LegoObject_Route_BuildList` at `Object.cpp:4319`) is **ours**. But it:
+- requires a live `LegoObject*`, because passability is decided per-unit by
+  `Lego_GetCrossTerrainType(liveObj, …)` (`Object.cpp:4358`), which is itself an exe macro
+  (`Game.h:1645`);
+- allocates the output lists with `Gods98::Mem_Alloc` (`Object.cpp:4496-4497`) which the
+  caller must free — and `Object.cpp:5281-5285` documents a past double-free bug (#66)
+  from exactly this;
+- has a hard frontier cap of `Point2I blockList[2][250]` per wave with no overflow check
+  (`Object.cpp:4393`, and again at `Object.cpp:4191` in the sibling
+  `…_BuildListWithoutScore`), already flagged in `docs/OVERHAUL-PLAN.md:206`;
+- reallocates and zeroes a `width*height` float grid per call
+  (`objectGlobs.routeBuildListScores`).
 
 That is far too much machinery, and too much shared mutable state
 (`objectGlobs.routeBuildListScores`), to run speculatively over dozens of candidate blocks
@@ -401,7 +405,7 @@ question we need: *"is there a walkable route from a Rock Raider to the floor ti
 of this wall?"*
 
 **Decision: (b).** Cited precedent for a DLL-side `std::vector` replacing fixed engine
-storage: the PowerGrid vectors at `Game.cpp:168-170`, used e.g. at `Game.cpp:3820-3824`.
+storage: the PowerGrid vectors at `Game.cpp:168-172`, used e.g. at `Game.cpp:3820-3824`.
 
 Note this fill is deliberately *raider-centric*: it does not model what a monster can
 cross. That is the correct bias for fairness — a wave that emerges somewhere the player
@@ -546,11 +550,11 @@ bool32 __cdecl OpenLRR_MainLoop_Wrapper(real32 elapsed)
 ```
 
 These are installed as the engine `Main_State` at `OpenLRR.cpp:1055-1059`, and the engine
-drives `MainLoop` from `Main.cpp:882-908`.
+drives `MainLoop` from `Main.cpp:874-908`.
 
 ### 4.2 Does it run in the front end? — confirmed, with a caveat
 
-The in-source comment ("the main loop does not run when in the FrontEnd", `OpenLRR.cpp:977`)
+The in-source comment ("the main loop does not run when in the FrontEnd", `OpenLRR.cpp:976`)
 is **correct but incomplete**, and the caveat matters.
 
 - `Lego_Initialise` blocks on `Front_RunScreenMenuType(Menu_Screen_Title)` before the state
@@ -558,7 +562,7 @@ is **correct but incomplete**, and the caveat matters.
 - **However**, `Lego_EndLevel()` is called from *inside* `Lego_MainLoop`
   (`GameState.cpp:2094` and `GameState.cpp:2283`), and `Lego_EndLevel` itself calls
   `Reward_Show()`, `Level_Free()` and `Front_RunScreenMenuType(...)` inline
-  (`Game.cpp:4198-4229`). Those block. When they return, `Lego_MainLoop` returns, and
+  (`Game.cpp:4197-4229`). Those block. When they return, `Lego_MainLoop` returns, and
   **post-MainLoop code then runs on a tick during which the level was freed and a new one
   loaded.**
 
@@ -590,11 +594,11 @@ tick not yet processed, level ending.
 `elapsed` is in **"standard units", where 25.0 == one second**:
 
 - `#define STANDARD_FRAMERATE 25.0f` (`common.h:109`).
-- The engine's comment at `Main.cpp:874-875`: *"Use the MultiMedia timer to give a
+- The engine's comment at `Main.cpp:876-877`: *"Use the MultiMedia timer to give a
   'realtime passed' value per frame to the main loop (in 25th's of a second)"*.
 - Conversion: `delta = (currTime - lastTime) / (1000.0f / STANDARD_FRAMERATE);`
   (`Main.cpp:436`).
-- **Hard-capped at 3.0 per tick** (`Main.cpp:440-444`, and `realMaxDeltaMS = 3.0 * (1000.0
+- **Hard-capped at 3.0 per tick** (`Main.cpp:438-443`, and `realMaxDeltaMS = 3.0 * (1000.0
   / STANDARD_FRAMERATE)` at `Main.cpp:395`). So a long stall — an alt-tab, a level load, a
   front-end excursion — cannot deliver a giant `elapsed` and dump six waves at once. This
   is worth knowing: it means the director does **not** need its own delta clamp.
@@ -637,7 +641,7 @@ The director's state must be zeroed per level. Two clean, DLL-side, no-new-hook 
 both **ours**:
 
 - `Level_Free()` (`Game.cpp:3302`) — already the level teardown that resets camera shake
-  (`Game.cpp:3341`), power-grid vectors (`Game.cpp:3334-3336`), disposable stats
+  (`Game.cpp:3341`), power-grid vectors (`Game.cpp:3333-3335`), disposable stats
   (`Game.cpp:3345`) and water (`Game.cpp:3350`). Add `DeepCore::Waves::Reset();` alongside.
 - `Lego_LoadLevel2()` (`Game.cpp:2951`) — the custom load wrapper; reset on success.
 
@@ -699,7 +703,7 @@ wave whose members die instantly would be followed immediately by another.
 
 `WaveCooldownSeconds` should default to **the level's own feel**: `level->EmergeTimeOut /
 STANDARD_FRAMERATE` (`Game.h:449`, default 1500.0 → 60 s), which is exactly the timeout the
-map's own triggers use before they can re-fire (`Game.cpp:3081`). A map that was authored
+map's own triggers use before they can re-fire (`Game.cpp:3082`). A map that was authored
 to be slow stays slow.
 
 ### 5.3 Species selection
@@ -707,7 +711,7 @@ to be slow stays slow.
 Reuse the existing pooling machinery rather than duplicating it. `DeepCore.cpp:77-124`
 already resolves names → IDs once, bounds-checks against **both**
 `legoGlobs.rockMonsterCount` and the hard `LegoObject_ID_Count == 15` ceiling
-(`DeepCore.cpp:107-115`, `GameCommon.h:143`), warns once per bad name, and caches failures.
+(`DeepCore.cpp:107-115`, `GameCommon.h:1143`), warns once per bad name, and caches failures.
 
 Add a sibling to `PickEmergeSpecies` (`DeepCore.cpp:127-146`):
 
@@ -739,7 +743,7 @@ Four channels, all verified present in the tree.
 Info_Send(Info_Type infoType, OPTIONAL const char* opt_text, OPTIONAL LegoObject* liveObj, OPTIONAL const Point2I* blockPos);
 ```
 
-`InfoMessageInstance` stores the `blockPos` (`InfoMessages.h:87-94`) and the engine has
+`InfoMessageInstance` stores the `blockPos` (`InfoMessages.h:86-93`) and the engine has
 `Info_GotoFirst` (`InfoMessages.h:271`) to jump the camera to a message, so **sending the
 warning with the *block position* and a null object gives the player a locatable alert
 before anything exists there.** That is the single best telegraph available and it costs
@@ -759,7 +763,7 @@ shake rather than telegraphing nothing.
 (`SFX.cpp:311`). Useful IDs from `GameCommon.h:1369-1421`: `SFX_RockMonster = 9`,
 `SFX_RockMonster2 = 10`, `SFX_Siren = 25`, `SFX_RockBreak = 4`, `SFX_FallIn = 40`. For a
 positional cue, `SFX_Random_PlaySound3DOnContainer(nullptr, sfxID, false, false, &wPos)` is
-also ours (`SFX.cpp:381`) and is used exactly that way at `Game.cpp:3719`.
+also ours (`SFX.cpp:381`) and is used exactly that way at `Game.cpp:3674`.
 
 **(3) Screen shake.** `Camera_Shake(LegoCamera*, real32 intensity, real32 duration)` is
 **ours** and is four lines (`Camera.cpp:192-197`); it just seeds
@@ -783,9 +787,9 @@ own state so it can always be cleaned up.
 
 **Explicitly rejected:**
 
-- **`Lego_PTL_RockFall`** (`Game.cpp:3627`) looks like a perfect "the wall is cracking"
+- **`Lego_PTL_RockFall`** (`Game.cpp:3628`) looks like a perfect "the wall is cracking"
   telegraph and is **not**. It sets `BLOCK1_ROCKFALLFX`, marks the block busy, and posts a
-  `Message_RockFallComplete` (`Game.cpp:3679-3712`) — it is a real rockfall that changes
+  `Message_RockFallComplete` (`Game.cpp:3680-3712`) — it is a real rockfall that changes
   terrain, not a cosmetic warning.
 - **`Lego_SetCallToArmsOn`** (`Game.h:1990`, exe macro) drives the red "action stations"
   ambient light (`GameState.cpp:964-975`) but also changes unit behaviour — raiders equip
@@ -816,16 +820,16 @@ stated as a hard predicate on the candidate *wall* block `W` and its chosen adja
 | F3 | `W` is not undiscovered | `!(W.flags1 & BLOCK1_HIDDEN)` | never spawn out of terrain the player has not opened (`Game.h:205`) |
 | F4 | `W` is not immovable / seam / reinforced | `W.terrain != Lego_SurfaceType_Immovable`, `!(W.flags1 & BLOCK1_REINFORCED)` | a monster bursting through *reinforced* rock reads as a bug, not a threat |
 | F5 | `F` is walkable floor, cleared | `(F.flags1 & BLOCK1_FLOOR) && (F.flags1 & BLOCK1_CLEARED)` | `Game.h:191`, `Game.h:209`; the "not rubble" flag |
-| F6 | `F` is not lava/water | `F.terrain != Lego_SurfaceType_Lava && F.terrain != Lego_SurfaceType_Lake` | mirrors the buildable check at `Game.cpp:3765-3773` |
+| F6 | `F` is not lava/water | `F.terrain != Lego_SurfaceType_Lava && F.terrain != Lego_SurfaceType_Lake` | mirrors the buildable check at `Game.cpp:3764-3773` |
 | F7 | `F` is not busy | `!(F.flags1 & (BLOCK1_BUSY_FLOOR\|BLOCK1_BUSY_WALL))` | don't drop a monster on top of a raider mid-job (`Game.h:207`, `218`) |
 | F8 | **Never inside the base** | `!(F.flags1 & (BLOCK1_BUILDINGSOLID\|BLOCK1_BUILDINGPATH\|BLOCK1_FOUNDATION)) && !(F.flags2 & BLOCK2_TOOLSTORE)` | `Game.h:198`, `203`, `208`, `232` |
-| F9 | No construction zone | `!Construction_Zone_ExistsAtBlock(&fPos)` | matches `Game.cpp:3789` |
+| F9 | No construction zone | `!Construction_Zone_ExistsAtBlock(&fPos)` | matches `Game.cpp:3788` |
 | F10 | **Never on top of a unit** | no live `LegoObject` (`MiniFigure`/`Vehicle`/`Building`/`RockMonster`) reports `LegoObject_GetBlockPos == F`, nor on the eight neighbours of `F` | `Object.h:1256`; a spawn inside a raider is the single most unfair thing the director can do |
 | F11 | **Minimum distance from Tool Store** | Chebyshev block distance from `F` to every building with `STATS1_TOOLSTORE` ≥ `WaveMinToolStoreBlocks` (default **6**) | `Stats.h:63`; `StatsObject_GetStatsFlags1` is ours (`Stats.h:383`) |
 | F12 | Minimum distance from *any* building | ≥ `WaveMinBuildingBlocks` (default **3**) | prevents a monster materialising inside the power station's blind spot |
 | F13 | Reachable | `F` is in the raider flood-fill set (§2.5b) | a wave the player cannot reach is not a threat, it's a timer |
 | F14 | Not a map emerge point | `!(W.flags2 & BLOCK2_EMERGE_POINT)` | leave the map's own triggers alone; the director is *additive*, not a replacement |
-| F15 | Not on a slug hole | `!(F.flags2 & (BLOCK2_SLUGHOLE_EXPOSED\|BLOCK2_SLUGHOLE_HIDDEN))` | `Game.h:235`, `239`; mirrors `Game.cpp:3771-3772` |
+| F15 | Not on a slug hole | `!(F.flags2 & (BLOCK2_SLUGHOLE_EXPOSED\|BLOCK2_SLUGHOLE_HIDDEN))` | `Game.h:235`, `239`; mirrors `Game.cpp:3755` |
 | F16 | Spacing within a wave | ≥ 2 blocks between two spawns in the same wave | a three-monster wave that all appear on the same tile is a bug that looks like a design |
 | F17 | Grace period | no waves before `WaveGraceSeconds` (default **120 s**) of world time | the player must be allowed to build a Tool Store |
 | F18 | Raiders must exist | at least one live `LegoObject_MiniFigure` | see §3.3 |
@@ -927,7 +931,7 @@ something diagnosable. That is the closest thing to play-testing available to th
 		///      The LIVEOBJ1_EXPANDING completion path at Object.cpp:3214-3226 feeds
 		///      targetBlockPos straight to Level_Block_SetBusy when
 		///      LegoObject_IsRockMonsterCanGather() is true -- and blockValue() does not
-		///      bounds-check (Game.h:783), so (-1,-1) is a negative-index write.
+		///      bounds-check (Game.h:784), so (-1,-1) is a negative-index write.
 		slugObj->targetBlockPos.x = (real32)bx;
 		slugObj->targetBlockPos.y = (real32)by;
 
@@ -1033,7 +1037,7 @@ namespace DeepCore { namespace Waves
 }}
 ```
 
-Internal state, entirely DLL-side (the `Game.cpp:168-170` pattern):
+Internal state, entirely DLL-side (the `Game.cpp:168-172` pattern):
 
 ```cpp
 namespace {
@@ -1190,7 +1194,7 @@ static bool _ChooseSpawnBlocks(sint32 want, std::vector<Point2I>& outWall, std::
 Call sites to add — three lines total:
 
 - `OpenLRR.cpp`, in `OpenLRR_MainLoop_Wrapper` after the `// post-MainLoop code here...`
-  marker (`OpenLRR.cpp:978`): `DeepCore::Waves::Update(elapsed);`
+  marker (`OpenLRR.cpp:977`, immediately after the NOTE at `OpenLRR.cpp:976`): `DeepCore::Waves::Update(elapsed);`
 - `Game.cpp`, in `Level_Free` beside the other custom teardown (`Game.cpp:3341-3352`):
   `DeepCore::Waves::Reset();`
 - `Game.cpp`, in `Lego_LoadLevel2` on the success path (`Game.cpp:2965`):
@@ -1212,8 +1216,8 @@ Call sites to add — three lines total:
 - **No struct grows.** Nothing in `Lego_Block`, `Lego_Level`, `LegoObject`,
   `LegoObject_Globs`, `Lego_Globs` or any other `assert_sizeof` type changes by one byte.
   All director state is DLL-side statics and `std::vector`s.
-- **No new object IDs.** `LegoObject_ID_Count == 15` (`GameCommon.h:143`) and roughly
-  eleven RockMonster names are already spoken for (`GameCommon.h:136-150`). The director
+- **No new object IDs.** `LegoObject_ID_Count == 15` (`GameCommon.h:1143`) and roughly
+  eleven RockMonster names are already spoken for (`GameCommon.h:137-150`). The director
   spawns *existing* species.
 - **No new `hook_write_jmpret`.** The interop table (`interop.cpp`) is untouched.
 - **No new art, no new models, no new animations.** `Activity_Emerge` already exists in
@@ -1255,7 +1259,7 @@ log (§7) exists precisely so that first run produces something we can read.
 
 1. **`12.75f`** (`Object.cpp:1625`). Not derivable from any constant in the tree;
    `Map3D_BlockSize` is an exe macro (`Map3D.h:345`) and `BlockSize` is per-level
-   (`Game.h:400`). If it is `BlockSize * 0.31875` for the stock `BlockSize`, the director
+   (`Game.h:398`). If it is `BlockSize * 0.31875` for the stock `BlockSize`, the director
    should compute it, not hardcode it. Needs a running game to check.
 2. **Do vanilla emerge points sit on wall blocks or floor blocks?** (§2.6). The exe's
    `LegoObject_TryGenerateRMonster` (`0x0043b1f0`, `Object.h:974`) is undecompiled. This is
@@ -1270,7 +1274,7 @@ log (§7) exists precisely so that first run produces something we can read.
    its body.
 5. **`Level_Block_SetBusy`** (`0x00432d30`, `Game.h:1781`) — whether it bounds-checks.
    Assumed not, on the strength of every in-tree accessor going through the unchecked
-   `blockValue` macro (`Game.h:783`). The plan bounds-checks before calling, so the answer
+   `blockValue` macro (`Game.h:784`). The plan bounds-checks before calling, so the answer
    does not change the design.
 6. **Whether `Info_RockMonster` is configured in a typical `Lego.cfg`.** `Info_Initialise`
    is exe (`GameState.cpp:218`). Handled defensively via `Info_HasTypeText`
