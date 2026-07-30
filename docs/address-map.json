@@ -604,7 +604,7 @@
    "name": "LegoRR::weaponGlobs",
    "type": "Weapon_Globs",
    "addr": 5261424,
-   "where": "src/openlrr/game/object/Weapons.cpp:27",
+   "where": "src/openlrr/game/object/Weapons.cpp:28",
    "size": 7056,
    "size_src": "assert_sizeof"
   },

@@ -196,6 +196,38 @@ bool32 __cdecl LegoRR::SFX_LoadSampleProperty(char* value, SFX_ID sfxID)
         else {
             nextItem = curItem;
             if (lastItem != nullptr) { // add to grouped sounds
+
+                /// DEEPCORE: sampleGroupCount was never checked against the table it
+                /// indexes. sampleGroupTable is SFX_MAXSAMPLEGROUPS (200) entries at
+                /// offset 0x0f78 inside SFX_Globs (SFX.h:35,97), and SFX_Globs is
+                /// overlaid on the original executable at 0x00502468 (SFX.cpp:21),
+                /// pinned by assert_sizeof(SFX_Globs, 0x1770) (SFX.h:115). The counter
+                /// accumulates across every Samples line in the config and is never
+                /// reset, so a large enough sound pack walks off the end:
+                ///
+                ///   entry 200  -> overwrites hashNameList / hashNameCount (SFX.h:98-99)
+                ///   entry 201  -> overwrites sampleGroupCount ITSELF, and flags
+                ///   entry 293+ -> past the end of sfxGlobs entirely
+                ///
+                /// That last one is not hyperbole. Per docs/ADDRESS-MAP.md this is the
+                /// only exactly-adjacent region pair in the entire map, zero slack:
+                ///   0x00502468 + 0x1770 == 0x00503bd8 == LegoRR::statsGlobs
+                /// so a big enough overflow lands on statsGlobs.objectStats, the
+                /// ObjectStats** pointer table. The symptom would be an access violation
+                /// inside SFX code on the first random sound, with nothing pointing at
+                /// the real cause: one sample too many in a config file.
+                ///
+                /// Unconditional, like the other overflow guards -- the behaviour being
+                /// replaced is memory corruption, so there is no vanilla semantics worth
+                /// preserving.
+                if (sfxGlobs.sampleGroupCount >= SFX_MAXSAMPLEGROUPS) {
+                    Error_WarnF2(true, "SFX: sample group table is full (%i entries); extra "
+                                       "grouped samples are being ignored.\n",
+                                 (sint32)SFX_MAXSAMPLEGROUPS);
+                    success = false;
+                    break;
+                }
+
                 curItem = &sfxGlobs.sampleGroupTable[sfxGlobs.sampleGroupCount++];
                 lastItem->next = curItem;
 

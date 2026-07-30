@@ -132,7 +132,7 @@ before contemplating any struct change.
 | `0x00503bd8` | `0x00504188` | 1456 | `LegoRR::statsGlobs` | `Stats_Globs` | assert_sizeof @ src/openlrr/game/object/Stats.h:232 | `src/openlrr/game/object/Stats.cpp:41` |
 | `0x00504188` | `0x0050418c` | 4 | `LegoRR::g_Teleporter_BOOL_00504188` | `bool32` | primitive | `src/openlrr/game/world/Teleporter.cpp:17` |
 | `0x00504190` | `0x0050466c` | 1244 | `LegoRR::textGlobs` | `Text_Globs` | assert_sizeof @ src/openlrr/game/interface/TextMessages.h:81 | `src/openlrr/game/interface/TextMessages.cpp:24` |
-| `0x00504870` | `0x00506400` | 7056 | `LegoRR::weaponGlobs` | `Weapon_Globs` | assert_sizeof @ src/openlrr/game/object/Weapons.h:140 | `src/openlrr/game/object/Weapons.cpp:27` |
+| `0x00504870` | `0x00506400` | 7056 | `LegoRR::weaponGlobs` | `Weapon_Globs` | assert_sizeof @ src/openlrr/game/object/Weapons.h:140 | `src/openlrr/game/object/Weapons.cpp:28` |
 | `0x00506800` | `0x00507098` | 2200 | `Gods98::mainGlobs` | `Main_Globs` | assert_sizeof @ src/openlrr/engine/Main.h:243 | `src/openlrr/engine/Main.cpp:75` |
 | `0x00507098` | `0x00507524` | 1164 | `Gods98::configGlobs` | `Config_Globs` | assert_sizeof @ src/openlrr/engine/core/Config.h:132 | `src/openlrr/engine/core/Config.cpp:21` |
 | `0x00507528` | `0x005075b4` | 140 | `Gods98::fontGlobs` | `Font_Globs` | assert_sizeof @ src/openlrr/engine/drawing/Fonts.h:109 | `src/openlrr/engine/drawing/Fonts.cpp:19` |
