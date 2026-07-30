@@ -5,10 +5,26 @@
 > attributable. Upstream carries no license, so this fork claims no rights over the inherited
 > code — please read **[NOTICE.md](NOTICE.md)** before using, forking, or contributing.
 >
-> **Status: groundwork.** The overhaul goals — a larger creature roster, more equipment, visual
-> work, expanded campaign — are being scoped against what this codebase can actually support.
-> Nothing beyond upstream parity is implemented yet, and this README will not claim otherwise.
-> Verified so far: the solution builds clean (0 errors, 44 warnings) with the v142 toolset.
+> **Status: early, and honest about it.** Three features exist, all opt-in and all **off by
+> default** — see [`data/Settings/DeepCore.cfg`](data/Settings/DeepCore.cfg). They are
+> **compile-verified but not play-tested**, because they were written on a machine with no
+> installation of the game. Treat anything you enable as untested.
+>
+> | Feature | What it does |
+> | --- | --- |
+> | `MultiSpeciesEmerge` | Different caverns in one mission emerge different monster species. Vanilla allows only one species per mission. |
+> | `CreatureVariants` | Per-monster scale and tint, so individuals of a species differ visibly. No new models involved. |
+> | `SurviveWaterOverflow` | Maps that exceed the engine's fixed water tables load and play instead of crashing to desktop. |
+>
+> **What this project cannot do**, so nobody is misled: the engine allows a hard maximum of
+> **15 object IDs per category**, and the base game already uses about 11 monsters, 12 vehicles
+> and 10 buildings. That leaves roughly 4 monster slots, 3 vehicles and 1 buildable building.
+> The limit is welded to the original 1999 executable's memory layout and **cannot be raised** —
+> the reasoning, with addresses, is in [`docs/OVERHAUL-PLAN.md`](docs/OVERHAUL-PLAN.md).
+> So this project chases **density and consequence**, not a longer unit list.
+>
+> Verified: `Debug|x86` and `Release|x86` both build with **0 errors** and no new warnings
+> against the upstream baseline of 44, using the v142 toolset.
 >
 > This project contains **no game assets** and is not playable on its own. It loads alongside
 > your own legally obtained copy of the original game.
