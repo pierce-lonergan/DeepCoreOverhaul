@@ -162,7 +162,7 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 		if ((uint32)type >= (uint32)LegoObject_Type_Count ||
 			(uint32)id   >= (uint32)LegoObject_ID_Count)
 		{
-			Config_FatalItemF(true, prop,
+			Config_WarnItemF(true, prop,
 				"Stats entry \"%s\" resolved to out-of-range indices (type %i, max %i; id %i, max %i). "
 				"Writing it would corrupt adjacent memory in the original executable. Entry skipped.",
 				Config_GetItemName(prop),
@@ -182,7 +182,25 @@ bool32 __cdecl LegoRR::Stats_Initialise(const Gods98::Config* config, const char
 
         /// REFACTOR: Moved to after Lego_GetObjectByName and type array allocation
         uint32 levels = (uint32)Config_GetIntValue(config, Stats_ID("Levels"));
-        Config_FatalLast(levels > OBJECT_MAXLEVELS, config, "Cannot have levels greater than maximum in Stats");
+        /// DEEPCORE: CLAMP, do not merely complain.
+        /// This value is stored verbatim into statsGlobs.objectLevels[type][id] below and
+        /// handed out by Stats_GetLevels (Stats.cpp:1176-1179), which every consumer then
+        /// uses as a loop bound over arrays dimensioned OBJECT_MAXLEVELS. Weapon_Initialise
+        /// is the clearest example: it walks objLevel up to Stats_GetLevels() while writing
+        /// objectCoefs[20][15][16].
+        /// Config_FatalLast alone is not protection. Error_FatalF2 is gated on
+        /// Error_IsFatalVisible() (Errors.h:111,192) -- a runtime-toggleable log level --
+        /// so with fatals suppressed an oversized value sails straight through and every
+        /// downstream loop overruns. Clamping at the single point of storage fixes all of
+        /// them at once.
+        if (levels > OBJECT_MAXLEVELS) {
+            Config_WarnItemF(true, prop,
+                "Stats entry \"%s\" declares %i levels; the engine supports at most %i. "
+                "Clamped -- the extra levels are unreachable and would overrun every "
+                "per-level table.",
+                Config_GetItemName(prop), (sint32)levels, (sint32)OBJECT_MAXLEVELS);
+            levels = OBJECT_MAXLEVELS;
+        }
         StatsFlags1 flags1 = StatsFlags1::STATS1_NONE;
         StatsFlags2 flags2 = StatsFlags2::STATS2_NONE;
         StatsFlags3 flags3 = StatsFlags3::STATS3_NONE;

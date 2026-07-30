@@ -175,7 +175,7 @@ bool32 __cdecl LegoRR::Weapon_Initialise(const Gods98::Config* config, const cha
 							if ((uint32)objType >= (uint32)LegoObject_Type_Count ||
 								(uint32)objID   >= (uint32)LegoObject_ID_Count)
 							{
-								Config_FatalItemF(true, stat,
+								Config_WarnItemF(true, stat,
 									"WeaponTypes object coef \"%s\" resolved to out-of-range indices "
 									"(type %i, max %i; id %i, max %i). Writing it would corrupt the "
 									"weapon coefficient table. Entry skipped.",
@@ -185,7 +185,22 @@ bool32 __cdecl LegoRR::Weapon_Initialise(const Gods98::Config* config, const cha
 								continue;
 							}
 
-							const uint32 objLevelCount = Stats_GetLevels(objType, objID);
+							/// DEEPCORE: Clamp the loop bound as well as trusting the source.
+							/// Stats_GetLevels just returns statsGlobs.objectLevels[type][id]
+							/// (Stats.cpp:1176-1179). Stats_Initialise now clamps that value
+							/// where it is stored, but an entry SKIPPED by the bounds guard
+							/// above never had it written at all, so the slot still holds
+							/// whatever the original executable left there. The loop below
+							/// writes objectCoefs[20][15][OBJECT_MAXLEVELS], so an unclamped
+							/// bound overruns the third dimension into the next weapon's row.
+							uint32 objLevelCount = Stats_GetLevels(objType, objID);
+							if (objLevelCount > OBJECT_MAXLEVELS) {
+								Config_WarnItemF(true, stat,
+									"WeaponTypes object coef \"%s\" reports %i levels; clamping to %i.",
+									Gods98::Config_GetItemName(stat),
+									(sint32)objLevelCount, (sint32)OBJECT_MAXLEVELS);
+								objLevelCount = OBJECT_MAXLEVELS;
+							}
 
 							/// FIX APPLY: Don't modify the config strings. BAD! NO TOUCH!
 							char* str = Gods98::Util_StrCpy(Gods98::Config_GetDataString(stat));
