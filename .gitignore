@@ -67,3 +67,9 @@ _unused/
 # Everything in here (d3drm.lib, d3drm.def, inc/*)
 !/lib/d3drm/*.def
 !/lib/d3drm/*.lib
+
+# Patched launchers: these are the ORIGINAL game executable with an import appended.
+# They are copyrighted game code and must never be committed. Generate your own with
+# OpenLRR-MakeExe from your own legally obtained LegoRR.exe.
+/OpenLRR.exe
+/OpenLRR-d.exe

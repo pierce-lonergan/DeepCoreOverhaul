@@ -60,6 +60,31 @@ Running this software requires your own legally obtained installation of the ori
 It functions by loading alongside the original executable; it is not a standalone game and
 cannot be used to play without those files.
 
+### Correction: two patched executables were removed
+
+Commits `2f6743c` and earlier (inherited from upstream) tracked `OpenLRR.exe` and
+`OpenLRR-d.exe` at the repository root, 737,280 bytes each. **These were not launchers written
+by the project — PE analysis shows they are the original 1999 game executable itself**, with a
+512-byte `.idata2` section appended to import `openlrr.dll!StartOpenLRR`:
+
+```
+ImageBase 0x400000   Entry 0x8f2c0
+.text  0x9d0b5   <- 644 KB of original game code
+.data  0x2cced4  <- the data segment the hardcoded 0x005xxxxx globals live in
+.idata2 0x200    <- the only part added by this project
+```
+
+They also contain original game strings (`"Rock Raiders"`, `"Lego.cfg"`). Their presence
+contradicted the statement above, so they have been **deleted from the working tree and from
+tracking**, and added to `.gitignore`.
+
+The supported path is now to generate your own launcher from your own `LegoRR.exe` using
+`OpenLRR-MakeExe`, or to use the injector, which needs no patched executable at all. The build
+no longer fails when they are absent (`src/openlrr/openlrr.vcxproj`).
+
+Note that they remain reachable in this repository's inherited git history, and upstream still
+tracks them. Removing them from history requires a rewrite; see the project issues.
+
 ## Third-party components
 
 | Component | Location | Origin |

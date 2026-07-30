@@ -110,8 +110,8 @@
       <AdditionalDependencies>$(SolutionDir)lib\d3drm\d3drm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(SolutionDir)OpenLRR-d.exe" "$(OutDir)"</Command>
-      <Message>Copying OpenLRR debug executable</Message>
+      <Command>if exist "$(SolutionDir)OpenLRR-d.exe" (xcopy /y /d "$(SolutionDir)OpenLRR-d.exe" "$(OutDir)") else (echo [DeepCore] No launcher in repo root - this is expected. Generate one from your own LegoRR.exe using OpenLRR-MakeExe, or use the injector. Skipping copy.)</Command>
+      <Message>Copying launcher executable (skipped if absent)</Message>
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>xcopy /y /d "$(SolutionDir)data\Settings\Shortcuts.cfg" "$(OutDir)Settings\"
@@ -139,8 +139,8 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
       <AdditionalDependencies>$(SolutionDir)lib\d3drm\d3drm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(SolutionDir)OpenLRR.exe" "$(OutDir)"</Command>
-      <Message>Copying OpenLRR release executable</Message>
+      <Command>if exist "$(SolutionDir)OpenLRR.exe" (xcopy /y /d "$(SolutionDir)OpenLRR.exe" "$(OutDir)") else (echo [DeepCore] No launcher in repo root - this is expected. Generate one from your own LegoRR.exe using OpenLRR-MakeExe, or use the injector. Skipping copy.)</Command>
+      <Message>Copying launcher executable (skipped if absent)</Message>
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>xcopy /y /d "$(SolutionDir)data\Settings\Shortcuts.cfg" "$(OutDir)Settings\"
