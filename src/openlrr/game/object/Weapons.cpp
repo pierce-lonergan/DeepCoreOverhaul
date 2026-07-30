@@ -14,6 +14,7 @@
 #include "Collision.h"
 #include "Object.h"
 #include "Stats.h"
+#include "../DeepCore.hpp"
 #include "Weapons.h"
 
 
@@ -658,7 +659,9 @@ LegoRR::LegoObject* __cdecl LegoRR::Weapon_FireLazer(const Vector3F* fromPos, co
 	Gods98::Maths_RayEndPoint(&toPos, fromPos, &weaponDir, weaponDist);
 
 	Gods98::Container* cont = LegoObject_GetActivityContainer(liveObj);
-	Weapon_Lazer_Add(cont, fromPos, &toPos);
+	/// DEEPCORE: weaponID is already in scope here (Weapon_FireLazer parameter) and was
+	/// simply being dropped, which is why every weapon looked the same.
+	Weapon_Lazer_AddStyled(cont, fromPos, &toPos, weaponID);
 
 	// There must have been more to this function that was stripped by the compiler.
 	// This function is filled with so much unexpected redundancy and variable jank:
@@ -816,6 +819,25 @@ bool32 __cdecl LegoRR::Weapon_LegoObject_TestCollision_FUN_004708f0(LegoObject* 
 // <LegoRR.exe @00470950>
 void __cdecl LegoRR::Weapon_Lazer_Add(Gods98::Container* cont, const Vector3F* fromPos, const Vector3F* toPos)
 {
+	/// DEEPCORE: This signature is HOOKED over the original executable
+	/// (interop.cpp:4369 -> 0x00470950), so exe code can call it directly and its
+	/// parameter list must not change. -1 means "no particular weapon", which always
+	/// yields the stock beam, so any exe-originated laser stays exactly vanilla.
+	Weapon_Lazer_AddStyled(cont, fromPos, toPos, -1);
+}
+
+/// CUSTOM: Weapon_Lazer_Add, but told which weapon fired, so a weapon can look like itself.
+///
+/// Weapon TYPES are already unbounded -- Weapon_Initialise counts the config's WeaponTypes
+/// array and heap-allocates that many WeaponStats (Weapons.cpp:46-92) -- but every laser
+/// rendered identically, because the appearance was hardcoded here. A roster of new weapons
+/// that all look the same reads to a player as one weapon, so this is what makes expanding
+/// the roster worth anything.
+///
+/// A negative weaponID, or a weapon with no configured style, reproduces the original
+/// constants exactly.
+void __cdecl LegoRR::Weapon_Lazer_AddStyled(Gods98::Container* cont, const Vector3F* fromPos, const Vector3F* toPos, sint32 weaponID)
+{
 	const sint32 handle = Weapon_Lazer_GetNextAvailable();
 	if (handle != -1) {
 		Weapon_Lazer* lazer = &weaponGlobs.lazerList[handle];
@@ -825,11 +847,22 @@ void __cdecl LegoRR::Weapon_Lazer_Add(Gods98::Container* cont, const Vector3F* f
 		lazer->innerMesh = Gods98::Mesh_CreateOnFrame(cont->activityFrame, nullptr, flags, nullptr, Gods98::Mesh_Type::Norm);
 		lazer->outerMesh = Gods98::Mesh_CreateOnFrame(cont->activityFrame, nullptr, flags, nullptr, Gods98::Mesh_Type::Norm);
 
-		Weapon_Lazer_InitMesh(lazer->innerMesh, 0.3f, fromPos, toPos, 0.6f, 0.6f, 0.6f, 1.0f);
-		Weapon_Lazer_InitMesh(lazer->outerMesh, 1.0f, fromPos, toPos, 0.1f, 0.2f, 0.5f, 1.0f);
+		const DeepCore::Settings::BeamStyle* style = DeepCore::GetBeamStyle(weaponID);
+
+		if (style != nullptr) {
+			Weapon_Lazer_InitMesh(lazer->innerMesh, style->innerThickness, fromPos, toPos,
+								  style->innerR, style->innerG, style->innerB, style->innerA);
+			Weapon_Lazer_InitMesh(lazer->outerMesh, style->outerThickness, fromPos, toPos,
+								  style->outerR, style->outerG, style->outerB, style->outerA);
+			lazer->timer = style->lifetimeFrames;
+		}
+		else {
+			Weapon_Lazer_InitMesh(lazer->innerMesh, 0.3f, fromPos, toPos, 0.6f, 0.6f, 0.6f, 1.0f);
+			Weapon_Lazer_InitMesh(lazer->outerMesh, 1.0f, fromPos, toPos, 0.1f, 0.2f, 0.5f, 1.0f);
+			lazer->timer = 5.0f; // Lasts for 5 frames.
+		}
 
 		lazer->cont = cont;
-		lazer->timer = 5.0f; // Lasts for 5 frames.
 	}
 }
 

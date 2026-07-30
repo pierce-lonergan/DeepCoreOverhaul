@@ -2,6 +2,7 @@
 //
 
 #include <cstdlib>
+#include <cstring>
 #include <map>
 
 #include "../engine/core/Errors.h"
@@ -55,6 +56,7 @@ bool DeepCore::IsAnyFeatureEnabled(void)
 	return (settings.multiSpeciesEmerge
 		|| settings.waveDirector
 		|| settings.creatureVariants
+		|| settings.weaponBeamStyles
 		|| settings.surviveWaterOverflow);
 }
 
@@ -241,6 +243,75 @@ void DeepCore::ApplyCreatureVariant(void* creatureModel, sint32 objID)
 }
 
 
+/// Split a config value into fields on whitespace, ':' and ','.
+///
+/// One splitter for every list-shaped value in DeepCore.cfg, so "1.5 0.6:0.3:0.3" and
+/// "1.5 0.6 0.3 0.3" always mean the same thing no matter which key they appear under.
+/// The engine's own config values use ':' as a level separator, so accepting it here
+/// keeps this file looking like the rest of the game's data.
+static void _SplitFields(const char* value, std::vector<std::string>& out)
+{
+	out.clear();
+	if (value == nullptr) return;
+
+	std::string current;
+	for (const char* c = value; ; c++) {
+		if (*c == '\0' || *c == ' ' || *c == '\t' || *c == ':' || *c == ',') {
+			if (!current.empty()) {
+				out.push_back(current);
+				current.clear();
+			}
+			if (*c == '\0') break;
+		}
+		else {
+			current.push_back(*c);
+		}
+	}
+}
+
+
+/// weaponID -> index into settings.beamStyles, or -1 for "no style". Resolved lazily
+/// because weaponGlobs.weaponNameList does not exist until Weapon_Initialise has run.
+static std::map<sint32, sint32> _beamStyleByWeapon;
+
+
+const DeepCore::Settings::BeamStyle* DeepCore::GetBeamStyle(sint32 weaponID)
+{
+	if (!settings.weaponBeamStyles || settings.beamStyles.empty() || weaponID < 0) {
+		return nullptr;
+	}
+	if ((uint32)weaponID >= LegoRR::weaponGlobs.weaponCount) {
+		return nullptr; // never index the name list out of range
+	}
+
+	auto cached = _beamStyleByWeapon.find(weaponID);
+	if (cached == _beamStyleByWeapon.end()) {
+		sint32 found = -1;
+		const char* name = LegoRR::weaponGlobs.weaponNameList
+			? LegoRR::weaponGlobs.weaponNameList[weaponID] : nullptr;
+
+		if (name != nullptr) {
+			for (size_t i = 0; i < settings.beamStyles.size(); i++) {
+				// Config identifiers are case-insensitive throughout this engine.
+				if (::_stricmp(settings.beamStyles[i].weaponName.c_str(), name) == 0) {
+					found = (sint32)i;
+					break;
+				}
+			}
+		}
+		_beamStyleByWeapon[weaponID] = found;
+		cached = _beamStyleByWeapon.find(weaponID);
+
+		if (settings.verboseStartup) {
+			DeepCore_LogF("beam style for weapon %i (\"%s\"): %s",
+				weaponID, (name ? name : "?"), (found >= 0 ? "matched" : "stock"));
+		}
+	}
+
+	return (cached->second >= 0) ? &settings.beamStyles[cached->second] : nullptr;
+}
+
+
 /// Distinct overflow kinds already reported, so each warns exactly once per run.
 static std::map<std::string, bool> _waterOverflowWarned;
 
@@ -294,21 +365,7 @@ bool DeepCore::Load(void)
 	// Species pool: whitespace- or comma-separated monster type names.
 	{
 		const char* pool = Gods98::Config_GetTempStringValue(config, DeepCore_ID("EmergeSpeciesPool"));
-		if (pool != nullptr) {
-			std::string current;
-			for (const char* c = pool; ; c++) {
-				if (*c == '\0' || *c == ' ' || *c == '\t' || *c == ',' || *c == ':') {
-					if (!current.empty()) {
-						settings.emergeSpeciesNames.push_back(current);
-						current.clear();
-					}
-					if (*c == '\0') break;
-				}
-				else {
-					current.push_back(*c);
-				}
-			}
-		}
+		_SplitFields(pool, settings.emergeSpeciesNames);
 
 		if (settings.multiSpeciesEmerge && settings.emergeSpeciesNames.empty()) {
 			DeepCore_WarnF(true, "%s", "MultiSpeciesEmerge is TRUE but EmergeSpeciesPool is empty; "
@@ -359,16 +416,7 @@ bool DeepCore::Load(void)
 		// Split on whitespace and ':' so both "1.5 0.6:0.3:0.3" and
 		// "1.5 0.6 0.3 0.3" parse identically.
 		std::vector<std::string> fields;
-		{
-			std::string current;
-			for (const char* c = value; ; c++) {
-				if (*c == '\0' || *c == ' ' || *c == '\t' || *c == ':' || *c == ',') {
-					if (!current.empty()) { fields.push_back(current); current.clear(); }
-					if (*c == '\0') break;
-				}
-				else current.push_back(*c);
-			}
-		}
+		_SplitFields(value, fields);
 
 		if (fields.size() < 2) {
 			DeepCore_WarnF(true, "Variants: \"%s\" needs at least a species name and a scale; skipping.", label);
@@ -401,6 +449,57 @@ bool DeepCore::Load(void)
 	if (settings.creatureVariants && settings.variants.empty()) {
 		DeepCore_WarnF(true, "%s", "CreatureVariants is TRUE but the Variants block is empty; "
 			"creatures will look exactly as vanilla.");
+	}
+
+	// ---- Weapon beam appearance -----------------------------------------------
+
+	settings.weaponBeamStyles = Config_GetBoolOrFalse(config, DeepCore_ID("WeaponBeamStyles"));
+
+	// "<Label>  <WeaponName> <innerThick>:<r>:<g>:<b>:<a> <outerThick>:<r>:<g>:<b>:<a> [frames]"
+	for (const Gods98::Config* prop = Gods98::Config_FindArray(config, DeepCore_ID("BeamStyles"));
+		 prop != nullptr;
+		 prop = Gods98::Config_GetNextItem(prop))
+	{
+		const char* label = Gods98::Config_GetItemName(prop);
+		const char* value = Gods98::Config_GetDataString(prop);
+		if (label == nullptr || value == nullptr) continue;
+
+		std::vector<std::string> f;
+		_SplitFields(value, f);
+
+		if (f.size() < 11) {
+			DeepCore_WarnF(true, "BeamStyles: \"%s\" has %i fields; needs at least 11 "
+				"(weapon, then 5 inner, then 5 outer). Skipped.", label, (sint32)f.size());
+			continue;
+		}
+
+		Settings::BeamStyle style;
+		style.weaponName    = f[0];
+		style.innerThickness= (real32)std::atof(f[1].c_str());
+		style.innerR        = (real32)std::atof(f[2].c_str());
+		style.innerG        = (real32)std::atof(f[3].c_str());
+		style.innerB        = (real32)std::atof(f[4].c_str());
+		style.innerA        = (real32)std::atof(f[5].c_str());
+		style.outerThickness= (real32)std::atof(f[6].c_str());
+		style.outerR        = (real32)std::atof(f[7].c_str());
+		style.outerG        = (real32)std::atof(f[8].c_str());
+		style.outerB        = (real32)std::atof(f[9].c_str());
+		style.outerA        = (real32)std::atof(f[10].c_str());
+		if (f.size() >= 12) {
+			style.lifetimeFrames = (real32)std::atof(f[11].c_str());
+		}
+
+		if (style.innerThickness <= 0.0f || style.outerThickness <= 0.0f || style.lifetimeFrames <= 0.0f) {
+			DeepCore_WarnF(true, "BeamStyles: \"%s\" has a non-positive thickness or lifetime; skipped.", label);
+			continue;
+		}
+
+		settings.beamStyles.push_back(style);
+	}
+
+	if (settings.weaponBeamStyles && settings.beamStyles.empty()) {
+		DeepCore_WarnF(true, "%s", "WeaponBeamStyles is TRUE but the BeamStyles block is empty; "
+			"every laser will look stock.");
 	}
 
 	// ---- Stability ------------------------------------------------------------

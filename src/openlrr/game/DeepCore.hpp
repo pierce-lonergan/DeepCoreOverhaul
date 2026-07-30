@@ -130,6 +130,32 @@ struct Settings
 	// twenty-five years. Water_Globs is exe-overlaid (Water.cpp:18, assert_sizeof
 	// 0x29ec) so the arrays CANNOT be grown; the fix is DLL-side storage.
 
+	// ---- Weapon beam appearance -----------------------------------------------
+	// Weapon TYPES are genuinely unbounded -- Weapon_Initialise counts the config's
+	// WeaponTypes array and heap-allocates that many WeaponStats (Weapons.cpp:46-92),
+	// and OpenLRR's parser is the one that actually runs. But every laser looked
+	// identical no matter which weapon fired it, because Weapon_Lazer_Add hardcodes
+	// one appearance (Weapons.cpp:817-835). New weapons that all look the same read
+	// as one weapon, so the roster expansion is wasted without this.
+
+	/// Apply per-weapon beam appearance.
+	bool weaponBeamStyles = false;
+
+	/// Appearance of one weapon's laser. Defaults reproduce the vanilla beam EXACTLY,
+	/// so an entry that overrides only, say, the outer colour keeps everything else
+	/// looking stock.
+	struct BeamStyle
+	{
+		std::string weaponName;
+		real32 innerThickness = 0.3f;   // Weapons.cpp:830
+		real32 innerR = 0.6f, innerG = 0.6f, innerB = 0.6f, innerA = 1.0f;
+		real32 outerThickness = 1.0f;   // Weapons.cpp:831
+		real32 outerR = 0.1f, outerG = 0.2f, outerB = 0.5f, outerA = 1.0f;
+		real32 lifetimeFrames = 5.0f;   // Weapons.cpp:834
+	};
+
+	std::vector<BeamStyle> beamStyles;
+
 	/// Degrade instead of dying when a map exceeds the engine's fixed water tables.
 	///
 	/// This does NOT raise the caps. Water_Globs is a reference overlaid on the
@@ -204,6 +230,13 @@ void ApplyCreatureVariant(void* creatureModel, sint32 objID);
 /// vanilla behaviour is preserved exactly). Warns once per distinct `what`, so a
 /// large map does not emit thousands of identical lines.
 bool WaterOverflow(const char* what);
+
+/// Beam appearance for a weapon index, or nullptr to use the stock hardcoded look.
+///
+/// `weaponID` indexes weaponGlobs.weaponNameList; a negative value means "no specific
+/// weapon" (the path the original executable takes when it calls Weapon_Lazer_Add
+/// directly) and always yields nullptr, so exe-originated lasers stay vanilla.
+const Settings::BeamStyle* GetBeamStyle(sint32 weaponID);
 
 #pragma endregion
 

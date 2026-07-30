@@ -273,6 +273,11 @@ bool32 __cdecl Weapon_LegoObject_TestCollision_FUN_004708f0(LegoObject* liveObj,
 //#define Weapon_Lazer_Add ((void (__cdecl* )(Gods98::Container* cont, const Vector3F* fromPos, const Vector3F* toPos))0x00470950)
 void __cdecl Weapon_Lazer_Add(Gods98::Container* cont, const Vector3F* fromPos, const Vector3F* toPos);
 
+/// CUSTOM: Weapon_Lazer_Add with the firing weapon's identity, so per-weapon beam
+/// appearance can be applied. weaponID < 0 means "stock beam". Weapon_Lazer_Add itself
+/// is hooked over the exe and so cannot take an extra parameter.
+void __cdecl Weapon_Lazer_AddStyled(Gods98::Container* cont, const Vector3F* fromPos, const Vector3F* toPos, sint32 weaponID);
+
 // <LegoRR.exe @00470a20>
 //#define Weapon_Lazer_InitMesh ((void (__cdecl* )(Gods98::Mesh* mesh, real32 thickness, const Vector3F* fromPos, const Vector3F* toPos, real32 red, real32 green, real32 blue, real32 alpha))0x00470a20)
 void __cdecl Weapon_Lazer_InitMesh(Gods98::Mesh* mesh, real32 thickness, const Vector3F* fromPos, const Vector3F* toPos, real32 red, real32 green, real32 blue, real32 alpha);
