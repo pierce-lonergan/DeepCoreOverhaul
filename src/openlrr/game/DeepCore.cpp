@@ -62,6 +62,10 @@ bool DeepCore::IsAnyFeatureEnabled(void)
 }
 
 
+/// Forward declarations for the wave pool, defined with PickWaveSpecies below.
+static std::vector<sint32> _resolvedWaveSpecies;
+static bool _waveSpeciesResolved = false;
+
 /// Cached name->ID resolution for the emerge species pool.
 /// -1 means "resolution attempted and failed"; the entry is then skipped forever
 /// rather than re-warned every time a wall is drilled.
@@ -73,6 +77,8 @@ void DeepCore::InvalidateSpeciesCache(void)
 {
 	_resolvedSpecies.clear();
 	_speciesResolved = false;
+	_resolvedWaveSpecies.clear();
+	_waveSpeciesResolved = false;
 }
 
 
@@ -146,6 +152,58 @@ sint32 DeepCore::PickEmergeSpecies(sint32 fallbackId, uint32 triggerIndex)
 	// players learn which tunnel breeds what, which is far more interesting than
 	// noise, and it keeps behaviour reproducible when diagnosing a report.
 	return _resolvedSpecies[triggerIndex % _resolvedSpecies.size()];
+}
+
+
+sint32 DeepCore::PickWaveSpecies(sint32 waveNumber, sint32 indexInWave)
+{
+	using namespace LegoRR; // required: Lego_GetObjectByName is an exe address macro
+
+	if (!_waveSpeciesResolved) {
+		_waveSpeciesResolved = true;
+		_resolvedWaveSpecies.clear();
+
+		for (const std::string& name : settings.waveSpeciesNames) {
+			LegoObject_Type objType = LegoObject_Type::LegoObject_None;
+			LegoObject_ID objID = (LegoObject_ID)0;
+
+			if (!Lego_GetObjectByName(name.c_str(), &objType, &objID, nullptr)) {
+				DeepCore_WarnF(true, "WaveSpeciesPool: no object named \"%s\"; skipping it.", name.c_str());
+				continue;
+			}
+			if (objType != LegoObject_Type::LegoObject_RockMonster) {
+				DeepCore_WarnF(true, "WaveSpeciesPool: \"%s\" is not a RockMonster type; skipping it.", name.c_str());
+				continue;
+			}
+			if ((uint32)objID >= legoGlobs.rockMonsterCount ||
+				(uint32)objID >= (uint32)LegoObject_ID_Count)
+			{
+				DeepCore_WarnF(true, "WaveSpeciesPool: \"%s\" resolved to out-of-range ID %i; skipping it.",
+					name.c_str(), (sint32)objID);
+				continue;
+			}
+			_resolvedWaveSpecies.push_back((sint32)objID);
+		}
+	}
+
+	if (!_resolvedWaveSpecies.empty()) {
+		// Vary within a wave AND across waves, so a wave reads as a mixed group rather
+		// than a squad of clones -- without ever being unpredictable enough to feel random.
+		const size_t n = _resolvedWaveSpecies.size();
+		return _resolvedWaveSpecies[(size_t)(waveNumber + indexInWave) % n];
+	}
+
+	// Fall back to whatever this level was built to emerge, so an unconfigured director
+	// still produces something the mission was designed to contain.
+	if (legoGlobs.currLevel != nullptr) {
+		const sint32 id = (sint32)legoGlobs.currLevel->EmergeCreature;
+		if (id >= 0 && (uint32)id < legoGlobs.rockMonsterCount &&
+			(uint32)id < (uint32)LegoObject_ID_Count)
+		{
+			return id;
+		}
+	}
+	return -1;
 }
 
 
@@ -351,6 +409,44 @@ void DeepCore::WarnOnce_DebugWaterKeyDisabled(void)
 }
 
 
+/// Apply a numeric config value only when the key is actually present, so a partial
+/// config file cannot silently zero a tuning value. `mustBePositive` rejects <= 0 and
+/// keeps the default, with a warning naming both the bad value and what was kept.
+static void _ReadRealIfPresent(const Gods98::Config* config, const char* key, real32& dest, bool mustBePositive)
+{
+	const char* id = Config_ID(LegoRR::legoGlobs.gameName, DEEPCORE_BLOCKNAME, key);
+	if (Gods98::Config_FindItem(config, id) == nullptr) return;
+
+	const real32 value = Config_GetRealValue(config, id);
+	if (mustBePositive && value <= 0.0f) {
+		DeepCore_WarnF(true, "%s must be > 0 (got %f); keeping default %f", key, value, dest);
+		return;
+	}
+	if (value < 0.0f) {
+		DeepCore_WarnF(true, "%s cannot be negative (got %f); keeping default %f", key, value, dest);
+		return;
+	}
+	dest = value;
+}
+
+static void _ReadIntIfPresent(const Gods98::Config* config, const char* key, sint32& dest, bool mustBePositive)
+{
+	const char* id = Config_ID(LegoRR::legoGlobs.gameName, DEEPCORE_BLOCKNAME, key);
+	if (Gods98::Config_FindItem(config, id) == nullptr) return;
+
+	const sint32 value = Config_GetIntValue(config, id);
+	if (mustBePositive && value <= 0) {
+		DeepCore_WarnF(true, "%s must be > 0 (got %i); keeping default %i", key, value, dest);
+		return;
+	}
+	if (value < 0) {
+		DeepCore_WarnF(true, "%s cannot be negative (got %i); keeping default %i", key, value, dest);
+		return;
+	}
+	dest = value;
+}
+
+
 bool DeepCore::Load(void)
 {
 	InvalidateSpeciesCache();
@@ -380,6 +476,20 @@ bool DeepCore::Load(void)
 
 	settings.multiSpeciesEmerge = Config_GetBoolOrFalse(config, DeepCore_ID("MultiSpeciesEmerge"));
 	settings.waveDirector       = Config_GetBoolOrFalse(config, DeepCore_ID("WaveDirector"));
+
+	{
+		const char* wpool = Gods98::Config_GetTempStringValue(config, DeepCore_ID("WaveSpeciesPool"));
+		_SplitFields(wpool, settings.waveSpeciesNames);
+	}
+
+	_ReadRealIfPresent(config, "WaveRampSeconds",        settings.waveRampSeconds,        false);
+	_ReadRealIfPresent(config, "WaveMinIntervalSeconds", settings.waveMinIntervalSeconds, true);
+	_ReadRealIfPresent(config, "WaveTelegraphSeconds",   settings.waveTelegraphSeconds,   false);
+	_ReadRealIfPresent(config, "WaveShakeIntensity",     settings.waveShakeIntensity,     false);
+	_ReadRealIfPresent(config, "WaveShakeDuration",      settings.waveShakeDuration,      false);
+	_ReadIntIfPresent (config, "WaveSize",               settings.waveSize,               true);
+	_ReadIntIfPresent (config, "WaveSizeMax",            settings.waveSizeMax,            true);
+	_ReadIntIfPresent (config, "WaveMinDistanceFromBase",settings.waveMinDistanceFromBase,false);
 
 	// Species pool: whitespace- or comma-separated monster type names.
 	{

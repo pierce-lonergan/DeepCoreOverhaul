@@ -86,13 +86,45 @@ struct Settings
 	/// Enable the DLL-side spawn director (waves independent of map emerge triggers).
 	bool waveDirector = false;
 
-	/// Seconds between wave-director evaluations. Ignored unless waveDirector.
-	real32 waveIntervalSeconds = 90.0f;
+	/// Seconds between waves at mission start. Ignored unless waveDirector.
+	real32 waveIntervalSeconds = 150.0f;
 
-	/// Hard ceiling on creatures the director will keep alive at once. This is a
-	/// director-side budget, NOT an engine limit; it exists so a runaway config
-	/// cannot flood the level.
+	/// Seconds of mission time over which the interval halves. 0 disables the ramp,
+	/// giving a flat cadence. The ramp is what makes a long mission tighten instead of
+	/// settling into a rhythm the player stops noticing.
+	real32 waveRampSeconds = 600.0f;
+
+	/// Floor on the ramped interval, so escalation never becomes a continuous stream.
+	real32 waveMinIntervalSeconds = 45.0f;
+
+	/// Seconds between the warning and the arrival. This is the whole difference
+	/// between brutal and unfair: a wave the player could not have seen coming is a
+	/// coin flip, not difficulty.
+	real32 waveTelegraphSeconds = 6.0f;
+
+	/// Creatures in the first wave. Grows by one every three waves.
+	sint32 waveSize = 1;
+
+	/// Ceiling on a single wave regardless of how far the ramp has run.
+	sint32 waveSizeMax = 4;
+
+	/// Hard ceiling on creatures alive at once. This is a director-side budget, NOT an
+	/// engine limit, and it counts creatures the MAP spawned too -- so the director
+	/// never stacks on top of a level that is already hostile.
 	sint32 waveMaxAlive = 6;
+
+	/// Minimum distance, in blocks, between a spawn and any of the player's buildings.
+	/// The base is the one place a player is entitled to feel safe until something
+	/// walks there.
+	sint32 waveMinDistanceFromBase = 8;
+
+	/// Camera shake accompanying the warning. 0 disables.
+	real32 waveShakeIntensity = 0.35f;
+	real32 waveShakeDuration  = 1.5f;
+
+	/// Species pool for director waves, by monster type name. Falls back to the level's
+	/// own EmergeCreature when empty or unresolvable, exactly like the emerge pool.
+	std::vector<std::string> waveSpeciesNames;
 
 
 	// ---- Creature variants ----------------------------------------------------
@@ -228,6 +260,14 @@ bool IsAnyFeatureEnabled(void);
 /// index of the trigger within Lego_Level::emergeTriggers, so a given trigger always
 /// yields the same species for the whole mission rather than shuffling per wall hit.
 sint32 PickEmergeSpecies(sint32 fallbackId, uint32 triggerIndex);
+
+/// Choose the RockMonster type ID for one creature in a director wave.
+///
+/// Falls back to the current level's own EmergeCreature when no wave pool is configured
+/// or nothing in it resolved, so an unconfigured director still spawns something the
+/// level was built to contain. Returns -1 only if even that is unavailable, in which case
+/// the caller must not spawn.
+sint32 PickWaveSpecies(sint32 waveNumber, sint32 indexInWave);
 
 /// Drop cached name->ID resolutions. Call when the game's object tables may have been
 /// reloaded, so a stale ID can never be handed to the spawner.

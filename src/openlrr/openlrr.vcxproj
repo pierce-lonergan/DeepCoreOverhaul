@@ -256,6 +256,7 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     <ClInclude Include="game\interface\TextMessages.h" />
     <ClInclude Include="game\interface\ToolTip.h" />
     <ClInclude Include="game\DeepCore.hpp" />
+    <ClInclude Include="game\WaveDirector.hpp" />
     <ClInclude Include="game\Shortcuts.hpp" />
     <ClInclude Include="game\mission\Messages.h" />
     <ClInclude Include="game\mission\NERPsFile.h" />
@@ -382,6 +383,7 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
     <ClCompile Include="game\interface\TextMessages.cpp" />
     <ClCompile Include="game\interface\ToolTip.cpp" />
     <ClCompile Include="game\DeepCore.cpp" />
+    <ClCompile Include="game\WaveDirector.cpp" />
     <ClCompile Include="game\Shortcuts.cpp" />
     <ClCompile Include="game\mission\Messages.cpp" />
     <ClCompile Include="game\mission\NERPsFile.cpp" />

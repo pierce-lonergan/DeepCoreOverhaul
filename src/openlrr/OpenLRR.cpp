@@ -16,6 +16,7 @@
 #include "engine/Main.h"
 #include "game/Debug.h"
 #include "game/Game.h"
+#include "game/WaveDirector.hpp"
 #include "game/Shortcuts.hpp"
 #include "game/effects/LightEffects.h"
 #include "game/front/FrontEnd.h"
@@ -975,6 +976,12 @@ bool32 __cdecl OpenLRR_MainLoop_Wrapper(real32 elapsed)
 
 	// NOTE: Similar to Initialise, the main loop does not run when in the FrontEnd!!!
 	// post-MainLoop code here...
+
+	/// DEEPCORE: Timed monster waves. Needs no hook of its own -- this slot already
+	/// exists for exactly this. Update() returns immediately when the feature is off or
+	/// there is no live level, and converts to world time itself so waves do not advance
+	/// while the game is paused. See game/WaveDirector.hpp.
+	DeepCore::Waves::Update(elapsed);
 
 
 	if (OpenLRR_IsWobblyWorld()) {

@@ -47,6 +47,7 @@
 #include "world/Teleporter.h"
 #include "world/Water.h"
 #include "DeepCore.hpp"
+#include "WaveDirector.hpp"
 #include "Debug.h"
 #include "Shortcuts.hpp"
 #include "Game.h"
@@ -3359,6 +3360,10 @@ const char* __cdecl LegoRR::Level_Free(void)
 
 		/// CUSTOM: Handle water cleanup so that it doesn't persist between levels.
 		Water_RemoveAll();
+
+		/// DEEPCORE: Clear wave-director state so escalation does not carry between
+		/// levels -- otherwise mission two would open at mission one's threat level.
+		DeepCore::Waves::Reset();
 
 		Smoke_RemoveAll();
 		Lego_StopUserAction();
