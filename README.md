@@ -31,6 +31,48 @@
 >
 > As upstream requires, the **L in "LRR" is never expanded** anywhere in this project.
 
+## Run it
+
+**Watch this project's systems run right now — no game required:**
+
+```
+scripts\DeepCoreSandbox.cmd
+```
+
+Or double-click **DeepCore Sandbox** on your desktop. It pulls the latest commit,
+rebuilds if anything changed, and runs. In a container instead:
+
+```
+docker compose -f docker/docker-compose.yml run --rm view
+```
+
+That is the **sandbox**: it executes the wave director, the spawn-fairness rules and the
+threat-audio decisions against a procedurally generated cavern. It is not the 1999 game
+and does not contain any part of it.
+
+**To run the actual game with these modifications**, you need your own installed copy:
+
+```
+scriptsun.ps1
+```
+
+That script detects an installation, builds, deploys the settings and generated audio,
+launches, and tails the log. If it finds no installation it says so and stops — it never
+downloads anything and never guesses a path.
+
+### What "it runs" means here, precisely
+
+This project keeps three claim tiers separate and never blurs them:
+
+| Tier | Meaning | Status |
+| --- | --- | --- |
+| **compile-verified** | it builds | 0 errors, exactly 44 warnings, both configs |
+| **sandbox-verified** | our code executed on generated data and behaved correctly | 40/40 seeds pass every invariant |
+| **play-tested** | someone ran it in the real game | **nobody, yet** |
+
+Sandbox-verified says nothing about the 1999 executable, nothing about Direct3D Retained
+Mode, and nothing about how a wave feels in an actual mission.
+
 ## Upstream description
 
 An open source re-implementation of [LEGO Rock Raiders (PC)][Wikipedia_LRR]. This is created by slowly implementing and replacing game functionality, while relying on the original executable and game assets for everything else.

@@ -44,8 +44,11 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup>
-    <OutDir>$(SolutionDir)bin\</OutDir>
-    <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Configuration)\</IntDir>
+    <!-- Same reasoning as sandbox.vcxproj: derived from the project location so this can be
+         built directly, without $(SolutionDir) and without the trailing-backslash quoting
+         hazard that comes with passing it on a command line. -->
+    <OutDir>$(MSBuildProjectDirectory)\..\..\bin\</OutDir>
+    <IntDir>$(MSBuildProjectDirectory)\..\..\bin\tmp\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>harness</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">

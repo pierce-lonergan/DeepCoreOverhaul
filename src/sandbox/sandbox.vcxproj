@@ -43,8 +43,15 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup>
-    <OutDir>$(SolutionDir)bin\</OutDir>
-    <IntDir>$(SolutionDir)bin\tmp\$(ProjectName)\$(Configuration)\</IntDir>
+    <!-- Derived from the project's own location, NOT from $(SolutionDir).
+         SolutionDir is only defined when building through the .sln, and supplying it on a
+         command line from PowerShell is a trap: a value ending in a backslash escapes the
+         closing quote and swallows the following arguments, which surfaces as an
+         "Illegal characters in path" error from MSBuild that names neither cause nor
+         culprit. This project is built directly by scripts/DeepCoreSandbox.ps1, so it
+         cannot depend on that variable existing. -->
+    <OutDir>$(MSBuildProjectDirectory)\..\..\bin\</OutDir>
+    <IntDir>$(MSBuildProjectDirectory)\..\..\bin\tmp\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName>sandbox</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
