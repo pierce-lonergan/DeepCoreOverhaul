@@ -31,6 +31,7 @@
 
 #include "../../src/openlrr/game/DeepCoreLogic.hpp"
 #include "../../src/openlrr/game/DeepCoreDenseIndex.hpp"
+#include "../../src/game3d/Anim.hpp"
 
 using namespace DeepCore::Logic;
 
@@ -677,6 +678,207 @@ TEST(fuzz_dense_index_always_agrees_with_the_full_walk)
 		}
 	}
 	CHECK_EQ(idx.Count(), ls.WalkCountAlive());
+}
+
+
+/**********************************************************************************
+ ******** Animation -- the maths that makes a character look alive
+ **********************************************************************************/
+
+TEST(anim_walk_foot_stays_planted_through_stance)
+{
+	// THE test for a walk cycle. If the foot moves while it is supposed to be planted, the
+	// character skates, and skating is the single most obvious tell of bad locomotion.
+	// Stance is phase 0.0-0.5, and lift must be exactly zero throughout it.
+	for (float p = 0.0f; p < 0.5f; p += 0.01f) {
+		const Anim::LegPose l = Anim::WalkLeg(p);
+		CHECK(l.lift == 0.0f);
+	}
+}
+
+TEST(anim_walk_foot_lifts_during_swing)
+{
+	// ...and it must actually leave the ground during swing, or the foot drags.
+	float maxLift = 0.0f;
+	for (float p = 0.5f; p < 1.0f; p += 0.01f) {
+		const Anim::LegPose l = Anim::WalkLeg(p);
+		CHECK(l.lift >= 0.0f);
+		if (l.lift > maxLift) maxLift = l.lift;
+	}
+	CHECK(maxLift > 0.05f);
+}
+
+TEST(anim_walk_hip_sweeps_backward_through_stance)
+{
+	// During stance the foot is fixed and the body travels over it, so the hip angle must
+	// decrease monotonically. Any reversal means the foot slid.
+	float prev = Anim::WalkLeg(0.0f).hip;
+	for (float p = 0.01f; p < 0.5f; p += 0.01f) {
+		const float h = Anim::WalkLeg(p).hip;
+		CHECK(h <= prev + 0.001f);
+		prev = h;
+	}
+}
+
+TEST(anim_walk_cycle_is_continuous_at_the_wrap)
+{
+	// Phase 0.999 and phase 0.0 must nearly agree, or the character snaps once per stride.
+	const Anim::LegPose a = Anim::WalkLeg(0.999f);
+	const Anim::LegPose b = Anim::WalkLeg(0.0f);
+	CHECK_NEAR(a.hip, b.hip, 1.5);
+	CHECK_NEAR(a.lift, b.lift, 0.01);
+}
+
+TEST(anim_bob_runs_at_twice_the_leg_frequency)
+{
+	// The body rises once per STEP, not once per cycle. This doubling is what makes a walk
+	// read as a walk, and getting it wrong is the classic hand-written-locomotion error.
+	int minima = 0;
+	float prev = Anim::WalkBob(0.0f), prevSlope = 0.0f;
+	for (float p = 0.005f; p <= 1.0f; p += 0.005f) {
+		const float v = Anim::WalkBob(p);
+		const float slope = v - prev;
+		if (prevSlope < 0.0f && slope >= 0.0f) minima++;
+		prevSlope = slope; prev = v;
+	}
+	CHECK_EQ(minima, 2);
+}
+
+TEST(anim_phase_wrap_never_negative)
+{
+	for (float t = -5.0f; t < 5.0f; t += 0.037f) {
+		const float w = Anim::Wrap01(t);
+		CHECK(w >= 0.0f);
+		CHECK(w < 1.0f);
+	}
+}
+
+TEST(anim_easing_hits_its_endpoints)
+{
+	CHECK_NEAR(Anim::EaseInOut(0.0f), 0.0, 1e-5);
+	CHECK_NEAR(Anim::EaseInOut(1.0f), 1.0, 1e-5);
+	CHECK_NEAR(Anim::EaseIn(0.0f), 0.0, 1e-5);
+	CHECK_NEAR(Anim::EaseOut(1.0f), 1.0, 1e-5);
+	// and it must be non-linear in between, or it is not easing at all
+	CHECK(Anim::EaseInOut(0.25f) < 0.25f);
+	CHECK(Anim::EaseInOut(0.75f) > 0.75f);
+}
+
+TEST(anim_spring_settles_and_does_not_oscillate_forever)
+{
+	Anim::Spring s;
+	s.Snap(0.0f);
+	for (int i = 0; i < 600; i++) s.Step(1.0f, 1.0f / 60.0f);
+	CHECK_NEAR(s.value, 1.0, 0.01);
+	CHECK_NEAR(s.vel, 0.0, 0.05);
+}
+
+TEST(anim_spring_survives_an_absurd_timestep)
+{
+	// A dropped frame or a dragged window must not make a character fly off. dt is clamped
+	// internally precisely so a visual system cannot explode.
+	Anim::Spring s;
+	s.Snap(0.0f);
+	for (int i = 0; i < 100; i++) s.Step(1.0f, 3.0f);
+	CHECK(!std::isnan(s.value));
+	CHECK(!std::isinf(s.value));
+	CHECK(std::fabs(s.value) < 100.0f);
+}
+
+TEST(anim_squash_preserves_volume)
+{
+	// Squash that does not preserve volume reads as a scaling bug rather than as weight.
+	for (float v = -6.0f; v <= 6.0f; v += 0.5f) {
+		const Anim::Squash s = Anim::SquashFromVelocity(v);
+		const float vol = s.x * s.y * s.z;
+		CHECK_NEAR(vol, 1.0, 0.02);
+	}
+}
+
+TEST(anim_ik_reaches_when_it_can_and_reports_when_it_cannot)
+{
+	const float upper = 0.5f, lower = 0.5f;
+	const Anim::IkResult mid = Anim::TwoBoneIK(0.7f, upper, lower);
+	CHECK(mid.reached);
+	CHECK(mid.lower > 1.0f);                 // knee is bent
+
+	const Anim::IkResult far = Anim::TwoBoneIK(1.5f, upper, lower);
+	CHECK(!far.reached);                     // honestly reports being out of reach
+}
+
+TEST(anim_ik_never_produces_nan_at_the_limits)
+{
+	// acos outside [-1,1] is the classic IK crash. Sweep the whole domain including beyond.
+	for (float d = 0.0f; d <= 2.5f; d += 0.01f) {
+		const Anim::IkResult r = Anim::TwoBoneIK(d, 0.5f, 0.5f);
+		CHECK(!std::isnan(r.upper));
+		CHECK(!std::isnan(r.lower));
+	}
+}
+
+TEST(anim_lookat_takes_the_short_way_round)
+{
+	// 350 -> 10 degrees must move +20, not -340. Getting this wrong makes a head spin.
+	CHECK_NEAR(Anim::AngleDelta(350.0f, 10.0f), 20.0, 0.01);
+	CHECK_NEAR(Anim::AngleDelta(10.0f, 350.0f), -20.0, 0.01);
+}
+
+TEST(anim_lookat_respects_the_neck_limit)
+{
+	// A target exactly 180 degrees behind is genuinely ambiguous -- both directions are the
+	// same distance -- so only the MAGNITUDE of the turn is meaningful there. An earlier
+	// version of this test asserted +75 and failed on a perfectly correct -75, which was
+	// the test being wrong rather than the code.
+	CHECK_NEAR(std::fabs(Anim::LookAtYaw(0.0f, 180.0f, 75.0f)), 75.0, 0.01);
+
+	// With an unambiguous target the direction IS meaningful, so it is checked there.
+	CHECK_NEAR(Anim::LookAtYaw(0.0f, 100.0f, 75.0f), 75.0, 0.01);
+	CHECK_NEAR(Anim::LookAtYaw(0.0f, -100.0f, 75.0f), -75.0, 0.01);
+
+	// And inside the limit it must reach the target exactly rather than clamping early.
+	CHECK_NEAR(Anim::LookAtYaw(0.0f, 40.0f, 75.0f), 40.0, 0.01);
+}
+
+TEST(anim_attack_anticipates_before_it_strikes)
+{
+	// The curve must go NEGATIVE first. A creature that strikes without winding up reads as
+	// teleporting into the hit, which is exactly the unfairness the wave director's
+	// telegraph exists to avoid -- the same principle at animation scale.
+	bool sawWindUp = false;
+	for (float t = 0.0f; t < 0.35f; t += 0.01f)
+		if (Anim::AttackCurve(t) < -0.2f) sawWindUp = true;
+	CHECK(sawWindUp);
+	CHECK(Anim::AttackCurve(0.5f) > 0.5f);       // and then commits
+}
+
+TEST(anim_emerge_is_monotonic)
+{
+	// A creature climbing out of rock must never sink back down mid-emerge.
+	float prev = -1.0f;
+	for (float t = 0.0f; t <= 1.0f; t += 0.01f) {
+		const float h = Anim::EmergeCurve(t);
+		CHECK(h >= prev - 0.02f);
+		prev = h;
+	}
+	CHECK_NEAR(Anim::EmergeCurve(1.0f), 1.0, 0.05);
+}
+
+TEST(fuzz_anim_never_produces_nan)
+{
+	unsigned int seed = 777u;
+	auto next = [&seed]() { seed = seed * 1103515245u + 12345u; return (seed >> 16) & 0x7fff; };
+	auto f = [&next](float lo, float hi) { return lo + (hi - lo) * ((float)next() / 32767.0f); };
+
+	for (int i = 0; i < 20000; i++) {
+		const float p = f(-100.0f, 100.0f);
+		const Anim::LegPose l = Anim::WalkLeg(p, f(-90.0f, 90.0f));
+		CHECK(!std::isnan(l.hip) && !std::isnan(l.knee) && !std::isnan(l.lift));
+		CHECK(!std::isnan(Anim::WalkBob(p)));
+		CHECK(!std::isnan(Anim::IdleBreath(p)));
+		CHECK(!std::isnan(Anim::AttackCurve(f(-2.0f, 3.0f))));
+		const Anim::Squash sq = Anim::SquashFromVelocity(f(-1000.0f, 1000.0f));
+		CHECK(!std::isnan(sq.x) && !std::isnan(sq.y) && sq.y > 0.0f);
+	}
 }
 
 

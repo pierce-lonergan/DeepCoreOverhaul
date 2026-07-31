@@ -42,6 +42,7 @@
 
 #include "../openlrr/game/DeepCoreLogic.hpp"
 #include "../sandbox/SyntheticLevel.hpp"
+#include "Anim.hpp"
 
 #pragma comment(lib, "opengl32.lib")
 #pragma comment(lib, "glu32.lib")
@@ -73,14 +74,29 @@ struct Miner
 	V3 pos, target;
 	bool selected = false, hasTarget = false, drilling = false;
 	int drillX = 0, drillZ = 0;
-	float drillProgress = 0.0f, health = 100.0f, phase = 0.0f, facing = 0.0f;
+	float drillProgress = 0.0f, health = 100.0f, facing = 0.0f;
+
+	// --- animation state ---
+	float gait = 0.0f;          ///< walk-cycle phase, advanced by DISTANCE not by time, so
+	                            ///  the feet cannot skate however fast the miner moves
+	float speed = 0.0f;         ///< smoothed, drives the walk/idle blend
+	float lifeT = 0.0f;         ///< personal clock, offset per miner so nobody syncs
+	Anim::Spring headYaw;       ///< lags the body, then settles
+	Anim::Spring lean;          ///< leans into acceleration
+	Anim::Spring toolRaise;     ///< the drill comes up and down with weight
 };
 
 struct Monster
 {
 	V3 pos, wander;
 	int species = 0;
-	float health = 100.0f, scale = 1.0f, emerge = 0.0f, phase = 0.0f;
+	float health = 100.0f, scale = 1.0f, emerge = 0.0f;
+
+	float gait = 0.0f, speed = 0.0f, lifeT = 0.0f;
+	float attackT = -1.0f;      ///< >=0 while an attack is playing; negative when idle
+	float hitFlash = 0.0f;      ///< recoil timer, so a hit is felt rather than just counted
+	Anim::Spring headYaw;
+	Anim::Spring bodyTilt;
 };
 
 struct Marker { int x = 0, z = 0; float remaining = 0.0f; };
@@ -181,7 +197,7 @@ void Game::NewLevel(std::uint32_t seed)
 	for (int i = 0; i < 5; i++) {
 		Miner m;
 		m.pos = { (float)sx + (float)(i % 3) - 1.0f, 0, (float)sz + (float)(i / 3) - 0.5f };
-		m.phase = (float)i * 0.8f;
+		m.lifeT = (float)i * 1.37f;   // offset so the crew never breathes in unison
 		miners.push_back(m);
 	}
 
@@ -227,7 +243,8 @@ void Game::Update(float dt)
 	if (bannerT > 0) bannerT -= dt;
 
 	for (Miner& m : miners) {
-		m.phase += dt * 6.0f;
+		m.lifeT += dt;
+		const V3 was = m.pos;
 		const float d = Dist2D(m.pos, m.target);
 		if (m.hasTarget && d > 0.08f) {
 			m.facing = std::atan2(m.target.x - m.pos.x, m.target.z - m.pos.z);
@@ -262,8 +279,33 @@ void Game::Update(float dt)
 			if (Dist2D(m.pos, mo.pos) < 0.9f) {
 				mo.health -= MINER_DPS * dt;
 				m.health  -= MON_DPS * dt;
+				mo.hitFlash = 0.18f;
+				if (mo.attackT < 0.0f) mo.attackT = 0.0f;    // wind up before it lands
 			}
 		}
+
+		// --- animation drive ---
+		//
+		// The gait advances by DISTANCE TRAVELLED, not by elapsed time. That is the whole
+		// trick behind feet that do not skate: however fast the miner moves, one stride of
+		// cycle corresponds to one stride of ground, so a planted foot stays planted.
+		const float moved = Dist2D(was, m.pos);
+		const float instSpeed = (dt > 0.0f) ? moved / dt : 0.0f;
+		m.speed += (instSpeed - m.speed) * (1.0f - std::exp(-8.0f * dt));
+		const float STRIDE = 0.85f;
+		m.gait = Anim::Wrap01(m.gait + moved / STRIDE);
+
+		// Head lags the body and settles, rather than snapping with it.
+		m.headYaw.stiffness = 55.0f; m.headYaw.damping = 11.0f;
+		m.headYaw.Step(m.facing, dt);
+
+		// Lean into acceleration; upright when idle.
+		m.lean.stiffness = 40.0f; m.lean.damping = 9.0f;
+		m.lean.Step(m.speed * 0.045f, dt);
+
+		// The drill rises with weight and drops when the work stops.
+		m.toolRaise.stiffness = 70.0f; m.toolRaise.damping = 10.0f;
+		m.toolRaise.Step(m.drilling && !m.hasTarget ? 1.0f : (m.drilling ? 0.4f : 0.0f), dt);
 	}
 
 	for (std::size_t i = 0; i < miners.size(); ) {
@@ -273,8 +315,11 @@ void Game::Update(float dt)
 	if (miners.empty()) { lost = true; Say("THE CREW IS GONE.", 999.0f); }
 
 	for (Monster& mo : monsters) {
-		mo.phase += dt * 5.0f;
-		if (mo.emerge < 1.0f) { mo.emerge += dt / 1.3f; continue; }
+		mo.lifeT += dt;
+		if (mo.hitFlash > 0.0f) mo.hitFlash -= dt;
+		if (mo.attackT >= 0.0f) { mo.attackT += dt / 0.75f; if (mo.attackT > 1.0f) mo.attackT = -1.0f; }
+		const V3 wasM = mo.pos;
+		if (mo.emerge < 1.0f) { mo.emerge += dt / 1.6f; continue; }
 
 		const Miner* best = nullptr; float bd = 1e9f;
 		for (const Miner& m : miners) { const float d = Dist2D(m.pos, mo.pos); if (d < bd) { bd = d; best = &m; } }
@@ -292,6 +337,16 @@ void Game::Update(float dt)
 			if (Walkable((int)nx, (int)mo.pos.z)) mo.pos.x = nx;
 			if (Walkable((int)mo.pos.x, (int)nz)) mo.pos.z = nz;
 		}
+
+		const float movedM = Dist2D(wasM, mo.pos);
+		mo.speed += ((dt > 0.0f ? movedM / dt : 0.0f) - mo.speed) * (1.0f - std::exp(-7.0f * dt));
+		mo.gait = Anim::Wrap01(mo.gait + movedM / (0.72f * mo.scale));
+
+		const float faceTo = std::atan2(want.x - mo.pos.x, want.z - mo.pos.z);
+		mo.headYaw.stiffness = 34.0f; mo.headYaw.damping = 9.0f;
+		mo.headYaw.Step(faceTo, dt);
+		mo.bodyTilt.stiffness = 26.0f; mo.bodyTilt.damping = 7.0f;
+		mo.bodyTilt.Step(mo.speed * 0.10f, dt);
 	}
 	for (std::size_t i = 0; i < monsters.size(); ) {
 		if (monsters[i].health <= 0) monsters.erase(monsters.begin() + (long)i); else i++;
@@ -370,39 +425,110 @@ void Cube(float cx, float cy, float cz, float sx, float sy, float sz,
 
 void DrawMiner(const Miner& m, float t)
 {
-	const float bob = std::sin(m.phase) * 0.06f;
+	// Blend idle against walk on smoothed speed, so starting and stopping is a transition
+	// rather than a switch between two states.
+	const float w = Anim::Clamp(m.speed / MINER_SPEED, 0.0f, 1.0f);
+
+	const Anim::LegPose L = Anim::WalkLeg(m.gait);
+	const Anim::LegPose R = Anim::WalkLeg(m.gait + 0.5f);   // half a cycle out of phase
+	const float bob   = Anim::WalkBob(m.gait) * w + Anim::IdleBreath(m.lifeT) * (1.0f - w);
+	const float sway  = Anim::WalkSway(m.gait) * w;
+	const float armL  =  Anim::WalkArm(m.gait) * w;
+	const float armR  = -Anim::WalkArm(m.gait) * w;
+	const float shift = Anim::IdleShift(m.lifeT) * (1.0f - w) * 3.0f;
+
 	glPushMatrix();
 	glTranslatef(m.pos.x, 0, m.pos.z);
 	glRotatef(m.facing * 57.2958f, 0, 1, 0);
 
 	if (m.selected) {
-		// Selection ring on the floor.
 		glColor3f(0.25f, 0.95f, 0.4f);
 		glBegin(GL_LINE_LOOP);
-		for (int i = 0; i < 24; i++) {
-			const float a = (float)i / 24.0f * 6.2832f;
+		for (int i = 0; i < 28; i++) {
+			const float a = (float)i / 28.0f * Anim::TAU;
 			glVertex3f(std::cos(a) * 0.55f, 0.03f, std::sin(a) * 0.55f);
 		}
 		glEnd();
 	}
 
-	Cube(0, 0.18f + bob, 0, 0.17f, 0.17f, 0.12f, 0.30f, 0.42f, 0.85f);  // torso
-	Cube(0, 0.52f + bob, 0, 0.13f, 0.10f, 0.12f, 0.95f, 0.78f, 0.55f);  // head
-	Cube(0, 0.70f + bob, 0, 0.16f, 0.05f, 0.15f, 0.98f, 0.80f, 0.15f);  // helmet
-	Cube(0, 0.66f + bob, 0.14f, 0.05f, 0.03f, 0.03f, 1.0f, 1.0f, 0.85f); // lamp
+	glTranslatef(sway, bob, 0.0f);
+	glRotatef(m.lean.value * 57.2958f, 1, 0, 0);   // lean into travel
+	glRotatef(shift, 0, 0, 1);                      // idle weight shift
 
-	// Legs swing when moving.
-	const float sw = m.hasTarget ? std::sin(m.phase) * 0.10f : 0.0f;
-	Cube(-0.09f, 0.0f, sw,  0.05f, 0.10f, 0.05f, 0.22f, 0.24f, 0.30f);
-	Cube( 0.09f, 0.0f, -sw, 0.05f, 0.10f, 0.05f, 0.22f, 0.24f, 0.30f);
+	// Legs. Hip rotation applies at the hip and the knee bend BELOW it, so the shin follows
+	// the thigh instead of both pivoting from the body.
+	for (int side = 0; side < 2; side++) {
+		const Anim::LegPose& P = side ? R : L;
+		glPushMatrix();
+		glTranslatef(side ? 0.10f : -0.10f, 0.30f, 0.0f);
+		glRotatef(P.hip, 1, 0, 0);
+		Cube(0, -0.15f, 0, 0.055f, 0.075f, 0.055f, 0.20f, 0.22f, 0.28f);
+		glTranslatef(0, -0.15f, 0);
+		glRotatef(-P.knee, 1, 0, 0);
+		Cube(0, -0.15f, 0, 0.05f, 0.075f, 0.05f, 0.17f, 0.19f, 0.24f);
+		glTranslatef(0, -0.15f, 0);
+		Cube(0, -0.03f + P.lift, 0.02f, 0.06f, 0.025f, 0.075f, 0.12f, 0.12f, 0.14f);
+		glPopMatrix();
+	}
+
+	Cube(0, 0.30f, 0, 0.155f, 0.145f, 0.11f, 0.24f, 0.46f, 0.86f);
+	Cube(0, 0.29f, 0.09f, 0.10f, 0.075f, 0.03f, 0.92f, 0.74f, 0.20f);
+
+	for (int side = 0; side < 2; side++) {
+		glPushMatrix();
+		glTranslatef(side ? 0.20f : -0.20f, 0.53f, 0.0f);
+		glRotatef(side ? armR : armL, 1, 0, 0);
+		glRotatef(side ? -8.0f : 8.0f, 0, 0, 1);
+		Cube(0, -0.13f, 0, 0.045f, 0.11f, 0.045f, 0.24f, 0.46f, 0.86f);
+		Cube(0, -0.26f, 0, 0.05f, 0.035f, 0.05f, 0.90f, 0.72f, 0.52f);
+		glPopMatrix();
+	}
+
+	// The head lags the torso through its spring, which is what stops it feeling welded on.
+	glPushMatrix();
+	glTranslatef(0, 0.60f, 0);
+	glRotatef((m.headYaw.value - m.facing) * 57.2958f, 0, 1, 0);
+	Cube(0, 0.0f, 0, 0.10f, 0.085f, 0.095f, 0.92f, 0.76f, 0.56f);
+	Cube(0, 0.15f, 0, 0.125f, 0.045f, 0.115f, 0.98f, 0.80f, 0.14f);
+	Cube(0, 0.16f, 0.10f, 0.10f, 0.035f, 0.03f, 0.98f, 0.80f, 0.14f);
+	Cube(0, 0.11f, 0.115f, 0.035f, 0.028f, 0.025f, 1.0f, 1.0f, 0.90f);
+
+	// A visible cone from the helmet lamp. In a dark cave this does more for readability
+	// than any amount of extra geometry.
+	glDisable(GL_CULL_FACE);
+	glDepthMask(GL_FALSE);
+	glBegin(GL_TRIANGLE_FAN);
+	glColor4f(1.0f, 0.97f, 0.75f, 0.22f);
+	glVertex3f(0, 0.11f, 0.14f);
+	glColor4f(1.0f, 0.95f, 0.65f, 0.0f);
+	for (int i = 0; i <= 12; i++) {
+		const float a = (float)i / 12.0f * Anim::TAU;
+		glVertex3f(std::cos(a) * 0.36f, 0.11f + std::sin(a) * 0.28f, 1.35f);
+	}
+	glEnd();
+	glDepthMask(GL_TRUE);
+	glEnable(GL_CULL_FACE);
+	glPopMatrix();
+
+	// Drill, raised on a spring while working and pumping into the face.
+	if (m.toolRaise.value > 0.02f) {
+		glPushMatrix();
+		glTranslatef(0.0f, 0.42f, 0.20f);
+		glRotatef(-62.0f * m.toolRaise.value, 1, 0, 0);
+		const float pump = (m.drilling && !m.hasTarget) ? std::sin(m.lifeT * 26.0f) * 0.045f : 0.0f;
+		glTranslatef(0, 0, pump);
+		Cube(0, 0.0f, 0.14f, 0.045f, 0.035f, 0.16f, 0.42f, 0.44f, 0.48f);
+		Cube(0, 0.0f, 0.34f, 0.028f, 0.022f, 0.10f, 0.85f, 0.85f, 0.90f);
+		glPopMatrix();
+	}
 
 	if (m.health < 100.0f) {
 		glDisable(GL_DEPTH_TEST);
 		glColor3f(0.2f, 0.9f, 0.3f);
 		glBegin(GL_QUADS);
-		const float w = 0.4f * (m.health / 100.0f);
-		glVertex3f(-0.2f, 1.05f, 0); glVertex3f(-0.2f + w, 1.05f, 0);
-		glVertex3f(-0.2f + w, 1.12f, 0); glVertex3f(-0.2f, 1.12f, 0);
+		const float bw = 0.4f * (m.health / 100.0f);
+		glVertex3f(-0.2f, 1.02f, 0); glVertex3f(-0.2f + bw, 1.02f, 0);
+		glVertex3f(-0.2f + bw, 1.09f, 0); glVertex3f(-0.2f, 1.09f, 0);
 		glEnd();
 		glEnable(GL_DEPTH_TEST);
 	}
@@ -412,25 +538,90 @@ void DrawMiner(const Miner& m, float t)
 
 void DrawMonster(const Monster& mo)
 {
-	static const float col[3][3] = { {0.72f,0.28f,0.20f}, {0.45f,0.80f,0.92f}, {1.0f,0.45f,0.12f} };
-	const float* c = col[mo.species % 3];
-	const float s = mo.scale * (0.35f + 0.65f * mo.emerge);
-	const float sink = (1.0f - mo.emerge) * 0.9f;   // rises out of the rock
+	static const float base[3][3] = { {0.72f,0.28f,0.20f}, {0.45f,0.80f,0.92f}, {1.0f,0.45f,0.12f} };
+	float c[3] = { base[mo.species % 3][0], base[mo.species % 3][1], base[mo.species % 3][2] };
+
+	// A hit whitens the whole creature briefly, so damage is FELT rather than merely counted.
+	if (mo.hitFlash > 0.0f) {
+		const float f = mo.hitFlash / 0.18f;
+		c[0] = Anim::Lerp(c[0], 1.0f, f);
+		c[1] = Anim::Lerp(c[1], 1.0f, f);
+		c[2] = Anim::Lerp(c[2], 1.0f, f);
+	}
+
+	// Emerging strains upward then bursts through, rather than rising linearly.
+	const float e = Anim::EmergeCurve(mo.emerge);
+	const float sink = (1.0f - e) * 1.05f;
+	const float s = mo.scale;
+
+	// Anticipation: pull BACK before the strike. Same principle as the wave director's
+	// telegraph, applied to a single animation -- the player gets a moment to read it.
+	const float atk = (mo.attackT >= 0.0f) ? Anim::AttackCurve(mo.attackT) : 0.0f;
+
+	const float w = Anim::Clamp(mo.speed / MON_SPEED, 0.0f, 1.0f);
+	const Anim::LegPose L = Anim::WalkLeg(mo.gait, 34.0f);
+	const Anim::LegPose R = Anim::WalkLeg(mo.gait + 0.5f, 34.0f);
+	const float bob = Anim::WalkBob(mo.gait, 0.07f) * w + Anim::IdleBreath(mo.lifeT, 0.03f) * (1.0f - w);
 
 	glPushMatrix();
 	glTranslatef(mo.pos.x, -sink, mo.pos.z);
-	glRotatef(std::sin(mo.phase) * 9.0f, 0, 0, 1);
+	glRotatef(mo.headYaw.value * 57.2958f, 0, 1, 0);
+	glTranslatef(0, bob, atk * 0.22f * s);
+	glRotatef(-mo.bodyTilt.value * 57.2958f + atk * 16.0f, 1, 0, 0);
 
-	Cube(0, 0.12f, 0, 0.34f * s, 0.30f * s, 0.28f * s, c[0], c[1], c[2]);
-	Cube(0, 0.62f * s + 0.12f, 0.10f * s, 0.22f * s, 0.18f * s, 0.20f * s,
-		 c[0] * 1.15f, c[1] * 1.15f, c[2] * 1.15f);
-	// eyes
-	Cube(-0.10f * s, 0.80f * s + 0.12f, 0.26f * s, 0.05f * s, 0.04f * s, 0.03f * s, 1, 0.95f, 0.3f);
-	Cube( 0.10f * s, 0.80f * s + 0.12f, 0.26f * s, 0.05f * s, 0.04f * s, 0.03f * s, 1, 0.95f, 0.3f);
-	// arms
-	const float sw = std::sin(mo.phase) * 0.12f;
-	Cube(-0.40f * s, 0.20f + sw, 0, 0.10f * s, 0.22f * s, 0.10f * s, c[0]*0.85f, c[1]*0.85f, c[2]*0.85f);
-	Cube( 0.40f * s, 0.20f - sw, 0, 0.10f * s, 0.22f * s, 0.10f * s, c[0]*0.85f, c[1]*0.85f, c[2]*0.85f);
+	for (int side = 0; side < 2; side++) {
+		const Anim::LegPose& P = side ? R : L;
+		glPushMatrix();
+		glTranslatef(side ? 0.20f * s : -0.20f * s, 0.26f * s, 0);
+		glRotatef(P.hip * 0.8f, 1, 0, 0);
+		Cube(0, -0.12f * s, 0, 0.075f * s, 0.07f * s, 0.075f * s, c[0]*0.7f, c[1]*0.7f, c[2]*0.7f);
+		glTranslatef(0, -0.14f * s, 0);
+		glRotatef(-P.knee * 0.7f, 1, 0, 0);
+		Cube(0, -0.06f * s + P.lift * s, 0.02f * s, 0.085f * s, 0.05f * s, 0.10f * s,
+			 c[0]*0.55f, c[1]*0.55f, c[2]*0.55f);
+		glPopMatrix();
+	}
+
+	Cube(0, 0.28f * s, 0, 0.34f * s, 0.24f * s, 0.28f * s, c[0], c[1], c[2]);
+
+	// Jagged back plates. Silhouette is what distinguishes a creature from a box at
+	// distance, and costs three cubes.
+	for (int i = 0; i < 3; i++) {
+		const float o = -0.14f * s + (float)i * 0.14f * s;
+		const float hgt = 0.10f * s - (float)((i == 1) ? 0 : 1) * 0.03f * s;
+		Cube(o, 0.72f * s, -0.06f * s, 0.05f * s, hgt, 0.05f * s, c[0]*1.2f, c[1]*1.2f, c[2]*1.2f);
+	}
+
+	glPushMatrix();
+	glTranslatef(0, 0.66f * s, 0.14f * s);
+	glRotatef(atk * -14.0f, 1, 0, 0);
+	Cube(0, 0, 0, 0.20f * s, 0.15f * s, 0.19f * s, c[0]*1.12f, c[1]*1.12f, c[2]*1.12f);
+	Cube(-0.10f * s, 0.10f * s, 0.17f * s, 0.045f * s, 0.035f * s, 0.03f * s, 1.0f, 0.93f, 0.28f);
+	Cube( 0.10f * s, 0.10f * s, 0.17f * s, 0.045f * s, 0.035f * s, 0.03f * s, 1.0f, 0.93f, 0.28f);
+	Cube(0, -0.13f * s - atk * 0.05f * s, 0.14f * s, 0.14f * s, 0.035f * s, 0.10f * s,
+		 c[0]*0.6f, c[1]*0.6f, c[2]*0.6f);
+	glPopMatrix();
+
+	for (int side = 0; side < 2; side++) {
+		glPushMatrix();
+		glTranslatef(side ? 0.40f * s : -0.40f * s, 0.42f * s, 0);
+		glRotatef((side ? -1.0f : 1.0f) * Anim::WalkArm(mo.gait, 22.0f) * w - atk * 45.0f, 1, 0, 0);
+		Cube(0, -0.16f * s, 0, 0.085f * s, 0.14f * s, 0.085f * s, c[0]*0.85f, c[1]*0.85f, c[2]*0.85f);
+		Cube(0, -0.32f * s, 0.03f * s, 0.10f * s, 0.06f * s, 0.09f * s, c[0]*0.65f, c[1]*0.65f, c[2]*0.65f);
+		glPopMatrix();
+	}
+
+	if (mo.health < 100.0f) {
+		glDisable(GL_DEPTH_TEST);
+		glColor3f(0.95f, 0.35f, 0.3f);
+		glBegin(GL_QUADS);
+		const float bw = 0.5f * (mo.health / 100.0f);
+		const float hy = 1.15f * s;
+		glVertex3f(-0.25f, hy, 0); glVertex3f(-0.25f + bw, hy, 0);
+		glVertex3f(-0.25f + bw, hy + 0.07f, 0); glVertex3f(-0.25f, hy + 0.07f, 0);
+		glEnd();
+		glEnable(GL_DEPTH_TEST);
+	}
 	glPopMatrix();
 }
 
