@@ -21,7 +21,8 @@
 
 param(
     [switch]$NoUpdate,        # skip the git pull
-    [switch]$Sandbox,         # run the headless simulation viewer instead of the game
+    [switch]$Flat,            # the 2D version
+    [switch]$Sandbox,         # the headless simulation viewer
     [switch]$Headless,        # text summary only
     [int]$Seed = 0,
     [int]$Seconds = 600
@@ -41,7 +42,7 @@ $host.UI.RawUI.WindowTitle = "DeepCoreOverhaul Sandbox"
 Write-Host ""
 Write-Host "  DeepCore" -ForegroundColor Cyan
 Write-Host "  ========" -ForegroundColor Cyan
-Dim   "  A subterranean mining game built on this project's own systems."
+Dim   "  A 3D subterranean mining game built on this project's own systems."
 Dim   "  NOT LEGO Rock Raiders -- that is a 1999 commercial game this cannot"
 Dim   "  contain or reproduce. For a faithful free remake, play Manic Miners."
 Write-Host ""
@@ -98,10 +99,21 @@ try {
     # -----------------------------------------------------------------------
     # The GAME is the default. The sandbox viewer is still there behind -Sandbox, because
     # it is what CI asserts on and what makes the director's decisions inspectable.
+    # 3D is the default now. -Flat gives the 2D version, -Sandbox the headless viewer.
     $useGame = -not ($Sandbox -or $Headless)
-    $exe   = Join-Path $Repo $(if ($useGame) { "bin\DeepCoreGame.exe" } else { "bin\sandbox.exe" })
-    $proj  = Join-Path $Repo $(if ($useGame) { "src\game\deepcoregame.vcxproj" } else { "src\sandbox\sandbox.vcxproj" })
-    $stamp = Join-Path $Repo $(if ($useGame) { "bin\.game-built-at" } else { "bin\.sandbox-built-at" })
+    if ($Flat) {
+        $exe = Join-Path $Repo "bin\DeepCoreGame.exe"
+        $proj = Join-Path $Repo "src\game\deepcoregame.vcxproj"
+        $stamp = Join-Path $Repo "bin\.game-built-at"
+    } elseif ($useGame) {
+        $exe = Join-Path $Repo "bin\DeepCore3D.exe"
+        $proj = Join-Path $Repo "src\game3d\deepcore3d.vcxproj"
+        $stamp = Join-Path $Repo "bin\.game3d-built-at"
+    } else {
+        $exe = Join-Path $Repo "bin\sandbox.exe"
+        $proj = Join-Path $Repo "src\sandbox\sandbox.vcxproj"
+        $stamp = Join-Path $Repo "bin\.sandbox-built-at"
+    }
 
     if (-not (Test-Path $exe)) { $rebuild = $true }
     elseif (Test-Path $stamp) {
