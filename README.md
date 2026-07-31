@@ -5,16 +5,23 @@
 > attributable. Upstream carries no license, so this fork claims no rights over the inherited
 > code — please read **[NOTICE.md](NOTICE.md)** before using, forking, or contributing.
 >
-> **Status: early, and honest about it.** Three features exist, all opt-in and all **off by
-> default** — see [`data/Settings/DeepCore.cfg`](data/Settings/DeepCore.cfg). They are
-> **compile-verified but not play-tested**, because they were written on a machine with no
-> installation of the game. Treat anything you enable as untested.
+> **Status: it runs — the half of it that is ours.** Every feature is opt-in and **off by
+> default**; see [`data/Settings/DeepCore.cfg`](data/Settings/DeepCore.cfg). The subsystems
+> this project owns now execute in a standalone sandbox against a generated cavern, with no
+> game and no copyrighted content. The 1999 executable itself still requires your own
+> installed copy, and nothing here has been **play-tested** in it. See the claim tiers below,
+> which this project keeps deliberately sharp.
 >
-> | Feature | What it does |
-> | --- | --- |
-> | `MultiSpeciesEmerge` | Different caverns in one mission emerge different monster species. Vanilla allows only one species per mission. |
-> | `CreatureVariants` | Per-monster scale and tint, so individuals of a species differ visibly. No new models involved. |
-> | `SurviveWaterOverflow` | Maps that exceed the engine's fixed water tables load and play instead of crashing to desktop. |
+> | Feature | Gate | What it does |
+> | --- | --- | --- |
+> | Multi-species emerges | `MultiSpeciesEmerge` | Different caverns in one mission emerge different species. Vanilla allows only one per mission. |
+> | Wave director | `WaveDirector` | Escalating, budgeted, always-telegraphed waves the map does not know about. |
+> | Threat audio | `ThreatAudio` | Generated voice and stings driven by real escalation state. Registers its own cues; no `Lego.cfg` edit. |
+> | Creature variants | `CreatureVariants` | Per-instance scale and tint, so individuals differ visibly. No new models. |
+> | Per-weapon beams | `WeaponBeamStyles` | Each weapon's laser looks like itself. |
+> | Water relocation | `RelocateWaterTables` | Pool storage moved DLL-side; caps raised from 10/100 to 4096/65536. |
+> | Water survival | `SurviveWaterOverflow` | Simpler stopgap: oversized maps load instead of crashing to desktop. |
+> | Corruption fixes | *always on* | Eight memory-corruption bugs fixed. Never gated — the behaviour they replace is a bug, not a feature. |
 >
 > **What this project cannot do**, so nobody is misled: the engine allows a hard maximum of
 > **15 object IDs per category**, and the base game already uses about 11 monsters, 12 vehicles
@@ -53,7 +60,7 @@ and does not contain any part of it.
 **To run the actual game with these modifications**, you need your own installed copy:
 
 ```
-scriptsun.ps1
+scripts\run.ps1
 ```
 
 That script detects an installation, builds, deploys the settings and generated audio,
