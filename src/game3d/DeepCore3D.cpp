@@ -43,6 +43,7 @@
 #include "../openlrr/game/DeepCoreLogic.hpp"
 #include "../sandbox/SyntheticLevel.hpp"
 #include "Anim.hpp"
+#include "Brick.hpp"
 
 #pragma comment(lib, "opengl32.lib")
 #pragma comment(lib, "glu32.lib")
@@ -100,6 +101,10 @@ struct Monster
 };
 
 struct Marker { int x = 0, z = 0; float remaining = 0.0f; };
+
+/// Set whenever the terrain changes, so the display list is recompiled once
+/// rather than the world being re-emitted every frame.
+extern bool g_terrainDirty;
 
 struct Game
 {
@@ -184,6 +189,7 @@ void Game::NewLevel(std::uint32_t seed)
 	d.oreSeams = 14;
 	d.crystalSeams = 22;
 	level.Generate(d);
+	g_terrainDirty = true;
 
 	miners.clear(); monsters.clear(); markers.clear();
 	crystals = 0; time = waveTimer = 0; waveNumber = 0;
@@ -261,6 +267,7 @@ void Game::Update(float dt)
 				b.flags = BLOCK_FLOOR;
 				level.Discover(m.drillX, m.drillZ, 3);
 				level.RecomputeWalls();
+				g_terrainDirty = true;
 				if (crystal) {
 					crystals++;
 					Say("Crystal recovered: " + std::to_string(crystals) + " / " +
@@ -359,7 +366,11 @@ void Game::Update(float dt)
 			mo.pos = { (float)markers[i].x, 0, (float)markers[i].z };
 			mo.wander = mo.pos;
 			mo.species = (int)RotationIndex(waveNumber + (int)i, 3);
-			mo.scale = 0.75f + rng.Unit() * 0.8f;   // the variant system, in 3D
+			// Three discrete size classes, not a continuum. A continuously random scale
+			// reads as noise; distinct classes let a player judge a threat at a glance,
+			// which is what the creature-variant system is actually for.
+			static const float kClass[3] = { 0.82f, 1.00f, 1.34f };
+			mo.scale = kClass[rng.Below(3)];
 			monsters.push_back(mo);
 			markers.erase(markers.begin() + (long)i);
 			::Beep(70, 90);
@@ -434,14 +445,18 @@ void Cube(float cx, float cy, float cz, float sx, float sy, float sz,
 	glEnd();
 }
 
+// A miner, assembled from generic construction-toy bricks.
+//
+// DELIBERATELY NOT A MINIFIGURE. That specific design -- cylindrical head, trapezoidal
+// torso, C-grip hands -- is a registered trade mark, so this character is built to a
+// different shape on purpose: a tapered torso, a domed helmet, blocky articulated limbs and
+// mitt hands. Generic bricks are fine to generate; that one silhouette is not.
 void DrawMiner(const Miner& m, float t)
 {
-	// Blend idle against walk on smoothed speed, so starting and stopping is a transition
-	// rather than a switch between two states.
 	const float w = Anim::Clamp(m.speed / MINER_SPEED, 0.0f, 1.0f);
 
 	const Anim::LegPose L = Anim::WalkLeg(m.gait);
-	const Anim::LegPose R = Anim::WalkLeg(m.gait + 0.5f);   // half a cycle out of phase
+	const Anim::LegPose R = Anim::WalkLeg(m.gait + 0.5f);
 	const float bob   = Anim::WalkBob(m.gait) * w + Anim::IdleBreath(m.lifeT) * (1.0f - w);
 	const float sway  = Anim::WalkSway(m.gait) * w;
 	const float armL  =  Anim::WalkArm(m.gait) * w;
@@ -453,106 +468,131 @@ void DrawMiner(const Miner& m, float t)
 	glRotatef(m.facing * 57.2958f, 0, 1, 0);
 
 	if (m.selected) {
+		glDisable(GL_LIGHTING);
 		glColor3f(0.25f, 0.95f, 0.4f);
 		glBegin(GL_LINE_LOOP);
-		for (int i = 0; i < 28; i++) {
-			const float a = (float)i / 28.0f * Anim::TAU;
-			glVertex3f(std::cos(a) * 0.55f, 0.03f, std::sin(a) * 0.55f);
+		for (int i = 0; i < 32; i++) {
+			const float a = (float)i / 32.0f * Anim::TAU;
+			glVertex3f(std::cos(a) * 0.52f, 0.02f, std::sin(a) * 0.52f);
 		}
 		glEnd();
+		glEnable(GL_LIGHTING);
 	}
 
 	glTranslatef(sway, bob, 0.0f);
-	glRotatef(m.lean.value * 57.2958f, 1, 0, 0);   // lean into travel
-	glRotatef(shift, 0, 0, 1);                      // idle weight shift
+	glRotatef(m.lean.value * 57.2958f, 1, 0, 0);
+	glRotatef(shift, 0, 0, 1);
 
-	// Legs. Hip rotation applies at the hip and the knee bend BELOW it, so the shin follows
-	// the thigh instead of both pivoting from the body.
+	// Legs: hip drives the thigh, knee bends BELOW it so the shin follows properly.
 	for (int side = 0; side < 2; side++) {
 		const Anim::LegPose& P = side ? R : L;
 		glPushMatrix();
-		glTranslatef(side ? 0.10f : -0.10f, 0.30f, 0.0f);
+		glTranslatef(side ? 0.11f : -0.11f, 0.30f, 0.0f);
 		glRotatef(P.hip, 1, 0, 0);
-		Cube(0, -0.15f, 0, 0.055f, 0.075f, 0.055f, 0.20f, 0.22f, 0.28f);
-		glTranslatef(0, -0.15f, 0);
+		glColor3f(0.16f, 0.20f, 0.32f);
+		Brick::Part(0, -0.08f, 0, 0.075f, 0.08f, 0.075f);            // thigh
+		glTranslatef(0, -0.16f, 0);
 		glRotatef(-P.knee, 1, 0, 0);
-		Cube(0, -0.15f, 0, 0.05f, 0.075f, 0.05f, 0.17f, 0.19f, 0.24f);
-		glTranslatef(0, -0.15f, 0);
-		Cube(0, -0.03f + P.lift, 0.02f, 0.06f, 0.025f, 0.075f, 0.12f, 0.12f, 0.14f);
+		glColor3f(0.13f, 0.16f, 0.26f);
+		Brick::Part(0, -0.08f, 0, 0.068f, 0.08f, 0.068f);            // shin
+		glTranslatef(0, -0.16f, 0);
+		glColor3f(0.10f, 0.10f, 0.12f);
+		Brick::Part(0, -0.02f + P.lift, 0.02f, 0.085f, 0.03f, 0.10f); // boot
 		glPopMatrix();
 	}
 
-	Cube(0, 0.30f, 0, 0.155f, 0.145f, 0.11f, 0.24f, 0.46f, 0.86f);
-	Cube(0, 0.29f, 0.09f, 0.10f, 0.075f, 0.03f, 0.92f, 0.74f, 0.20f);
+	// Torso: two bricks, narrower at the waist, so the silhouette tapers instead of being a
+	// slab. Studs on the shoulders read as construction-toy without copying anything.
+	glColor3f(0.16f, 0.42f, 0.82f);
+	Brick::Part(0, 0.34f, 0, 0.135f, 0.075f, 0.10f);                  // waist
+	glColor3f(0.20f, 0.50f, 0.92f);
+	Brick::Part(0, 0.49f, 0, 0.175f, 0.075f, 0.115f);                 // chest
+	glColor3f(0.95f, 0.76f, 0.18f);
+	Brick::Part(0, 0.50f, 0.10f, 0.075f, 0.045f, 0.02f);              // hi-vis bib
+	glColor3f(0.20f, 0.50f, 0.92f);
+	Brick::Stud(-0.09f, 0.565f, 0.0f, 0.5f);
+	Brick::Stud( 0.09f, 0.565f, 0.0f, 0.5f);
 
 	for (int side = 0; side < 2; side++) {
 		glPushMatrix();
-		glTranslatef(side ? 0.20f : -0.20f, 0.53f, 0.0f);
+		glTranslatef(side ? 0.20f : -0.20f, 0.55f, 0.0f);
 		glRotatef(side ? armR : armL, 1, 0, 0);
-		glRotatef(side ? -8.0f : 8.0f, 0, 0, 1);
-		Cube(0, -0.13f, 0, 0.045f, 0.11f, 0.045f, 0.24f, 0.46f, 0.86f);
-		Cube(0, -0.26f, 0, 0.05f, 0.035f, 0.05f, 0.90f, 0.72f, 0.52f);
+		glRotatef(side ? -9.0f : 9.0f, 0, 0, 1);
+		glColor3f(0.20f, 0.50f, 0.92f);
+		Brick::Part(0, -0.10f, 0, 0.055f, 0.10f, 0.055f);             // arm
+		glColor3f(0.92f, 0.74f, 0.52f);
+		Brick::Part(0, -0.23f, 0.01f, 0.065f, 0.045f, 0.065f);        // mitt, not a C-grip
 		glPopMatrix();
 	}
 
-	// The head lags the torso through its spring, which is what stops it feeling welded on.
 	glPushMatrix();
-	glTranslatef(0, 0.60f, 0);
+	glTranslatef(0, 0.635f, 0);
 	glRotatef((m.headYaw.value - m.facing) * 57.2958f, 0, 1, 0);
-	Cube(0, 0.0f, 0, 0.10f, 0.085f, 0.095f, 0.92f, 0.76f, 0.56f);
-	Cube(0, 0.15f, 0, 0.125f, 0.045f, 0.115f, 0.98f, 0.80f, 0.14f);
-	Cube(0, 0.16f, 0.10f, 0.10f, 0.035f, 0.03f, 0.98f, 0.80f, 0.14f);
-	Cube(0, 0.11f, 0.115f, 0.035f, 0.028f, 0.025f, 1.0f, 1.0f, 0.90f);
+	glColor3f(0.94f, 0.78f, 0.58f);
+	Brick::Part(0, 0.045f, 0, 0.088f, 0.055f, 0.082f);                // head, not cylindrical
+	glColor3f(0.98f, 0.80f, 0.12f);
+	Brick::Domed(0, 0.10f, 0, 0.115f, 0.17f);                          // domed helmet
+	glColor3f(0.98f, 0.80f, 0.12f);
+	Brick::Part(0, 0.115f, 0.085f, 0.095f, 0.02f, 0.035f);            // brim
+	glColor3f(1.0f, 1.0f, 0.92f);
+	Brick::Part(0, 0.11f, 0.105f, 0.032f, 0.026f, 0.022f);            // lamp
 
-	// A visible cone from the helmet lamp. In a dark cave this does more for readability
-	// than any amount of extra geometry.
+	// The lamp cone. In a dark cave this does more for readability than geometry does.
+	glDisable(GL_LIGHTING);
 	glDisable(GL_CULL_FACE);
 	glDepthMask(GL_FALSE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 	glBegin(GL_TRIANGLE_FAN);
-	glColor4f(1.0f, 0.97f, 0.75f, 0.22f);
-	glVertex3f(0, 0.11f, 0.14f);
-	glColor4f(1.0f, 0.95f, 0.65f, 0.0f);
-	for (int i = 0; i <= 12; i++) {
-		const float a = (float)i / 12.0f * Anim::TAU;
-		glVertex3f(std::cos(a) * 0.36f, 0.11f + std::sin(a) * 0.28f, 1.35f);
+	glColor4f(1.0f, 0.96f, 0.72f, 0.20f);
+	glVertex3f(0, 0.11f, 0.13f);
+	glColor4f(1.0f, 0.94f, 0.62f, 0.0f);
+	for (int i = 0; i <= 14; i++) {
+		const float a = (float)i / 14.0f * Anim::TAU;
+		glVertex3f(std::cos(a) * 0.40f, 0.11f + std::sin(a) * 0.30f, 1.45f);
 	}
 	glEnd();
+	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_LIGHTING);
 	glPopMatrix();
 
-	// Drill, raised on a spring while working and pumping into the face.
 	if (m.toolRaise.value > 0.02f) {
 		glPushMatrix();
-		glTranslatef(0.0f, 0.42f, 0.20f);
+		glTranslatef(0.0f, 0.44f, 0.20f);
 		glRotatef(-62.0f * m.toolRaise.value, 1, 0, 0);
-		const float pump = (m.drilling && !m.hasTarget) ? std::sin(m.lifeT * 26.0f) * 0.045f : 0.0f;
+		const float pump = (m.drilling && !m.hasTarget) ? std::sin(m.lifeT * 26.0f) * 0.05f : 0.0f;
 		glTranslatef(0, 0, pump);
-		Cube(0, 0.0f, 0.14f, 0.045f, 0.035f, 0.16f, 0.42f, 0.44f, 0.48f);
-		Cube(0, 0.0f, 0.34f, 0.028f, 0.022f, 0.10f, 0.85f, 0.85f, 0.90f);
+		glColor3f(0.34f, 0.36f, 0.42f);
+		Brick::Part(0, 0.0f, 0.14f, 0.055f, 0.045f, 0.16f);
+		glColor3f(0.80f, 0.82f, 0.88f);
+		Brick::Part(0, 0.0f, 0.33f, 0.03f, 0.026f, 0.10f);
 		glPopMatrix();
 	}
 
 	if (m.health < 100.0f) {
-		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_LIGHTING); glDisable(GL_DEPTH_TEST);
 		glColor3f(0.2f, 0.9f, 0.3f);
 		glBegin(GL_QUADS);
 		const float bw = 0.4f * (m.health / 100.0f);
-		glVertex3f(-0.2f, 1.02f, 0); glVertex3f(-0.2f + bw, 1.02f, 0);
-		glVertex3f(-0.2f + bw, 1.09f, 0); glVertex3f(-0.2f, 1.09f, 0);
+		glVertex3f(-0.2f, 1.05f, 0); glVertex3f(-0.2f + bw, 1.05f, 0);
+		glVertex3f(-0.2f + bw, 1.12f, 0); glVertex3f(-0.2f, 1.12f, 0);
 		glEnd();
-		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_DEPTH_TEST); glEnable(GL_LIGHTING);
 	}
 	glPopMatrix();
 	(void)t;
 }
 
+/// A rock creature, also brick-built, but coarser: bigger blocks, fewer studs, jagged
+/// plates. The contrast in construction is the point -- the crew look manufactured and the
+/// creatures look like the cavern assembled itself, which reads instantly at a distance.
 void DrawMonster(const Monster& mo)
 {
-	static const float base[3][3] = { {0.72f,0.28f,0.20f}, {0.45f,0.80f,0.92f}, {1.0f,0.45f,0.12f} };
+	static const float base[3][3] = { {0.66f,0.30f,0.22f}, {0.42f,0.76f,0.90f}, {0.98f,0.46f,0.14f} };
 	float c[3] = { base[mo.species % 3][0], base[mo.species % 3][1], base[mo.species % 3][2] };
 
-	// A hit whitens the whole creature briefly, so damage is FELT rather than merely counted.
 	if (mo.hitFlash > 0.0f) {
 		const float f = mo.hitFlash / 0.18f;
 		c[0] = Anim::Lerp(c[0], 1.0f, f);
@@ -560,13 +600,9 @@ void DrawMonster(const Monster& mo)
 		c[2] = Anim::Lerp(c[2], 1.0f, f);
 	}
 
-	// Emerging strains upward then bursts through, rather than rising linearly.
 	const float e = Anim::EmergeCurve(mo.emerge);
-	const float sink = (1.0f - e) * 1.05f;
+	const float sink = (1.0f - e) * 1.15f;
 	const float s = mo.scale;
-
-	// Anticipation: pull BACK before the strike. Same principle as the wave director's
-	// telegraph, applied to a single animation -- the player gets a moment to read it.
 	const float atk = (mo.attackT >= 0.0f) ? Anim::AttackCurve(mo.attackT) : 0.0f;
 
 	const float w = Anim::Clamp(mo.speed / MON_SPEED, 0.0f, 1.0f);
@@ -577,64 +613,76 @@ void DrawMonster(const Monster& mo)
 	glPushMatrix();
 	glTranslatef(mo.pos.x, -sink, mo.pos.z);
 	glRotatef(mo.headYaw.value * 57.2958f, 0, 1, 0);
-	glTranslatef(0, bob, atk * 0.22f * s);
+	glTranslatef(0, bob, atk * 0.24f * s);
 	glRotatef(-mo.bodyTilt.value * 57.2958f + atk * 16.0f, 1, 0, 0);
 
 	for (int side = 0; side < 2; side++) {
 		const Anim::LegPose& P = side ? R : L;
 		glPushMatrix();
-		glTranslatef(side ? 0.20f * s : -0.20f * s, 0.26f * s, 0);
+		glTranslatef(side ? 0.21f * s : -0.21f * s, 0.26f * s, 0);
 		glRotatef(P.hip * 0.8f, 1, 0, 0);
-		Cube(0, -0.12f * s, 0, 0.075f * s, 0.07f * s, 0.075f * s, c[0]*0.7f, c[1]*0.7f, c[2]*0.7f);
-		glTranslatef(0, -0.14f * s, 0);
+		glColor3f(c[0]*0.66f, c[1]*0.66f, c[2]*0.66f);
+		Brick::Part(0, -0.07f * s, 0, 0.088f * s, 0.075f * s, 0.088f * s);
+		glTranslatef(0, -0.15f * s, 0);
 		glRotatef(-P.knee * 0.7f, 1, 0, 0);
-		Cube(0, -0.06f * s + P.lift * s, 0.02f * s, 0.085f * s, 0.05f * s, 0.10f * s,
-			 c[0]*0.55f, c[1]*0.55f, c[2]*0.55f);
+		glColor3f(c[0]*0.52f, c[1]*0.52f, c[2]*0.52f);
+		Brick::Part(0, -0.04f * s + P.lift * s, 0.02f * s, 0.10f * s, 0.05f * s, 0.115f * s);
 		glPopMatrix();
 	}
 
-	Cube(0, 0.28f * s, 0, 0.34f * s, 0.24f * s, 0.28f * s, c[0], c[1], c[2]);
+	// Body: two coarse blocks with studs, so it looks quarried rather than moulded.
+	glColor3f(c[0], c[1], c[2]);
+	Brick::Part(0, 0.30f * s, 0, 0.33f * s, 0.14f * s, 0.28f * s, true, 0.9f * s);
+	glColor3f(c[0]*1.08f, c[1]*1.08f, c[2]*1.08f);
+	Brick::Part(0, 0.54f * s, 0, 0.29f * s, 0.11f * s, 0.25f * s);
 
-	// Jagged back plates. Silhouette is what distinguishes a creature from a box at
-	// distance, and costs three cubes.
+	// Jagged back plates -- silhouette, which is what distinguishes a creature from a box
+	// at any distance, for three parts.
 	for (int i = 0; i < 3; i++) {
-		const float o = -0.14f * s + (float)i * 0.14f * s;
-		const float hgt = 0.10f * s - (float)((i == 1) ? 0 : 1) * 0.03f * s;
-		Cube(o, 0.72f * s, -0.06f * s, 0.05f * s, hgt, 0.05f * s, c[0]*1.2f, c[1]*1.2f, c[2]*1.2f);
+		const float o = -0.15f * s + (float)i * 0.15f * s;
+		const float hgt = (i == 1) ? 0.13f * s : 0.09f * s;
+		glColor3f(c[0]*1.25f, c[1]*1.25f, c[2]*1.25f);
+		Brick::Part(o, 0.70f * s, -0.09f * s, 0.045f * s, hgt, 0.045f * s);
 	}
 
 	glPushMatrix();
-	glTranslatef(0, 0.66f * s, 0.14f * s);
+	glTranslatef(0, 0.70f * s, 0.13f * s);
 	glRotatef(atk * -14.0f, 1, 0, 0);
-	Cube(0, 0, 0, 0.20f * s, 0.15f * s, 0.19f * s, c[0]*1.12f, c[1]*1.12f, c[2]*1.12f);
-	Cube(-0.10f * s, 0.10f * s, 0.17f * s, 0.045f * s, 0.035f * s, 0.03f * s, 1.0f, 0.93f, 0.28f);
-	Cube( 0.10f * s, 0.10f * s, 0.17f * s, 0.045f * s, 0.035f * s, 0.03f * s, 1.0f, 0.93f, 0.28f);
-	Cube(0, -0.13f * s - atk * 0.05f * s, 0.14f * s, 0.14f * s, 0.035f * s, 0.10f * s,
-		 c[0]*0.6f, c[1]*0.6f, c[2]*0.6f);
+	glColor3f(c[0]*1.12f, c[1]*1.12f, c[2]*1.12f);
+	Brick::Part(0, 0.0f, 0, 0.20f * s, 0.10f * s, 0.18f * s);
+	glColor3f(1.0f, 0.92f, 0.26f);
+	Brick::Part(-0.10f * s, 0.06f * s, 0.16f * s, 0.045f * s, 0.032f * s, 0.03f * s);
+	Brick::Part( 0.10f * s, 0.06f * s, 0.16f * s, 0.045f * s, 0.032f * s, 0.03f * s);
+	glColor3f(c[0]*0.55f, c[1]*0.55f, c[2]*0.55f);
+	Brick::Part(0, -0.12f * s - atk * 0.05f * s, 0.13f * s, 0.15f * s, 0.032f * s, 0.10f * s);
 	glPopMatrix();
 
 	for (int side = 0; side < 2; side++) {
 		glPushMatrix();
-		glTranslatef(side ? 0.40f * s : -0.40f * s, 0.42f * s, 0);
+		glTranslatef(side ? 0.40f * s : -0.40f * s, 0.46f * s, 0);
 		glRotatef((side ? -1.0f : 1.0f) * Anim::WalkArm(mo.gait, 22.0f) * w - atk * 45.0f, 1, 0, 0);
-		Cube(0, -0.16f * s, 0, 0.085f * s, 0.14f * s, 0.085f * s, c[0]*0.85f, c[1]*0.85f, c[2]*0.85f);
-		Cube(0, -0.32f * s, 0.03f * s, 0.10f * s, 0.06f * s, 0.09f * s, c[0]*0.65f, c[1]*0.65f, c[2]*0.65f);
+		glColor3f(c[0]*0.85f, c[1]*0.85f, c[2]*0.85f);
+		Brick::Part(0, -0.13f * s, 0, 0.09f * s, 0.13f * s, 0.09f * s);
+		glColor3f(c[0]*0.62f, c[1]*0.62f, c[2]*0.62f);
+		Brick::Part(0, -0.30f * s, 0.03f * s, 0.115f * s, 0.06f * s, 0.10f * s);
 		glPopMatrix();
 	}
 
 	if (mo.health < 100.0f) {
-		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_LIGHTING); glDisable(GL_DEPTH_TEST);
 		glColor3f(0.95f, 0.35f, 0.3f);
 		glBegin(GL_QUADS);
 		const float bw = 0.5f * (mo.health / 100.0f);
-		const float hy = 1.15f * s;
+		const float hy = 1.20f * s;
 		glVertex3f(-0.25f, hy, 0); glVertex3f(-0.25f + bw, hy, 0);
 		glVertex3f(-0.25f + bw, hy + 0.07f, 0); glVertex3f(-0.25f, hy + 0.07f, 0);
 		glEnd();
-		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_DEPTH_TEST); glEnable(GL_LIGHTING);
 	}
 	glPopMatrix();
 }
+
+float TileAO(const Level& L, int x, int z);
 
 /// How enclosed a tile is, 0 (open) to 1 (boxed in).
 ///
@@ -659,7 +707,16 @@ float TileAO(const Level& L, int x, int z)
 	return 1.0f - occ * 0.55f;     // never fully black; unreadable is worse than flat
 }
 
-void RenderWorld()
+/// Terrain is compiled into a display list and only rebuilt when the map changes.
+///
+/// Studs multiply the geometry by roughly eight, and re-emitting 1,600 studded bricks
+/// through immediate mode every frame would be wasteful for something that changes only
+/// when a wall is drilled. A display list is the right tool in this GL version and turns a
+/// per-frame cost into a per-drill one.
+GLuint g_terrainList = 0;
+bool g_terrainDirty = true;
+
+void EmitTerrain()
 {
 	const Level& L = g.level;
 
@@ -668,67 +725,131 @@ void RenderWorld()
 			const Block& b = L.At(x, z);
 			const float ao = TileAO(L, x, z);
 			const bool solid = !b.Has(BLOCK_FLOOR) && !b.Has(BLOCK_WATER);
+			const float fx = (float)x, fz = (float)z;
 
+			// Undiscovered rock: unstudded, so unexplored ground reads as raw stone rather
+			// than as something already built. The visual grammar carries information.
 			if (b.Has(BLOCK_HIDDEN) && solid) {
-				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.13f, 0.115f, 0.10f, ao);
+				glColor3f(0.15f * ao, 0.135f * ao, 0.12f * ao);
+				Brick::Studded(fx, -0.5f, fz, 1, 1, 1.30f, false);
 				continue;
 			}
+
 			if (b.Has(BLOCK_CRYSTAL_SEAM)) {
-				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.30f, 0.20f, 0.34f, ao);
-				const float p = 0.65f + 0.35f * std::sin(g.time * 3.5f + (float)(x * 3 + z));
-				Cube((float)x, 0.85f, (float)z, 0.20f, 0.22f, 0.20f, 0.75f * p, 0.35f * p, 1.0f * p);
+				glColor3f(0.30f * ao, 0.21f * ao, 0.36f * ao);
+				Brick::Studded(fx, -0.5f, fz, 1, 1, 1.05f, true);
+				const float p = 0.7f + 0.3f * std::sin(g.time * 3.2f + (float)(x * 3 + z));
+				glColor3f(0.80f * p, 0.38f * p, 1.00f * p);
+				Brick::Domed(fx, 0.58f, fz, 0.26f, 0.42f);
 				continue;
 			}
 			if (b.Has(BLOCK_ORE_SEAM)) {
-				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.34f, 0.24f, 0.15f, ao);
-				Cube((float)x, 0.85f, (float)z, 0.18f, 0.14f, 0.18f, 0.62f, 0.44f, 0.22f);
+				glColor3f(0.36f * ao, 0.26f * ao, 0.16f * ao);
+				Brick::Studded(fx, -0.5f, fz, 1, 1, 1.05f, true);
+				glColor3f(0.66f * ao, 0.47f * ao, 0.24f * ao);
+				Brick::Studded(fx, 0.55f, fz, 1, 1, 0.22f, true, 0.8f);
 				continue;
 			}
-			if (solid) {                     // exposed wall face
-				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.34f, 0.29f, 0.25f, ao);
+			if (solid) {
+				// Exposed wall face: two stacked bricks, so a wall has a visible course line
+				// and reads as built rather than extruded.
+				glColor3f(0.40f * ao, 0.34f * ao, 0.29f * ao);
+				Brick::Studded(fx, -0.5f, fz, 1, 1, 0.62f, true, 0.9f);
+				glColor3f(0.36f * ao, 0.31f * ao, 0.27f * ao);
+				Brick::Studded(fx, 0.12f + Brick::STUD_HEIGHT, fz, 1, 1, 0.56f, true, 0.9f);
 				continue;
 			}
 			if (b.Has(BLOCK_WATER)) {
-				Cube((float)x, -0.16f, (float)z, 0.5f, 0.10f, 0.5f, 0.10f, 0.34f, 0.60f);
+				glColor3f(0.10f * ao, 0.36f * ao, 0.62f * ao);
+				Brick::Box(fx, -0.30f, fz, 0.5f, 0.16f, 0.5f);
 				continue;
 			}
 			if (b.Has(BLOCK_TOOLSTORE)) {
-				Cube((float)x, -0.14f, (float)z, 0.5f, 0.06f, 0.5f, 0.26f, 0.24f, 0.22f);
-				Cube((float)x, 0, (float)z, 0.42f, 0.34f, 0.42f, 0.82f, 0.62f, 0.16f);
+				glColor3f(0.30f * ao, 0.28f * ao, 0.26f * ao);
+				Brick::Studded(fx, -0.30f, fz, 1, 1, 0.12f, false);
+				glColor3f(0.90f, 0.68f, 0.16f);
+				Brick::Studded(fx, -0.18f, fz, 1, 1, 0.55f, true);
+				glColor3f(0.32f, 0.34f, 0.40f);
+				Brick::Box(fx, 0.37f, fz, 0.42f, 0.10f, 0.42f);
 				continue;
 			}
-			Cube((float)x, -0.14f, (float)z, 0.5f, 0.06f, 0.5f, 0.26f, 0.24f, 0.22f, ao); // floor
+
+			// Floor: a studded plate. This is what makes the ground read as a build surface
+			// and gives every open chamber a repeating highlight.
+			glColor3f(0.30f * ao, 0.285f * ao, 0.265f * ao);
+			Brick::Studded(fx, -0.30f, fz, 1, 1, 0.12f, true, 0.72f);
+		}
+	}
+}
+
+void RenderWorld()
+{
+	if (g_terrainDirty || !g_terrainList) {
+		if (!g_terrainList) g_terrainList = glGenLists(1);
+		glNewList(g_terrainList, GL_COMPILE);
+		EmitTerrain();
+		glEndList();
+		g_terrainDirty = false;
+	}
+	glCallList(g_terrainList);
+
+	// Crystals pulse, so they are drawn live rather than baked into the list.
+	const Level& L = g.level;
+	for (int z = 0; z < L.Height(); z++) {
+		for (int x = 0; x < L.Width(); x++) {
+			if (!L.At(x, z).Has(BLOCK_CRYSTAL_SEAM)) continue;
+			const float p = 0.7f + 0.3f * std::sin(g.time * 3.2f + (float)(x * 3 + z));
+			glColor3f(0.85f * p, 0.42f * p, 1.0f * p);
+			Brick::Domed((float)x, 0.60f, (float)z, 0.24f, 0.40f);
 		}
 	}
 
-	// Telegraph markers: exactly where a wave will arrive, five seconds early.
+	// Telegraph: a pulsing stud-plate and a column of light on the exact arrival block.
 	for (const Marker& mk : g.markers) {
 		const float p = 0.4f + 0.6f * std::sin(g.time * 12.0f);
-		Cube((float)mk.x, -0.06f, (float)mk.z, 0.46f, 0.03f, 0.46f, 0.95f * p, 0.15f * p, 0.12f * p);
-		glDisable(GL_DEPTH_TEST);
-		glColor3f(1.0f * p, 0.2f, 0.15f);
-		glBegin(GL_LINES);
-		glVertex3f((float)mk.x, 0.0f, (float)mk.z);
-		glVertex3f((float)mk.x, 2.2f, (float)mk.z);
+		glColor3f(0.95f * p, 0.16f * p, 0.13f * p);
+		Brick::Studded((float)mk.x, -0.26f, (float)mk.z, 1, 1, 0.08f, true, 0.8f);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_CULL_FACE);
+		glDepthMask(GL_FALSE);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+		glBegin(GL_QUADS);
+		glColor4f(1.0f, 0.2f, 0.15f, 0.30f * p);
+		glVertex3f((float)mk.x - 0.34f, 0.0f, (float)mk.z);
+		glVertex3f((float)mk.x + 0.34f, 0.0f, (float)mk.z);
+		glColor4f(1.0f, 0.3f, 0.2f, 0.0f);
+		glVertex3f((float)mk.x + 0.34f, 3.0f, (float)mk.z);
+		glVertex3f((float)mk.x - 0.34f, 3.0f, (float)mk.z);
+		glColor4f(1.0f, 0.2f, 0.15f, 0.30f * p);
+		glVertex3f((float)mk.x, 0.0f, (float)mk.z - 0.34f);
+		glVertex3f((float)mk.x, 0.0f, (float)mk.z + 0.34f);
+		glColor4f(1.0f, 0.3f, 0.2f, 0.0f);
+		glVertex3f((float)mk.x, 3.0f, (float)mk.z + 0.34f);
+		glVertex3f((float)mk.x, 3.0f, (float)mk.z - 0.34f);
 		glEnd();
-		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_BLEND);
+		glDepthMask(GL_TRUE);
+		glEnable(GL_CULL_FACE);
+		glEnable(GL_LIGHTING);
 	}
 
 	for (const Miner& m : g.miners)  DrawMiner(m, g.time);
 	for (const Monster& mo : g.monsters) DrawMonster(mo);
 
-	// Drill progress bars
 	for (const Miner& m : g.miners) {
 		if (!m.drilling) continue;
+		glDisable(GL_LIGHTING);
 		glDisable(GL_DEPTH_TEST);
 		glColor3f(1.0f, 0.82f, 0.25f);
 		glBegin(GL_QUADS);
 		const float w = 0.8f * (m.drillProgress / DRILL_TIME);
 		const float bx = (float)m.drillX - 0.4f, bz = (float)m.drillZ;
-		glVertex3f(bx, 1.35f, bz); glVertex3f(bx + w, 1.35f, bz);
-		glVertex3f(bx + w, 1.45f, bz); glVertex3f(bx, 1.45f, bz);
+		glVertex3f(bx, 1.55f, bz); glVertex3f(bx + w, 1.55f, bz);
+		glVertex3f(bx + w, 1.65f, bz); glVertex3f(bx, 1.65f, bz);
 		glEnd();
 		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_LIGHTING);
 	}
 }
 
