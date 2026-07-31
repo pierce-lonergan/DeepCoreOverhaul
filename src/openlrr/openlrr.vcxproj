@@ -100,6 +100,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_WINDOWS;_USRDLL;_GODS98COMPILE;_GODS98_USEWAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <!-- Explicit, because the absence of this element does NOT mean "unoptimised".
+           MSBuild defaults Optimization to MaxSpeed here, so this configuration was
+           building with /O2 despite being called Debug: inlined frames, locals
+           optimised away, single-stepping that jumps around. Measured with
+           `msbuild -t:ClCompile -v:diagnostic | grep "Task Parameter:Optimization"`,
+           which reported MaxSpeed for BOTH configurations. Anyone who can actually run
+           the game needs this configuration to be steppable. -->
+      <Optimization>Disabled</Optimization>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -124,6 +132,12 @@ xcopy /y /d /s "$(SolutionDir)data\Data\" "$(OutDir)Data\"</Command>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
+      <!-- Explicit rather than inherited. Release WAS already compiling with /O2  - 
+           verified via `msbuild -t:ClCompile -v:diagnostic`, which shows
+           Task Parameter:Optimization=MaxSpeed  -  but it was arriving as an MSBuild
+           default with nothing in this file saying so. A setting this load-bearing
+           should not be invisible in the project that depends on it. -->
+      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
