@@ -422,7 +422,20 @@ a fix to a quadratic**, because they scale every line of C++ in the DLL at once.
 | `EnableCOMDATFolding` / `OptimizeReferences` | — | `true` / `true` | `:137-138` |
 | `GenerateDebugInformation` | `true` | `true` | `:109`, `:139` |
 
-### 4.2 What is **not** set, and why that is the headline
+### 4.2 What the project file omits, and why that turned out NOT to be the headline
+
+> **This section reached the wrong conclusion and is kept as the record of how.** It
+> reasoned from what `openlrr.vcxproj` omits — no `<Optimization>` element — and inferred
+> that Release emitted no `/O` switch. That inference is refuted: MSBuild supplies
+> `Optimization=MaxSpeed` as a default, so Release always compiled `/O2 /Oi /Oy /Gy /GL`.
+> The disassembly below is real, but it compares raw `cl` invocations, which is not what
+> MSBuild emits — so it answers a question nobody was asking.
+>
+> The correct experiment interrogates the toolchain instead of modelling it:
+> `msbuild ... -t:ClCompile -v:diagnostic | grep "Task Parameter:Optimization"`.
+> Both configurations reported `MaxSpeed`, which is how the REAL defect surfaced: the
+> `Debug` configuration was also inheriting `/O2`, making it unsteppable for the one
+> audience it exists for. Both are now explicit — Debug `Disabled`, Release `MaxSpeed`.
 
 `Release|Win32` has **no `<Optimization>` element**, no `<InlineFunctionExpansion>`, no
 `<FavorSizeOrSpeed>`, no `<OmitFramePointers>`, no `<BufferSecurityCheck>`, no
@@ -684,7 +697,8 @@ number.
 **A8. Hoist the `Water` accessor loop conditions.** `Water.cpp:812`, `:836`, `:891`, `:925`,
 `:926`, `:976`, `:977` all call an accessor in the loop condition. Hoist into locals; re-fetch
 `Pool_Mesh(i)` once outside the vertex loop (`:894`, `:900`).
-*Expected effect:* small under `/O2`, **material under the current `/Od` Release** (§4).
+*Expected effect:* small. An earlier draft called this material on the grounds that Release
+was unoptimised; that premise was refuted (§4.2), so this is a minor cleanup, not a win.
 *OURS.* *Measurability:* `in situ only`.
 
 **A9. Remove the debug `Error_InfoF` from `Water_Update`** (`Water.cpp:823`, statics at
@@ -850,7 +864,11 @@ only way any of this survives contact with a future session.
 ### Tier 3 — Toolchain-level evidence
 
 Assembly, object sizes, or linker output produced on the authoring machine and quoted
-verbatim, with the exact command line. §4.2 is the worked example, and it is the reason the
+verbatim, with the exact command line. §4.2 is the worked example of the FAILURE mode:
+it produced real disassembly of the wrong experiment, because it modelled the build system
+instead of asking it. Tier-3 evidence must come from interrogating the toolchain — for
+build flags that means `-v:diagnostic` task parameters, not inference from the project
+file. That distinction is the reason the
 build finding is stated as fact rather than as suspicion.
 
 Reproduce it as follows (nothing here touches the project or its shared intermediate
@@ -912,18 +930,26 @@ project can establish, and it is worth more than a fabricated percentage.
 
 ## 7. Decision
 
-**Land D1 first.** Setting `<Optimization>MaxSpeed</Optimization>` in `Release|Win32` is one
+**D1 is done, and it was not what it looked like.** Release was already `/O2`; the item as
+written rested on a refuted premise (§4.2). What actually landed was the inverse: `Debug`
+was silently inheriting `MaxSpeed` too, so both configurations are now explicit — Debug
+`Disabled`, Release `MaxSpeed` — and both still build at exactly 44 warnings. **Start
+instead at A1** (`ListSet` O(alive) enumeration), which is the highest-leverage item here
+and the only one fully measurable in the harness today.
+
+<!-- Superseded D1 text, retained so the ranking below still reads in order: -->
+<!-- Setting `<Optimization>MaxSpeed</Optimization>` in `Release|Win32` is one
 line, it is backed by reproduced disassembly rather than inference, and it multiplies the
 value of every other fix in this document. Everything else in Tier A is currently being
 compiled by a non-optimising compiler, which means the measured-on-paper wins are being
 thrown away at the last step. Land it behind a full rebuild and a re-verified 44-warning
-tally.
+tally. -->
 
 **Then A5, A10, A9, B2 and B1** — five small, local, individually reviewable changes that
 remove two full object walks per frame, three per-frame string hashes, a debug log, an O(n)
 vector copy and a 42 KB per-frame malloc. None of them requires a design decision.
 
-**Then A1**, gated on the creator/destroyer audit that `GameState.cpp:1792-1795` already asks
+**A1 is now the head of the queue**, gated on the creator/destroyer audit that `GameState.cpp:1792-1795` already asks
 for, with the mandatory `ListSet` harness. This is the root fix: it is the only change that
 makes the eight-plus per-frame walks proportional to what is alive rather than to what was
 once alive, and it is the only item here that is fully measurable today.

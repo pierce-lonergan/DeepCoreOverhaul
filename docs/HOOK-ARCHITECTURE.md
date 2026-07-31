@@ -207,7 +207,7 @@ There are **683 `/// CUSTOM:` markers** across the tree (`grep -rh "CUSTOM:" --i
 
 ## 5. Risk model, and the rule
 
-The danger is not the hooking — it is the **124 struct overlays** onto the exe's data segment (`grep -rn '= \*(.*\*)0x00' --include=*.cpp src/openlrr | wc -l`), guarded by **394 `assert_sizeof` static-asserts** (`common.h:207`). Every one is a hard-coded absolute address with a hard-coded size: `statsGlobs` at `0x00503bd8` sized `0x5b0` (`Stats.cpp:41`, `Stats.h:232`); `legoGlobs` at `0x005570c0` sized `0xf00` (`Game.cpp:151`, `Game.h:672`); `weaponGlobs` at `0x00504870` sized `0x1b90` (`Weapons.cpp:27`, `Weapons.h:140`).
+The danger is not the hooking — it is the **124 struct overlays** onto the exe's data segment (`grep -rn '= \*(.*\*)0x00' --include=*.cpp src/openlrr | wc -l`), guarded by **389 live `assert_sizeof` static-asserts** (`common.h:207`) — 398 occurrences in source, 9 of them commented out. Note that `addrlint` reports a different and equally correct number, **376**: that is the count of distinct *types* it can size, which is smaller because several types are asserted in more than one place. 389 is the declaration count; 376 is the linter's denominator. Both are derived by `tools/docsaudit/docsaudit.py --facts`. Every one is a hard-coded absolute address with a hard-coded size: `statsGlobs` at `0x00503bd8` sized `0x5b0` (`Stats.cpp:41`, `Stats.h:232`); `legoGlobs` at `0x005570c0` sized `0xf00` (`Game.cpp:151`, `Game.h:672`); `weaponGlobs` at `0x00504870` sized `0x1b90` (`Weapons.cpp:27`, `Weapons.h:140`).
 
 The `static_assert` catches a *size* change at compile time. It does **not** catch a field-order change, and it does **not** catch you enlarging an inner array while shrinking padding. Those compile clean and corrupt the neighbouring global at runtime.
 
@@ -226,7 +226,7 @@ The `static_assert` catches a *size* change at compile time. It does **not** cat
 - Touching a function annotated `// internal, no need to hook these` — re-check whether an exe caller crept back in.
 
 **RED — do not, without a full-tree audit.**
-- Changing any field of a struct that carries an `assert_sizeof` and is bound to a fixed address. Adjusting the `assert_sizeof` number to make the build pass is the single most destructive edit available in this repo — `Stats_Globs` ends at `0x504188`, `textGlobs` begins at `0x504190`; there are **8 bytes of slack**, and `LegoObject_ID_Count 15→16` would run 72 bytes into `Text_Globs`.
+- Changing any field of a struct that carries an `assert_sizeof` and is bound to a fixed address. Adjusting the `assert_sizeof` number to make the build pass is the single most destructive edit available in this repo — `Stats_Globs` ends at `0x504188`, `textGlobs` begins at `0x504190`, and of those 8 raw bytes **4 are already occupied** by `g_Teleporter_BOOL_00504188` (`Teleporter.cpp:17`) — so there are **4 free bytes**. `LegoObject_ID_Count 15→16` adds 80 bytes, which destroys that live flag first and then runs 72 bytes into `Text_Globs`.
 - Raising `LegoObject_ID_Count` (`GameCommon.h:1143`) or `LegoObject_Type_Count`. Both are load-bearing across at least 13 fixed-layout tables: `Stats.h:228`, `Object.h:454,463,464`, `AITask.h:147`, `Dependencies.h:91`, `Interface.h:143`, `HelpWindow.h:91-93`, `Weapons.h:83`.
 - `hook_write_jmpret` onto a merged address (`interop.cpp:310, 1572, 1766, 1920, 3918`).
 - Anything in `#pragma region Temporary Hooks` — `interop.cpp:4574-4576` says `// Do not commit anything in here!`.
@@ -242,7 +242,16 @@ The `static_assert` catches a *size* change at compile time. It does **not** cat
 
 ---
 
-## 6. Reimplementing `Lego_LoadRockMonsterTypes` — hard, not a dead end
+## 6. Reimplementing `Lego_LoadRockMonsterTypes` — tractable, and deliberately not done
+
+> **Read this together with `HANDOFF-2026-07-30.md` §3, which records the same work as
+> rejected. The two are not in conflict.** This section shows the work is *tractable* —
+> no interop hook is even required, because the only call site is already C++. The handoff
+> records the separate judgement that it is *not worth doing*: it unlocks no capability
+> (the free ID slots below 15 already work, both consumers being count-driven) while
+> carrying an unverifiable regression risk in startup code, with no trampoline to fall
+> back to. Tractable and not-worth-doing are compatible. Do not read this section as a
+> recommendation to proceed.
 
 **It is more tractable than it looks, and here is the decisive fact: no hook is required.**
 

@@ -37,6 +37,8 @@ jobs:
         run: python tools/addrlint/test_addrlint.py
       - name: No overlapping exe-overlaid regions
         run: python tools/addrlint/addrlint.py --check
+      - name: Documentation numbers agree with the tree
+        run: python tools/docsaudit/docsaudit.py --check
       - name: docs/ADDRESS-MAP.md is up to date
         run: |
           python tools/addrlint/addrlint.py --markdown /tmp/ADDRESS-MAP.md --quiet
