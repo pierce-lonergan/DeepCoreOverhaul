@@ -1,0 +1,201 @@
+{
+  "_comment": [
+    "DeepCoreOverhaul audio manifest. Consumed by tools/audio/generate.py.",
+    "",
+    "OUTPUT FORMAT IS FIXED BY THE ENGINE, NOT BY TASTE: every secondary sound buffer is",
+    "created with DSBCAPS_CTRL3D unconditionally (3DSound.cpp:1123), and DirectSound3D",
+    "buffers are mono-only, so a stereo file fails to create a buffer and the engine says",
+    "only 'Cannot create sound buffer.'. Everything here is generated as PCM 22050 Hz",
+    "16-bit MONO, which also matches the primary buffer (3DSound.cpp:154-156) and so",
+    "avoids a resample at mix time.",
+    "",
+    "NAMING RULE: the L in LRR is never expanded, and that includes spoken lines. Any",
+    "entry whose text or prompt contains it is rejected by the validator.",
+    "",
+    "VOICES: original voices in a fitting register. This project never clones or imitates",
+    "the original game's voice actors or any real person. Voice names below are resolved",
+    "against the account's own catalogue at generation time.",
+    "",
+    "All generated audio is original work and is committable. Nothing extracted from the",
+    "game ever is."
+  ],
+
+  "default_model": "eleven_multilingual_v2",
+  "request_delay_seconds": 0.25,
+
+  "voices": {
+    "commander": {
+      "elevenlabs_name": "Brian",
+      "_role": "Mission control. Calm, procedural, unhurried even when things are bad. The voice that has done this a hundred times.",
+      "settings": { "stability": 0.55, "similarity_boost": 0.75, "style": 0.15 }
+    },
+    "geologist": {
+      "elevenlabs_name": "Alice",
+      "_role": "Survey and science briefings. Precise, curious, slightly clipped.",
+      "settings": { "stability": 0.5, "similarity_boost": 0.75, "style": 0.2 }
+    },
+    "alert": {
+      "elevenlabs_name": "Charlie",
+      "_role": "Threat warnings only. Tighter, faster, more pressure. Never used for anything routine, so the player learns its meaning instantly.",
+      "settings": { "stability": 0.35, "similarity_boost": 0.8, "style": 0.45 }
+    }
+  },
+
+  "entries": [
+    {
+      "_group": "THREAT LAYER -- driven by the wave director.",
+      "_note": "The director already owns escalation state: telegraph phase, alive budget, wave number. Nothing else in the project can drive audio from real threat state, which is why this is first.",
+      "name": "dc_threat_telegraph",
+      "category": "threat",
+      "kind": "speech",
+      "voice": "alert",
+      "text": "Movement in the rock. Something is coming through.",
+      "settings": { "stability": 0.35 }
+    },
+    {
+      "name": "dc_threat_telegraph_heavy",
+      "category": "threat",
+      "kind": "speech",
+      "voice": "alert",
+      "text": "Multiple contacts. They are coming through the walls.",
+      "settings": { "stability": 0.3 }
+    },
+    {
+      "name": "dc_threat_escalate",
+      "category": "threat",
+      "kind": "speech",
+      "voice": "commander",
+      "text": "Pressure is building down there. Do not let them settle."
+    },
+    {
+      "name": "dc_threat_cleared",
+      "category": "threat",
+      "kind": "speech",
+      "voice": "commander",
+      "text": "Cavern is quiet again. Use it."
+    },
+    {
+      "name": "dc_sting_warning",
+      "category": "threat",
+      "kind": "sfx",
+      "prompt": "Low ominous sub-bass swell with a distant rock groan, tense, building, cavernous, no music, ends unresolved",
+      "duration_seconds": 3.0,
+      "prompt_influence": 0.6
+    },
+    {
+      "name": "dc_sting_arrival",
+      "category": "threat",
+      "kind": "sfx",
+      "prompt": "Heavy rock bursting outward, stone shattering and tumbling, deep impact thud, close and violent",
+      "duration_seconds": 2.0,
+      "prompt_influence": 0.7
+    },
+    {
+      "name": "dc_sting_relief",
+      "category": "threat",
+      "kind": "sfx",
+      "prompt": "Tension releasing, low tone fading into settling gravel and quiet cave ambience, calm resolution",
+      "duration_seconds": 3.5,
+      "prompt_influence": 0.5
+    },
+
+    {
+      "_group": "CREATURE VOCALISATIONS -- eleven species that currently blur together.",
+      "_note": "Cosmetic variants already make individuals differ in size and colour; this makes them differ in what you hear coming.",
+      "name": "dc_creature_rock_alert",
+      "category": "creature",
+      "kind": "sfx",
+      "prompt": "Massive stone creature waking, grinding boulder-on-boulder growl, deep and slow, threatening",
+      "duration_seconds": 2.5,
+      "prompt_influence": 0.7
+    },
+    {
+      "name": "dc_creature_ice_alert",
+      "category": "creature",
+      "kind": "sfx",
+      "prompt": "Cracking ice and splintering frost, sharp brittle shriek layered over a low freezing groan",
+      "duration_seconds": 2.5,
+      "prompt_influence": 0.7
+    },
+    {
+      "name": "dc_creature_lava_alert",
+      "category": "creature",
+      "kind": "sfx",
+      "prompt": "Molten rock hissing and spitting, roaring furnace breath, bubbling magma, dangerous heat",
+      "duration_seconds": 2.5,
+      "prompt_influence": 0.7
+    },
+    {
+      "name": "dc_creature_small_skitter",
+      "category": "creature",
+      "kind": "sfx",
+      "prompt": "Small many-legged creature skittering fast over loose stone, chittering, quick and unsettling",
+      "duration_seconds": 2.0,
+      "prompt_influence": 0.7
+    },
+
+    {
+      "_group": "CAMPAIGN BRIEFINGS -- what makes authored content feel official.",
+      "_note": "Text is placeholder-quality until the campaign missions are written; the pipeline is what matters here. Regenerating after a rewrite is one command.",
+      "name": "dc_brief_01_descent",
+      "category": "briefing",
+      "kind": "speech",
+      "voice": "commander",
+      "text": "Welcome to the deep core. The seam below you is rich, and it is not empty. Get a base standing, get your crew underground, and be ready to lose the first cavern you dig into."
+    },
+    {
+      "name": "dc_brief_02_pressure",
+      "category": "briefing",
+      "kind": "speech",
+      "voice": "commander",
+      "text": "The survey was wrong. There is far more moving down here than we mapped. Hold what you have taken and do not spread thin."
+    },
+    {
+      "name": "dc_brief_03_heat",
+      "category": "briefing",
+      "kind": "speech",
+      "voice": "geologist",
+      "text": "Temperature is climbing the deeper you cut. Whatever lives in the hot rock does not mind it. Your machines will."
+    },
+    {
+      "name": "dc_objective_complete",
+      "category": "briefing",
+      "kind": "speech",
+      "voice": "commander",
+      "text": "Objective secured. Good work down there."
+    },
+    {
+      "name": "dc_objective_failed",
+      "category": "briefing",
+      "kind": "speech",
+      "voice": "commander",
+      "text": "We have lost the cavern. Pull everyone back to the surface."
+    },
+
+    {
+      "_group": "AMBIENCE BEDS -- long, loopable, per-biome.",
+      "name": "dc_ambience_rock",
+      "category": "ambience",
+      "kind": "sfx",
+      "prompt": "Deep underground cavern ambience, distant dripping water, faint settling stone, vast empty space, no music",
+      "duration_seconds": 20.0,
+      "prompt_influence": 0.35
+    },
+    {
+      "name": "dc_ambience_ice",
+      "category": "ambience",
+      "kind": "sfx",
+      "prompt": "Frozen cavern ambience, distant ice groaning and cracking, cold hollow wind, sparse, no music",
+      "duration_seconds": 20.0,
+      "prompt_influence": 0.35
+    },
+    {
+      "name": "dc_ambience_lava",
+      "category": "ambience",
+      "kind": "sfx",
+      "prompt": "Volcanic cavern ambience, low magma rumble, distant hissing steam vents, oppressive heat, no music",
+      "duration_seconds": 20.0,
+      "prompt_influence": 0.35
+    }
+  ]
+}

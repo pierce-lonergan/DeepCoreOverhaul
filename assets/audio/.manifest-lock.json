@@ -1,0 +1,21 @@
+{
+ "dc_ambience_ice": "0398b5a59ff1206a216dcd2ee54ca393a0cae6762cc1a0eca624557452051068",
+ "dc_ambience_lava": "79b34a22bb15703e2d0853f6ed3aaafa0121d4ada58ea39a3bbff9ae2c4eef0c",
+ "dc_ambience_rock": "43de122b19a78a3ee6e23be96518ac06785b4afb767140ed6d82ca12d0dcf45a",
+ "dc_brief_01_descent": "dc46de7293e96ed3ce8278a9e3e219dc8f093ab3f95f1bbb995d1228e2ab95aa",
+ "dc_brief_02_pressure": "1ef61d12a44bb923b4d0859bd546c3b4b74c1e39514a4530e8a53c792b4bb9b7",
+ "dc_brief_03_heat": "0463202e7401ee3c61eec2c596ca92d114c4667c16a02e9ec3dc64bc4c55f25a",
+ "dc_creature_ice_alert": "6bde0c8a4a3a2e917cbbe50eb1b58c2c4ddda7e1f9ac81bbd6b2ab5a0916e695",
+ "dc_creature_lava_alert": "430a60228a333974cd4b2f63709b68e18abcb746331993c6968b74a1137b572a",
+ "dc_creature_rock_alert": "8b28d526a1ea620e0c29f63bad53516217511de3901cad0fd78d2099c768a560",
+ "dc_creature_small_skitter": "9c02da02f215fab46166ff1a69228f2c41a75c13e5458cbc438f4a56c323a742",
+ "dc_objective_complete": "5384ec6adc1c8961e8b7b98e3d1b7ce997b891f73f747d543597a46080d3eedb",
+ "dc_objective_failed": "4821cf9801f3d4bfffd16d356aa0384cde69a456bbaa1218a669e4c0ac61c54d",
+ "dc_sting_arrival": "8650fe4899267651960b38131fac3e12a61aa0982fb7ab02da310bcf5bebb756",
+ "dc_sting_relief": "efab78f7c382954a57842924d35a06e391dbbb47940df5ead8ff8837cec67444",
+ "dc_sting_warning": "eb2878e4337a9cc9c6798693b41c630ae3d3798131d9a9620c5c64f034552772",
+ "dc_threat_cleared": "c8fcc40e5746bd6f733f5ab87b44da7454672984894de700b4fbceedac4bd0f3",
+ "dc_threat_escalate": "92083dca6b43f387173e3586d05abeadd8895f8e6c2a9e37bcf1d2d86b8e0e47",
+ "dc_threat_telegraph": "7ea42fc58398e51e1156a7e575a90796b552a4d8abe5e81c29bf2b1d8a1fbcc9",
+ "dc_threat_telegraph_heavy": "da66d4fcb4958d2c380c3ffb8ba5df784c7b0358dd99fb7a6a7356c616da0d8a"
+}

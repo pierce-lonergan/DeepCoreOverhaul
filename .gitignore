@@ -77,3 +77,9 @@ _unused/
 # Harness build output
 /bin/harness.exe
 /bin/harness.pdb
+
+# Secrets: never commit an API key. tools/audio/generate.py reads ELEVENLABS_API_KEY
+# from the environment and writes it nowhere.
+.env
+*.key
+secrets.json
