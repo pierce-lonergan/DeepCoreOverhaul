@@ -22,8 +22,16 @@
 
 #pragma region Macros
 
+// VerboseStartup diagnostics use the INFO level, not DEBUG, and that is deliberate.
+// Gods98::errorLogLevels defaults debugVisible to FALSE (Errors.cpp:26), so anything
+// emitted through Error_DebugF2 prints nothing unless the user also passes
+// `-loglevels debug`. A diagnostic that is silent by default is not a diagnostic -- it
+// is the single most likely source of a false negative when someone is trying to work
+// out whether DeepCore.cfg loaded at all. infoVisible defaults TRUE.
+// Note also there is no log FILE: Error_SetDumpFile (Errors.cpp:92) has no callers
+// anywhere in the tree, so output goes only to the console MakeConsole() allocates.
 #define DeepCore_WarnF(b, s, ...)	Error_WarnF2( (b), "DeepCore: Warning: %s\n", Gods98::Error_Format((s), __VA_ARGS__))
-#define DeepCore_LogF(s, ...)		Error_DebugF2("DeepCore: %s\n", Gods98::Error_Format((s), __VA_ARGS__))
+#define DeepCore_LogF(s, ...)		Error_InfoF2("DeepCore: %s\n", Gods98::Error_Format((s), __VA_ARGS__))
 
 // Config keys live at "<gameName>::DeepCore::<name>", mirroring how Shortcuts.cfg
 // nests its KeyBinds block under the game name.
@@ -501,6 +509,7 @@ bool DeepCore::Load(void)
 	_ReadStringIfPresent(config, "CueArrival",        settings.cueArrival);
 	_ReadStringIfPresent(config, "CueEscalate",       settings.cueEscalate);
 	_ReadStringIfPresent(config, "CueCleared",        settings.cueCleared);
+	_ReadStringIfPresent(config, "CueSampleDir",      settings.cueSampleDir);
 
 	// Species pool: whitespace- or comma-separated monster type names.
 	{

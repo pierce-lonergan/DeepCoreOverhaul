@@ -673,6 +673,15 @@ public:
 		}
 		m_cont.listCount = 0;
 		m_cont.freeList = nullptr;
+
+		/// DEEPCORE: reset the alive counter too.
+		/// Initialise deliberately bypasses Remove -- it drops the whole listSet at once --
+		/// so nothing was decrementing m_aliveCount, and CountAlive() drifted upward by the
+		/// live count of the previous cycle every time a listSet was re-initialised.
+		/// efenceListSet re-initialises on every level load via ElectricFence_Restart, so
+		/// this was not hypothetical. m_aliveCount is DLL-side state in this wrapper, not a
+		/// field of the exe-overlaid container, so this changes no struct layout.
+		m_aliveCount = 0;
 	}
 
 	/**
@@ -692,6 +701,10 @@ public:
 		// NOTE: LegoRR ListSet shutdowns often do not reset one or both these fields.
 		m_cont.listCount = 0;
 		m_cont.freeList = nullptr;
+
+		/// DEEPCORE: same reasoning as Initialise -- Shutdown frees the lists wholesale
+		/// without routing items through Remove, so the counter has to be reset explicitly.
+		m_aliveCount = 0;
 	}
 
 	/**

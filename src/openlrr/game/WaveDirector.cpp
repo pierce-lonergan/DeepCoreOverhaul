@@ -24,7 +24,7 @@
 #pragma region Macros
 
 #define Waves_WarnF(b, s, ...)	Error_WarnF2( (b), "DeepCore/Waves: %s\n", Gods98::Error_Format((s), __VA_ARGS__))
-#define Waves_LogF(s, ...)		Error_DebugF2("DeepCore/Waves: %s\n", Gods98::Error_Format((s), __VA_ARGS__))
+#define Waves_LogF(s, ...)		Error_InfoF2("DeepCore/Waves: %s\n", Gods98::Error_Format((s), __VA_ARGS__))
 
 #pragma endregion
 

@@ -41,6 +41,18 @@ namespace Audio
 /// resolve. Safe to call from a per-frame path: resolution happens once per cue per level.
 void PlayThreatCue(Logic::ThreatCue cue);
 
+/// Register this project's cues directly into the engine's sample table.
+///
+/// This is what removes the dependency on the user editing their own config. All three
+/// pieces are implemented C++ and hooked over the exe -- SFX_SetSamplePopulateMode
+/// (interop.cpp:4027), SFX_GetType (:4028) and SFX_LoadSampleProperty (:4031) -- so we can
+/// do exactly what the game's own Samples parser does, immediately after it runs.
+///
+/// Called from Lego_Initialise straight after Lego_LoadSamples (GameState.cpp), which is
+/// the one moment when the table exists, is fully populated, and nothing has looked a cue
+/// up yet. No-op unless threatAudio is on.
+void RegisterCues(void);
+
 /// Drop cached name->ID resolutions. Called on level teardown, because the SFX table is
 /// rebuilt per level and a cached ID from the previous one would be meaningless.
 void InvalidateCueCache(void);

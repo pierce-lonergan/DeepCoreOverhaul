@@ -150,6 +150,11 @@ struct Settings
 	std::string cueEscalate       = "dc_threat_escalate";
 	std::string cueCleared        = "dc_threat_cleared";
 
+	/// Subdirectory of the game's Data\ folder holding the cue WAVs. The engine resolves a
+	/// sample as "<Data>\<value>.wav", so a cue named dc_threat_telegraph with this set to
+	/// "DeepCore" loads Data\DeepCore\dc_threat_telegraph.wav. Empty puts them at the root.
+	std::string cueSampleDir = "DeepCore";
+
 
 	// ---- Creature variants ----------------------------------------------------
 	// Uniform model scale is a data-driven property and per-group diffuse/emissive

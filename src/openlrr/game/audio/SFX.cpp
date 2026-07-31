@@ -124,6 +124,28 @@ bool32 __cdecl LegoRR::SFX_GetType(OPTIONAL const char* sfxName, OUT SFX_ID* sfx
 
         // This flag presumably states the SFX table is still being built
         if (sfxGlobs.flags & SFX_GlobFlags::SFX_GLOB_FLAG_POPULATEMODE) {
+
+            /// DEEPCORE: hashNameList is SFX_MAXSAMPLES (495) entries, allocated once at
+            /// SFX.cpp:39-40 (arraySize = SFX_MAXSAMPLES * sizeof(uint32) == 0x7bc). This
+            /// write was unbounded, and populate mode is driven straight from config data,
+            /// so a config declaring more sample names than the table holds walks off the
+            /// end of a heap block -- silently, because the very next thing it does is
+            /// increment the count and report success.
+            ///
+            /// The vanilla Samples block already declares on the order of 446 names, so the
+            /// headroom is small and a modder adding sounds is exactly the person who would
+            /// hit this. Refuse loudly instead; the caller treats a false return as "cue not
+            /// found", which is a survivable outcome.
+            ///
+            /// Unconditional, like every other overflow guard here: what it replaces is a
+            /// heap overrun, so there is no vanilla behaviour worth preserving.
+            if (totalCount >= (uint32)SFX_MAXSAMPLES) {
+                Error_WarnF2(true, "SFX: sample name table is full (%i names); \"%s\" and any "
+                                   "further names cannot be registered.\n",
+                             (sint32)SFX_MAXSAMPLES, sfxName);
+                return false;
+            }
+
             *sfxID = (SFX_ID)totalCount;
             // Removed duplicate call to Util_HashString, present in LegoRR
             sfxGlobs.hashNameList[totalCount] = hashValue;

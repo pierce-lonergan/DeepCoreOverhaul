@@ -76,6 +76,7 @@
 #include "world/Water.h"
 #include "Debug.h"
 #include "DeepCore.hpp"
+#include "DeepCoreAudio.hpp"
 #include "Shortcuts.hpp"
 #include "Game.h"
 
@@ -436,6 +437,12 @@ bool32 __cdecl LegoRR::Lego_Initialise(void)
 
 
 	Lego_LoadSamples(legoConfig, !Gods98::Graphics_IsReduceSamples());
+
+	/// DEEPCORE: register our own cues immediately after the game's Samples block is parsed.
+	/// This is the only correct moment: the name table exists and is fully populated, and
+	/// nothing has resolved a cue yet. Doing it here means a user never has to edit their
+	/// own Lego.cfg -- they only drop the WAV files in. No-op unless ThreatAudio is on.
+	DeepCore::Audio::RegisterCues();
 
 	Lego_LoadSurfaceTypeDescriptions_sound(legoConfig, legoGlobs.gameName);
 
