@@ -154,6 +154,58 @@ inline std::size_t RotationIndex(int step, std::size_t count)
 #pragma endregion
 
 /**********************************************************************************
+ ******** Spawn fairness
+ **********************************************************************************/
+
+#pragma region SpawnFairness
+
+/// A candidate spawn block, described in terms of what the rules care about rather than in
+/// terms of engine flag bits.
+///
+/// The normalisation is the point. The shipping code fills this from BlockFlags1/BlockFlags2
+/// (Game.h:182-246); the sandbox fills it from its own synthetic map. Both then run the SAME
+/// predicate, so the fairness rules are exercised for real against a generated cavern
+/// instead of only being asserted in a comment next to code nobody can execute.
+struct SpawnBlockInfo
+{
+	bool isFloor = false;          ///< walkable ground
+	bool isHidden = false;         ///< inside an unopened cavern
+	bool isToolStore = false;
+	bool isBuilding = false;       ///< building footprint or foundation
+	bool isPath = false;
+	bool isBusy = false;           ///< something is already working here
+	bool hasAdjacentExposedWall = false;
+	int  distSqToNearestBuilding = 1 << 30;  ///< squared, in blocks; huge when none exist
+};
+
+/// May a creature fairly arrive here?
+///
+/// Every clause is a promise to the player, not a technical constraint:
+///  - discovered floor only, because arriving inside unexplored rock is not a threat, it is
+///    a bug the player cannot see
+///  - never in the base, because that is the one place they are entitled to feel safe until
+///    something walks there
+///  - never on a busy tile, because displacing a working unit reads as the game cheating
+///  - adjacent to an exposed wall, because a creature that materialises in open floor looks
+///    like an error rather than something that came from somewhere
+inline bool IsFairSpawn(const SpawnBlockInfo& b, int minDistanceFromBase)
+{
+	if (!b.isFloor)   return false;
+	if (b.isHidden)   return false;
+	if (b.isToolStore || b.isBuilding || b.isPath) return false;
+	if (b.isBusy)     return false;
+	if (!b.hasAdjacentExposedWall) return false;
+
+	if (minDistanceFromBase > 0) {
+		const int minSq = minDistanceFromBase * minDistanceFromBase;
+		if (b.distSqToNearestBuilding < minSq) return false;
+	}
+	return true;
+}
+
+#pragma endregion
+
+/**********************************************************************************
  ******** Threat audio
  **********************************************************************************/
 

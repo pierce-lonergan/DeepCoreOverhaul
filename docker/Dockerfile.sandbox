@@ -1,0 +1,25 @@
+# Dockerfile.sandbox : build and run the DeepCore sandbox anywhere.
+#
+# This container does NOT and CANNOT run the game. It runs the half of the project that
+# DeepCoreOverhaul actually owns: the wave director's decisions, the synthetic cavern
+# generator, and the pure logic the shipping DLL calls. No 1999 executable, no copyrighted
+# asset, nothing that requires a licence to obtain.
+#
+#   docker compose -f docker/docker-compose.yml run --rm sandbox
+FROM gcc:13-bookworm AS build
+
+WORKDIR /src
+COPY src/sandbox        /src/src/sandbox
+COPY src/openlrr/game/DeepCoreLogic.hpp      /src/src/openlrr/game/DeepCoreLogic.hpp
+COPY src/openlrr/game/DeepCoreDenseIndex.hpp /src/src/openlrr/game/DeepCoreDenseIndex.hpp
+
+RUN apt-get update && apt-get install -y --no-install-recommends cmake \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN cmake -B /build -S /src/src/sandbox -DCMAKE_BUILD_TYPE=Release \
+ && cmake --build /build -j
+
+FROM debian:bookworm-slim
+COPY --from=build /build/sandbox /usr/local/bin/sandbox
+ENTRYPOINT ["/usr/local/bin/sandbox"]
+CMD ["--selftest"]

@@ -1,0 +1,30 @@
+# docker-compose.yml : one command to watch DeepCoreOverhaul's systems run.
+#
+# NOTE ON WHAT THIS IS: none of these services run the 1999 game. They run the subsystems
+# this project owns, against a procedurally generated cavern. That is "sandbox-verified",
+# which is a real claim and a much weaker one than "play-tested". See docs/HANDOFF for the
+# distinction, which this project keeps deliberately sharp.
+services:
+
+  # Invariant assertions over 40 generated caverns. Exits non-zero on failure; this is what
+  # CI runs.
+  sandbox:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.sandbox
+    command: ["--selftest"]
+
+  # Animated terminal view: watch waves escalate on a generated map.
+  view:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.sandbox
+    command: ["--view", "--seconds", "600"]
+    tty: true
+
+  # Structured JSONL trace, for diffing runs against each other.
+  trace:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.sandbox
+    command: ["--trace", "--seed", "7"]

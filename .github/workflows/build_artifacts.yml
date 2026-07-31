@@ -79,9 +79,27 @@ jobs:
           .\bin\harness.exe --no-bench
           if ($LASTEXITCODE -ne 0) { throw "harness reported $LASTEXITCODE failure(s)" }
 
+  # Builds and RUNS the sandbox. This is the only job in CI that executes the project's
+  # decision-making against real data rather than only compiling it. Linux, no game, no exe.
+  Sandbox:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -S src/sandbox -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build -j
+      - name: Invariants over 40 generated caverns
+        run: ./build/sandbox --selftest
+      - name: Trace run is well-formed JSONL
+        run: |
+          ./build/sandbox --trace --seed 7 --seconds 300 > trace.jsonl
+          python3 -c "import json,sys; [json.loads(l) for l in open('trace.jsonl') if l.strip()]; print('trace ok')"
+
   Release_build:
     runs-on: windows-latest
-    needs: [Address_space_lint, No_game_binaries, Harness]
+    needs: [Address_space_lint, No_game_binaries, Harness, Sandbox]
     steps:
       - name: Clone repo
         uses: actions/checkout@v4
@@ -103,7 +121,7 @@ jobs:
 
   Debug_build:
     runs-on: windows-latest
-    needs: [Address_space_lint, No_game_binaries, Harness]
+    needs: [Address_space_lint, No_game_binaries, Harness, Sandbox]
     steps:
       - name: Clone repo
         uses: actions/checkout@v4

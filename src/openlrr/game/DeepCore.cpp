@@ -13,6 +13,7 @@
 #include "Game.h"
 #include "DeepCoreLogic.hpp"
 #include "DeepCoreAudio.hpp"
+#include "DeepCoreLog.hpp"
 #include "DeepCore.hpp"
 
 
@@ -467,10 +468,21 @@ bool DeepCore::Load(void)
 	Reset();
 
 	// Load using exeDir, and never from the CD. Same flags as Shortcuts.
+	// Open the log BEFORE reading anything, so a failure to find the config file is
+	// itself recorded. This is the single most common first-run question and it used to
+	// be answerable only by inference from silence.
+	DeepCore::Log::Open("DeepCore.log");
+
 	Gods98::Config* config = Gods98::Config_Load2(DEEPCORE_FILENAME,
 		Gods98::FileFlags::FILE_FLAG_EXEDIR|Gods98::FileFlags::FILE_FLAG_NOCD);
 
+	DeepCore::Log::AssetChecked("settings", DEEPCORE_FILENAME, config != nullptr);
+
 	if (config == nullptr) {
+		DeepCore::Log::Write(DeepCore::Log::Level::Warn, "%s",
+			"No " DEEPCORE_FILENAME " found next to the executable. Every DeepCore feature "
+			"stays off and the game behaves as stock OpenLRR. If you meant to enable "
+			"something, copy data/Settings/DeepCore.cfg into your game's Settings folder.");
 		// Not an error. No config means "behave exactly like upstream OpenLRR",
 		// which is the correct outcome for anyone who just wants the base project.
 		return false;
@@ -681,6 +693,8 @@ bool DeepCore::Load(void)
 	}
 
 	Gods98::Config_Free(config);
+
+	DeepCore::Log::Banner();
 
 	if (settings.verboseStartup) {
 		DeepCore_LogF("%s", "settings loaded from " DEEPCORE_FILENAME);
