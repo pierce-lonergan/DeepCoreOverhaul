@@ -200,7 +200,16 @@ void Simulation::Step()
 
 	// ---- waiting ----
 	const float interval = WaveInterval(m_cfg.wave, m_time);
-	if (m_phaseTimer < interval) return;
+	if (m_phaseTimer < interval) {
+		// Refresh the candidate count occasionally so the on-screen explanation reflects
+		// the map as it is now, not as it was at the last wave.
+		if (m_lastCandidateCount < 0 || ((int)(m_time * 10.0f) % 50) == 0) {
+			std::vector<std::pair<int,int>> peek;
+			GatherCandidates(peek);
+			m_lastCandidateCount = (int)peek.size();
+		}
+		return;
+	}
 	m_phaseTimer = 0.0f;
 
 	const int alive = (int)m_creatures.size();
@@ -212,6 +221,7 @@ void Simulation::Step()
 
 	std::vector<std::pair<int,int>> candidates;
 	GatherCandidates(candidates);
+	m_lastCandidateCount = (int)candidates.size();
 	if (candidates.empty()) {
 		// Worth tracing rather than returning silently: a sealed or fully-built-out map
 		// legitimately has nowhere fair, and that should be visible, not inferred.
@@ -302,6 +312,39 @@ std::string Simulation::StatusLine() const
 		m_phase == Phase::Telegraph ? "INCOMING in " : "next in ",
 		m_phase == Phase::Telegraph ? (m_cfg.telegraphSeconds - m_phaseTimer)
 									: (interval - m_phaseTimer));
+	return buf;
+}
+
+
+std::string Simulation::ExplainLine() const
+{
+	char buf[320];
+
+	if (m_phase == Phase::Telegraph) {
+		std::snprintf(buf, sizeof(buf),
+			"  [1;31mWAVE INCOMING[0m at %zu marked block(s) -- the warning names where "
+			"it will actually arrive", m_pending.size());
+		return buf;
+	}
+
+	if ((int)m_creatures.size() >= m_cfg.wave.maxAlive) {
+		std::snprintf(buf, sizeof(buf),
+			"  holding: alive budget is full (%d/%d), so no wave will fire until some die",
+			(int)m_creatures.size(), m_cfg.wave.maxAlive);
+		return buf;
+	}
+
+	if (m_lastCandidateCount == 0) {
+		// This is the state that previously looked like a hang. Say it out loud.
+		std::snprintf(buf, sizeof(buf),
+			"  waiting: [33mno legal spawn block[0m -- every discovered tile is inside "
+			"the %d-block base standoff, or has no exposed wall", m_cfg.minDistanceFromBase);
+		return buf;
+	}
+
+	std::snprintf(buf, sizeof(buf),
+		"  waiting: %d legal spawn block(s) available; escalation shortens the interval as the "
+		"mission runs", m_lastCandidateCount);
 	return buf;
 }
 

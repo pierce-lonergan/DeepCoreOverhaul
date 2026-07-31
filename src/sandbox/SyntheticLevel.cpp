@@ -113,7 +113,16 @@ void Level::Generate(const LevelDesc& desc)
 	// Water pools. The count matters: the relocated water tables raised the engine's caps
 	// from 10 pools / 100 blocks to 4096 / 65536, and a sandbox map can deliberately exceed
 	// the old limits to exercise the path that used to terminate the process.
-	const int waterTiles = (int)(desc.waterFraction * (float)(m_width * m_height));
+	//
+	// BUT the fraction is of the OPEN FLOOR, not of the whole map. Taking it from the map
+	// area was a real bug: a 56x28 map at 0.08 asked for 125 water tiles when the carved
+	// caverns only contained about 220, so water ate more than half the walkable space and
+	// the director had almost nowhere legal to put anything. Hard-capped at a third of the
+	// floor as well, so a careless fraction cannot reproduce that.
+	const int floorTiles = (int)CountFlag(BLOCK_FLOOR);
+	int waterTiles = (int)(desc.waterFraction * (float)floorTiles);
+	if (waterTiles > floorTiles / 3) waterTiles = floorTiles / 3;
+
 	int placedWater = 0, guard = 0;
 	while (placedWater < waterTiles && guard++ < 20000) {
 		const int x = 1 + (int)rng.Below((std::uint32_t)(m_width - 2));
@@ -130,12 +139,25 @@ void Level::Generate(const LevelDesc& desc)
 		At(rooms[0].cx, rooms[0].cy).flags = BLOCK_TOOLSTORE | BLOCK_FLOOR | BLOCK_BUILDING;
 	}
 
-	// Start with only the first chamber discovered, so the map opens up over time exactly
-	// as it would in play.
+	// Open the map up over time, but not from nothing.
+	//
+	// Revealing ONLY the starting chamber was the second half of the same bug: the base
+	// standoff distance is measured from the Tool Store, and a starting room of radius 2-4
+	// lies entirely inside it, so every discovered tile was rejected and the director had
+	// zero candidates for the first two minutes of every run. That is arguably correct
+	// behaviour -- an unexplored map genuinely has nowhere fair -- but it modelled a player
+	// who had done nothing, which is not the interesting case and made the sandbox look
+	// broken.
+	//
+	// Two chambers plus the corridor between them is the smallest state that is both
+	// plausible and testable: it puts legal ground outside the standoff radius immediately,
+	// while leaving most of the map to be discovered as the run proceeds.
 	for (Block& b : m_blocks) {
 		if (b.Has(BLOCK_FLOOR) || b.Has(BLOCK_WATER)) b.Set(BLOCK_HIDDEN);
 	}
-	if (!rooms.empty()) Discover(rooms[0].cx, rooms[0].cy, rooms[0].r + 2);
+	for (std::size_t i = 0; i < rooms.size() && i < 2; i++) {
+		Discover(rooms[i].cx, rooms[i].cy, rooms[i].r + 3);
+	}
 
 	RecomputeWalls();
 }

@@ -96,27 +96,81 @@ int RunHeadless(SimConfig cfg)
 	return 0;
 }
 
+/// Console size, so the map can be generated to FIT. Falls back to a conservative 80x25.
+void ConsoleSize(int& cols, int& rows)
+{
+	cols = 80;
+	rows = 25;
+#if defined(_WIN32)
+	CONSOLE_SCREEN_BUFFER_INFO info;
+	if (::GetConsoleScreenBufferInfo(::GetStdHandle(STD_OUTPUT_HANDLE), &info)) {
+		cols = info.srWindow.Right - info.srWindow.Left + 1;
+		rows = info.srWindow.Bottom - info.srWindow.Top + 1;
+	}
+#endif
+	if (cols < 40) cols = 40;
+	if (rows < 12) rows = 12;
+}
+
 int RunView(SimConfig cfg)
 {
 	EnableAnsi();
+
+	// Fit the cavern to the window. Drawing a frame TALLER than the console was the display
+	// bug: each frame scrolled the viewport, so the next "cursor home" landed at the top of
+	// a viewport that had already moved, and the screen filled with an endless ribbon of
+	// headers instead of redrawing in place.
+	int cols = 0, rows = 0;
+	ConsoleSize(cols, rows);
+
+	const int chromeRows = 5;   // title, status, hint, legend, blank
+	cfg.level.width  = (cols > 4) ? (cols - 2) : 40;
+	cfg.level.height = (rows > chromeRows + 6) ? (rows - chromeRows - 1) : 12;
+	if (cfg.level.width > 120) cfg.level.width = 120;
+
+	// Keep the cavern count proportionate, or a small window gets one blob and a large one
+	// gets a sparse scattering.
+	cfg.level.caverns = 3 + (cfg.level.width * cfg.level.height) / 400;
+	if (cfg.level.caverns > 10) cfg.level.caverns = 10;
+
 	Simulation sim;
 	sim.Init(cfg);
 
-	std::printf("\x1b[2J");
+	std::printf("\x1b[2J\x1b[?25l");   // clear once, hide the cursor
+
 	while (!sim.Done()) {
 		for (int i = 0; i < 5; i++) { if (!sim.Done()) sim.Step(); }
 
-		std::printf("\x1b[H");
-		std::printf("DeepCore sandbox -- terminal view   (no game, no exe, synthetic cavern)\n");
-		std::printf("%s\n", sim.StatusLine().c_str());
-		std::printf("legend  #rock  %%wall  .floor  ~water  O ore  C crystal  T store  "
-					"\x1b[1;31m!\x1b[0m incoming  \x1b[1;31mM\x1b[0m monster\n\n");
-		std::printf("%s", sim.RenderAscii(true).c_str());
+		std::string frame;
+		frame += "\x1b[H";                       // home
+		frame += "DeepCore sandbox -- the wave director running on a generated cavern\x1b[K\n";
+		frame += sim.StatusLine() + "\x1b[K\n";
+		frame += sim.ExplainLine() + "\x1b[K\n";
+		frame += "legend  #rock  %wall  .floor  ~water  O ore  C crystal  T store  "
+				 "\x1b[1;31m!\x1b[0m incoming  \x1b[1;31mM\x1b[0m monster\x1b[K\n";
+		frame += "\x1b[K\n";
+
+		// Every line gets an erase-to-end-of-line, so a shorter line never leaves debris
+		// from the previous frame behind it.
+		const std::string map = sim.RenderAscii(true);
+		std::size_t i = 0;
+		while (i < map.size()) {
+			std::size_t e = map.find('\n', i);
+			if (e == std::string::npos) e = map.size();
+			frame += map.substr(i, e - i);
+			frame += "\x1b[K\n";
+			i = e + 1;
+		}
+		frame += "\x1b[J";   // clear anything below the frame
+
+		std::fwrite(frame.data(), 1, frame.size(), stdout);
 		std::fflush(stdout);
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}
-	std::printf("\nDone. %d waves, %d spawned, peak alive %d.\n",
+
+	std::printf("\x1b[?25h\n");   // show the cursor again
+	std::printf("Done. %d waves, %d spawned, peak alive %d.\n",
 				sim.TotalWaves(), sim.TotalSpawned(), sim.PeakAlive());
 	return 0;
 }

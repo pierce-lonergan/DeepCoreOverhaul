@@ -100,6 +100,12 @@ public:
 	std::string RenderAscii(bool colour) const;
 	std::string StatusLine() const;
 
+	/// One line explaining what the director is currently doing AND WHY. When nothing is
+	/// happening, a status line full of zeroes looks identical to a hung program. The whole
+	/// point of this project's logging work is that silence is not an acceptable answer, and
+	/// that applies to the sandbox as much as to the game.
+	std::string ExplainLine() const;
+
 private:
 	enum class Phase { Waiting, Telegraph };
 
@@ -125,6 +131,7 @@ private:
 	std::vector<std::pair<int,int>> m_buildings;
 	DeepCore::Logic::QuietDetector m_quiet;
 	std::vector<TraceEvent> m_trace;
+	int m_lastCandidateCount = -1;   ///< -1 until the first gather
 	int m_cueCounts[8] = { 0 };
 };
 
