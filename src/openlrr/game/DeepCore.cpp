@@ -11,6 +11,7 @@
 
 #include "object/Creature.h"
 #include "Game.h"
+#include "DeepCoreLogic.hpp"
 #include "DeepCore.hpp"
 
 
@@ -302,30 +303,14 @@ void DeepCore::ApplyCreatureVariant(void* creatureModel, sint32 objID)
 }
 
 
-/// Split a config value into fields on whitespace, ':' and ','.
+/// Thin adapter over DeepCore::Logic::SplitFields.
 ///
-/// One splitter for every list-shaped value in DeepCore.cfg, so "1.5 0.6:0.3:0.3" and
-/// "1.5 0.6 0.3 0.3" always mean the same thing no matter which key they appear under.
-/// The engine's own config values use ':' as a level separator, so accepting it here
-/// keeps this file looking like the rest of the game's data.
+/// The splitting itself lives in DeepCoreLogic.hpp so it can be exercised by
+/// tools/harness/ without the game. This wrapper exists only so the call sites below
+/// read the same as they always did.
 static void _SplitFields(const char* value, std::vector<std::string>& out)
 {
-	out.clear();
-	if (value == nullptr) return;
-
-	std::string current;
-	for (const char* c = value; ; c++) {
-		if (*c == '\0' || *c == ' ' || *c == '\t' || *c == ':' || *c == ',') {
-			if (!current.empty()) {
-				out.push_back(current);
-				current.clear();
-			}
-			if (*c == '\0') break;
-		}
-		else {
-			current.push_back(*c);
-		}
-	}
+	DeepCore::Logic::SplitFields(value, out);
 }
 
 

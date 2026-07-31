@@ -73,3 +73,7 @@ _unused/
 # OpenLRR-MakeExe from your own legally obtained LegoRR.exe.
 /OpenLRR.exe
 /OpenLRR-d.exe
+
+# Harness build output
+/bin/harness.exe
+/bin/harness.pdb

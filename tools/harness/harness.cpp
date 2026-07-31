@@ -1,0 +1,520 @@
+// harness.cpp : Headless tests and benchmarks for DeepCoreOverhaul's pure logic.
+//
+// WHY
+// ---
+// This project has no installation of the original game, so nothing that touches an
+// exe-overlaid global can be executed at all -- reading one outside the injected process
+// reads unmapped memory. That leaves compile-verification as the only check, and
+// "it compiles" says nothing about whether a wave fires at the right time.
+//
+// This binary closes part of that gap. It links src/openlrr/game/DeepCoreLogic.hpp --
+// which by construction depends on nothing but the standard library -- and exercises the
+// actual arithmetic that ships. It runs anywhere, needs no game, no exe, no DirectX.
+//
+// It is NOT a substitute for play-testing and nothing here should ever be described as
+// such. It verifies that the decisions are correct, not that the engine does what we think
+// when handed them.
+//
+// Build:  MSBuild tools/harness/harness.vcxproj /p:Configuration=Release /p:Platform=x86
+// Run:    bin/harness.exe            (all tests, then benchmarks)
+//         bin/harness.exe --no-bench (tests only -- this is what CI runs)
+//
+// Exit code 0 = every test passed. Non-zero = the number of failures.
+//
+
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include <vector>
+
+#include "../../src/openlrr/game/DeepCoreLogic.hpp"
+
+using namespace DeepCore::Logic;
+
+
+/**********************************************************************************
+ ******** Tiny test framework
+ **********************************************************************************/
+
+namespace
+{
+
+int g_checks = 0;
+int g_failures = 0;
+const char* g_currentTest = "";
+
+void Fail(const char* file, int line, const char* expr, const std::string& detail)
+{
+	g_failures++;
+	std::printf("  FAIL  %s\n        %s:%d\n        %s\n", g_currentTest, file, line, expr);
+	if (!detail.empty()) std::printf("        %s\n", detail.c_str());
+}
+
+#define CHECK(expr)                                                            \
+	do {                                                                       \
+		g_checks++;                                                            \
+		if (!(expr)) Fail(__FILE__, __LINE__, #expr, "");                      \
+	} while (0)
+
+#define CHECK_EQ(actual, expected)                                             \
+	do {                                                                       \
+		g_checks++;                                                            \
+		const auto _a = (actual);                                              \
+		const auto _e = (expected);                                            \
+		if (!(_a == _e)) {                                                     \
+			char _buf[256];                                                    \
+			std::snprintf(_buf, sizeof(_buf), "got %lld, expected %lld",        \
+						  (long long)_a, (long long)_e);                       \
+			Fail(__FILE__, __LINE__, #actual " == " #expected, _buf);          \
+		}                                                                      \
+	} while (0)
+
+#define CHECK_NEAR(actual, expected, tol)                                      \
+	do {                                                                       \
+		g_checks++;                                                            \
+		const double _a = (double)(actual);                                    \
+		const double _e = (double)(expected);                                  \
+		if (std::fabs(_a - _e) > (double)(tol)) {                              \
+			char _buf[256];                                                    \
+			std::snprintf(_buf, sizeof(_buf), "got %.6f, expected %.6f +/- %.6f", \
+						  _a, _e, (double)(tol));                              \
+			Fail(__FILE__, __LINE__, #actual " ~= " #expected, _buf);          \
+		}                                                                      \
+	} while (0)
+
+struct TestCase { const char* name; void (*fn)(void); };
+std::vector<TestCase>& Registry() { static std::vector<TestCase> r; return r; }
+
+struct Register
+{
+	Register(const char* name, void (*fn)(void)) { Registry().push_back({ name, fn }); }
+};
+
+#define TEST(name)                                                             \
+	static void name(void);                                                    \
+	static Register _reg_##name(#name, name);                                  \
+	static void name(void)
+
+
+/**********************************************************************************
+ ******** SplitFields
+ **********************************************************************************/
+
+std::vector<std::string> Split(const char* s)
+{
+	std::vector<std::string> out;
+	SplitFields(s, out);
+	return out;
+}
+
+TEST(split_basic_whitespace)
+{
+	const auto f = Split("RockMonster IceMonster LavaMonster");
+	CHECK_EQ(f.size(), 3u);
+	CHECK(f[0] == "RockMonster");
+	CHECK(f[2] == "LavaMonster");
+}
+
+TEST(split_colon_and_space_are_equivalent)
+{
+	// The engine's own config values use ':' as a level separator, so "1.5 0.6:0.3:0.3"
+	// and "1.5 0.6 0.3 0.3" must mean the same thing.
+	CHECK(Split("1.5 0.6:0.3:0.3") == Split("1.5 0.6 0.3 0.3"));
+}
+
+TEST(split_commas_and_tabs)
+{
+	const auto f = Split("a,b\tc");
+	CHECK_EQ(f.size(), 3u);
+	CHECK(f[1] == "b");
+}
+
+TEST(split_drops_empty_fields)
+{
+	// Runs of separators, and leading/trailing ones, must not produce empty entries --
+	// an empty species name would otherwise reach the name resolver.
+	const auto f = Split("  ::a,,,b::  ");
+	CHECK_EQ(f.size(), 2u);
+	CHECK(f[0] == "a");
+	CHECK(f[1] == "b");
+}
+
+TEST(split_null_is_empty_not_a_crash)
+{
+	// Config lookups return null for an absent key. Every caller would otherwise have to
+	// check, and one of them would eventually forget.
+	std::vector<std::string> out;
+	out.push_back("stale");
+	SplitFields(nullptr, out);
+	CHECK_EQ(out.size(), 0u);
+}
+
+TEST(split_clears_previous_contents)
+{
+	std::vector<std::string> out;
+	SplitFields("a b c", out);
+	SplitFields("x", out);
+	CHECK_EQ(out.size(), 1u);
+	CHECK(out[0] == "x");
+}
+
+TEST(split_separators_only)
+{
+	CHECK_EQ(Split(" : , \t ").size(), 0u);
+}
+
+TEST(split_single_field_no_separators)
+{
+	const auto f = Split("Lazer");
+	CHECK_EQ(f.size(), 1u);
+	CHECK(f[0] == "Lazer");
+}
+
+
+/**********************************************************************************
+ ******** WaveInterval
+ **********************************************************************************/
+
+TEST(interval_starts_at_configured_value)
+{
+	WaveTuning t;
+	CHECK_NEAR(WaveInterval(t, 0.0f), t.intervalSeconds, 0.001);
+}
+
+TEST(interval_halves_after_exactly_one_ramp_period)
+{
+	// The documented shape: interval / (1 + missionTime/ramp). At one ramp period the
+	// divisor is 2. This is the property the design comment claims, so it is pinned here.
+	WaveTuning t;
+	t.intervalSeconds = 150.0f;
+	t.rampSeconds = 600.0f;
+	t.minIntervalSeconds = 1.0f; // out of the way
+	CHECK_NEAR(WaveInterval(t, 600.0f), 75.0f, 0.001);
+	CHECK_NEAR(WaveInterval(t, 1200.0f), 50.0f, 0.001);
+}
+
+TEST(interval_never_falls_below_the_floor)
+{
+	WaveTuning t;
+	t.intervalSeconds = 150.0f;
+	t.rampSeconds = 60.0f;
+	t.minIntervalSeconds = 45.0f;
+	// An hour in, the unclamped value would be ~2.5s.
+	CHECK_NEAR(WaveInterval(t, 3600.0f), 45.0f, 0.001);
+}
+
+TEST(interval_is_monotonically_non_increasing)
+{
+	// Escalation must never go backwards -- a mission that got easier as it ran would be
+	// the opposite of the intent.
+	WaveTuning t;
+	float prev = WaveInterval(t, 0.0f);
+	for (float s = 0.0f; s <= 3600.0f; s += 7.5f) {
+		const float now = WaveInterval(t, s);
+		CHECK(now <= prev + 0.0001f);
+		prev = now;
+	}
+}
+
+TEST(interval_zero_ramp_is_flat)
+{
+	WaveTuning t;
+	t.rampSeconds = 0.0f;
+	CHECK_NEAR(WaveInterval(t, 0.0f), t.intervalSeconds, 0.001);
+	CHECK_NEAR(WaveInterval(t, 99999.0f), t.intervalSeconds, 0.001);
+}
+
+TEST(interval_negative_mission_time_is_treated_as_zero)
+{
+	// Defensive: a caller that ever hands us a negative accumulator must not get a
+	// LARGER interval than at t=0, or a clock glitch would pause the director.
+	WaveTuning t;
+	CHECK_NEAR(WaveInterval(t, -100.0f), WaveInterval(t, 0.0f), 0.001);
+}
+
+
+/**********************************************************************************
+ ******** WaveSize
+ **********************************************************************************/
+
+TEST(size_starts_at_configured_size)
+{
+	WaveTuning t;
+	CHECK_EQ(WaveSize(t, 0, 0), t.size);
+}
+
+TEST(size_grows_every_three_waves)
+{
+	WaveTuning t;
+	t.size = 1;
+	t.sizeMax = 99;
+	t.maxAlive = 99;
+	CHECK_EQ(WaveSize(t, 0, 0), 1);
+	CHECK_EQ(WaveSize(t, 2, 0), 1);
+	CHECK_EQ(WaveSize(t, 3, 0), 2);
+	CHECK_EQ(WaveSize(t, 6, 0), 3);
+}
+
+TEST(size_respects_the_alive_budget)
+{
+	// The budget counts creatures the MAP spawned too. This is what stops the director
+	// stacking on top of an already-hostile level.
+	WaveTuning t;
+	t.size = 4;
+	t.sizeMax = 99;
+	t.maxAlive = 6;
+	CHECK_EQ(WaveSize(t, 0, 4), 2);
+	CHECK_EQ(WaveSize(t, 0, 6), 0);
+	CHECK_EQ(WaveSize(t, 99, 6), 0);
+}
+
+TEST(size_never_negative_when_over_budget)
+{
+	// If the map has already exceeded our budget on its own, the answer is "do not fire",
+	// not a negative count that a caller might use as a loop bound.
+	WaveTuning t;
+	t.maxAlive = 6;
+	CHECK_EQ(WaveSize(t, 0, 20), 0);
+}
+
+TEST(size_respects_the_per_wave_ceiling)
+{
+	WaveTuning t;
+	t.size = 1;
+	t.sizeMax = 4;
+	t.maxAlive = 99;
+	CHECK_EQ(WaveSize(t, 300, 0), 4);
+}
+
+TEST(size_ceiling_order_alive_budget_wins_over_sizemax)
+{
+	// Order matters: the alive budget must bind even when sizeMax would allow more,
+	// otherwise a late wave could exceed maxAlive.
+	WaveTuning t;
+	t.size = 10;
+	t.sizeMax = 8;
+	t.maxAlive = 6;
+	CHECK_EQ(WaveSize(t, 0, 5), 1);
+}
+
+TEST(size_never_exceeds_remaining_budget_over_a_long_mission)
+{
+	// Property test: across a long mission at every alive count, size + alive must never
+	// exceed maxAlive. This is the invariant that keeps a level playable.
+	WaveTuning t;
+	t.size = 2;
+	t.sizeMax = 5;
+	t.maxAlive = 7;
+	for (int wave = 0; wave < 200; wave++) {
+		for (int alive = 0; alive <= 12; alive++) {
+			const int s = WaveSize(t, wave, alive);
+			CHECK(s >= 0);
+			if (s > 0) CHECK(s + alive <= t.maxAlive);
+			CHECK(s <= t.sizeMax);
+		}
+	}
+}
+
+TEST(size_negative_inputs_are_clamped)
+{
+	WaveTuning t;
+	CHECK(WaveSize(t, -5, -5) >= 0);
+}
+
+
+/**********************************************************************************
+ ******** RotationIndex / bounds helpers
+ **********************************************************************************/
+
+TEST(rotation_cycles)
+{
+	CHECK_EQ(RotationIndex(0, 3), 0u);
+	CHECK_EQ(RotationIndex(1, 3), 1u);
+	CHECK_EQ(RotationIndex(3, 3), 0u);
+	CHECK_EQ(RotationIndex(7, 3), 1u);
+}
+
+TEST(rotation_empty_is_zero_not_a_division_by_zero)
+{
+	CHECK_EQ(RotationIndex(5, 0), 0u);
+}
+
+TEST(rotation_negative_step_stays_in_range)
+{
+	for (int i = -50; i < 0; i++) {
+		CHECK(RotationIndex(i, 4) < 4u);
+	}
+}
+
+TEST(index_in_range_rejects_the_id_ceiling)
+{
+	// The concrete case that motivated this helper: LegoObject_ID_Count is 15, and an id
+	// of 15 does not overflow -- in a [20][15] table it aliases [4][0], which is
+	// LegoObject_Building ID 0, the Tool Store. 15 must be rejected.
+	CHECK(IndexInRange(14, 15));
+	CHECK(!IndexInRange(15, 15));
+	CHECK(!IndexInRange(-1, 15));
+}
+
+TEST(clamp_count_reports_only_when_it_acted)
+{
+	// The bool return exists so a correct config stays silent and a broken one is loud
+	// exactly once.
+	unsigned int v = 10;
+	CHECK(!ClampCount(v, 16));
+	CHECK_EQ(v, 10u);
+
+	v = 40;
+	CHECK(ClampCount(v, 16));
+	CHECK_EQ(v, 16u);
+
+	v = 16;
+	CHECK(!ClampCount(v, 16)); // boundary is allowed
+	CHECK_EQ(v, 16u);
+}
+
+
+/**********************************************************************************
+ ******** Fuzz: malformed input must never crash or hang
+ **********************************************************************************/
+
+TEST(fuzz_splitfields_never_crashes)
+{
+	// Deterministic pseudo-random byte soup. Config files are user-editable and a modder
+	// will eventually feed this something absurd; the requirement is warn-and-skip, never
+	// terminate and never corrupt. There is nothing to corrupt here, so the bar is: it
+	// returns, and every field it produces is non-empty.
+	unsigned int seed = 12345u;
+	auto next = [&seed]() { seed = seed * 1103515245u + 12345u; return (seed >> 16) & 0x7fff; };
+
+	std::vector<std::string> out;
+	for (int iter = 0; iter < 20000; iter++) {
+		const int len = (int)(next() % 64);
+		std::string s;
+		for (int i = 0; i < len; i++) {
+			// Bias towards separators and printable junk, including quotes and newlines.
+			static const char alphabet[] = " \t:,;abcXYZ0129_.-\"'\n\r\\/[]{}#";
+			s.push_back(alphabet[next() % (sizeof(alphabet) - 1)]);
+		}
+		SplitFields(s.c_str(), out);
+		for (const std::string& f : out) {
+			CHECK(!f.empty());
+			CHECK(f.find(' ') == std::string::npos);
+			CHECK(f.find(':') == std::string::npos);
+			CHECK(f.find(',') == std::string::npos);
+			CHECK(f.find('\t') == std::string::npos);
+		}
+	}
+}
+
+TEST(fuzz_wave_maths_never_produces_an_unsafe_answer)
+{
+	// The invariant that matters: whatever garbage a config supplies, the director must
+	// never be told to spawn a negative count, never exceed the alive budget, and never
+	// be handed a non-finite interval it would compare a timer against.
+	unsigned int seed = 987654321u;
+	auto next = [&seed]() { seed = seed * 1103515245u + 12345u; return (seed >> 16) & 0x7fff; };
+	auto nextf = [&next](float lo, float hi) {
+		return lo + (hi - lo) * ((float)next() / 32767.0f);
+	};
+
+	for (int iter = 0; iter < 50000; iter++) {
+		WaveTuning t;
+		t.intervalSeconds    = nextf(-1000.0f, 10000.0f);
+		t.rampSeconds        = nextf(-1000.0f, 10000.0f);
+		t.minIntervalSeconds = nextf(-1000.0f, 10000.0f);
+		t.size               = (int)next() % 200 - 50;
+		t.sizeMax            = (int)next() % 200 - 50;
+		t.maxAlive           = (int)next() % 200 - 50;
+
+		const float missionTime = nextf(-10000.0f, 100000.0f);
+		const int alive = (int)next() % 100 - 20;
+
+		const float interval = WaveInterval(t, missionTime);
+		CHECK(!std::isnan(interval));
+		CHECK(!std::isinf(interval));
+
+		const int size = WaveSize(t, (int)next() % 1000, alive);
+		CHECK(size >= 0);
+		CHECK(size <= (t.sizeMax > 0 ? t.sizeMax : 0));
+		if (size > 0 && alive >= 0) CHECK(size + alive <= t.maxAlive);
+	}
+}
+
+
+/**********************************************************************************
+ ******** Benchmarks
+ **********************************************************************************/
+
+double BenchMillis(void (*fn)(void), int iterations)
+{
+	const auto start = std::chrono::steady_clock::now();
+	for (int i = 0; i < iterations; i++) fn();
+	const auto end = std::chrono::steady_clock::now();
+	return std::chrono::duration<double, std::milli>(end - start).count();
+}
+
+void BenchSplitOnce(void)
+{
+	static std::vector<std::string> out;
+	SplitFields("Brute RockMonster 1.45 0.55:0.30:0.30", out);
+}
+
+void RunBenchmarks(void)
+{
+	std::printf("\nBenchmarks (informational -- these measure our own code, not the game)\n");
+
+	const int N = 200000;
+	const double ms = BenchMillis(BenchSplitOnce, N);
+	std::printf("  SplitFields   %8d calls  %8.2f ms  %8.3f us/call\n",
+				N, ms, (ms * 1000.0) / N);
+
+	// The scheduling maths runs once per frame at most; this exists to prove it is
+	// nowhere near a frame budget, not because it was ever suspected.
+	const auto start = std::chrono::steady_clock::now();
+	WaveTuning t;
+	volatile float sink = 0.0f;
+	const int M = 5000000;
+	for (int i = 0; i < M; i++) sink += WaveInterval(t, (float)(i % 4000));
+	const auto end = std::chrono::steady_clock::now();
+	const double ms2 = std::chrono::duration<double, std::milli>(end - start).count();
+	std::printf("  WaveInterval  %8d calls  %8.2f ms  %8.4f us/call\n",
+				M, ms2, (ms2 * 1000.0) / M);
+
+	std::printf("\n  NOTE: these are harness numbers on this machine. They say nothing about\n"
+				"        in-game frame cost, which cannot be measured from here.\n");
+}
+
+} // namespace
+
+
+/**********************************************************************************
+ ******** Entry point
+ **********************************************************************************/
+
+int main(int argc, char** argv)
+{
+	bool runBench = true;
+	for (int i = 1; i < argc; i++) {
+		if (std::strcmp(argv[i], "--no-bench") == 0) runBench = false;
+	}
+
+	std::printf("DeepCoreOverhaul harness -- pure-logic tests\n");
+	std::printf("(compile-verified logic only; this is NOT play-testing)\n\n");
+
+	for (const TestCase& tc : Registry()) {
+		g_currentTest = tc.name;
+		const int before = g_failures;
+		tc.fn();
+		if (g_failures == before) std::printf("  ok    %s\n", tc.name);
+	}
+
+	std::printf("\n%d checks in %d tests, %d failure(s)\n",
+				g_checks, (int)Registry().size(), g_failures);
+
+	if (runBench && g_failures == 0) RunBenchmarks();
+
+	return g_failures;
+}

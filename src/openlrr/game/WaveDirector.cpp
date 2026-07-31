@@ -11,6 +11,7 @@
 #include "world/Camera.h"
 #include "interface/InfoMessages.h"
 #include "Game.h"
+#include "DeepCoreLogic.hpp"
 #include "DeepCore.hpp"
 #include "WaveDirector.hpp"
 
@@ -278,6 +279,22 @@ void Telegraph(const std::vector<Point2I>& blocks)
 } // namespace
 
 
+/// Snapshot the live settings into the pure tuning struct the scheduling maths uses.
+/// Keeping this the ONLY place settings are read for scheduling means the harness tests
+/// exactly the arithmetic that ships.
+static DeepCore::Logic::WaveTuning CurrentTuning(void)
+{
+	DeepCore::Logic::WaveTuning t;
+	t.intervalSeconds    = DeepCore::settings.waveIntervalSeconds;
+	t.rampSeconds        = DeepCore::settings.waveRampSeconds;
+	t.minIntervalSeconds = DeepCore::settings.waveMinIntervalSeconds;
+	t.size               = DeepCore::settings.waveSize;
+	t.sizeMax            = DeepCore::settings.waveSizeMax;
+	t.maxAlive           = DeepCore::settings.waveMaxAlive;
+	return t;
+}
+
+
 void DeepCore::Waves::Update(real32 elapsedReal)
 {
 	using namespace LegoRR;
@@ -334,14 +351,10 @@ void DeepCore::Waves::Update(real32 elapsedReal)
 	// ---- Waiting -------------------------------------------------------------
 
 	// Waves come faster as the mission runs on, floored so it never becomes a stream.
-	real32 interval = settings.waveIntervalSeconds;
-	if (settings.waveRampSeconds > 0.0f) {
-		const real32 ramp = _s.missionTime / settings.waveRampSeconds;
-		interval = settings.waveIntervalSeconds / (1.0f + ramp);
-		if (interval < settings.waveMinIntervalSeconds) {
-			interval = settings.waveMinIntervalSeconds;
-		}
-	}
+	// The arithmetic lives in DeepCoreLogic.hpp so tools/harness/ can exercise it without
+	// the game -- this file only reads state and applies the answer.
+	const DeepCore::Logic::WaveTuning tuning = CurrentTuning();
+	const real32 interval = DeepCore::Logic::WaveInterval(tuning, _s.missionTime);
 
 	if (_s.timer < interval) return;
 
@@ -362,11 +375,10 @@ void DeepCore::Waves::Update(real32 elapsedReal)
 		return;
 	}
 
-	// Wave size grows with the wave number, clipped by the remaining alive budget.
-	sint32 size = settings.waveSize + (_s.waveNumber / 3);
-	if (size > settings.waveMaxAlive - alive) size = settings.waveMaxAlive - alive;
-	if (size > settings.waveSizeMax)          size = settings.waveSizeMax;
-	if (size < 1)                             return;
+	// Wave size grows with the wave number, clipped by the remaining alive budget and by
+	// the per-wave ceiling. Also in DeepCoreLogic.hpp, and covered by the harness.
+	const sint32 size = DeepCore::Logic::WaveSize(tuning, _s.waveNumber, alive);
+	if (size < 1) return;
 
 	_s.pendingBlocks.clear();
 	for (sint32 i = 0; i < size; i++) {

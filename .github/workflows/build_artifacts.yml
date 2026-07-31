@@ -60,9 +60,26 @@ jobs:
           fi
           echo "No tracked .exe/.dll/.wad files."
 
+  # Runs the pure-logic tests and fuzzers. This is the only thing in the project that
+  # actually EXECUTES shipped decision-making code -- the game itself cannot be run here --
+  # so it gates the builds rather than merely reporting.
+  Harness:
+    runs-on: windows-latest
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+      - name: Build harness
+        run: msbuild tools/harness/harness.vcxproj /p:Configuration=Release /p:Platform=x86 /p:SolutionDir=$PWD\
+      - name: Run tests and fuzzers
+        run: |
+          .\bin\harness.exe --no-bench
+          if ($LASTEXITCODE -ne 0) { throw "harness reported $LASTEXITCODE failure(s)" }
+
   Release_build:
     runs-on: windows-latest
-    needs: [Address_space_lint, No_game_binaries]
+    needs: [Address_space_lint, No_game_binaries, Harness]
     steps:
       - name: Clone repo
         uses: actions/checkout@v4
@@ -84,7 +101,7 @@ jobs:
 
   Debug_build:
     runs-on: windows-latest
-    needs: [Address_space_lint, No_game_binaries]
+    needs: [Address_space_lint, No_game_binaries, Harness]
     steps:
       - name: Clone repo
         uses: actions/checkout@v4
