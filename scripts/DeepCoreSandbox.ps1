@@ -21,8 +21,9 @@
 
 param(
     [switch]$NoUpdate,        # skip the git pull
-    [switch]$Headless,        # summary instead of the animated view
-    [int]$Seed = 0,           # 0 = pick a new one each launch
+    [switch]$Sandbox,         # run the headless simulation viewer instead of the game
+    [switch]$Headless,        # text summary only
+    [int]$Seed = 0,
     [int]$Seconds = 600
 )
 
@@ -38,10 +39,11 @@ function Dim($t)  { Write-Host $t -ForegroundColor DarkGray }
 $host.UI.RawUI.WindowTitle = "DeepCoreOverhaul Sandbox"
 
 Write-Host ""
-Write-Host "  DeepCoreOverhaul -- Sandbox" -ForegroundColor Cyan
-Write-Host "  ==========================" -ForegroundColor Cyan
-Dim   "  Runs this project's own systems on a generated cavern."
-Dim   "  This is NOT the 1999 game -- that needs your own installed copy."
+Write-Host "  DeepCore" -ForegroundColor Cyan
+Write-Host "  ========" -ForegroundColor Cyan
+Dim   "  A subterranean mining game built on this project's own systems."
+Dim   "  NOT LEGO Rock Raiders -- that is a 1999 commercial game this cannot"
+Dim   "  contain or reproduce. For a faithful free remake, play Manic Miners."
 Write-Host ""
 
 Push-Location $Repo
@@ -94,8 +96,12 @@ try {
     # -----------------------------------------------------------------------
     # 2. Build, but only when needed
     # -----------------------------------------------------------------------
-    $exe = Join-Path $Repo "bin\sandbox.exe"
-    $stamp = Join-Path $Repo "bin\.sandbox-built-at"
+    # The GAME is the default. The sandbox viewer is still there behind -Sandbox, because
+    # it is what CI asserts on and what makes the director's decisions inspectable.
+    $useGame = -not ($Sandbox -or $Headless)
+    $exe   = Join-Path $Repo $(if ($useGame) { "bin\DeepCoreGame.exe" } else { "bin\sandbox.exe" })
+    $proj  = Join-Path $Repo $(if ($useGame) { "src\game\deepcoregame.vcxproj" } else { "src\sandbox\sandbox.vcxproj" })
+    $stamp = Join-Path $Repo $(if ($useGame) { "bin\.game-built-at" } else { "bin\.sandbox-built-at" })
 
     if (-not (Test-Path $exe)) { $rebuild = $true }
     elseif (Test-Path $stamp) {
@@ -129,8 +135,6 @@ try {
             }
         }
         else {
-            $proj = Join-Path $Repo "src\sandbox\sandbox.vcxproj"
-
             # No /p:SolutionDir here, deliberately. Passing a path that ends in a backslash
             # to a native command from PowerShell mangles it -- the trailing \ escapes the
             # closing quote and swallows the following arguments, which produced a genuinely
@@ -175,11 +179,17 @@ try {
     Write-Host ""
     Start-Sleep -Milliseconds 700
 
-    $args = @()
-    if ($Headless) { $args += "--seed"; $args += "$Seed" }
-    else           { $args += "--view"; $args += "--seed"; $args += "$Seed"; $args += "--seconds"; $args += "$Seconds" }
-
-    & $exe @args
+    if ($useGame) {
+        Good "  Launching the game. Close its window to return here."
+        Write-Host ""
+        & $exe | Out-Null
+    }
+    else {
+        $args = @()
+        if ($Headless) { $args += "--seed"; $args += "$Seed" }
+        else           { $args += "--view"; $args += "--seed"; $args += "$Seed"; $args += "--seconds"; $args += "$Seconds" }
+        & $exe @args
+    }
 
     Write-Host ""
     Good "  Run complete."
