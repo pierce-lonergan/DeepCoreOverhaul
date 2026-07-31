@@ -397,29 +397,40 @@ void Game::Update(float dt)
 // Rendering
 // --------------------------------------------------------------------------
 
+// A lit box.
+//
+// The previous version multiplied each face by a CONSTANT chosen per local axis, which
+// meant a limb rotated forty-five degrees shaded exactly the same as one at rest. Every
+// joint rotation in Anim.hpp was therefore invisible to the eye: the geometry moved and
+// the image did not change. Emitting real normals and letting the fixed-function light
+// rig shade them is what makes rotation legible, and it is the reason this is a bigger
+// visual win than any amount of extra geometry would have been.
+//
+// `ao` scales the vertex colour and is used by the terrain to darken creases; character
+// parts pass 1.0.
 void Cube(float cx, float cy, float cz, float sx, float sy, float sz,
-		  float r, float gr, float b)
+		  float r, float gr, float b, float ao = 1.0f)
 {
 	const float x0 = cx - sx, x1 = cx + sx;
 	const float y0 = cy,      y1 = cy + sy * 2;
 	const float z0 = cz - sz, z1 = cz + sz;
 
-	// Per-face shading fakes a light without needing normals or a light rig, and keeps
-	// every face readable no matter how the camera is turned.
-	struct F { float n[3]; float v[4][3]; float k; };
-	const F faces[6] = {
-		{ {0,1,0},  {{x0,y1,z0},{x1,y1,z0},{x1,y1,z1},{x0,y1,z1}}, 1.00f }, // top
-		{ {0,-1,0}, {{x0,y0,z1},{x1,y0,z1},{x1,y0,z0},{x0,y0,z0}}, 0.35f },
-		{ {0,0,-1}, {{x0,y0,z0},{x1,y0,z0},{x1,y1,z0},{x0,y1,z0}}, 0.72f },
-		{ {0,0,1},  {{x1,y0,z1},{x0,y0,z1},{x0,y1,z1},{x1,y1,z1}}, 0.60f },
-		{ {-1,0,0}, {{x0,y0,z1},{x0,y0,z0},{x0,y1,z0},{x0,y1,z1}}, 0.82f },
-		{ {1,0,0},  {{x1,y0,z0},{x1,y0,z1},{x1,y1,z1},{x1,y1,z0}}, 0.50f },
-	};
+	glColor3f(r * ao, gr * ao, b * ao);
 	glBegin(GL_QUADS);
-	for (const F& f : faces) {
-		glColor3f(r * f.k, gr * f.k, b * f.k);
-		for (int i = 0; i < 4; i++) glVertex3fv(f.v[i]);
-	}
+
+	glNormal3f(0, 1, 0);
+	glVertex3f(x0,y1,z0); glVertex3f(x1,y1,z0); glVertex3f(x1,y1,z1); glVertex3f(x0,y1,z1);
+	glNormal3f(0, -1, 0);
+	glVertex3f(x0,y0,z1); glVertex3f(x1,y0,z1); glVertex3f(x1,y0,z0); glVertex3f(x0,y0,z0);
+	glNormal3f(0, 0, -1);
+	glVertex3f(x0,y0,z0); glVertex3f(x1,y0,z0); glVertex3f(x1,y1,z0); glVertex3f(x0,y1,z0);
+	glNormal3f(0, 0, 1);
+	glVertex3f(x1,y0,z1); glVertex3f(x0,y0,z1); glVertex3f(x0,y1,z1); glVertex3f(x1,y1,z1);
+	glNormal3f(-1, 0, 0);
+	glVertex3f(x0,y0,z1); glVertex3f(x0,y0,z0); glVertex3f(x0,y1,z0); glVertex3f(x0,y1,z1);
+	glNormal3f(1, 0, 0);
+	glVertex3f(x1,y0,z0); glVertex3f(x1,y0,z1); glVertex3f(x1,y1,z1); glVertex3f(x1,y1,z0);
+
 	glEnd();
 }
 
@@ -625,6 +636,29 @@ void DrawMonster(const Monster& mo)
 	glPopMatrix();
 }
 
+/// How enclosed a tile is, 0 (open) to 1 (boxed in).
+///
+/// Per-vertex ambient occlusion is the single largest static visual gain available here and
+/// costs one neighbour count. Creases between rock and floor darken, open chambers stay
+/// bright, and the world stops looking like a flat field of identical cubes. It is also
+/// exact rather than approximate -- unlike a screen-space method, which would sample the
+/// depth buffer to guess at what we can simply look up.
+float TileAO(const Level& L, int x, int z)
+{
+	int solid = 0, total = 0;
+	for (int dz = -1; dz <= 1; dz++) {
+		for (int dx = -1; dx <= 1; dx++) {
+			if (!dx && !dz) continue;
+			total++;
+			if (!L.InBounds(x + dx, z + dz)) { solid++; continue; }
+			const Block& n = L.At(x + dx, z + dz);
+			if (!n.Has(BLOCK_FLOOR) && !n.Has(BLOCK_WATER)) solid++;
+		}
+	}
+	const float occ = (float)solid / (float)(total ? total : 1);
+	return 1.0f - occ * 0.55f;     // never fully black; unreadable is worse than flat
+}
+
 void RenderWorld()
 {
 	const Level& L = g.level;
@@ -632,25 +666,26 @@ void RenderWorld()
 	for (int z = 0; z < L.Height(); z++) {
 		for (int x = 0; x < L.Width(); x++) {
 			const Block& b = L.At(x, z);
+			const float ao = TileAO(L, x, z);
 			const bool solid = !b.Has(BLOCK_FLOOR) && !b.Has(BLOCK_WATER);
 
 			if (b.Has(BLOCK_HIDDEN) && solid) {
-				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.13f, 0.115f, 0.10f);
+				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.13f, 0.115f, 0.10f, ao);
 				continue;
 			}
 			if (b.Has(BLOCK_CRYSTAL_SEAM)) {
-				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.30f, 0.20f, 0.34f);
+				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.30f, 0.20f, 0.34f, ao);
 				const float p = 0.65f + 0.35f * std::sin(g.time * 3.5f + (float)(x * 3 + z));
 				Cube((float)x, 0.85f, (float)z, 0.20f, 0.22f, 0.20f, 0.75f * p, 0.35f * p, 1.0f * p);
 				continue;
 			}
 			if (b.Has(BLOCK_ORE_SEAM)) {
-				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.34f, 0.24f, 0.15f);
+				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.34f, 0.24f, 0.15f, ao);
 				Cube((float)x, 0.85f, (float)z, 0.18f, 0.14f, 0.18f, 0.62f, 0.44f, 0.22f);
 				continue;
 			}
 			if (solid) {                     // exposed wall face
-				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.34f, 0.29f, 0.25f);
+				Cube((float)x, 0, (float)z, 0.5f, 0.62f, 0.5f, 0.34f, 0.29f, 0.25f, ao);
 				continue;
 			}
 			if (b.Has(BLOCK_WATER)) {
@@ -662,7 +697,7 @@ void RenderWorld()
 				Cube((float)x, 0, (float)z, 0.42f, 0.34f, 0.42f, 0.82f, 0.62f, 0.16f);
 				continue;
 			}
-			Cube((float)x, -0.14f, (float)z, 0.5f, 0.06f, 0.5f, 0.26f, 0.24f, 0.22f); // floor
+			Cube((float)x, -0.14f, (float)z, 0.5f, 0.06f, 0.5f, 0.26f, 0.24f, 0.22f, ao); // floor
 		}
 	}
 
@@ -791,11 +826,19 @@ LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l)
 	return ::DefWindowProcA(h, m, w, l);
 }
 
-void DrawText2D(HDC dc, int x, int y, const char* s, COLORREF c)
+GLuint g_fontBase = 0;
+
+/// Text through GL display lists rather than GDI. Coordinates are pixels from the top-left,
+/// matching how the HUD used to be positioned.
+void DrawText2D(int x, int y, const char* s, float r, float gr, float b)
 {
-	::SetBkMode(dc, TRANSPARENT);
-	::SetTextColor(dc, c);
-	::TextOutA(dc, x, y, s, (int)strlen(s));
+	if (!g_fontBase) return;
+	glColor3f(r, gr, b);
+	glRasterPos2i(x, y);
+	glPushAttrib(GL_LIST_BIT);
+	glListBase(g_fontBase);
+	glCallLists((GLsizei)strlen(s), GL_UNSIGNED_BYTE, s);
+	glPopAttrib();
 }
 
 } // namespace
@@ -820,6 +863,10 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 	HDC dc = ::GetDC(g_hwnd);
 	PIXELFORMATDESCRIPTOR pfd{};
 	pfd.nSize = sizeof(pfd); pfd.nVersion = 1;
+	// PFD_SUPPORT_GDI and PFD_DOUBLEBUFFER are mutually exclusive, so the previous build --
+	// which asked for double buffering and then called TextOutA on the same DC -- was
+	// relying on undefined behaviour that happened to work on this driver. The HUD is now
+	// drawn with wglUseFontBitmaps display lists, which is a supported GL path.
 	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
 	pfd.iPixelType = PFD_TYPE_RGBA;
 	pfd.cColorBits = 32; pfd.cDepthBits = 24;
@@ -832,6 +879,27 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glClearColor(0.03f, 0.035f, 0.05f, 1.0f);
+	// Two-light rig. A warm key from above-front reads as lamplight and models the
+	// characters' rotations; a cool fill from behind keeps the shadowed side from going to
+	// mud, which is what actually makes a dark cave readable rather than merely dark.
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+	glShadeModel(GL_SMOOTH);
+
+	const float keyDir[4]  = { 0.35f, 0.86f, 0.38f, 0.0f };   // directional
+	const float keyCol[4]  = { 1.00f, 0.88f, 0.70f, 1.0f };
+	const float fillDir[4] = { -0.45f, 0.30f, -0.75f, 0.0f };
+	const float fillCol[4] = { 0.30f, 0.42f, 0.62f, 1.0f };
+	const float ambient[4] = { 0.26f, 0.28f, 0.34f, 1.0f };
+	glLightfv(GL_LIGHT0, GL_POSITION, keyDir);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, keyCol);
+	glLightfv(GL_LIGHT1, GL_POSITION, fillDir);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, fillCol);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
+
 	glEnable(GL_FOG);
 	const float fogc[4] = { 0.03f, 0.035f, 0.05f, 1.0f };
 	glFogfv(GL_FOG_COLOR, fogc);
@@ -841,10 +909,19 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 
 	HFONT font = ::CreateFontA(16, 0, 0, 0, FW_SEMIBOLD, 0, 0, 0, ANSI_CHARSET,
 		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE, "Consolas");
+	::SelectObject(dc, font);
+	g_fontBase = glGenLists(256);
+	::wglUseFontBitmapsA(dc, 0, 256, g_fontBase);
 
 	g.NewLevel(::GetTickCount());
 
-	DWORD last = ::GetTickCount();
+	// QueryPerformanceCounter, not GetTickCount. GetTickCount quantises to about 15.6 ms,
+	// so at 60 Hz a frame delta is only ever 0 or 15 or 31 -- which visibly defeats every
+	// eased curve and every spring in Anim.hpp. Easing that is fed a stepped clock looks
+	// exactly like no easing at all.
+	LARGE_INTEGER freq, prevQpc;
+	::QueryPerformanceFrequency(&freq);
+	::QueryPerformanceCounter(&prevQpc);
 	MSG msg; bool run = true;
 
 	while (run) {
@@ -854,8 +931,10 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 		}
 		if (!run) break;
 
-		const DWORD now = ::GetTickCount();
-		float dt = (float)(now - last) / 1000.0f; last = now;
+		LARGE_INTEGER nowQpc;
+		::QueryPerformanceCounter(&nowQpc);
+		float dt = (float)(nowQpc.QuadPart - prevQpc.QuadPart) / (float)freq.QuadPart;
+		prevQpc = nowQpc;
 		if (dt > 0.1f) dt = 0.1f;
 
 		// WASD pans the focus in camera space.
@@ -884,25 +963,46 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
 
 		RenderWorld();
 
-		// HUD via GDI on top of the GL surface.
-		::wglMakeCurrent(dc, rc);
-		HDC hud = dc;
-		::SelectObject(hud, font);
+		// HUD as a proper GL overlay: orthographic, lighting and depth off, so text is not
+		// shaded by the cave's light rig and never sorts behind the world.
+		glDisable(GL_LIGHTING);
+		glDisable(GL_FOG);
+		glDisable(GL_DEPTH_TEST);
+		glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
+		glOrtho(0, W, H, 0, -1, 1);
+		glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity();
+
+		// A band behind the text, so it stays legible over bright rock.
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glColor4f(0.04f, 0.05f, 0.07f, 0.72f);
+		glBegin(GL_QUADS);
+		glVertex2i(0, 0); glVertex2i(W, 0); glVertex2i(W, 26); glVertex2i(0, 26);
+		glVertex2i(0, H - 24); glVertex2i(W, H - 24); glVertex2i(W, H); glVertex2i(0, H);
+		glEnd();
+
 		char line[300];
 		std::snprintf(line, sizeof(line),
-			" Crystals %d/%d   Crew %d   Monsters %d   Wave %d   next %.0fs %s",
+			" Crystals %d/%d    Crew %d    Monsters %d    Wave %d    next %.0fs%s",
 			g.crystals, CRYSTAL_GOAL, (int)g.miners.size(), (int)g.monsters.size(),
 			g.waveNumber, (WaveInterval(g.wave, g.time) - g.waveTimer) > 0
 							? (WaveInterval(g.wave, g.time) - g.waveTimer) : 0.0f,
-			g.paused ? "  [PAUSED]" : "");
-		DrawText2D(hud, 8, 8, line, RGB(240, 240, 245));
-		DrawText2D(hud, 8, H - 24,
-			" LMB select / select-all   RMB move or drill   MMB-drag orbit   wheel zoom   WASD pan   R new   Esc quit",
-			RGB(150, 150, 165));
+			g.paused ? "   [PAUSED]" : "");
+		DrawText2D(8, 18, line, 0.94f, 0.94f, 0.97f);
+		DrawText2D(8, H - 8,
+			" LMB select   RMB move/drill   MMB-drag orbit   wheel zoom   WASD pan   R new   Esc quit",
+			0.58f, 0.58f, 0.66f);
 		if (g.bannerT > 0 && !g.banner.empty())
-			DrawText2D(hud, 8, 30, g.banner.c_str(), RGB(255, 220, 130));
-		if (g.won)  DrawText2D(hud, W / 2 - 170, H / 2, "MISSION COMPLETE  -  R for a new cavern", RGB(130, 255, 150));
-		if (g.lost) DrawText2D(hud, W / 2 - 150, H / 2, "CREW LOST  -  R to try again", RGB(255, 120, 120));
+			DrawText2D(8, 46, g.banner.c_str(), 1.0f, 0.86f, 0.5f);
+		if (g.won)  DrawText2D(W / 2 - 170, H / 2, "MISSION COMPLETE  -  R for a new cavern", 0.5f, 1.0f, 0.6f);
+		if (g.lost) DrawText2D(W / 2 - 150, H / 2, "CREW LOST  -  R to try again", 1.0f, 0.45f, 0.45f);
+
+		glDisable(GL_BLEND);
+		glMatrixMode(GL_PROJECTION); glPopMatrix();
+		glMatrixMode(GL_MODELVIEW); glPopMatrix();
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_FOG);
+		glEnable(GL_LIGHTING);
 
 		::SwapBuffers(dc);
 		::Sleep(8);
