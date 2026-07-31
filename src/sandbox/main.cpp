@@ -214,9 +214,34 @@ int RunSelfTest()
 			}
 		}
 
-		// A 900-second mission with a 60s opening interval must produce waves. Zero would
-		// mean the director never fired, which is the failure mode a comment cannot catch.
-		if (sim.TotalWaves() == 0) fail(seed, "no waves in 900 simulated seconds");
+		// LIVENESS, not just safety.
+		//
+		// Every invariant above is a "never" -- never exceed the budget, never spawn in the
+		// base, never arrive untelegraphed. A director that does NOTHING satisfies all of
+		// them perfectly, and that is exactly the bug a real run found: water had eaten the
+		// map and the base standoff rejected every remaining tile, so 40 seeds passed while
+		// the first two minutes produced no waves at all.
+		//
+		// So assert that something actually happens. A 900-second mission opening at a 60s
+		// interval should comfortably produce a dozen waves; three is a floor low enough to
+		// tolerate an unlucky cavern and high enough to catch inertness.
+		if (sim.TotalWaves() < 3) {
+			fail(seed, "fewer than 3 waves in 900 simulated seconds -- the director is inert");
+		}
+		if (sim.TotalSpawned() < 1) {
+			fail(seed, "no creature ever spawned");
+		}
+		if (sim.CuesFired(ThreatCue::Arrival) < 1) {
+			fail(seed, "no arrival cue ever fired");
+		}
+
+		// And that the map is actually playable: water taken as a fraction of the whole map
+		// rather than of the floor once submerged more than half the walkable space.
+		const std::size_t floorTiles = sim.Map().CountFlag(BLOCK_FLOOR);
+		const std::size_t waterTiles = sim.Map().CountFlag(BLOCK_WATER);
+		if (waterTiles > floorTiles) {
+			fail(seed, "more water than floor -- the generator drowned the cavern");
+		}
 
 		// Escalation must actually escalate: the last interval must be shorter than the
 		// first, or the ramp is not doing anything.
