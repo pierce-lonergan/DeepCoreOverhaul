@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "../../src/openlrr/game/DeepCoreLogic.hpp"
+#include "../../src/openlrr/game/DeepCoreDenseIndex.hpp"
 
 using namespace DeepCore::Logic;
 
@@ -492,6 +493,194 @@ TEST(fuzz_quiet_detector_fires_only_on_edges)
 
 
 /**********************************************************************************
+ ******** DenseLiveIndex -- the A1 optimisation, tested and measured here
+ **********************************************************************************/
+
+// A stand-in for LegoObject: the real one is 1036 bytes, and the SIZE is the point --
+// the existing walk touches one pointer per slot at that stride and misses cache on
+// essentially every one. Anything smaller would flatter the old path.
+struct FakeItem
+{
+	FakeItem* nextFree;              // ListSet liveness: nextFree == this means DEAD
+	unsigned char pad[1036 - sizeof(void*)];
+};
+
+// Mirrors ListSet's geometric layout: list i holds 2^i items, capacity 2^listCount - 1.
+struct FakeListSet
+{
+	std::vector<std::vector<FakeItem>> lists;
+	std::size_t listCount = 0;
+
+	void Grow(std::size_t count)
+	{
+		listCount = count;
+		lists.clear();
+		for (std::size_t i = 0; i < count; i++) lists.emplace_back((std::size_t)1u << i);
+		for (auto& l : lists) for (auto& it : l) it.nextFree = &it;  // all dead initially
+	}
+	std::size_t Capacity() const { return ((std::size_t)1u << listCount) - 1u; }
+
+	FakeItem* At(std::size_t slot)
+	{
+		for (std::size_t i = 0; i < listCount; i++) {
+			const std::size_t n = (std::size_t)1u << i;
+			if (slot < n) return &lists[i][slot];
+			slot -= n;
+		}
+		return nullptr;
+	}
+	static bool Alive(const FakeItem* it) { return it->nextFree != it; }
+	void SetAlive(std::size_t slot, bool alive)
+	{
+		FakeItem* it = At(slot);
+		it->nextFree = alive ? nullptr : it;
+	}
+	// The existing enumeration: full walk of every slot, liveness read per item.
+	std::size_t WalkCountAlive()
+	{
+		std::size_t n = 0;
+		for (std::size_t i = 0; i < listCount; i++)
+			for (auto& it : lists[i]) if (Alive(&it)) n++;
+		return n;
+	}
+};
+
+using Index = DeepCore::Detail::DenseLiveIndex<FakeItem>;
+
+static void RebuildFrom(Index& idx, FakeListSet& ls)
+{
+	idx.RebuildBegin();
+	for (std::size_t s = 0; s < ls.Capacity(); s++)
+		if (FakeListSet::Alive(ls.At(s))) idx.RebuildAdd(s, ls.At(s));
+	idx.RebuildEnd();
+}
+
+TEST(dense_starts_dirty)
+{
+	// Dirty by default is the safety property: an index that has never been built must
+	// never be trusted, so the default cannot be "clean and empty".
+	Index idx;
+	idx.Reserve(255);
+	CHECK(idx.Dirty());
+}
+
+TEST(dense_rebuild_matches_the_full_walk)
+{
+	FakeListSet ls; ls.Grow(8);                 // capacity 255
+	for (std::size_t s = 0; s < 255; s += 3) ls.SetAlive(s, true);
+	Index idx; idx.Reserve(ls.Capacity());
+	RebuildFrom(idx, ls);
+	CHECK(!idx.Dirty());
+	CHECK_EQ(idx.Count(), ls.WalkCountAlive());
+}
+
+TEST(dense_add_and_remove_track_the_container)
+{
+	FakeListSet ls; ls.Grow(6);                 // capacity 63
+	Index idx; idx.Reserve(ls.Capacity());
+	RebuildFrom(idx, ls);
+
+	for (std::size_t s = 0; s < 20; s++) { ls.SetAlive(s, true); idx.OnAdd(s, ls.At(s)); }
+	CHECK_EQ(idx.Count(), ls.WalkCountAlive());
+
+	// Remove from the front, the middle and the end -- the swap-with-last path is where
+	// an index like this goes wrong.
+	for (std::size_t s : { (std::size_t)0, (std::size_t)9, (std::size_t)19 }) {
+		ls.SetAlive(s, false); idx.OnRemove(s);
+	}
+	CHECK_EQ(idx.Count(), ls.WalkCountAlive());
+	CHECK(!idx.IsTracked(0));
+	CHECK(!idx.IsTracked(9));
+	CHECK(!idx.IsTracked(19));
+	CHECK(idx.IsTracked(5));
+}
+
+TEST(dense_add_is_idempotent)
+{
+	// A duplicate would cause every consumer to process the same object twice.
+	FakeListSet ls; ls.Grow(5);
+	Index idx; idx.Reserve(ls.Capacity());
+	RebuildFrom(idx, ls);
+	ls.SetAlive(3, true);
+	idx.OnAdd(3, ls.At(3));
+	idx.OnAdd(3, ls.At(3));
+	idx.OnAdd(3, ls.At(3));
+	CHECK_EQ(idx.Count(), 1u);
+}
+
+TEST(dense_remove_of_untracked_slot_is_harmless)
+{
+	FakeListSet ls; ls.Grow(5);
+	Index idx; idx.Reserve(ls.Capacity());
+	RebuildFrom(idx, ls);
+	idx.OnRemove(7);
+	idx.OnRemove(0);
+	CHECK_EQ(idx.Count(), 0u);
+}
+
+TEST(dense_out_of_range_marks_dirty_rather_than_corrupting)
+{
+	// The safe failure. An out-of-range slot means our idea of capacity is wrong, so the
+	// only honest response is to distrust the whole index.
+	Index idx; idx.Reserve(16);
+	idx.RebuildBegin(); idx.RebuildEnd();
+	CHECK(!idx.Dirty());
+	FakeItem dummy; dummy.nextFree = nullptr;
+	idx.OnAdd(99, &dummy);
+	CHECK(idx.Dirty());
+}
+
+TEST(dense_clear_marks_dirty)
+{
+	FakeListSet ls; ls.Grow(5);
+	Index idx; idx.Reserve(ls.Capacity());
+	RebuildFrom(idx, ls);
+	idx.Clear();
+	CHECK(idx.Dirty());
+	CHECK_EQ(idx.Count(), 0u);
+}
+
+TEST(dense_reserve_change_invalidates)
+{
+	// Slot ids are only meaningful for a fixed capacity, so a capacity change must not
+	// leave stale mappings behind.
+	FakeListSet ls; ls.Grow(5);
+	Index idx; idx.Reserve(ls.Capacity());
+	RebuildFrom(idx, ls);
+	idx.Reserve(1023);
+	CHECK(idx.Dirty());
+	CHECK_EQ(idx.Count(), 0u);
+}
+
+TEST(fuzz_dense_index_always_agrees_with_the_full_walk)
+{
+	// The property that matters: after ANY sequence of adds and removes, the index's live
+	// set must equal what the O(capacity) walk would report. This is the test that makes
+	// the optimisation safe to ship.
+	unsigned int seed = 424242u;
+	auto next = [&seed]() { seed = seed * 1103515245u + 12345u; return (seed >> 16) & 0x7fff; };
+
+	FakeListSet ls; ls.Grow(7);                  // capacity 127
+	Index idx; idx.Reserve(ls.Capacity());
+	RebuildFrom(idx, ls);
+
+	for (int step = 0; step < 40000; step++) {
+		const std::size_t slot = next() % ls.Capacity();
+		const bool alive = FakeListSet::Alive(ls.At(slot));
+		if (!alive) { ls.SetAlive(slot, true);  idx.OnAdd(slot, ls.At(slot)); }
+		else        { ls.SetAlive(slot, false); idx.OnRemove(slot); }
+
+		if ((step % 977) == 0) {
+			CHECK_EQ(idx.Count(), ls.WalkCountAlive());
+			// every tracked pointer must actually be live in the container
+			for (FakeItem* p : idx.Live()) CHECK(FakeListSet::Alive(p));
+		}
+	}
+	CHECK_EQ(idx.Count(), ls.WalkCountAlive());
+}
+
+
+/**********************************************************************************
  ******** Fuzz: malformed input must never crash or hang
  **********************************************************************************/
 
@@ -598,8 +787,59 @@ void RunBenchmarks(void)
 	std::printf("  WaveInterval  %8d calls  %8.2f ms  %8.4f us/call\n",
 				M, ms2, (ms2 * 1000.0) / M);
 
-	std::printf("\n  NOTE: these are harness numbers on this machine. They say nothing about\n"
-				"        in-game frame cost, which cannot be measured from here.\n");
+	// ---- A1: O(capacity) full walk vs O(alive) dense index ----
+	//
+	// The measurement docs/PERFORMANCE.md makes mandatory for A1. It models the real shape:
+	// 1036-byte items, geometric lists, and the "peaked high, few alive now" case that
+	// ListSet's monotonic capacity makes permanent for the rest of a mission.
+	{
+		std::printf("\n  A1 -- ListSet enumeration, 1036-byte items\n");
+		std::printf("  %-32s %10s %10s %10s\n", "case", "walk ms", "index ms", "speedup");
+
+		struct Case { const char* name; std::size_t lists; std::size_t alive; };
+		const Case cases[] = {
+			{ "cap 255, 200 alive",   8, 200 },
+			{ "cap 255, 40 alive",    8,  40 },
+			{ "cap 255, 8 alive",     8,   8 },
+			{ "cap 1023, 60 alive",  10,  60 },
+			{ "cap 4095, 100 alive", 12, 100 },
+		};
+
+		for (const Case& c : cases) {
+			FakeListSet ls; ls.Grow(c.lists);
+			unsigned int bseed = 99991u;
+			auto bnext = [&bseed]() { bseed = bseed * 1103515245u + 12345u; return (bseed >> 16) & 0x7fff; };
+			std::size_t placed = 0;
+			while (placed < c.alive) {
+				const std::size_t s2 = bnext() % ls.Capacity();
+				if (!FakeListSet::Alive(ls.At(s2))) { ls.SetAlive(s2, true); placed++; }
+			}
+			Index idx; idx.Reserve(ls.Capacity());
+			RebuildFrom(idx, ls);
+
+			const int reps = 2000;
+			volatile std::size_t benchSink = 0;
+
+			const auto t0 = std::chrono::steady_clock::now();
+			for (int i = 0; i < reps; i++) benchSink += ls.WalkCountAlive();
+			const auto t1 = std::chrono::steady_clock::now();
+			for (int i = 0; i < reps; i++) {
+				std::size_t n = 0;
+				for (FakeItem* p : idx.Live()) { if (p->nextFree != p) n++; }
+				benchSink += n;
+			}
+			const auto t2 = std::chrono::steady_clock::now();
+
+			const double walkMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+			const double idxMs = std::chrono::duration<double, std::milli>(t2 - t1).count();
+			std::printf("  %-32s %10.2f %10.2f %9.1fx\n", c.name, walkMs, idxMs,
+						idxMs > 0.0 ? walkMs / idxMs : 0.0);
+		}
+	}
+
+	std::printf("\n  NOTE: harness numbers on this machine, over a synthetic item of the same size\n"
+				"        and layout as the real one. A real measurement of the ALGORITHM; it says\n"
+				"        nothing about in-game frame cost, which cannot be measured from here.\n");
 }
 
 } // namespace
