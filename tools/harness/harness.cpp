@@ -377,6 +377,121 @@ TEST(clamp_count_reports_only_when_it_acted)
 
 
 /**********************************************************************************
+ ******** Threat audio decisions
+ **********************************************************************************/
+
+TEST(telegraph_cue_splits_on_wave_size)
+{
+	ThreatAudioTuning t;
+	t.heavyWaveSize = 3;
+	CHECK(TelegraphCueFor(t, 1) == ThreatCue::Telegraph);
+	CHECK(TelegraphCueFor(t, 2) == ThreatCue::Telegraph);
+	CHECK(TelegraphCueFor(t, 3) == ThreatCue::TelegraphHeavy);
+	CHECK(TelegraphCueFor(t, 9) == ThreatCue::TelegraphHeavy);
+}
+
+TEST(telegraph_cue_none_for_empty_wave)
+{
+	// WaveSize returns 0 for "do not fire". That must not produce a warning for a wave
+	// that never comes -- crying wolf is exactly the failure this layer must not have.
+	ThreatAudioTuning t;
+	CHECK(TelegraphCueFor(t, 0) == ThreatCue::None);
+	CHECK(TelegraphCueFor(t, -1) == ThreatCue::None);
+}
+
+TEST(escalate_skips_the_first_wave)
+{
+	// Wave 0 is the player's introduction to the mechanic, not the moment to tell them
+	// it is getting worse.
+	ThreatAudioTuning t;
+	t.escalateEveryNWaves = 3;
+	CHECK(!ShouldEscalate(t, 0));
+	CHECK(!ShouldEscalate(t, 1));
+	CHECK(!ShouldEscalate(t, 2));
+	CHECK(ShouldEscalate(t, 3));
+	CHECK(ShouldEscalate(t, 6));
+	CHECK(!ShouldEscalate(t, 7));
+}
+
+TEST(escalate_zero_disables)
+{
+	ThreatAudioTuning t;
+	t.escalateEveryNWaves = 0;
+	for (int i = 0; i < 50; i++) CHECK(!ShouldEscalate(t, i));
+}
+
+TEST(escalate_negative_period_disables_rather_than_dividing)
+{
+	ThreatAudioTuning t;
+	t.escalateEveryNWaves = -3;
+	for (int i = 0; i < 20; i++) CHECK(!ShouldEscalate(t, i));
+}
+
+TEST(quiet_fires_once_on_the_edge)
+{
+	QuietDetector q;
+	CHECK(q.Update(2) == ThreatCue::None);
+	CHECK(q.Update(1) == ThreatCue::None);
+	CHECK(q.Update(0) == ThreatCue::Cleared);
+	// and not again while it stays quiet -- this is the bug the detector exists to avoid
+	for (int i = 0; i < 100; i++) CHECK(q.Update(0) == ThreatCue::None);
+}
+
+TEST(quiet_never_fires_before_anything_lived)
+{
+	// A mission opens with nothing alive. An all-clear at t=0 would be nonsense.
+	QuietDetector q;
+	for (int i = 0; i < 100; i++) CHECK(q.Update(0) == ThreatCue::None);
+}
+
+TEST(quiet_rearms_across_waves)
+{
+	QuietDetector q;
+	q.Update(3);
+	CHECK(q.Update(0) == ThreatCue::Cleared);
+	q.Update(2);                                   // next wave
+	CHECK(q.Update(0) == ThreatCue::Cleared);      // must fire again
+}
+
+TEST(quiet_reset_clears_history)
+{
+	// Reset happens on level teardown; the next level must not inherit an armed detector.
+	QuietDetector q;
+	q.Update(5);
+	q.Reset();
+	for (int i = 0; i < 10; i++) CHECK(q.Update(0) == ThreatCue::None);
+}
+
+TEST(quiet_negative_alive_treated_as_zero)
+{
+	QuietDetector q;
+	q.Update(4);
+	CHECK(q.Update(-7) == ThreatCue::Cleared);
+}
+
+TEST(fuzz_quiet_detector_fires_only_on_edges)
+{
+	// Property: over any sequence, Cleared appears exactly as often as the number of
+	// positive-to-zero transitions after the first positive value.
+	unsigned int seed = 2246822519u;
+	auto next = [&seed]() { seed = seed * 1103515245u + 12345u; return (seed >> 16) & 0x7fff; };
+
+	for (int trial = 0; trial < 500; trial++) {
+		QuietDetector q;
+		int prev = 0; bool lived = false; int expected = 0, got = 0;
+		for (int step = 0; step < 200; step++) {
+			const int alive = (int)(next() % 4);
+			if (alive > 0) lived = true;
+			else if (lived && prev > 0) expected++;
+			if (q.Update(alive) == ThreatCue::Cleared) got++;
+			prev = alive;
+		}
+		CHECK_EQ(got, expected);
+	}
+}
+
+
+/**********************************************************************************
  ******** Fuzz: malformed input must never crash or hang
  **********************************************************************************/
 

@@ -127,6 +127,30 @@ struct Settings
 	std::vector<std::string> waveSpeciesNames;
 
 
+	// ---- Threat audio -----------------------------------------------------------
+	// The wave director already owns real escalation state -- telegraph phase, alive
+	// budget, wave index -- and nothing else in this project can drive audio from it.
+	// Cues are addressed by NAME through SFX_GetType; a name this installation does not
+	// declare simply stays silent and is reported once. See DeepCoreAudio.hpp.
+
+	/// Play threat cues from wave-director state.
+	bool threatAudio = false;
+
+	/// A wave of at least this many creatures gets the heavier warning.
+	sint32 threatHeavyWaveSize = 3;
+
+	/// Play the escalation line every N waves. 0 disables it.
+	sint32 threatEscalateEveryNWaves = 3;
+
+	/// Cue names. Defaults match the generated assets in assets/audio/threat/.
+	/// An empty string disables that cue without disabling the layer.
+	std::string cueTelegraph      = "dc_threat_telegraph";
+	std::string cueTelegraphHeavy = "dc_threat_telegraph_heavy";
+	std::string cueArrival        = "dc_sting_arrival";
+	std::string cueEscalate       = "dc_threat_escalate";
+	std::string cueCleared        = "dc_threat_cleared";
+
+
 	// ---- Creature variants ----------------------------------------------------
 	// Uniform model scale is a data-driven property and per-group diffuse/emissive
 	// colour is implemented in Containers. The base game already recolours crystals

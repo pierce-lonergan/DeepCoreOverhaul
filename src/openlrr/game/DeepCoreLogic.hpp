@@ -154,6 +154,88 @@ inline std::size_t RotationIndex(int step, std::size_t count)
 #pragma endregion
 
 /**********************************************************************************
+ ******** Threat audio
+ **********************************************************************************/
+
+#pragma region ThreatAudio
+
+/// A cue the threat layer wants played. Which sample that maps to is the shipping
+/// layer's problem; choosing it is a decision, and decisions live here.
+enum class ThreatCue
+{
+	None = 0,
+	Telegraph,       ///< a wave has been announced
+	TelegraphHeavy,  ///< ...and it is a big one
+	Arrival,         ///< the wave is landing now
+	Escalate,        ///< periodic "the pressure is rising" line
+	Cleared,         ///< the last live creature just died
+};
+
+struct ThreatAudioTuning
+{
+	/// A wave of at least this many creatures gets the heavier warning. Below it, the
+	/// ordinary one. Two distinct warnings is the point: a player who cannot tell a
+	/// skirmish from a serious wave has been given noise, not information.
+	int heavyWaveSize = 3;
+
+	/// Play the escalation line every N waves. 0 disables it. Escalation lines are
+	/// flavour, and flavour on every wave stops being flavour.
+	int escalateEveryNWaves = 3;
+};
+
+/// Which warning a wave of this size deserves.
+inline ThreatCue TelegraphCueFor(const ThreatAudioTuning& t, int waveSize)
+{
+	if (waveSize <= 0) return ThreatCue::None;
+	return (waveSize >= t.heavyWaveSize) ? ThreatCue::TelegraphHeavy : ThreatCue::Telegraph;
+}
+
+/// True when this wave should also carry the escalation line.
+///
+/// waveNumber is 0-based, and wave 0 never escalates -- the first wave of a mission is
+/// the player's introduction to the mechanic, not the moment to tell them it is getting
+/// worse.
+inline bool ShouldEscalate(const ThreatAudioTuning& t, int waveNumber)
+{
+	if (t.escalateEveryNWaves <= 0) return false;
+	if (waveNumber <= 0) return false;
+	return (waveNumber % t.escalateEveryNWaves) == 0;
+}
+
+/// Edge detector for "the cavern just went quiet".
+///
+/// Deliberately an explicit little state machine rather than a check inlined at the call
+/// site, because the interesting case is the EDGE and edges are exactly what gets written
+/// wrong: firing on every frame while alive == 0, or firing once at mission start before
+/// anything has ever spawned. Both are covered by harness tests.
+struct QuietDetector
+{
+	int  lastAlive   = 0;
+	bool everHadLife = false;
+
+	/// Feed the current live-creature count; returns Cleared exactly on the transition
+	/// from "something alive" to "nothing alive", and None otherwise.
+	ThreatCue Update(int aliveNow)
+	{
+		if (aliveNow < 0) aliveNow = 0;
+
+		ThreatCue cue = ThreatCue::None;
+		if (aliveNow > 0) {
+			everHadLife = true;
+		}
+		else if (everHadLife && lastAlive > 0) {
+			cue = ThreatCue::Cleared;
+		}
+		lastAlive = aliveNow;
+		return cue;
+	}
+
+	void Reset() { lastAlive = 0; everHadLife = false; }
+};
+
+#pragma endregion
+
+/**********************************************************************************
  ******** Bounds and clamping
  **********************************************************************************/
 

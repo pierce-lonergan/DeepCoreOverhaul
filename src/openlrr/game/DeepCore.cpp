@@ -12,6 +12,7 @@
 #include "object/Creature.h"
 #include "Game.h"
 #include "DeepCoreLogic.hpp"
+#include "DeepCoreAudio.hpp"
 #include "DeepCore.hpp"
 
 
@@ -58,6 +59,7 @@ bool DeepCore::IsAnyFeatureEnabled(void)
 		|| settings.waveDirector
 		|| settings.creatureVariants
 		|| settings.weaponBeamStyles
+		|| settings.threatAudio
 		|| settings.surviveWaterOverflow
 		|| settings.relocateWaterTables);
 }
@@ -80,6 +82,7 @@ void DeepCore::InvalidateSpeciesCache(void)
 	_speciesResolved = false;
 	_resolvedWaveSpecies.clear();
 	_waveSpeciesResolved = false;
+	DeepCore::Audio::InvalidateCueCache();
 }
 
 
@@ -414,6 +417,18 @@ static void _ReadRealIfPresent(const Gods98::Config* config, const char* key, re
 	dest = value;
 }
 
+/// Apply a string config value only when the key is present. An explicitly empty value is
+/// meaningful -- it disables one cue without disabling the whole layer -- so emptiness is
+/// preserved rather than treated as absence.
+static void _ReadStringIfPresent(const Gods98::Config* config, const char* key, std::string& dest)
+{
+	const char* id = Config_ID(LegoRR::legoGlobs.gameName, DEEPCORE_BLOCKNAME, key);
+	if (Gods98::Config_FindItem(config, id) == nullptr) return;
+	const char* value = Gods98::Config_GetTempStringValue(config, id);
+	dest = (value != nullptr) ? value : "";
+}
+
+
 static void _ReadIntIfPresent(const Gods98::Config* config, const char* key, sint32& dest, bool mustBePositive)
 {
 	const char* id = Config_ID(LegoRR::legoGlobs.gameName, DEEPCORE_BLOCKNAME, key);
@@ -475,6 +490,17 @@ bool DeepCore::Load(void)
 	_ReadIntIfPresent (config, "WaveSize",               settings.waveSize,               true);
 	_ReadIntIfPresent (config, "WaveSizeMax",            settings.waveSizeMax,            true);
 	_ReadIntIfPresent (config, "WaveMinDistanceFromBase",settings.waveMinDistanceFromBase,false);
+
+	// ---- Threat audio ---------------------------------------------------------
+
+	settings.threatAudio = Config_GetBoolOrFalse(config, DeepCore_ID("ThreatAudio"));
+	_ReadIntIfPresent(config, "ThreatHeavyWaveSize",       settings.threatHeavyWaveSize,       true);
+	_ReadIntIfPresent(config, "ThreatEscalateEveryNWaves", settings.threatEscalateEveryNWaves, false);
+	_ReadStringIfPresent(config, "CueTelegraph",      settings.cueTelegraph);
+	_ReadStringIfPresent(config, "CueTelegraphHeavy", settings.cueTelegraphHeavy);
+	_ReadStringIfPresent(config, "CueArrival",        settings.cueArrival);
+	_ReadStringIfPresent(config, "CueEscalate",       settings.cueEscalate);
+	_ReadStringIfPresent(config, "CueCleared",        settings.cueCleared);
 
 	// Species pool: whitespace- or comma-separated monster type names.
 	{

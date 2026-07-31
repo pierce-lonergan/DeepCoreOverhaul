@@ -12,6 +12,7 @@
 #include "interface/InfoMessages.h"
 #include "Game.h"
 #include "DeepCoreLogic.hpp"
+#include "DeepCoreAudio.hpp"
 #include "DeepCore.hpp"
 #include "WaveDirector.hpp"
 
@@ -55,6 +56,10 @@ struct State
 	/// the arrival agree. A player who is told where to look and then ambushed
 	/// somewhere else has been lied to.
 	std::vector<Point2I> pendingBlocks;
+
+	/// Edge detector for "the cavern just went quiet", so the all-clear plays once on
+	/// the transition rather than every frame that nothing is alive.
+	DeepCore::Logic::QuietDetector quiet;
 };
 
 State _s;
@@ -282,6 +287,15 @@ void Telegraph(const std::vector<Point2I>& blocks)
 /// Snapshot the live settings into the pure tuning struct the scheduling maths uses.
 /// Keeping this the ONLY place settings are read for scheduling means the harness tests
 /// exactly the arithmetic that ships.
+static DeepCore::Logic::ThreatAudioTuning CurrentAudioTuning(void)
+{
+	DeepCore::Logic::ThreatAudioTuning t;
+	t.heavyWaveSize        = DeepCore::settings.threatHeavyWaveSize;
+	t.escalateEveryNWaves  = DeepCore::settings.threatEscalateEveryNWaves;
+	return t;
+}
+
+
 static DeepCore::Logic::WaveTuning CurrentTuning(void)
 {
 	DeepCore::Logic::WaveTuning t;
@@ -324,6 +338,13 @@ void DeepCore::Waves::Update(real32 elapsedReal)
 	_s.missionTime += seconds;
 	_s.timer       += seconds;
 
+	// Feed the quiet detector every tick so the all-clear fires on the EDGE. This reuses
+	// the same enumeration the budget needs; see PERFORMANCE.md on ListSet cost, which is
+	// why this is one walk rather than two.
+	if (settings.threatAudio) {
+		DeepCore::Audio::PlayThreatCue(_s.quiet.Update(CountLiveMonsters()));
+	}
+
 	if (_s.phase == Phase::Telegraph) {
 		if (_s.timer < settings.waveTelegraphSeconds) return;
 
@@ -333,6 +354,10 @@ void DeepCore::Waves::Update(real32 elapsedReal)
 			if (objID >= 0 && SpawnMonsterAtBlock(b.x, b.y, objID)) {
 				landed++;
 			}
+		}
+
+		if (landed > 0) {
+			DeepCore::Audio::PlayThreatCue(DeepCore::Logic::ThreatCue::Arrival);
 		}
 
 		_s.spawnedTotal += landed;
@@ -387,6 +412,16 @@ void DeepCore::Waves::Update(real32 elapsedReal)
 	}
 
 	Telegraph(_s.pendingBlocks);
+
+	/// DEEPCORE: the audio layer. Which cue belongs to this moment is decided in
+	/// DeepCoreLogic.hpp so the harness can test it; this only plays the answer.
+	{
+		const DeepCore::Logic::ThreatAudioTuning at = CurrentAudioTuning();
+		DeepCore::Audio::PlayThreatCue(DeepCore::Logic::TelegraphCueFor(at, size));
+		if (DeepCore::Logic::ShouldEscalate(at, _s.waveNumber)) {
+			DeepCore::Audio::PlayThreatCue(DeepCore::Logic::ThreatCue::Escalate);
+		}
+	}
 
 	_s.phase = Phase::Telegraph;
 
