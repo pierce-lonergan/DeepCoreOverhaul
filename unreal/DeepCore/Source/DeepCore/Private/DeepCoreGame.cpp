@@ -8,9 +8,9 @@
 #include "EngineUtils.h"
 #include "Components/SkyLightComponent.h"
 #include "DeepCoreTerrain.h"
+#include "DeepCoreTune.h"
 #include "DeepCoreUnit.h"
 #include "Engine/ExponentialHeightFog.h"
-#include "Engine/PostProcessVolume.h"
 #include "Engine/SkyLight.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -79,6 +79,8 @@ void ADeepCorePawn::BeginPlay()
 	FString ShotArg;
 	bCaptureLock = FParse::Value(FCommandLine::Get(), TEXT("DeepCoreShot="), ShotArg);
 
+	ApplyGrade();
+
 	// Pitch scales with distance: looking almost straight down works for a close view but
 	// makes a wide view read as a map rather than a place.
 	// A shallow pitch lets the ground plane run all the way to the horizon, which compresses
@@ -97,6 +99,44 @@ void ADeepCorePawn::SetupPlayerInputComponent(UInputComponent* Input)
 	Input->BindKey(EKeys::MouseScrollUp,     IE_Pressed, this, &ADeepCorePawn::ZoomIn);
 	Input->BindKey(EKeys::MouseScrollDown,   IE_Pressed, this, &ADeepCorePawn::ZoomOut);
 	Input->BindKey(EKeys::LeftMouseButton,   IE_Pressed, this, &ADeepCorePawn::OnClick);
+}
+
+void ADeepCorePawn::ApplyGrade()
+{
+	const FDeepCoreTune& T = FDeepCoreTune::Get();
+
+	Cam->PostProcessBlendWeight = 1.0f;
+	FPostProcessSettings& S = Cam->PostProcessSettings;
+
+	// FIXED exposure, expressed in EV100 -- HIGHER IS DARKER.
+	//
+	// Pinning Min == Max is how you get a fixed stop while leaving the exposure feature itself
+	// enabled. Disabling the feature (r.DefaultFeature.AutoExposure=False) does NOT give fixed
+	// exposure; it makes these values inert.
+	S.bOverride_AutoExposureMethod        = true; S.AutoExposureMethod        = AEM_Histogram;
+	S.bOverride_AutoExposureMinBrightness = true; S.AutoExposureMinBrightness = T.Ev;
+	S.bOverride_AutoExposureMaxBrightness = true; S.AutoExposureMaxBrightness = T.Ev;
+	S.bOverride_AutoExposureBias          = true; S.AutoExposureBias          = 0.0f;
+	S.bOverride_AutoExposureSpeedUp       = true; S.AutoExposureSpeedUp       = 100.0f;
+	S.bOverride_AutoExposureSpeedDown     = true; S.AutoExposureSpeedDown     = 100.0f;
+
+	// The filmic toe is what produces underground blacks. Without it the tonemapper lifts the
+	// shadows into the washed-out grey that is the signature UE5 default, and a dark scene
+	// reads as an underexposed bright scene rather than as a dark place.
+	S.bOverride_FilmToe       = true; S.FilmToe       = 0.62f;
+	S.bOverride_FilmSlope     = true; S.FilmSlope     = 0.92f;
+	S.bOverride_FilmShoulder  = true; S.FilmShoulder  = 0.30f;
+	S.bOverride_FilmBlackClip = true; S.FilmBlackClip = 0.0f;
+	S.bOverride_FilmWhiteClip = true; S.FilmWhiteClip = 0.04f;
+
+	S.bOverride_BloomIntensity    = true; S.BloomIntensity    = 0.28f;
+	S.bOverride_BloomThreshold    = true; S.BloomThreshold    = 1.0f;
+	S.bOverride_VignetteIntensity = true; S.VignetteIntensity = 0.40f;
+
+	// 40cm, not 90. Real cavity darkening happens at centimetre scale; 90cm is most of a tile
+	// and darkens open floor rather than corners.
+	S.bOverride_AmbientOcclusionIntensity = true; S.AmbientOcclusionIntensity = 0.45f;
+	S.bOverride_AmbientOcclusionRadius    = true; S.AmbientOcclusionRadius    = 40.0f;
 }
 
 void ADeepCorePawn::ZoomIn()  { if (!bCaptureLock) { Boom = FMath::Max(700.0f,  Boom * 0.88f); } }
@@ -169,6 +209,7 @@ ADeepCoreGameMode::ADeepCoreGameMode()
 
 void ADeepCoreGameMode::BuildLighting()
 {
+	const FDeepCoreTune& T = FDeepCoreTune::Get();
 	UWorld* W = GetWorld();
 	if (!W)
 	{
@@ -196,7 +237,7 @@ void ADeepCoreGameMode::BuildLighting()
 		{
 			C->SetMobility(EComponentMobility::Movable);
 			C->SourceType = SLS_CapturedScene;
-			C->SetIntensity(1.05f);
+			C->SetIntensity(T.Sky);
 			C->SetLightColor(FLinearColor(0.44f, 0.40f, 0.36f));
 			C->bLowerHemisphereIsBlack = false;
 			C->RecaptureSky();
@@ -214,7 +255,7 @@ void ADeepCoreGameMode::BuildLighting()
 		Fog->SetActorLocation(FVector(0, 0, -400.0f));
 		if (UExponentialHeightFogComponent* C = Fog->GetComponent())
 		{
-			C->SetFogDensity(0.009f);
+			C->SetFogDensity(T.FogDensity);
 			C->SetFogInscatteringColor(FLinearColor(0.022f, 0.019f, 0.016f));
 			C->SetFogHeightFalloff(0.02f);
 			C->SetStartDistance(200.0f);
@@ -222,59 +263,24 @@ void ADeepCoreGameMode::BuildLighting()
 			C->SetVolumetricFog(true);
 			// Forward-scattering, so beams bloom toward the viewer instead of glowing evenly
 			// in all directions. This is most of what makes a light shaft look like a shaft.
-			C->SetVolumetricFogScatteringDistribution(0.75f);
+			C->SetVolumetricFogScatteringDistribution(T.FogAniso);
 			C->SetVolumetricFogAlbedo(FColor(190, 178, 162));   // warm rock dust, not white
-			C->SetVolumetricFogExtinctionScale(0.9f);
+			C->SetVolumetricFogExtinctionScale(T.FogExtinct);
 			C->SetVolumetricFogDistance(4500.0f);
 		}
 	}
 
-	// Post. The filmic toe is what actually produces underground blacks: without it the
-	// tonemapper lifts the shadows into the washed-out grey that is the signature UE5 default
-	// look, and every dark scene reads as an underexposed bright scene rather than as a dark
-	// place.
-	if (APostProcessVolume* PP = W->SpawnActor<APostProcessVolume>())
-	{
-		PP->bUnbound = true;
-		FPostProcessSettings& S = PP->Settings;
-
-		// Fixed exposure.
-		//
-		// UNITS: these are EV100, not luminance. UE5 defaults ExtendDefaultLuminanceRange on,
-		// and Scene.h states the Min/Max are "expressed in pixel luminance (cd/m2) or in EV100
-		// when using ExtendDefaultLuminanceRange", with the property clamped to [-10, 20].
-		// So HIGHER IS DARKER, which is the exact inverse of the luminance reading -- every
-		// brightness pass before this one was pushing the value the wrong way and then
-		// "fixing" the resulting blowout by changing lights that were not the problem.
-		//
-		// EV100 ~4.5 is about right for a heading lit by a few hundred candela of installed
-		// lamps: roughly a dim interior, several stops under an overcast day at EV 12.
-		// Min == Max pins it, so the exposure never drifts as the camera pans between a lit
-		// chamber and an unlit drift.
-		S.bOverride_AutoExposureMethod        = true; S.AutoExposureMethod        = AEM_Histogram;
-		S.bOverride_AutoExposureMinBrightness = true; S.AutoExposureMinBrightness = 2.7f;
-		S.bOverride_AutoExposureMaxBrightness = true; S.AutoExposureMaxBrightness = 2.7f;
-		S.bOverride_AutoExposureBias          = true; S.AutoExposureBias          = 0.0f;
-
-		S.bOverride_FilmToe        = true; S.FilmToe        = 0.62f;
-		S.bOverride_FilmSlope      = true; S.FilmSlope      = 0.92f;
-		S.bOverride_FilmShoulder   = true; S.FilmShoulder   = 0.30f;
-		S.bOverride_FilmBlackClip  = true; S.FilmBlackClip  = 0.0f;
-		S.bOverride_FilmWhiteClip  = true; S.FilmWhiteClip  = 0.04f;
-
-		S.bOverride_BloomIntensity = true; S.BloomIntensity = 0.28f;
-		S.bOverride_BloomThreshold = true; S.BloomThreshold = 1.0f;
-		S.bOverride_VignetteIntensity = true; S.VignetteIntensity = 0.40f;
-
-		// 90cm was nearly a whole tile wide, which darkens open floor rather than cavities.
-		// Real contact darkening happens at centimetre scale.
-		S.bOverride_AmbientOcclusionIntensity = true; S.AmbientOcclusionIntensity = 0.45f;
-		S.bOverride_AmbientOcclusionRadius    = true; S.AmbientOcclusionRadius    = 40.0f;
-	}
+	// Post-processing is applied on the CAMERA (see ADeepCorePawn::ApplyGrade), not here.
+	//
+	// This used to spawn an unbound APostProcessVolume, and it silently never reached the view:
+	// changing exposure by five stops produced a byte-identical frame. That one fact had been
+	// mimicked as "the lights are wrong" for several rounds of tuning. A camera component's own
+	// PostProcessSettings belong to the view being rendered and cannot miss.
 }
 
 void ADeepCoreGameMode::PlaceWorklight(const FVector& Where)
 {
+	const FDeepCoreTune& T = FDeepCoreTune::Get();
 	UWorld* W = GetWorld();
 	if (!W)
 	{
@@ -302,9 +308,11 @@ void ADeepCoreGameMode::PlaceWorklight(const FVector& Where)
 	// installation lighting and the lamps people carry is a large part of why an industrial
 	// interior reads as industrial rather than as a cave with lights in it.
 	L->SetIntensityUnits(ELightUnits::Candelas);
-	L->SetIntensity(420.0f);
+	L->SetIntensity(T.Worklight);
 	L->SetLightColor(FLinearColor(0.82f, 0.88f, 1.0f));
 	L->SetAttenuationRadius(1700.0f);
+	L->SetSourceRadius(14.0f);
+	L->SetSoftSourceRadius(28.0f);
 	L->SetVolumetricScatteringIntensity(1.8f);
 	L->SetCastShadows(true);
 
@@ -352,6 +360,8 @@ void ADeepCoreGameMode::BeginPlay()
 	{
 		return;
 	}
+
+	FDeepCoreTune::ParseCommandLine();
 
 	// Confirm the renderer is actually in the mode the ini asked for. The entire lighting
 	// design depends on hardware ray tracing being live -- without it Lumen cannot see a single
@@ -463,7 +473,7 @@ void ADeepCoreGameMode::BeginPlay()
 	// They are placed on discovered floor, so lit space and known space are the same thing.
 	{
 		const Level& L = Terrain->GetLevel();
-		const int32 Step = 6;   // roughly one lamp per 6x6 tiles of opened ground
+		const int32 Step = FDeepCoreTune::Get().WorklightStep;
 		int32 Placed = 0;
 		for (int32 Y = Step / 2; Y < L.Height(); Y += Step)
 		{
@@ -482,7 +492,7 @@ void ADeepCoreGameMode::BeginPlay()
 							{
 								continue;
 							}
-							PlaceWorklight(ADeepCoreTerrain::TileToWorld(X + Dx, Y + Dy, 185.0f));
+							PlaceWorklight(ADeepCoreTerrain::TileToWorld(X + Dx, Y + Dy, FDeepCoreTune::Get().WorklightZ));
 							Placed++;
 							bDone = true;
 						}

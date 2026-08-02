@@ -16,6 +16,7 @@ param(
     [double]$Boom  = 0,           # 0 = use the game's own default
     [double]$Delay = 12,
     [string]$Name  = 'shot',
+    [string]$Tune  = '',            # -DeepCoreTune payload, e.g. 'ev=3,amb=0.1'
     [switch]$NoBuild,
     [int]$ResX = 1600,
     [int]$ResY = 900,
@@ -77,11 +78,12 @@ if (-not $NoBuild) {
 
 if (Test-Path $LogFile) { Remove-Item $LogFile -Force -ErrorAction SilentlyContinue }
 
-$args = @("`"$Proj`"", '-game', '-windowed', "-resx=$ResX", "-resy=$ResY", '-log', "-DeepCoreShot=$Delay")
-if ($Boom -gt 0) { $args += "-DeepCoreBoom=$Boom" }
+$runArgs = @("`"$Proj`"", '-game', '-windowed', "-resx=$ResX", "-resy=$ResY", '-log', "-DeepCoreShot=$Delay")
+if ($Boom -gt 0) { $runArgs += "-DeepCoreBoom=$Boom" }
+if ($Tune)       { $runArgs += "-DeepCoreTune=$Tune" }
 
 Write-Host "run    capturing at t+${Delay}s..." -NoNewline
-$p = Start-Process -FilePath $ue.Exe -ArgumentList $args -PassThru
+$p = Start-Process -FilePath $ue.Exe -ArgumentList $runArgs -PassThru
 # The game exits itself 4s after the capture; the wait is a backstop for a hang, not the plan.
 $null = $p.WaitForExit([int](($Delay + 45) * 1000))
 if (-not $p.HasExited) { $p | Stop-Process -Force; Write-Host ' (killed)' -ForegroundColor Yellow }

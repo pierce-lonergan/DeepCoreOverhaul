@@ -3,6 +3,7 @@
 #include "DeepCoreBrick.h"
 #include "DeepCoreMaterials.h"
 #include "DeepCoreTerrain.h"
+#include "DeepCoreTune.h"
 #include "Components/SpotLightComponent.h"
 #include "ProceduralMeshComponent.h"
 
@@ -149,7 +150,7 @@ void ADeepCoreUnit::BuildMiner(const FLinearColor& Accent)
 		Lamp->SetRelativeLocation(FVector(11.0f, 0.0f, 18.0f));
 		Lamp->SetMobility(EComponentMobility::Movable);
 		Lamp->SetIntensityUnits(ELightUnits::Candelas);
-		Lamp->SetIntensity(900.0f);
+		Lamp->SetIntensity(FDeepCoreTune::Get().CapLamp);
 		Lamp->SetLightColor(FLinearColor(1.0f, 0.72f, 0.44f));   // ~3200K
 		Lamp->SetInnerConeAngle(18.0f);
 		Lamp->SetOuterConeAngle(34.0f);

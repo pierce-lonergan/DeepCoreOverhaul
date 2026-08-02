@@ -41,6 +41,9 @@ public:
 	UPROPERTY() TObjectPtr<UCameraComponent>    Cam;
 
 private:
+	/** Exposure and grade, applied to the camera component itself. */
+	void ApplyGrade();
+
 	void ZoomIn();
 	void ZoomOut();
 	void OnClick();

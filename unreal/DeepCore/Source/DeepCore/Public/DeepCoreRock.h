@@ -31,6 +31,8 @@
 
 #include "CoreMinimal.h"
 
+#include "DeepCoreTune.h"
+
 namespace DeepCoreRock
 {
 	/** Maximum a render vertex may move. Well under half a tile, so topology is preserved. */
@@ -110,7 +112,7 @@ namespace DeepCoreRock
 			Fbm(P + C, Fine, 2) - 0.5f,
 			Fbm(P + A, Fine, 2) - 0.5f) * 0.45f;
 
-		return D * (MaxDisplace * 2.0f);
+		return D * (MaxDisplace * 2.0f * FDeepCoreTune::Get().Displace);
 	}
 
 	/**
@@ -126,9 +128,10 @@ namespace DeepCoreRock
 		const float Warp = (Fbm(P, 420.0f, 2) - 0.5f) * 130.0f;
 		const float Band = FMath::Sin((P.Z + Warp) * 0.055f);
 		// Squared so bands have soft wide bodies and tight dark partings, as bedding does.
-		const float Bedding = 0.86f + 0.14f * Band * Band;
+		const float K = FDeepCoreTune::Get().Strata;
+		const float Bedding = 1.0f - K * (0.14f - 0.14f * Band * Band);
 		// Fine mottle stops any single band reading as a painted stripe.
-		const float Mottle  = 0.90f + 0.20f * Fbm(P, 47.0f, 2);
+		const float Mottle  = 1.0f - K * (0.10f - 0.20f * Fbm(P, 47.0f, 2));
 		return Bedding * Mottle;
 	}
 }

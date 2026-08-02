@@ -1,0 +1,33 @@
+# name                tune
+# --- does the hidden GI roof give real bounce? amb=0 means NOTHING but the renderer ---
+a0_pure_gi            amb=0,alb=2.0,ev=2.5,wl=1500,wlstep=5
+a1_pure_gi_bright     amb=0,alb=2.0,ev=1.5,wl=2500,wlstep=4
+a2_pure_gi_dense      amb=0,alb=2.5,ev=2.0,wl=1200,wlstep=3
+# --- ambient cheat, against the same base ---
+b0_amb04              amb=0.04,alb=2.0,ev=2.5,wl=1500,wlstep=5
+b1_amb10              amb=0.10,alb=2.0,ev=2.5,wl=1500,wlstep=5
+b2_amb20              amb=0.20,alb=2.0,ev=2.5,wl=1500,wlstep=5
+# --- exposure ladder on a fixed, decently-lit base ---
+c0_ev10               amb=0.06,alb=2.0,ev=1.0,wl=1500,wlstep=5
+c1_ev20               amb=0.06,alb=2.0,ev=2.0,wl=1500,wlstep=5
+c2_ev30               amb=0.06,alb=2.0,ev=3.0,wl=1500,wlstep=5
+# --- lamp strategy: many dim vs few bright, and lamp height ---
+d0_manydim            amb=0.06,alb=2.0,ev=1.5,wl=500,wlstep=3
+d1_fewbright          amb=0.06,alb=2.0,ev=3.0,wl=4000,wlstep=9
+d2_lowlamps           amb=0.06,alb=2.0,ev=2.0,wl=1200,wlstep=4,wlz=90
+d3_roofmount          amb=0.06,alb=2.0,ev=2.0,wl=1200,wlstep=4,wlz=225
+# --- albedo: is dark rock simply unworkable here ---
+e0_alb15              amb=0.06,alb=1.5,ev=1.8,wl=1500,wlstep=4
+e1_alb30              amb=0.06,alb=3.0,ev=2.8,wl=1500,wlstep=4
+# --- surface: displacement and banding actually isolated this time ---
+f0_flat               amb=0.06,alb=2.0,ev=2.0,wl=1500,wlstep=4,disp=0
+f1_disp15             amb=0.06,alb=2.0,ev=2.0,wl=1500,wlstep=4,disp=1.5
+f2_disp30             amb=0.06,alb=2.0,ev=2.0,wl=1500,wlstep=4,disp=3.0
+f3_strata0            amb=0.06,alb=2.0,ev=2.0,wl=1500,wlstep=4,strata=0
+f4_strata25           amb=0.06,alb=2.0,ev=2.0,wl=1500,wlstep=4,strata=2.5
+# --- atmosphere ---
+g0_nofog              amb=0.06,alb=2.0,ev=2.0,wl=1500,wlstep=4,fog=0
+g1_fog20              amb=0.06,alb=2.0,ev=2.0,wl=1500,wlstep=4,fog=0.020,fogext=1.4
+# --- surface roughness ---
+h0_rough40            amb=0.06,alb=2.0,ev=2.0,wl=1500,wlstep=4,rough=0.40
+h1_rough95            amb=0.06,alb=2.0,ev=2.0,wl=1500,wlstep=4,rough=0.95

@@ -2,6 +2,7 @@
 
 #include "DeepCoreMaterials.h"
 #include "DeepCoreRock.h"
+#include "DeepCoreTune.h"
 #include "ProceduralMeshComponent.h"
 
 using namespace Sandbox;
@@ -20,6 +21,18 @@ ADeepCoreTerrain::ADeepCoreTerrain()
 	Mesh->SetMobility(EComponentMobility::Movable);
 	Mesh->bUseAsyncCooking = true;
 	Mesh->SetCastShadow(true);
+
+	RoofMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Roof"));
+	RoofMesh->SetupAttachment(Mesh);
+	RoofMesh->SetMobility(EComponentMobility::Movable);
+	RoofMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RoofMesh->SetCastShadow(false);
+	// Invisible to the camera, but still in the ray tracing scene and still allowed to bounce
+	// light. See the header for why this specific combination of flags.
+	RoofMesh->SetHiddenInGame(true);
+	RoofMesh->bVisibleInRayTracing = true;
+	RoofMesh->bAffectDynamicIndirectLighting = true;
+	RoofMesh->bAffectIndirectLightingWhileHidden = true;
 }
 
 float ADeepCoreTerrain::TileAO(int32 X, int32 Y) const
@@ -108,8 +121,7 @@ bool ADeepCoreTerrain::Drill(int32 X, int32 Y)
 
 namespace
 {
-	/** Top of the rock mass, and the base it is cut from. A wall stands ~2.4m over the floor. */
-	constexpr float RockTop  = 240.0f;
+	/** The base the rock is cut from. The top is tunable -- see FDeepCoreTune::RockHeight. */
 	constexpr float RockBase = -40.0f;
 
 	/** Subdivision of a one-tile face. 4 gives 25cm rock detail, which is about the finest
@@ -124,6 +136,7 @@ void ADeepCoreTerrain::Rebuild()
 
 	FBrickMesh Rock;   // the mass: walls, floors, everything structural
 	FBrickMesh Vein;   // mineral bands, smoother, so a lamp flares off them
+	FBrickMesh Roof;   // never drawn; exists only so light has something to come back off
 
 	Rock.bStrata = true;   // banding applied to every vertex; see FBrickMesh::bStrata
 	Vein.bStrata = false;  // a vein cuts ACROSS bedding, so it must not be banded by it
@@ -131,6 +144,8 @@ void ADeepCoreTerrain::Rebuild()
 	Rock.Reserve(Level.Width() * Level.Height() * 160);
 
 	const float H = TileSize * 0.5f;
+	const float Alb = FDeepCoreTune::Get().AlbedoScale;
+	const float RockTop = FDeepCoreTune::Get().RockHeight;
 
 	// A tile only contributes geometry where it MEETS OPEN SPACE. Interior faces between two
 	// solid tiles are invisible forever, and emitting them was most of the old vertex budget --
@@ -161,19 +176,19 @@ void ADeepCoreTerrain::Rebuild()
 
 				if (B.Has(BLOCK_CRYSTAL_SEAM))
 				{
-					M.SetInk(FLinearColor(0.34f, 0.40f, 0.33f));   // pegmatite
+					M.SetInk(FLinearColor(0.34f, 0.40f, 0.33f) * Alb);   // pegmatite
 				}
 				else if (B.Has(BLOCK_ORE_SEAM))
 				{
-					M.SetInk(FLinearColor(0.19f, 0.13f, 0.07f));   // massive sulphide
+					M.SetInk(FLinearColor(0.19f, 0.13f, 0.07f) * Alb);   // massive sulphide
 				}
 				else if (B.Has(BLOCK_HIDDEN))
 				{
-					M.SetInk(FLinearColor(0.042f, 0.040f, 0.038f)); // country rock, undisturbed
+					M.SetInk(FLinearColor(0.042f, 0.040f, 0.038f) * Alb); // country rock, undisturbed
 				}
 				else
 				{
-					M.SetInk(FLinearColor(0.105f, 0.100f, 0.094f)); // granodiorite
+					M.SetInk(FLinearColor(0.105f, 0.100f, 0.094f) * Alb); // granodiorite
 				}
 
 				// Back (roof of the rock mass). Seen constantly from a top-down camera, so it
@@ -210,28 +225,40 @@ void ADeepCoreTerrain::Rebuild()
 			{
 				// Standing water: very dark and very smooth, so it is read almost entirely by
 				// what it reflects. That is what water actually looks like underground.
-				Vein.SetInk(FLinearColor(0.014f, 0.020f, 0.024f));
+				Vein.SetInk(FLinearColor(0.014f, 0.020f, 0.024f) * Alb);
 				Vein.RockQuad(FVector(X0, Y0, -14.0f), FVector(X1, Y0, -14.0f),
 				              FVector(X1, Y1, -14.0f), FVector(X0, Y1, -14.0f), 1);
+				Roof.SetInk(FLinearColor(0.085f, 0.080f, 0.074f) * Alb);
+				Roof.Quad(FVector(X0, Y1, RockTop), FVector(X1, Y1, RockTop),
+				          FVector(X1, Y0, RockTop), FVector(X0, Y0, RockTop), FVector(0, 0, -1));
 				continue;
 			}
 
 			if (B.Has(BLOCK_TOOLSTORE))
 			{
-				Rock.SetInk(FLinearColor(0.086f, 0.082f, 0.077f));
+				Rock.SetInk(FLinearColor(0.086f, 0.082f, 0.077f) * Alb);
 				Rock.RockQuad(FVector(X0, Y0, 0.0f), FVector(X1, Y0, 0.0f),
 				              FVector(X1, Y1, 0.0f), FVector(X0, Y1, 0.0f), FloorSubdiv);
 				// High-visibility equipment is the ONLY saturated colour permitted underground,
 				// which is exactly why it reads as equipment and not as scenery.
 				Rock.bStrata = false;
-				Rock.SetInk(FLinearColor(0.42f, 0.26f, 0.02f));
+				Rock.SetInk(FLinearColor(0.42f, 0.26f, 0.02f) * Alb);
 				Rock.Box(FVector(C.X, C.Y, 0.0f), H * 0.72f, 90.0f, H * 0.72f);
 				Rock.bStrata = true;
+				Roof.SetInk(FLinearColor(0.085f, 0.080f, 0.074f) * Alb);
+				Roof.Quad(FVector(X0, Y1, RockTop), FVector(X1, Y1, RockTop),
+				          FVector(X1, Y0, RockTop), FVector(X0, Y0, RockTop), FVector(0, 0, -1));
 				continue;
 			}
 
+			// Every open tile gets a roof over it. Flat and coarse: it is never seen, so it
+			// only needs to be a big diffuse reflector in the right place.
+			Roof.SetInk(FLinearColor(0.085f, 0.080f, 0.074f) * Alb);
+			Roof.Quad(FVector(X0, Y1, RockTop), FVector(X1, Y1, RockTop),
+			          FVector(X1, Y0, RockTop), FVector(X0, Y0, RockTop), FVector(0, 0, -1));
+
 			// Muck-covered floor.
-			Rock.SetInk(FLinearColor(0.092f, 0.088f, 0.081f));
+			Rock.SetInk(FLinearColor(0.092f, 0.088f, 0.081f) * Alb);
 			Rock.RockQuad(FVector(X0, Y0, 0.0f), FVector(X1, Y0, 0.0f),
 			              FVector(X1, Y1, 0.0f), FVector(X0, Y1, 0.0f), FloorSubdiv);
 		}
@@ -239,10 +266,12 @@ void ADeepCoreTerrain::Rebuild()
 
 	Rock.Commit(Mesh, 0, true);
 	Vein.Commit(Mesh, 1, false);
+	Roof.Commit(RoofMesh, 0, false);
+	if (Palette.Surface) { RoofMesh->SetMaterial(0, Palette.Surface); }
 
 	if (Palette.Surface) { Mesh->SetMaterial(0, Palette.Surface); }
 	if (Palette.Glow)    { Mesh->SetMaterial(1, Palette.Glow); }
 
-	UE_LOG(LogTemp, Display, TEXT("DeepCore: terrain rebuilt, %d rock verts, %d vein verts"),
-	       Rock.Num(), Vein.Num());
+	UE_LOG(LogTemp, Display, TEXT("DeepCore: terrain rebuilt, %d rock verts, %d vein, %d roof (hidden)"),
+	       Rock.Num(), Vein.Num(), Roof.Num());
 }

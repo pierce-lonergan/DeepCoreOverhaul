@@ -61,6 +61,24 @@ public:
 
 	UPROPERTY() TObjectPtr<UProceduralMeshComponent> Mesh;
 
+	/**
+	 * The back (roof) over every open chamber. Never drawn; lights the mine anyway.
+	 *
+	 * A real heading is a CLOSED volume, and that is most of why it looks like one: light that
+	 * leaves a lamp comes back off the roof. Here the chambers were open to a void, so every
+	 * photon heading upward left the scene forever -- which is exactly why the floors clipped
+	 * white directly under a lamp and the walls a metre away were black. There was nothing to
+	 * return any light to them.
+	 *
+	 * Drawing the roof would be useless, since the camera looks down through it. So the
+	 * component is hidden in game but keeps bAffectDynamicIndirectLighting and
+	 * bAffectIndirectLightingWhileHidden set, which is precisely the case
+	 * PrimitiveSceneProxy.cpp:1708-1712 tests for when deciding whether a primitive can be
+	 * traced: (IsVisibleInRayTracing() && (IsDrawnInGame() || AffectsIndirectLightingWhileHidden())).
+	 * So Lumen bounces off a surface the player never sees.
+	 */
+	UPROPERTY() TObjectPtr<UProceduralMeshComponent> RoofMesh;
+
 private:
 	/**
 	 * How enclosed a tile is, 0 (open) to 1 (boxed in).

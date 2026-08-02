@@ -1,5 +1,7 @@
 #include "DeepCoreMaterials.h"
 
+#include "DeepCoreTune.h"
+
 #include "Materials/Material.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/Package.h"
@@ -89,12 +91,13 @@ const FDeepCorePalette& GetDeepCorePalette()
 	GBuilt = true;
 
 #if WITH_EDITOR
-	if (UMaterial* Surface = BuildVertexColorMaterial(TEXT("DeepCoreSurface"), 0.72f, 0.0f))
+	const FDeepCoreTune& T = FDeepCoreTune::Get();
+	if (UMaterial* Surface = BuildVertexColorMaterial(TEXT("DeepCoreSurface"), T.Roughness, T.Ambient))
 	{
 		Surface->AddToRoot();
 		GPalette.Surface = Surface;
 	}
-	if (UMaterial* Glow = BuildVertexColorMaterial(TEXT("DeepCoreGlow"), 0.14f, 0.0f))
+	if (UMaterial* Glow = BuildVertexColorMaterial(TEXT("DeepCoreGlow"), T.Roughness * 0.2f, T.Ambient))
 	{
 		Glow->AddToRoot();
 		GPalette.Glow = Glow;
