@@ -144,7 +144,8 @@ namespace
 		UMaterialExpressionTextureObjectParameter* RockTex =
 			NewObject<UMaterialExpressionTextureObjectParameter>(M);
 		RockTex->ParameterName = TEXT("RockTex");
-		RockTex->Texture = GetGeneratedTexture(bSmooth ? TEXT("pegmatite") : TEXT("granodiorite"));
+		const TCHAR* RockTexName = bSmooth ? TEXT("pegmatite") : TEXT("granodiorite");
+		RockTex->Texture = GetGeneratedTexture(RockTexName);
 		RockTex->SamplerType = SAMPLERTYPE_Color;
 		M->GetExpressionCollection().AddExpression(RockTex);
 
@@ -169,7 +170,12 @@ namespace
 				"// The texture carries GRAIN; the vertex colour carries which rock this is and\n"
 				"// how occluded it is. Multiplying keeps both: tinting a grey photo by the\n"
 				"// lithology colour is what makes one texture serve every rock class.\n"
-				"tx /= max(dot(tx, float3(0.333,0.333,0.333)), 1e-3);\n"
+				"// Normalise by the image's CONSTANT mean so the sample swings about 1.0 and\n"
+				"// modulates the authored albedo. Dividing by the per-pixel mean instead --\n"
+				"// dot(tx, 0.333) -- drives every sample to exactly 1.0 and deletes the grain:\n"
+				"// measured, turning the texture off then moved the frame by a mean of 0.999/255\n"
+				"// over 2% of pixels, i.e. the generated textures were doing nothing at all.\n"
+				"tx /= max(TexMean, 1e-3);\n"
 				"float broad = dcFbm(p * 0.5);\n"
 				"float grain = dcFbm(p * 6.0);\n"
 				"// Ridged noise isolates thin LINES rather than blobs: partings, not clouds.\n"
@@ -187,6 +193,7 @@ namespace
 			AddInput(C, TEXT("Inv"), MakeConst(M, Inv));
 			AddInput(C, TEXT("Mottle"), MakeConst(M, T.Mottle));
 			AddInput(C, TEXT("Tex"), RockTex);
+			AddInput(C, TEXT("TexMean"), MakeConst(M, GetGeneratedTextureMean(RockTexName)));
 			AddInput(C, TEXT("TexScale"), MakeConst(M, T.TexScale));
 			AddInput(C, TEXT("TexAmt"), MakeConst(M, T.TexAmount));
 			AddInput(C, TEXT("VNn"), VN);
