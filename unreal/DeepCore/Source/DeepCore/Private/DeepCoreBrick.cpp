@@ -16,8 +16,15 @@ int32 FBrickMesh::Vert(const FVector& P, const FVector& N, const FVector2D& UV)
 
 	if (bStrata)
 	{
+		// ReinterpretAsLinear, NOT FLinearColor(Ink). SetInk stores the ink with ToFColor(false),
+		// which writes the linear value into the byte with no sRGB encode -- so the byte IS the
+		// linear value scaled by 255, and dividing by 255 is its exact inverse. FLinearColor(FColor)
+		// instead runs sRGBToLinearTable (Color.h:838), decoding a value that was never encoded.
+		// On country rock that turned albedo 0.098 into 0.0097 -- a 10x crush that squeezed the
+		// whole strata band into about two byte levels, hiding the banding entirely and pushing the
+		// worklights to 900 cd to compensate for walls that were never meant to be that dark.
 		const float T = DeepCoreRock::Strata(P);
-		FLinearColor Tinted = FLinearColor(Ink);
+		FLinearColor Tinted = Ink.ReinterpretAsLinear();
 		Tinted.R *= T; Tinted.G *= T; Tinted.B *= T;
 		Colors.Add(Tinted.ToFColor(false));
 	}

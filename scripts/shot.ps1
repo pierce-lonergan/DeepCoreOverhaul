@@ -78,6 +78,13 @@ if (-not $NoBuild) {
 
 if (Test-Path $LogFile) { Remove-Item $LogFile -Force -ErrorAction SilentlyContinue }
 
+# Delete the previous capture BEFORE the run. Without this a run that fails to capture leaves the
+# last run's PNG in place, and the copy below silently publishes it under the new name -- which is
+# how a sweep produces two "different" variants that are byte-identical files. Any comparison drawn
+# from those is worthless, and nothing in the output says so.
+$ShotFile = Join-Path $Saved 'Screenshots\WindowsEditor\DeepCore.png'
+if (Test-Path $ShotFile) { Remove-Item $ShotFile -Force -ErrorAction SilentlyContinue }
+
 $runArgs = @("`"$Proj`"", '-game', '-windowed', "-resx=$ResX", "-resy=$ResY", '-log', "-DeepCoreShot=$Delay")
 if ($Boom -gt 0) { $runArgs += "-DeepCoreBoom=$Boom" }
 if ($Tune)       { $runArgs += "-DeepCoreTune=$Tune" }
