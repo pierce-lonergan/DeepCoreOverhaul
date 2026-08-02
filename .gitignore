@@ -83,3 +83,9 @@ _unused/
 .env
 *.key
 secrets.json
+
+# API keys never belong in this repository. tools/gen/genimage.py reads TOGETHER_API_KEY from
+# the environment, or a file pointed at by TOGETHER_KEY_FILE that lives outside the tree.
+*.key
+together.key
+.env
