@@ -126,6 +126,11 @@ struct FDeepCoreTune
 	/** Lamp source radius in cm. Larger = softer near-field falloff and far less clipping. */
 	float SourceRad   = 25.0f;
 
+	/** World size of one texture tile, as 1/cm. Smaller number = larger features on the wall. */
+	float TexScale    = 1.0f / 260.0f;
+	/** How strongly the photographic grain modulates the procedural base. 0 disables it. */
+	float TexAmount   = 1.0f;
+
 	/** Populate from -DeepCoreTune=k=v,k=v. Logs what it parsed and what it did not recognise. */
 	static void ParseCommandLine();
 

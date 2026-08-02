@@ -13,6 +13,8 @@
 #include "Materials/MaterialExpressionCustom.h"
 #include "Materials/MaterialExpressionWorldPosition.h"
 #include "Materials/MaterialExpressionVertexNormalWS.h"
+#include "Materials/MaterialExpressionTextureObjectParameter.h"
+#include "DeepCoreTextures.h"
 #endif
 
 namespace
@@ -114,6 +116,14 @@ namespace
 
 		const float Inv = 1.0f / FMath::Max(10.0f, T.RockScale);
 
+		// The generated rock photograph, as a texture object the Custom node can sample.
+		UMaterialExpressionTextureObjectParameter* RockTex =
+			NewObject<UMaterialExpressionTextureObjectParameter>(M);
+		RockTex->ParameterName = TEXT("RockTex");
+		RockTex->Texture = GetGeneratedTexture(bSmooth ? TEXT("pegmatite") : TEXT("granodiorite"));
+		RockTex->SamplerType = SAMPLERTYPE_Color;
+		M->GetExpressionCollection().AddExpression(RockTex);
+
 		// --- base colour -----------------------------------------------------------------
 		{
 			UMaterialExpressionCustom* C = NewObject<UMaterialExpressionCustom>(M);
@@ -121,6 +131,20 @@ namespace
 			C->Description = TEXT("RockAlbedo");
 			C->Code = FString(kNoiseHLSL) +
 				"float3 p = WP * Inv;\n"
+				"// TRIPLANAR. There are no usable UVs on this mesh -- FBrickMesh emits an\n"
+				"// arbitrary (0,0)-(1,1) per quad regardless of world size -- so the texture is\n"
+				"// projected from the three world axes and blended by the surface normal. The\n"
+				"// exponent sharpens the blend; too low and every surface looks doubly-exposed.\n"
+				"float3 tp = WP * TexScale;\n"
+				"float3 bw = pow(abs(normalize(VNn)), 6.0);\n"
+				"bw /= max(bw.x + bw.y + bw.z, 1e-4);\n"
+				"float3 tx = Texture2DSample(Tex, TexSampler, tp.yz).rgb * bw.x\n"
+				"         + Texture2DSample(Tex, TexSampler, tp.xz).rgb * bw.y\n"
+				"         + Texture2DSample(Tex, TexSampler, tp.xy).rgb * bw.z;\n"
+				"// The texture carries GRAIN; the vertex colour carries which rock this is and\n"
+				"// how occluded it is. Multiplying keeps both: tinting a grey photo by the\n"
+				"// lithology colour is what makes one texture serve every rock class.\n"
+				"tx /= max(dot(tx, float3(0.333,0.333,0.333)), 1e-3);\n"
 				"float broad = dcFbm(p * 0.5);\n"
 				"float grain = dcFbm(p * 6.0);\n"
 				"// Ridged noise isolates thin LINES rather than blobs: partings, not clouds.\n"
@@ -131,11 +155,16 @@ namespace
 				"float3 c = VC * mott * grit;\n"
 				"// Partings go dark and slightly cool, as damp fracture faces do.\n"
 				"c = lerp(c, c * float3(0.30, 0.32, 0.36), parting * Mottle);\n"
+				"c *= lerp(1.0.xxx, tx, saturate(TexAmt));\n"
 				"return max(c, 0.0);\n";
 			AddInput(C, TEXT("WP"), WP);
 			AddInput(C, TEXT("VC"), VC);
 			AddInput(C, TEXT("Inv"), MakeConst(M, Inv));
 			AddInput(C, TEXT("Mottle"), MakeConst(M, T.Mottle));
+			AddInput(C, TEXT("Tex"), RockTex);
+			AddInput(C, TEXT("TexScale"), MakeConst(M, T.TexScale));
+			AddInput(C, TEXT("TexAmt"), MakeConst(M, T.TexAmount));
+			AddInput(C, TEXT("VNn"), VN);
 			M->GetExpressionCollection().AddExpression(C);
 			Ed->BaseColor.Expression = C;
 		}

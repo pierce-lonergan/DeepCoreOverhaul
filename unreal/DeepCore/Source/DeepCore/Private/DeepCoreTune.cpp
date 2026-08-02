@@ -58,6 +58,8 @@ void FDeepCoreTune::ParseCommandLine()
 		else if (Key == TEXT("mottle"))   { T.Mottle = V; }
 		else if (Key == TEXT("roughvar")) { T.RoughVar = V; }
 		else if (Key == TEXT("srad"))     { T.SourceRad = V; }
+		else if (Key == TEXT("texscale")) { T.TexScale = (V > 0.0f) ? 1.0f / V : 0.0f; }
+		else if (Key == TEXT("tex"))      { T.TexAmount = V; }
 		else                              { Unknown.Add(Key); }
 	}
 

@@ -12,7 +12,10 @@ public class DeepCore : ModuleRules
 			"Engine",
 			"InputCore",
 			"ProceduralMeshComponent",
-			"EnhancedInput"
+			"EnhancedInput",
+			// FImageUtils::ImportBufferAsTexture2D decodes the generated PNGs at runtime.
+			"ImageWrapper",
+			"ImageCore"
 		});
 
 		// The game logic headers are shared verbatim with the standalone build. They are
