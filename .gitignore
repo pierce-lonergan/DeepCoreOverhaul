@@ -89,3 +89,11 @@ secrets.json
 *.key
 together.key
 .env
+
+# IDE project files. workspace.xml in particular is per-machine window state and
+# churns on every session.
+/.idea/
+
+# Python bytecode from tools/
+__pycache__/
+*.pyc
