@@ -116,7 +116,7 @@ void ADeepCorePawn::ApplyGrade()
 	S.bOverride_AutoExposureMethod        = true; S.AutoExposureMethod        = AEM_Histogram;
 	S.bOverride_AutoExposureMinBrightness = true; S.AutoExposureMinBrightness = T.Ev;
 	S.bOverride_AutoExposureMaxBrightness = true; S.AutoExposureMaxBrightness = T.Ev;
-	S.bOverride_AutoExposureBias          = true; S.AutoExposureBias          = 0.0f;
+	S.bOverride_AutoExposureBias          = true; S.AutoExposureBias          = T.Bias;
 	S.bOverride_AutoExposureSpeedUp       = true; S.AutoExposureSpeedUp       = 100.0f;
 	S.bOverride_AutoExposureSpeedDown     = true; S.AutoExposureSpeedDown     = 100.0f;
 

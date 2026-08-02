@@ -1,4 +1,4 @@
-// DeepCoreTune.h : every look-affecting constant, in one place, settable from the command line.
+﻿// DeepCoreTune.h : every look-affecting constant, in one place, settable from the command line.
 //
 // WHY THIS EXISTS
 // ---------------
@@ -55,6 +55,17 @@ struct FDeepCoreTune
 	float Ev          = 12.0f;
 	/** Sky light intensity. Near-useless in a sealed cave; kept as a knob to prove that. */
 	float Sky         = 0.20f;
+
+	/**
+	 * Exposure compensation in stops, applied on top of Ev.
+	 *
+	 * Exists as a POSITIVE CONTROL. Ev stopped responding above about 12 and it was not clear
+	 * whether that was a clamp, a saturating conversion, or the setting simply not being read.
+	 * Bias reaches the exposure through a different path, so sweeping it answers the question:
+	 * if Bias moves the image while Ev does not, the fault is specific to the Min/Max path
+	 * rather than to exposure as a whole.
+	 */
+	float Bias        = 0.0f;
 	float FogDensity  = 0.009f;
 	float FogExtinct  = 0.9f;
 	/** Volumetric fog scattering anisotropy, 0 = isotropic, ->1 = forward-scattering beams. */
@@ -121,3 +132,4 @@ struct FDeepCoreTune
 	/** The one instance. Read everywhere; written only by ParseCommandLine. */
 	static FDeepCoreTune& Get();
 };
+
