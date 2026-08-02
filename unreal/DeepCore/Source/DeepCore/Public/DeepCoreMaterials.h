@@ -37,7 +37,16 @@ struct FDeepCorePalette
 	/** Lit, vertex-coloured, dielectric. Terrain, crew, creatures -- almost everything. */
 	UMaterialInterface* Surface = nullptr;
 
-	/** Lit but with vertex colour also driving emissive, for crystals and warning lights. */
+	/**
+	 * Lit and very smooth, for mineral veins.
+	 *
+	 * Deliberately NOT emissive. Self-illuminating minerals are a fantasy-game convention and
+	 * they were the loudest remaining toy signal in the frame: against a dark mine they clipped
+	 * to pure white and bloomed, reading as glowing plastic gems. Real pegmatite and sulphide
+	 * are simply SMOOTHER than their host rock, so they flare when a cap lamp sweeps across them
+	 * and vanish when it moves on. That is better gameplay too -- finding ore becomes something
+	 * you do by pointing a light at it.
+	 */
 	UMaterialInterface* Glow = nullptr;
 
 	/** True when the lit graphs were built; false when the unlit fallback is in use. */

@@ -82,6 +82,15 @@ struct FBrickMesh
 	/** Colour applied to every vertex emitted from here on. */
 	FColor Ink = FColor::White;
 
+	/**
+	 * When set, every emitted vertex is tinted by DeepCoreRock::Strata at its world position.
+	 *
+	 * Applied in Vert() rather than at each call site so that it cannot be forgotten on one
+	 * surface and applied on another -- a single untinted wall in a banded cavern reads as a
+	 * different material and is instantly obvious.
+	 */
+	bool bStrata = false;
+
 	void SetInk(const FLinearColor& C) { Ink = C.ToFColor(false); }
 
 	void Reset()
@@ -152,6 +161,18 @@ struct FBrickMesh
 	 * it than a smooth sphere would -- the faceting is the point.
 	 */
 	void Domed(const FVector& Centre, float Radius, float Height);
+
+	/**
+	 * A quad subdivided Subdiv x Subdiv and displaced into rock.
+	 *
+	 * Corners are given in world space and wound so the normal points out of the solid. Every
+	 * sample is displaced by DeepCoreRock::Displace, which depends only on world position, so
+	 * adjacent quads -- in this tile or the next one -- agree exactly along their shared edge
+	 * and no crack can open. Normals are recomputed per sub-quad from the DISPLACED corners:
+	 * faceted, because rock breaks in flat conchoidal faces and smoothing them reads as clay.
+	 */
+	void RockQuad(const FVector& A, const FVector& B, const FVector& C, const FVector& D,
+	              int32 Subdiv);
 
 	/** Push this soup into a component as one section. */
 	void Commit(UProceduralMeshComponent* Comp, int32 Section, bool bCollision) const;

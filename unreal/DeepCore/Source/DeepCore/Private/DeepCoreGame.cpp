@@ -1,12 +1,14 @@
 #include "DeepCoreGame.h"
 
 #include "Camera/CameraComponent.h"
-#include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Components/SkyAtmosphereComponent.h"
+#include "Engine/DirectionalLight.h"
+#include "EngineUtils.h"
 #include "Components/SkyLightComponent.h"
 #include "DeepCoreTerrain.h"
 #include "DeepCoreUnit.h"
-#include "Engine/DirectionalLight.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/SkyLight.h"
@@ -73,6 +75,10 @@ void ADeepCorePawn::BeginPlay()
 		Arm->TargetArmLength = Boom;
 	}
 
+	// FCommandLine::Get() returns a raw TCHAR*, so the value form is the parse to use here.
+	FString ShotArg;
+	bCaptureLock = FParse::Value(FCommandLine::Get(), TEXT("DeepCoreShot="), ShotArg);
+
 	// Pitch scales with distance: looking almost straight down works for a close view but
 	// makes a wide view read as a map rather than a place.
 	// A shallow pitch lets the ground plane run all the way to the horizon, which compresses
@@ -93,8 +99,8 @@ void ADeepCorePawn::SetupPlayerInputComponent(UInputComponent* Input)
 	Input->BindKey(EKeys::LeftMouseButton,   IE_Pressed, this, &ADeepCorePawn::OnClick);
 }
 
-void ADeepCorePawn::ZoomIn()  { Boom = FMath::Max(700.0f,  Boom * 0.88f); }
-void ADeepCorePawn::ZoomOut() { Boom = FMath::Min(5200.0f, Boom * 1.14f); }
+void ADeepCorePawn::ZoomIn()  { if (!bCaptureLock) { Boom = FMath::Max(700.0f,  Boom * 0.88f); } }
+void ADeepCorePawn::ZoomOut() { if (!bCaptureLock) { Boom = FMath::Min(5200.0f, Boom * 1.14f); } }
 
 void ADeepCorePawn::OnClick()
 {
@@ -121,7 +127,7 @@ void ADeepCorePawn::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC)
+	if (!PC || bCaptureLock)
 	{
 		return;
 	}
@@ -169,84 +175,146 @@ void ADeepCoreGameMode::BuildLighting()
 		return;
 	}
 
-	// Key light. Warm, low, and strongly angled: a single hard key is what gives stacked
-	// bricks their edge definition, and a low angle throws the long shadows that make a
-	// cavern floor read as a floor rather than as a texture.
-	if (ADirectionalLight* Key = W->SpawnActor<ADirectionalLight>())
-	{
-		Key->SetMobility(EComponentMobility::Movable);
-		Key->SetActorRotation(FRotator(-42.0f, 35.0f, 0.0f));
-		if (UDirectionalLightComponent* C = Cast<UDirectionalLightComponent>(Key->GetLightComponent()))
-		{
-			// Intensity is in lux. 4 lux is roughly deep twilight, which is what made the first
-			// capture read as an unlit scene; 10 is the engine's own daylight default and the
-			// right order of magnitude once exposure is pinned.
-			C->SetIntensity(10.0f);
-			C->SetLightColor(FLinearColor(1.0f, 0.92f, 0.78f));
-			C->SetDynamicShadowCascades(4);
-			C->SetShadowBias(0.4f);
-		}
-	}
+	// THERE IS NO SUN UNDERGROUND.
+	//
+	// The single loudest wrong note in this game so far was a directional light: parallel
+	// shadows of uniform density falling across every tile of a sealed cavern, plus a blue sky
+	// visible past the map edge. No amount of rock shading survives being lit by daylight. So
+	// there is deliberately no ADirectionalLight spawned here, and there never should be.
+	//
+	// Everything is lit by what the crew carried down (see ADeepCoreUnit's cap lamp) and by a
+	// handful of fixed worklights. That is also why hardware ray tracing matters so much: with
+	// the sun gone, indirect bounce from those few small sources IS the ambient light, and
+	// before this commit Lumen could not see any of this geometry to bounce off.
 
-	// Fill. Cool, dim, omnidirectional -- the bounce a real cavern would give. Without it the
-	// shadow side of every brick goes to pure black and the geometry disappears.
+	// A near-black floor, not a light source. Real fill now comes from Lumen bounce; this only
+	// stops the shadow side of geometry clipping to absolute zero, which reads as a hole in the
+	// world rather than as darkness.
 	if (ASkyLight* Sky = W->SpawnActor<ASkyLight>())
 	{
-		// ASkyLight derives from AInfo, which has no mobility of its own; the mobility lives
-		// on the component.
 		if (USkyLightComponent* C = Sky->GetLightComponent())
 		{
 			C->SetMobility(EComponentMobility::Movable);
-			// Captured scene, NOT SpecifiedCubemap: the latter needs a cubemap asset, and with
-			// none assigned the sky light contributes exactly nothing -- which is why every
-			// shadowed brick face went to pure black.
 			C->SourceType = SLS_CapturedScene;
-			C->SetIntensity(1.6f);
-			C->SetLightColor(FLinearColor(0.62f, 0.72f, 0.92f));
+			C->SetIntensity(1.05f);
+			C->SetLightColor(FLinearColor(0.44f, 0.40f, 0.36f));
 			C->bLowerHemisphereIsBlack = false;
 			C->RecaptureSky();
 		}
 	}
 
-	// Fog. Depth cueing is what stops a large map reading flat; distant caverns should sit
-	// behind near ones without the player having to work it out from perspective alone.
+	// Dust. An underground heading is defined by what hangs in the air: without participating
+	// media a cap lamp is just a bright spot on a wall, and with it the beam itself becomes
+	// visible and the space acquires depth.
+	//
+	// The old inscattering colour here was (0.16, 0.20, 0.30) -- that is Rayleigh scatter, the
+	// colour of outdoor sky, and it was tinting the whole mine blue.
 	if (AExponentialHeightFog* Fog = W->SpawnActor<AExponentialHeightFog>())
 	{
 		Fog->SetActorLocation(FVector(0, 0, -400.0f));
 		if (UExponentialHeightFogComponent* C = Fog->GetComponent())
 		{
-			C->SetFogDensity(0.008f);
-			C->SetFogInscatteringColor(FLinearColor(0.16f, 0.20f, 0.30f));
-			C->SetFogHeightFalloff(0.12f);
-			C->SetStartDistance(600.0f);
+			C->SetFogDensity(0.009f);
+			C->SetFogInscatteringColor(FLinearColor(0.022f, 0.019f, 0.016f));
+			C->SetFogHeightFalloff(0.02f);
+			C->SetStartDistance(200.0f);
+
+			C->SetVolumetricFog(true);
+			// Forward-scattering, so beams bloom toward the viewer instead of glowing evenly
+			// in all directions. This is most of what makes a light shaft look like a shaft.
+			C->SetVolumetricFogScatteringDistribution(0.75f);
+			C->SetVolumetricFogAlbedo(FColor(190, 178, 162));   // warm rock dust, not white
+			C->SetVolumetricFogExtinctionScale(0.9f);
+			C->SetVolumetricFogDistance(4500.0f);
 		}
 	}
 
-	// Post. Fixed exposure is the important part: auto-exposure would ramp brightness as the
-	// player pans between an open chamber and a tight corridor, which reads as the game
-	// flickering rather than as the eye adapting.
+	// Post. The filmic toe is what actually produces underground blacks: without it the
+	// tonemapper lifts the shadows into the washed-out grey that is the signature UE5 default
+	// look, and every dark scene reads as an underexposed bright scene rather than as a dark
+	// place.
 	if (APostProcessVolume* PP = W->SpawnActor<APostProcessVolume>())
 	{
 		PP->bUnbound = true;
 		FPostProcessSettings& S = PP->Settings;
 
-		// Fixed exposure, done the reliable way: histogram metering with its min and max
-		// brightness pinned to the same value. AEM_Manual sounds like the right tool but it
-		// derives exposure from physical camera settings (ISO, aperture, shutter), so setting
-		// only a bias leaves the actual stop undefined -- which crushed every lit surface to
-		// black while the emissive crystals blew out to pure white.
+		// Fixed exposure.
+		//
+		// UNITS: these are EV100, not luminance. UE5 defaults ExtendDefaultLuminanceRange on,
+		// and Scene.h states the Min/Max are "expressed in pixel luminance (cd/m2) or in EV100
+		// when using ExtendDefaultLuminanceRange", with the property clamped to [-10, 20].
+		// So HIGHER IS DARKER, which is the exact inverse of the luminance reading -- every
+		// brightness pass before this one was pushing the value the wrong way and then
+		// "fixing" the resulting blowout by changing lights that were not the problem.
+		//
+		// EV100 ~4.5 is about right for a heading lit by a few hundred candela of installed
+		// lamps: roughly a dim interior, several stops under an overcast day at EV 12.
+		// Min == Max pins it, so the exposure never drifts as the camera pans between a lit
+		// chamber and an unlit drift.
 		S.bOverride_AutoExposureMethod        = true; S.AutoExposureMethod        = AEM_Histogram;
-		// These clamp the METERED scene luminance, and exposure is its reciprocal, so a smaller
-		// number means a brighter image. 1.0 metered a cave lit at 10 lux about two stops
-		// under; 0.35 lands it where the rock reads as rock rather than as silhouette.
-		S.bOverride_AutoExposureMinBrightness = true; S.AutoExposureMinBrightness = 0.35f;
-		S.bOverride_AutoExposureMaxBrightness = true; S.AutoExposureMaxBrightness = 0.35f;
+		S.bOverride_AutoExposureMinBrightness = true; S.AutoExposureMinBrightness = 2.7f;
+		S.bOverride_AutoExposureMaxBrightness = true; S.AutoExposureMaxBrightness = 2.7f;
 		S.bOverride_AutoExposureBias          = true; S.AutoExposureBias          = 0.0f;
-		S.bOverride_BloomIntensity     = true;  S.BloomIntensity     = 0.45f;
-		S.bOverride_BloomThreshold     = true;  S.BloomThreshold     = 1.4f;
-		S.bOverride_VignetteIntensity  = true;  S.VignetteIntensity  = 0.32f;
-		S.bOverride_AmbientOcclusionIntensity = true; S.AmbientOcclusionIntensity = 0.55f;
-		S.bOverride_AmbientOcclusionRadius    = true; S.AmbientOcclusionRadius    = 90.0f;
+
+		S.bOverride_FilmToe        = true; S.FilmToe        = 0.62f;
+		S.bOverride_FilmSlope      = true; S.FilmSlope      = 0.92f;
+		S.bOverride_FilmShoulder   = true; S.FilmShoulder   = 0.30f;
+		S.bOverride_FilmBlackClip  = true; S.FilmBlackClip  = 0.0f;
+		S.bOverride_FilmWhiteClip  = true; S.FilmWhiteClip  = 0.04f;
+
+		S.bOverride_BloomIntensity = true; S.BloomIntensity = 0.28f;
+		S.bOverride_BloomThreshold = true; S.BloomThreshold = 1.0f;
+		S.bOverride_VignetteIntensity = true; S.VignetteIntensity = 0.40f;
+
+		// 90cm was nearly a whole tile wide, which darkens open floor rather than cavities.
+		// Real contact darkening happens at centimetre scale.
+		S.bOverride_AmbientOcclusionIntensity = true; S.AmbientOcclusionIntensity = 0.45f;
+		S.bOverride_AmbientOcclusionRadius    = true; S.AmbientOcclusionRadius    = 40.0f;
+	}
+}
+
+void ADeepCoreGameMode::PlaceWorklight(const FVector& Where)
+{
+	UWorld* W = GetWorld();
+	if (!W)
+	{
+		return;
+	}
+
+	AActor* Holder = W->SpawnActor<AActor>(AActor::StaticClass());
+	if (!Holder)
+	{
+		return;
+	}
+
+	UPointLightComponent* L = NewObject<UPointLightComponent>(Holder);
+	Holder->SetRootComponent(L);
+	L->RegisterComponent();
+	L->SetMobility(EComponentMobility::Movable);
+
+	// Position AFTER the root exists. SpawnActor applies its transform to the actor's root
+	// component, and this actor has none at spawn time, so passing the location there silently
+	// discarded it and stacked every worklight at the world origin -- which is inside solid
+	// rock, so the entire map rendered as unlit black silhouettes against the fog.
+	L->SetWorldLocation(Where);
+
+	// Cool white, against the warm 3200K cap lamps. That colour contrast between fixed
+	// installation lighting and the lamps people carry is a large part of why an industrial
+	// interior reads as industrial rather than as a cave with lights in it.
+	L->SetIntensityUnits(ELightUnits::Candelas);
+	L->SetIntensity(420.0f);
+	L->SetLightColor(FLinearColor(0.82f, 0.88f, 1.0f));
+	L->SetAttenuationRadius(1700.0f);
+	L->SetVolumetricScatteringIntensity(1.8f);
+	L->SetCastShadows(true);
+
+	Worklights.Add(L);
+
+	if (Worklights.Num() == 1)
+	{
+		// Proof the fix holds: this used to print (0, 0, 0) for every lamp.
+		const FVector P = L->GetComponentLocation();
+		UE_LOG(LogTemp, Display, TEXT("DeepCore: first worklight at (%.0f, %.0f, %.0f)"), P.X, P.Y, P.Z);
 	}
 }
 
@@ -283,6 +351,43 @@ void ADeepCoreGameMode::BeginPlay()
 	if (!W)
 	{
 		return;
+	}
+
+	// Confirm the renderer is actually in the mode the ini asked for. The entire lighting
+	// design depends on hardware ray tracing being live -- without it Lumen cannot see a single
+	// procedural mesh in this game -- and a silent fallback to software would look like a
+	// tuning problem for hours before anyone suspected the renderer.
+	{
+		auto CVarInt = [](const TCHAR* Name) -> int32
+		{
+			IConsoleVariable* V = IConsoleManager::Get().FindConsoleVariable(Name);
+			return V ? V->GetInt() : -1;
+		};
+		UE_LOG(LogTemp, Display,
+		       TEXT("DeepCore: renderer -- RayTracing=%d LumenHWRT=%d LumenHWRTMode=%d SkinCache=%d VolFog=%d"),
+		       CVarInt(TEXT("r.RayTracing")), CVarInt(TEXT("r.Lumen.HardwareRayTracing")),
+		       CVarInt(TEXT("r.Lumen.HardwareRayTracing.LightingMode")),
+		       CVarInt(TEXT("r.SkinCache.CompileShaders")), CVarInt(TEXT("r.VolumetricFog")));
+	}
+
+	// The startup map is an engine map and arrives with its own sky. Anything that lights the
+	// world from outside is wrong here by definition, and it was also washing out the frame
+	// wherever the camera could see past the level's edge.
+	{
+		int32 Removed = 0;
+		for (TActorIterator<AActor> It(W); It; ++It)
+		{
+			AActor* A = *It;
+			if (!A) { continue; }
+			const FString N = A->GetName();
+			if (A->IsA(ADirectionalLight::StaticClass()) || A->IsA(ASkyAtmosphere::StaticClass())
+			    || N.Contains(TEXT("Sky")) || N.Contains(TEXT("Atmospher")) || N.Contains(TEXT("Sun")))
+			{
+				A->Destroy();
+				Removed++;
+			}
+		}
+		UE_LOG(LogTemp, Display, TEXT("DeepCore: removed %d sky/sun actors from the startup map"), Removed);
 	}
 
 	BuildLighting();
@@ -350,6 +455,42 @@ void ADeepCoreGameMode::BeginPlay()
 		U->SetWanders(true);
 		U->FinishSpawning(Xf);
 		Creatures.Add(U);
+	}
+
+	// Fixed worklights through the opened ground. Five cap lamps over a 48x40m map leave
+	// almost the whole level black, which is authentic and unplayable; a developed heading is
+	// strung with installed lighting anyway, so this is the honest fix rather than a cheat.
+	// They are placed on discovered floor, so lit space and known space are the same thing.
+	{
+		const Level& L = Terrain->GetLevel();
+		const int32 Step = 6;   // roughly one lamp per 6x6 tiles of opened ground
+		int32 Placed = 0;
+		for (int32 Y = Step / 2; Y < L.Height(); Y += Step)
+		{
+			for (int32 X = Step / 2; X < L.Width(); X += Step)
+			{
+				// Search the neighbourhood for a walkable tile, so a lamp is never stranded
+				// inside rock just because the fixed lattice landed there.
+				bool bDone = false;
+				for (int32 R = 0; R <= 3 && !bDone; R++)
+				{
+					for (int32 Dy = -R; Dy <= R && !bDone; Dy++)
+					{
+						for (int32 Dx = -R; Dx <= R && !bDone; Dx++)
+						{
+							if (!Terrain->IsWalkable(X + Dx, Y + Dy))
+							{
+								continue;
+							}
+							PlaceWorklight(ADeepCoreTerrain::TileToWorld(X + Dx, Y + Dy, 185.0f));
+							Placed++;
+							bDone = true;
+						}
+					}
+				}
+			}
+		}
+		UE_LOG(LogTemp, Display, TEXT("DeepCore: %d worklights placed"), Placed);
 	}
 
 	// Put the camera over the middle of the map rather than over the origin, which is a map

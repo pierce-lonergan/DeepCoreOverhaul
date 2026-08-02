@@ -1,6 +1,7 @@
 #include "DeepCoreTerrain.h"
 
 #include "DeepCoreMaterials.h"
+#include "DeepCoreRock.h"
 #include "ProceduralMeshComponent.h"
 
 using namespace Sandbox;
@@ -105,110 +106,143 @@ bool ADeepCoreTerrain::Drill(int32 X, int32 Y)
 	return true;
 }
 
+namespace
+{
+	/** Top of the rock mass, and the base it is cut from. A wall stands ~2.4m over the floor. */
+	constexpr float RockTop  = 240.0f;
+	constexpr float RockBase = -40.0f;
+
+	/** Subdivision of a one-tile face. 4 gives 25cm rock detail, which is about the finest
+	 *  that survives being viewed from strategy distance. */
+	constexpr int32 FaceSubdiv  = 4;
+	constexpr int32 FloorSubdiv = 3;
+}
+
 void ADeepCoreTerrain::Rebuild()
 {
 	const FDeepCorePalette& Palette = GetDeepCorePalette();
 
-	FBrickMesh Surface;
-	FBrickMesh Glow;
+	FBrickMesh Rock;   // the mass: walls, floors, everything structural
+	FBrickMesh Vein;   // mineral bands, smoother, so a lamp flares off them
 
-	// Studs multiply vertex count by roughly eight over a plain box world, so reserving up
-	// front matters: without it this reallocates dozens of times per rebuild, and a rebuild
-	// happens on every drill.
-	Surface.Reserve(Level.Width() * Level.Height() * 200);
+	Rock.bStrata = true;   // banding applied to every vertex; see FBrickMesh::bStrata
+	Vein.bStrata = false;  // a vein cuts ACROSS bedding, so it must not be banded by it
+
+	Rock.Reserve(Level.Width() * Level.Height() * 160);
+
+	const float H = TileSize * 0.5f;
+
+	// A tile only contributes geometry where it MEETS OPEN SPACE. Interior faces between two
+	// solid tiles are invisible forever, and emitting them was most of the old vertex budget --
+	// this is what pays for subdividing and displacing the faces that can actually be seen.
+	auto IsSolid = [&](int32 X, int32 Y) -> bool
+	{
+		if (!Level.InBounds(X, Y))
+		{
+			return true;   // off-map reads as solid, so the world is sealed at its border
+		}
+		const Block& B = Level.At(X, Y);
+		return !B.Has(BLOCK_FLOOR) && !B.Has(BLOCK_WATER);
+	};
 
 	for (int32 Y = 0; Y < Level.Height(); Y++)
 	{
 		for (int32 X = 0; X < Level.Width(); X++)
 		{
 			const Block& B = Level.At(X, Y);
-			const float AO = TileAO(X, Y);
-			const bool bSolid = !B.Has(BLOCK_FLOOR) && !B.Has(BLOCK_WATER);
 			const FVector C = TileToWorld(X, Y);
+			const float X0 = C.X - H, X1 = C.X + H;
+			const float Y0 = C.Y - H, Y1 = C.Y + H;
 
-			// Everything is measured from the floor plate, which sits just under ground level
-			// so that units placed at Z=0 stand ON it.
-			const float PlateBase = FloorTop - PlateHeight;
-			// Eight courses puts a wall at 240cm -- well over head height on a 147cm crew
-			// member. Five courses read as a kerb from a strategy camera: the eye needs the
-			// walls to dominate before a corridor reads as a corridor rather than as a colour
-			// change in the floor.
-			const int32 WallCourses = 8;
-
-			// Undiscovered rock is deliberately UNSTUDDED and emitted as a single block, so
-			// unexplored ground reads as raw stone rather than as something already built.
-			// The visual grammar carries information: studs mean "known", bare means "not
-			// yet". It is also most of the map, so it is the cheap case by design.
-			if (B.Has(BLOCK_HIDDEN) && bSolid)
+			if (IsSolid(X, Y))
 			{
-				Surface.SetInk(FLinearColor(0.15f, 0.135f, 0.12f) * AO);
-				Surface.Studded(C + FVector(0, 0, PlateBase), 1, 1,
-				                PlateHeight + WallCourses * BrickHeight, false);
+				const bool bSeam = B.Has(BLOCK_CRYSTAL_SEAM) || B.Has(BLOCK_ORE_SEAM);
+				FBrickMesh& M = bSeam ? Vein : Rock;
+
+				if (B.Has(BLOCK_CRYSTAL_SEAM))
+				{
+					M.SetInk(FLinearColor(0.34f, 0.40f, 0.33f));   // pegmatite
+				}
+				else if (B.Has(BLOCK_ORE_SEAM))
+				{
+					M.SetInk(FLinearColor(0.19f, 0.13f, 0.07f));   // massive sulphide
+				}
+				else if (B.Has(BLOCK_HIDDEN))
+				{
+					M.SetInk(FLinearColor(0.042f, 0.040f, 0.038f)); // country rock, undisturbed
+				}
+				else
+				{
+					M.SetInk(FLinearColor(0.105f, 0.100f, 0.094f)); // granodiorite
+				}
+
+				// Back (roof of the rock mass). Seen constantly from a top-down camera, so it
+				// gets the same treatment as the walls rather than being a flat lid.
+				M.RockQuad(FVector(X0, Y0, RockTop), FVector(X1, Y0, RockTop),
+				           FVector(X1, Y1, RockTop), FVector(X0, Y1, RockTop), FaceSubdiv);
+
+				// Exposed faces only.
+				if (!IsSolid(X, Y - 1))
+				{
+					M.RockQuad(FVector(X0, Y0, RockBase), FVector(X1, Y0, RockBase),
+					           FVector(X1, Y0, RockTop),  FVector(X0, Y0, RockTop), FaceSubdiv);
+				}
+				if (!IsSolid(X, Y + 1))
+				{
+					M.RockQuad(FVector(X1, Y1, RockBase), FVector(X0, Y1, RockBase),
+					           FVector(X0, Y1, RockTop),  FVector(X1, Y1, RockTop), FaceSubdiv);
+				}
+				if (!IsSolid(X - 1, Y))
+				{
+					M.RockQuad(FVector(X0, Y1, RockBase), FVector(X0, Y0, RockBase),
+					           FVector(X0, Y0, RockTop),  FVector(X0, Y1, RockTop), FaceSubdiv);
+				}
+				if (!IsSolid(X + 1, Y))
+				{
+					M.RockQuad(FVector(X1, Y0, RockBase), FVector(X1, Y1, RockBase),
+					           FVector(X1, Y1, RockTop),  FVector(X1, Y0, RockTop), FaceSubdiv);
+				}
 				continue;
 			}
 
-			if (B.Has(BLOCK_CRYSTAL_SEAM))
-			{
-				Surface.Courses(C + FVector(0, 0, PlateBase), 1, 1, WallCourses - 1,
-				                BrickHeight, FLinearColor(0.30f, 0.21f, 0.36f) * AO);
-				Glow.SetInk(FLinearColor(0.80f, 0.38f, 1.00f));
-				Glow.Domed(C + FVector(0, 0, PlateBase + (WallCourses - 1) * BrickHeight),
-				           26.0f, 42.0f);
-				continue;
-			}
-
-			if (B.Has(BLOCK_ORE_SEAM))
-			{
-				Surface.Courses(C + FVector(0, 0, PlateBase), 1, 1, WallCourses - 1,
-				                BrickHeight, FLinearColor(0.36f, 0.26f, 0.16f) * AO);
-				Surface.SetInk(FLinearColor(0.66f, 0.47f, 0.24f) * AO);
-				Surface.Studded(C + FVector(0, 0, PlateBase + (WallCourses - 1) * BrickHeight),
-				                1, 1, PlateHeight, true);
-				continue;
-			}
-
-			if (bSolid)
-			{
-				// An exposed wall is a stack of real courses. One tall box the same size has
-				// no seams and reads as extruded terrain -- the single clearest tell of a
-				// prototype.
-				Surface.Courses(C + FVector(0, 0, PlateBase), 1, 1, WallCourses,
-				                BrickHeight, FLinearColor(0.40f, 0.34f, 0.29f) * AO);
-				continue;
-			}
-
+			// --- open ground ------------------------------------------------------------
 			if (B.Has(BLOCK_WATER))
 			{
-				Surface.SetInk(FLinearColor(0.10f, 0.36f, 0.62f) * AO);
-				Surface.Box(C + FVector(0, 0, PlateBase), TileSize * 0.5f, 6.0f, TileSize * 0.5f);
+				// Standing water: very dark and very smooth, so it is read almost entirely by
+				// what it reflects. That is what water actually looks like underground.
+				Vein.SetInk(FLinearColor(0.014f, 0.020f, 0.024f));
+				Vein.RockQuad(FVector(X0, Y0, -14.0f), FVector(X1, Y0, -14.0f),
+				              FVector(X1, Y1, -14.0f), FVector(X0, Y1, -14.0f), 1);
 				continue;
 			}
 
 			if (B.Has(BLOCK_TOOLSTORE))
 			{
-				Surface.SetInk(FLinearColor(0.30f, 0.28f, 0.26f) * AO);
-				Surface.Studded(C + FVector(0, 0, PlateBase), 1, 1, PlateHeight, false);
-				Surface.Courses(C + FVector(0, 0, FloorTop), 1, 1, 2, BrickHeight,
-				                FLinearColor(0.90f, 0.68f, 0.16f));
-				Surface.SetInk(FLinearColor(0.32f, 0.34f, 0.40f));
-				Surface.Box(C + FVector(0, 0, FloorTop + 2 * BrickHeight),
-				            TileSize * 0.42f, 10.0f, TileSize * 0.42f);
+				Rock.SetInk(FLinearColor(0.086f, 0.082f, 0.077f));
+				Rock.RockQuad(FVector(X0, Y0, 0.0f), FVector(X1, Y0, 0.0f),
+				              FVector(X1, Y1, 0.0f), FVector(X0, Y1, 0.0f), FloorSubdiv);
+				// High-visibility equipment is the ONLY saturated colour permitted underground,
+				// which is exactly why it reads as equipment and not as scenery.
+				Rock.bStrata = false;
+				Rock.SetInk(FLinearColor(0.42f, 0.26f, 0.02f));
+				Rock.Box(FVector(C.X, C.Y, 0.0f), H * 0.72f, 90.0f, H * 0.72f);
+				Rock.bStrata = true;
 				continue;
 			}
 
-			// Floor: a studded plate. This is what makes open ground read as a build surface
-			// and gives every chamber a repeating highlight to catch the key light.
-			Surface.SetInk(FLinearColor(0.30f, 0.285f, 0.265f) * AO);
-			Surface.Studded(C + FVector(0, 0, PlateBase), 1, 1, PlateHeight, true);
+			// Muck-covered floor.
+			Rock.SetInk(FLinearColor(0.092f, 0.088f, 0.081f));
+			Rock.RockQuad(FVector(X0, Y0, 0.0f), FVector(X1, Y0, 0.0f),
+			              FVector(X1, Y1, 0.0f), FVector(X0, Y1, 0.0f), FloorSubdiv);
 		}
 	}
 
-	Surface.Commit(Mesh, 0, true);
-	Glow.Commit(Mesh, 1, false);
+	Rock.Commit(Mesh, 0, true);
+	Vein.Commit(Mesh, 1, false);
 
 	if (Palette.Surface) { Mesh->SetMaterial(0, Palette.Surface); }
 	if (Palette.Glow)    { Mesh->SetMaterial(1, Palette.Glow); }
 
-	UE_LOG(LogTemp, Display, TEXT("DeepCore: terrain rebuilt, %d verts (%d glow)"),
-	       Surface.Num(), Glow.Num());
+	UE_LOG(LogTemp, Display, TEXT("DeepCore: terrain rebuilt, %d rock verts, %d vein verts"),
+	       Rock.Num(), Vein.Num());
 }

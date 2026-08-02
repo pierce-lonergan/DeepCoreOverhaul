@@ -1,5 +1,7 @@
 #include "DeepCoreBrick.h"
 
+#include "DeepCoreRock.h"
+
 // Unreal is Z-up; the OpenGL original was Y-up. Every "height" here therefore runs along Z.
 // Getting this wrong produces a world lying on its side, which is obvious the moment it is
 // seen but easy to write.
@@ -11,7 +13,18 @@ int32 FBrickMesh::Vert(const FVector& P, const FVector& N, const FVector2D& UV)
 	const int32 Index = Vertices.Add(P);
 	Normals.Add(N);
 	UVs.Add(UV);
-	Colors.Add(Ink);
+
+	if (bStrata)
+	{
+		const float T = DeepCoreRock::Strata(P);
+		FLinearColor Tinted = FLinearColor(Ink);
+		Tinted.R *= T; Tinted.G *= T; Tinted.B *= T;
+		Colors.Add(Tinted.ToFColor(false));
+	}
+	else
+	{
+		Colors.Add(Ink);
+	}
 	// A tangent perpendicular to the normal. Nothing here samples a normal map, but the
 	// component wants tangents and a degenerate one would break any material that ever does.
 	const FVector T = FMath::Abs(N.Z) > 0.9f ? FVector(1, 0, 0) : FVector(0, 0, 1) ^ N;
@@ -190,4 +203,50 @@ void FBrickMesh::Commit(UProceduralMeshComponent* Comp, int32 Section, bool bCol
 
 	Comp->CreateMeshSection(Section, Vertices, Triangles, Normals, UVs, Colors, Tangents,
 	                        bCollision);
+}
+
+void FBrickMesh::RockQuad(const FVector& A, const FVector& B, const FVector& C, const FVector& D,
+                          int32 Subdiv)
+{
+	Subdiv = FMath::Clamp(Subdiv, 1, 8);
+
+	// Displace once per grid sample and reuse, rather than once per sub-quad corner. Each
+	// interior sample is shared by four sub-quads, so this is a 4x saving on the noise, which
+	// is by far the most expensive thing in a rebuild.
+	const int32 N = Subdiv + 1;
+	TArray<FVector, TInlineAllocator<81>> P;
+	P.SetNumUninitialized(N * N);
+
+	for (int32 J = 0; J < N; J++)
+	{
+		const float V = (float)J / (float)Subdiv;
+		const FVector Left  = FMath::Lerp(A, D, V);
+		const FVector Right = FMath::Lerp(B, C, V);
+		for (int32 I = 0; I < N; I++)
+		{
+			const float U = (float)I / (float)Subdiv;
+			const FVector Flat = FMath::Lerp(Left, Right, U);
+			P[J * N + I] = Flat + DeepCoreRock::Displace(Flat);
+		}
+	}
+
+	for (int32 J = 0; J < Subdiv; J++)
+	{
+		for (int32 I = 0; I < Subdiv; I++)
+		{
+			const FVector& Q0 = P[J * N + I];
+			const FVector& Q1 = P[J * N + I + 1];
+			const FVector& Q2 = P[(J + 1) * N + I + 1];
+			const FVector& Q3 = P[(J + 1) * N + I];
+
+			// Normal from the displaced diagonal, so the shading follows the broken surface
+			// rather than the ideal plane it was generated from.
+			FVector Nrm = FVector::CrossProduct(Q1 - Q0, Q3 - Q0).GetSafeNormal();
+			if (Nrm.IsNearlyZero())
+			{
+				continue;   // degenerate sample; dropping it is cheaper than a NaN normal
+			}
+			Quad(Q0, Q1, Q2, Q3, Nrm);
+		}
+	}
 }

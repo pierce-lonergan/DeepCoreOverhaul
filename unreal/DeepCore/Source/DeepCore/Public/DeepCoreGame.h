@@ -16,6 +16,7 @@
 class ADeepCoreTerrain;
 class ADeepCoreUnit;
 class USpringArmComponent;
+class UPointLightComponent;
 class UCameraComponent;
 
 /**
@@ -53,6 +54,16 @@ private:
 	 * is what flattened the brickwork in the first place.
 	 */
 	float Boom = 2200.0f;
+
+	/**
+	 * Set by -DeepCoreShot. Freezes the camera so a capture is reproducible.
+	 *
+	 * Without this the boom crept to its zoom-out cap during unattended captures -- something
+	 * delivers MouseScrollDown events to an unfocused window -- which walked the camera outside
+	 * the map and produced three consecutive screenshots of the level's exterior against the
+	 * sky. Two of those were nearly misread as rendering faults.
+	 */
+	bool bCaptureLock = false;
 };
 
 UCLASS()
@@ -69,11 +80,20 @@ public:
 	void OrderNearestTo(const FVector& World);
 
 	UPROPERTY() TObjectPtr<ADeepCoreTerrain>          Terrain;
+	UPROPERTY() TArray<TObjectPtr<UPointLightComponent>> Worklights;
 	UPROPERTY() TArray<TObjectPtr<ADeepCoreUnit>>     Crew;
 	UPROPERTY() TArray<TObjectPtr<ADeepCoreUnit>>     Creatures;
 
+	/** A fixed cool-white worklight, as installed along a developed heading. */
+	void PlaceWorklight(const FVector& Where);
+
 private:
-	/** Directional key light, sky fill, fog and a fixed-exposure post volume. */
+	/**
+	 * Sky fill, volumetric dust and a fixed-exposure post volume.
+	 *
+	 * Deliberately spawns NO directional light. There is no sun underground, and daylight
+	 * falling across a sealed cavern was the single most unrealistic thing in this project.
+	 */
 	void BuildLighting();
 
 	/** Find an open tile, preferring ones near the middle of a chamber. */

@@ -30,6 +30,7 @@
 #include "DeepCoreUnit.generated.h"
 
 class UProceduralMeshComponent;
+class USpotLightComponent;
 class ADeepCoreTerrain;
 
 UENUM()
@@ -96,6 +97,13 @@ private:
 	UPROPERTY() TObjectPtr<USceneComponent>          ShoulderR;
 
 	UPROPERTY() TArray<TObjectPtr<UProceduralMeshComponent>> Parts;
+
+	/**
+	 * The cap lamp. With no sun underground this is the game's key light, not a decoration:
+	 * five crew members carrying five of these ARE the lighting rig, and the pools they throw
+	 * are the only reason any of the rock is visible at all.
+	 */
+	UPROPERTY() TObjectPtr<USpotLightComponent> Lamp;
 
 	EDeepCoreUnitKind Kind  = EDeepCoreUnitKind::Miner;
 	float   Scale           = 1.0f;

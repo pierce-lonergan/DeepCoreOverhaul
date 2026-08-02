@@ -3,6 +3,7 @@
 #include "DeepCoreBrick.h"
 #include "DeepCoreMaterials.h"
 #include "DeepCoreTerrain.h"
+#include "Components/SpotLightComponent.h"
 #include "ProceduralMeshComponent.h"
 
 using namespace DeepCoreBrick;
@@ -135,8 +136,31 @@ void ADeepCoreUnit::BuildMiner(const FLinearColor& Accent)
 		FBrickMesh L;
 		L.SetInk(FLinearColor(1.0f, 0.92f, 0.62f));
 		L.Part(FVector(11.0f, 0, 18.0f), 3.0f, 5.0f, 4.0f);    // headlamp lens
-		L.Commit(MakePart(HeadPivot, TEXT("Lamp")), 0, false);
+		L.Commit(MakePart(HeadPivot, TEXT("LampHousing")), 0, false);
 		Parts.Last()->SetMaterial(0, Palette.Glow);
+
+		// The light itself. A real cap lamp is roughly 200-400 lumens in a fairly tight cone;
+		// in candelas over an 18/34 degree cone that lands near 1800. Warm, because they are
+		// tungsten-temperature or a warm LED, and that warmth against cold fixed worklights is
+		// most of the colour story in a working mine.
+		Lamp = NewObject<USpotLightComponent>(this, TEXT("CapLamp"));
+		Lamp->SetupAttachment(HeadPivot);
+		Lamp->RegisterComponent();
+		Lamp->SetRelativeLocation(FVector(11.0f, 0.0f, 18.0f));
+		Lamp->SetMobility(EComponentMobility::Movable);
+		Lamp->SetIntensityUnits(ELightUnits::Candelas);
+		Lamp->SetIntensity(900.0f);
+		Lamp->SetLightColor(FLinearColor(1.0f, 0.72f, 0.44f));   // ~3200K
+		Lamp->SetInnerConeAngle(18.0f);
+		Lamp->SetOuterConeAngle(34.0f);
+		Lamp->SetAttenuationRadius(1400.0f);
+		// Makes the beam itself visible in the dust rather than just its landing spot.
+		Lamp->SetVolumetricScatteringIntensity(2.5f);
+		Lamp->SetCastShadows(true);
+		// Centimetre-scale cavity darkening. Tile ambient occlusion works at 100cm and can
+		// never produce contact shading at the scale the eye actually looks for it.
+		Lamp->ContactShadowLength = 0.03f;
+		Lamp->ContactShadowLengthInWS = false;
 	}
 
 	auto Limb = [&](USceneComponent* Parent, const TCHAR* Name,

@@ -94,7 +94,7 @@ const FDeepCorePalette& GetDeepCorePalette()
 		Surface->AddToRoot();
 		GPalette.Surface = Surface;
 	}
-	if (UMaterial* Glow = BuildVertexColorMaterial(TEXT("DeepCoreGlow"), 0.35f, 2.5f))
+	if (UMaterial* Glow = BuildVertexColorMaterial(TEXT("DeepCoreGlow"), 0.14f, 0.0f))
 	{
 		Glow->AddToRoot();
 		GPalette.Glow = Glow;
