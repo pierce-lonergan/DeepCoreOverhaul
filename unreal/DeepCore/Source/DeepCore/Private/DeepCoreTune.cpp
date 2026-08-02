@@ -52,6 +52,11 @@ void FDeepCoreTune::ParseCommandLine()
 		else if (Key == TEXT("disp"))     { T.Displace = V; }
 		else if (Key == TEXT("strata"))   { T.Strata = V; }
 		else if (Key == TEXT("rock"))     { T.RockHeight = V; }
+		else if (Key == TEXT("rscale"))   { T.RockScale = FMath::Max(10.0f, V); }
+		else if (Key == TEXT("bump"))     { T.Bump = V; }
+		else if (Key == TEXT("mottle"))   { T.Mottle = V; }
+		else if (Key == TEXT("roughvar")) { T.RoughVar = V; }
+		else if (Key == TEXT("srad"))     { T.SourceRad = V; }
 		else                              { Unknown.Add(Key); }
 	}
 
@@ -66,8 +71,9 @@ void FDeepCoreTune::ParseCommandLine()
 
 	UE_LOG(LogTemp, Display,
 	       TEXT("DeepCore: tune -- ev=%.2f sky=%.2f fog=%.4f fogext=%.2f aniso=%.2f wl=%.0f wlz=%.0f ")
-	       TEXT("wlstep=%d lamp=%.0f amb=%.3f rough=%.2f alb=%.2f disp=%.2f strata=%.2f rock=%.0f"),
+	       TEXT("wlstep=%d lamp=%.0f amb=%.3f rough=%.2f alb=%.2f disp=%.2f strata=%.2f rock=%.0f ")
+	       TEXT("rscale=%.0f bump=%.2f mottle=%.2f roughvar=%.2f srad=%.0f"),
 	       T.Ev, T.Sky, T.FogDensity, T.FogExtinct, T.FogAniso, T.Worklight, T.WorklightZ,
 	       T.WorklightStep, T.CapLamp, T.Ambient, T.Roughness, T.AlbedoScale, T.Displace, T.Strata,
-	       T.RockHeight);
+	       T.RockHeight, T.RockScale, T.Bump, T.Mottle, T.RoughVar, T.SourceRad);
 }

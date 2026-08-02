@@ -28,15 +28,31 @@
 // than by eye. The measurement mattered: several rounds of "make it brighter / darker" tuning were
 // chasing settings that turned out to be inert, and only a pixel histogram made that visible.
 //
-// KNOWN REMAINING FAULT: roughly 18% of pixels still clip to pure white. Exposure cannot fix it --
-// a six-stop change moves the median by about one stop and leaves the clipped fraction almost
-// unchanged -- because it is inverse-square falloff from point lamps close to now-tall walls. The
-// fix is softer/larger emitters or many more much dimmer ones, not another exposure value.
+// MEASURED RESULTS so far, at the strategy camera (boom 2600, pitch -55, FOV 38):
+//   clipped highlights   18.1%  ->  2.4%
+//   frame that is void   49.7%  -> 27.6%
+//   median brightness       12  ->    95
+//
+// Two findings from the sweeps that are worth keeping, because both are counter-intuitive:
+//
+//   * A LARGE lamp source radius is worse on both axes. It was added to soften the near-field
+//     hotspot, and it does -- but soft light is exactly what hides surface normals, so it cost
+//     15% of the measured surface detail while barely reducing clipping. Small sources win.
+//   * A global histogram cannot see surface detail at all. Twelve variants spanning the whole
+//     shader parameter range produced identical median/clipped/spread figures while differing
+//     by up to 58 levels per channel. Judging the rock shader needs a LOCAL contrast metric;
+//     judging the lighting needs the histogram. They are different questions.
+//
+// KNOWN REMAINING FAULT: exposure stops responding above about EV 12 -- EV 15 renders
+// indistinguishably from EV 12 -- so the lit walls still sit around 150-200 and read as bright
+// grey concrete rather than dark stone, and the tonemapper desaturates them enough to throw
+// away the warm colour the albedo specifies. There is a clamp somewhere that has not been
+// found yet. Until it is, the honest lever is fewer and dimmer lamps rather than more exposure.
 struct FDeepCoreTune
 {
 	// --- exposure and atmosphere ---------------------------------------------------------
 	/** EV100. HIGHER IS DARKER. See DeepCoreGame.cpp for why that is worth shouting about. */
-	float Ev          = 5.0f;
+	float Ev          = 12.0f;
 	/** Sky light intensity. Near-useless in a sealed cave; kept as a knob to prove that. */
 	float Sky         = 0.20f;
 	float FogDensity  = 0.009f;
@@ -45,10 +61,10 @@ struct FDeepCoreTune
 	float FogAniso    = 0.75f;
 
 	// --- lamps ---------------------------------------------------------------------------
-	float Worklight   = 800.0f;   ///< candelas
+	float Worklight   = 900.0f;   ///< candelas
 	float WorklightZ  = 185.0f;   ///< height above the floor; the rock roof is at 240
 	int32 WorklightStep = 3;      ///< one lamp per N x N tiles of opened ground
-	float CapLamp     = 600.0f;   ///< candelas, per crew member
+	float CapLamp     = 400.0f;   ///< candelas, per crew member
 
 	/**
 	 * Emissive ambient, as a fraction of a surface's own albedo.
@@ -61,7 +77,7 @@ struct FDeepCoreTune
 	 *
 	 * Set to 0 to see what the renderer alone produces.
 	 */
-	float Ambient     = 0.300f;
+	float Ambient     = 0.250f;
 
 	// --- surface -------------------------------------------------------------------------
 	float Roughness   = 0.72f;
@@ -83,6 +99,21 @@ struct FDeepCoreTune
 	 * fills with something to light.
 	 */
 	float RockHeight  = 800.0f;
+
+	// --- procedural rock shader ----------------------------------------------------------
+	/** Size of the coarsest rock feature, in cm. Smaller = busier stone. */
+	float RockScale   = 90.0f;
+	/** Strength of the noise-derived surface normal. This is what makes flat facets read as
+	 *  broken stone without adding a single triangle. */
+	float Bump        = 4.0f;
+	/** How far albedo varies with the noise. 0 = flat colour, the definitive CGI tell. */
+	float Mottle      = 1.5f;
+	/** How far roughness varies with the SAME noise. Correlated variation reads as rock;
+	 *  uncorrelated reads as marble; constant reads as plastic. */
+	float RoughVar    = 1.5f;
+
+	/** Lamp source radius in cm. Larger = softer near-field falloff and far less clipping. */
+	float SourceRad   = 25.0f;
 
 	/** Populate from -DeepCoreTune=k=v,k=v. Logs what it parsed and what it did not recognise. */
 	static void ParseCommandLine();

@@ -311,8 +311,8 @@ void ADeepCoreGameMode::PlaceWorklight(const FVector& Where)
 	L->SetIntensity(T.Worklight);
 	L->SetLightColor(FLinearColor(0.82f, 0.88f, 1.0f));
 	L->SetAttenuationRadius(1700.0f);
-	L->SetSourceRadius(14.0f);
-	L->SetSoftSourceRadius(28.0f);
+	L->SetSourceRadius(T.SourceRad);
+	L->SetSoftSourceRadius(T.SourceRad * 2.0f);
 	L->SetVolumetricScatteringIntensity(1.8f);
 	L->SetCastShadows(true);
 

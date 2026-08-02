@@ -184,11 +184,11 @@ void ADeepCoreTerrain::Rebuild()
 				}
 				else if (B.Has(BLOCK_HIDDEN))
 				{
-					M.SetInk(FLinearColor(0.042f, 0.040f, 0.038f) * Alb); // country rock, undisturbed
+					M.SetInk(FLinearColor(0.046f, 0.038f, 0.030f) * Alb); // country rock, undisturbed
 				}
 				else
 				{
-					M.SetInk(FLinearColor(0.105f, 0.100f, 0.094f) * Alb); // granodiorite
+					M.SetInk(FLinearColor(0.118f, 0.098f, 0.074f) * Alb); // granodiorite
 				}
 
 				// Back (roof of the rock mass). Seen constantly from a top-down camera, so it
@@ -228,7 +228,7 @@ void ADeepCoreTerrain::Rebuild()
 				Vein.SetInk(FLinearColor(0.014f, 0.020f, 0.024f) * Alb);
 				Vein.RockQuad(FVector(X0, Y0, -14.0f), FVector(X1, Y0, -14.0f),
 				              FVector(X1, Y1, -14.0f), FVector(X0, Y1, -14.0f), 1);
-				Roof.SetInk(FLinearColor(0.085f, 0.080f, 0.074f) * Alb);
+				Roof.SetInk(FLinearColor(0.096f, 0.080f, 0.062f) * Alb);
 				Roof.Quad(FVector(X0, Y1, RockTop), FVector(X1, Y1, RockTop),
 				          FVector(X1, Y0, RockTop), FVector(X0, Y0, RockTop), FVector(0, 0, -1));
 				continue;
@@ -236,7 +236,7 @@ void ADeepCoreTerrain::Rebuild()
 
 			if (B.Has(BLOCK_TOOLSTORE))
 			{
-				Rock.SetInk(FLinearColor(0.086f, 0.082f, 0.077f) * Alb);
+				Rock.SetInk(FLinearColor(0.098f, 0.082f, 0.064f) * Alb);
 				Rock.RockQuad(FVector(X0, Y0, 0.0f), FVector(X1, Y0, 0.0f),
 				              FVector(X1, Y1, 0.0f), FVector(X0, Y1, 0.0f), FloorSubdiv);
 				// High-visibility equipment is the ONLY saturated colour permitted underground,
@@ -245,7 +245,7 @@ void ADeepCoreTerrain::Rebuild()
 				Rock.SetInk(FLinearColor(0.42f, 0.26f, 0.02f) * Alb);
 				Rock.Box(FVector(C.X, C.Y, 0.0f), H * 0.72f, 90.0f, H * 0.72f);
 				Rock.bStrata = true;
-				Roof.SetInk(FLinearColor(0.085f, 0.080f, 0.074f) * Alb);
+				Roof.SetInk(FLinearColor(0.096f, 0.080f, 0.062f) * Alb);
 				Roof.Quad(FVector(X0, Y1, RockTop), FVector(X1, Y1, RockTop),
 				          FVector(X1, Y0, RockTop), FVector(X0, Y0, RockTop), FVector(0, 0, -1));
 				continue;
@@ -253,12 +253,12 @@ void ADeepCoreTerrain::Rebuild()
 
 			// Every open tile gets a roof over it. Flat and coarse: it is never seen, so it
 			// only needs to be a big diffuse reflector in the right place.
-			Roof.SetInk(FLinearColor(0.085f, 0.080f, 0.074f) * Alb);
+			Roof.SetInk(FLinearColor(0.096f, 0.080f, 0.062f) * Alb);
 			Roof.Quad(FVector(X0, Y1, RockTop), FVector(X1, Y1, RockTop),
 			          FVector(X1, Y0, RockTop), FVector(X0, Y0, RockTop), FVector(0, 0, -1));
 
 			// Muck-covered floor.
-			Rock.SetInk(FLinearColor(0.092f, 0.088f, 0.081f) * Alb);
+			Rock.SetInk(FLinearColor(0.104f, 0.086f, 0.066f) * Alb);
 			Rock.RockQuad(FVector(X0, Y0, 0.0f), FVector(X1, Y0, 0.0f),
 			              FVector(X1, Y1, 0.0f), FVector(X0, Y1, 0.0f), FloorSubdiv);
 		}
