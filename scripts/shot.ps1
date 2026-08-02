@@ -106,7 +106,12 @@ if (Test-Path $LogFile) {
 
     # Scoped to our own log lines plus genuine engine failures. A bare "LogTemp: Error" also
     # matches the engine's UnifiedErrorTest self-test, which fires every boot and is not a fault.
-    $errs = @(Select-String -Path $LogFile -Pattern 'DeepCore: .*(Error|FAIL)|Fatal error|Ensure condition failed|LogMaterial: Error|LogProceduralMesh: Error')
+    # "Failed to compile Material" is logged at WARNING level, not Error, and the engine then
+    # silently swaps in the Default Material -- a frame that renders perfectly while showing none
+    # of this project's shading work. That exact failure went unnoticed across several sessions of
+    # look tuning because nothing here matched it. It is the single most expensive thing this log
+    # can say, so it is scanned for explicitly.
+    $errs = @(Select-String -Path $LogFile -Pattern 'DeepCore: .*(Error|FAIL)|Fatal error|Ensure condition failed|LogMaterial: Error|LogProceduralMesh: Error|Failed to compile Material|function definition is not allowed here')
     if ($errs.Count -gt 0) {
         Write-Host 'errors' -ForegroundColor Red
         $errs | Select-Object -First 10 | ForEach-Object { Write-Host "  $($_.Line)" -ForegroundColor Red }

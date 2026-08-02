@@ -64,6 +64,30 @@ namespace
 		"	return s;\n"
 		"}\n");
 
+	/**
+	 * Publish the noise prelude as a preprocessor define instead of prepending it to Code.
+	 *
+	 * Code is emitted INSIDE the body of a generated function -- HLSLMaterialTranslator.cpp:14338
+	 * wraps it in `CustomExpression%d(FMaterialPixelParameters Parameters, ...) { <Code> }` -- so an
+	 * HLSL *function definition* placed there is illegal. The compiler reports "function definition
+	 * is not allowed here", every later dcFbm call then fails as an undeclared identifier, and the
+	 * whole material silently falls back to the engine Default Material. That fallback ignores
+	 * vertex colour, which is what made the frame achromatic and every tuning knob inert.
+	 *
+	 * AdditionalDefines are emitted at GLOBAL scope instead, ahead of the wrapper
+	 * (HLSLMaterialTranslator.cpp:14318-14325), and the translator wraps each one in
+	 * `#ifndef NAME / #define NAME <value> / #endif` -- so all three Custom nodes can request the
+	 * same block and the guard makes the repeat inclusion harmless. The value starts "1\n" so the
+	 * #define directive terminates at that newline and the function bodies land as plain global HLSL.
+	 */
+	void AddNoiseDefine(UMaterialExpressionCustom* C)
+	{
+		FCustomDefine D;
+		D.DefineName = TEXT("DC_NOISE");
+		D.DefineValue = FString(TEXT("1\n")) + kNoiseHLSL;
+		C->AdditionalDefines.Add(D);
+	}
+
 	/** Wire a Custom node input to an expression. */
 	void AddInput(UMaterialExpressionCustom* C, const TCHAR* Name, UMaterialExpression* Expr)
 	{
@@ -129,7 +153,8 @@ namespace
 			UMaterialExpressionCustom* C = NewObject<UMaterialExpressionCustom>(M);
 			C->OutputType = CMOT_Float3;
 			C->Description = TEXT("RockAlbedo");
-			C->Code = FString(kNoiseHLSL) +
+			AddNoiseDefine(C);
+			C->Code =
 				"float3 p = WP * Inv;\n"
 				"// TRIPLANAR. There are no usable UVs on this mesh -- FBrickMesh emits an\n"
 				"// arbitrary (0,0)-(1,1) per quad regardless of world size -- so the texture is\n"
@@ -174,7 +199,8 @@ namespace
 			UMaterialExpressionCustom* C = NewObject<UMaterialExpressionCustom>(M);
 			C->OutputType = CMOT_Float1;
 			C->Description = TEXT("RockRoughness");
-			C->Code = FString(kNoiseHLSL) +
+			AddNoiseDefine(C);
+			C->Code =
 				"float3 p = WP * Inv;\n"
 				"// Deliberately the SAME frequencies the albedo uses, so a patch that reads\n"
 				"// darker also reads rougher. That correlation is the whole point.\n"
@@ -199,7 +225,8 @@ namespace
 			UMaterialExpressionCustom* C = NewObject<UMaterialExpressionCustom>(M);
 			C->OutputType = CMOT_Float3;
 			C->Description = TEXT("RockNormal");
-			C->Code = FString(kNoiseHLSL) +
+			AddNoiseDefine(C);
+			C->Code =
 				"float3 p = WP * Inv;\n"
 				"float3 N = normalize(VN);\n"
 				"// Finite differences of the height field give its gradient. Projecting that\n"
